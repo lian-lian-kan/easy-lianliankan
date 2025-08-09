@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Board, Coord } from '../game/engine';
+import { getTileIcon, getTileColor } from '../utils/tileIcons';
 
 type Props = {
   board: Board;
@@ -34,25 +35,23 @@ export default function BoardView({ board, selected, onSelect }: Props) {
                 height: size,
                 borderRadius: 8,
                 border: sel ? '2px solid #ff7a00' : '1px solid #ddd',
-                background: v === 0 ? '#f6f7f9' : tileColor(v),
+                background: v === 0 ? '#f6f7f9' : getTileColor(v),
                 color: v === 0 ? '#aaa' : '#222',
                 fontWeight: 700,
-                fontSize: size * 0.32,
+                fontSize: size * 0.5,
                 boxShadow: v !== 0 ? '0 2px 6px rgba(0,0,0,.1)' : 'none',
                 touchAction: 'manipulation',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {v !== 0 ? v : ''}
+              {v !== 0 ? getTileIcon(v) : ''}
             </button>
           );
         })
       )}
     </div>
   );
-}
-
-function tileColor(v: number): string {
-  const palette = ['#ffd6e7', '#d6fff2', '#e8ffd6', '#d6e5ff', '#fff8d6', '#e1d6ff', '#d6fff9', '#ffd6d6'];
-  return palette[(v - 1) % palette.length];
 }
 
