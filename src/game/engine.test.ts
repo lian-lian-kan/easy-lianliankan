@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createBoard, findPath, Coord, removePair, hasAnyMoves, reshuffle, findAnyHint } from './engine';
-
-function clone<T>(x: T): T { return JSON.parse(JSON.stringify(x)); }
+import { createBoard, findPath, removePair, hasAnyMoves, reshuffle, findAnyHint } from './engine';
 
 describe('连连看核心逻辑', () => {
   it('生成棋盘为偶数配对', () => {

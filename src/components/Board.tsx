@@ -1,4 +1,4 @@
-import React from 'react';
+
 import type { Board, Coord } from '../game/engine';
 import { getTileIcon, getTileColor } from '../utils/tileIcons';
 

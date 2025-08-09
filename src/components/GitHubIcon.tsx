@@ -1,4 +1,4 @@
-import React from 'react';
+
 import './GitHubIcon.css';
 
 type Props = {
