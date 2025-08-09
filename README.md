@@ -1,69 +1,72 @@
-# React + TypeScript + Vite
+# 连连看 H5 游戏
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个基于 TypeScript + React 开发的移动端连连看游戏。
 
-Currently, two official plugins are available:
+## 🎮 游戏特性
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **核心玩法**：点击两个相同的水果图标进行消除
+- **路径算法**：支持最多2次拐弯的连通路径
+- **智能提示**：自动寻找可消除的配对
+- **无解处理**：自动检测无解状态并重新排列
+- **移动优化**：响应式设计，触摸友好
 
-## Expanding the ESLint configuration
+## 🚀 在线体验
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **GitHub Pages**: https://lian-lian-kan.github.io/demo/
+- **本地开发**: http://localhost:50511/
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ 技术栈
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+- **前端框架**: React 19 + TypeScript
+- **构建工具**: Vite 7
+- **测试框架**: Vitest
+- **部署方式**: GitHub Pages + GitHub Actions
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📱 游戏说明
+
+1. 点击两个相同的水果图标
+2. 如果路径可达（最多2次拐弯），则消除配对
+3. 消除所有配对即可获胜
+4. 使用"提示"按钮获取可消除的配对
+5. 使用"重开"按钮重新开始游戏
+
+## 🧪 开发
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 运行测试
+npm run test
+
+# 构建生产版本
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 📦 项目结构
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── game/
+│   ├── engine.ts      # 核心游戏逻辑
+│   └── engine.test.ts # 单元测试
+├── components/
+│   ├── Board.tsx      # 游戏棋盘组件
+│   └── GitHubIcon.tsx # GitHub图标组件
+├── utils/
+│   └── tileIcons.ts   # 水果图标映射
+├── App.tsx           # 主应用组件
+└── main.tsx          # 应用入口
+```
+
+## ⚙️ GitHub Pages 配置说明
+
+如果GitHub Actions构建失败，请确保在仓库设置中：
+
+1. 进入 Settings → Pages
+2. 将 Source 设置为 "GitHub Actions"
+3. 确保 Actions 权限已启用 (Settings → Actions → General)
+4. 推送代码后会自动触发部署
