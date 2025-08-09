@@ -1,0 +1,16 @@
+#root {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+* { box-sizing: border-box; }
+
+button {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+h2 { text-align: center; }
