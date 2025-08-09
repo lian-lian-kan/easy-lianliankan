@@ -1,22 +1,55 @@
-html, body, #root {
-  height: 100%;
-  margin: 0;
-}
+/* App组件专用样式 */
 
-#root {
+.app-container {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  padding-bottom: 24px;
   max-width: 720px;
   margin: 0 auto;
-  padding: 0;
+  padding: 0 0 24px 0;
 }
 
-* { box-sizing: border-box; }
+.app-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+  padding: 12px 12px 0;
+}
 
-button {
+.app-title {
+  margin: 0;
+  text-align: center;
+}
+
+.app-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+
+.app-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.app-button {
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-h2 { text-align: center; }
+.app-button:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.app-message {
+  color: #ff7a00;
+  margin-bottom: 6px;
+}

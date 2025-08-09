@@ -85,21 +85,21 @@ function App() {
   }
 
   return (
-    <div style={{ fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial', paddingBottom: 24 }}>
+    <div className="app-container">
       <GitHubIcon repoUrl="https://github.com/lian-lian-kan/demo" />
-      <header style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1, padding: '12px 12px 0' }}>
-        <h2 style={{ margin: 0 }}>连连看</h2>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '8px 0 12px' }}>
+      <header className="app-header">
+        <h2 className="app-title">连连看</h2>
+        <div className="app-stats">
           <span>分数：{score}</span>
           <span>步数：{moves}</span>
           <span>剩余：{Math.floor(remaining / 2)} 对</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <button onClick={onHint}>提示</button>
-            <button onClick={onReset}>重开</button>
+          <div className="app-controls">
+            <button className="app-button" onClick={onHint}>提示</button>
+            <button className="app-button" onClick={onReset}>重开</button>
           </div>
         </div>
         {message && (
-          <div style={{ color: '#ff7a00', marginBottom: 6 }}>{message}</div>
+          <div className="app-message">{message}</div>
         )}
       </header>
       <BoardView board={board} selected={selected} onSelect={onSelect} />
