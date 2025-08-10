@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import BoardView from './components/Board';
 import GitHubIcon from './components/GitHubIcon';
+import ThemeSelector from './components/ThemeSelector';
 import type { Board, Coord } from './game/engine';
 import { createBoard, findPath, removePair, reshuffle, findAnyHint } from './game/engine';
+import type { Theme } from './themes/types';
+import { themeManager } from './themes/ThemeManager';
 
 const ROWS = 12;
 const COLS = 8;
@@ -15,6 +18,7 @@ function App() {
   const [score, setScore] = useState(0);
   const [moves, setMoves] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  const [, setCurrentTheme] = useState<Theme>(themeManager.getCurrentTheme());
 
   // auto-reshuffle if deadlocked on mount
   useEffect(() => {
@@ -84,6 +88,12 @@ function App() {
     setTimeout(() => setMessage(null), 800);
   }
 
+  function onThemeChange(theme: Theme) {
+    setCurrentTheme(theme);
+    // 主题切换时强制重新渲染棋盘
+    setBoard(board => [...board.map(row => [...row])]);
+  }
+
   return (
     <div className="app-container">
       <GitHubIcon repoUrl="https://github.com/lian-lian-kan/demo" />
@@ -94,6 +104,7 @@ function App() {
           <span>步数：{moves}</span>
           <span>剩余：{Math.floor(remaining / 2)} 对</span>
           <div className="app-controls">
+            <ThemeSelector onThemeChange={onThemeChange} />
             <button className="app-button" onClick={onHint}>提示</button>
             <button className="app-button" onClick={onReset}>重开</button>
           </div>
