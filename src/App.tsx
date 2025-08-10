@@ -5,8 +5,8 @@ import GitHubIcon from './components/GitHubIcon';
 import type { Board, Coord } from './game/engine';
 import { createBoard, findPath, removePair, reshuffle, findAnyHint } from './game/engine';
 
-const ROWS = 8;
-const COLS = 10;
+const ROWS = 12;
+const COLS = 8;
 const KINDS = 10;
 
 function App() {
