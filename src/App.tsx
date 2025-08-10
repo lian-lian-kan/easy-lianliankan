@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import BoardView from './components/Board';
 import GitHubIcon from './components/GitHubIcon';
-import ThemeSelector from './components/ThemeSelector';
+import GameHeader from './components/GameHeader';
 import EffectLayer from './components/EffectLayer';
 import type { Board, Coord } from './game/engine';
 import { createBoard, findPath, removePair, reshuffle, findAnyHint } from './game/engine';
@@ -194,22 +194,15 @@ function App() {
   return (
     <div className="app-container">
       <GitHubIcon repoUrl="https://github.com/lian-lian-kan/demo" />
-      <header className="app-header">
-        <h2 className="app-title">连连看</h2>
-        <div className="app-stats">
-          <span>分数：{score}</span>
-          <span>步数：{moves}</span>
-          <span>剩余：{Math.floor(remaining / 2)} 对</span>
-          <div className="app-controls">
-            <ThemeSelector onThemeChange={onThemeChange} />
-            <button className="app-button" onClick={onHint}>提示</button>
-            <button className="app-button" onClick={onReset}>重开</button>
-          </div>
-        </div>
-        {message && (
-          <div className="app-message">{message}</div>
-        )}
-      </header>
+      <GameHeader
+        score={score}
+        moves={moves}
+        remaining={remaining}
+        message={message}
+        onThemeChange={onThemeChange}
+        onHint={onHint}
+        onReset={onReset}
+      />
       <BoardView board={board} selected={selected} onSelect={onSelect} />
       <EffectLayer
         effects={activeEffects}

@@ -8,32 +8,7 @@
   padding: 0 0 24px 0;
 }
 
-.app-header {
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 1;
-  padding: 12px 12px 0;
-}
-
-.app-title {
-  margin: 0;
-  text-align: center;
-}
-
-.app-stats {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin: 8px 0 12px;
-}
-
-.app-controls {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+/* 旧的header样式已移除，使用新的GameHeader组件 */
 
 .app-button {
   background: #fff;
