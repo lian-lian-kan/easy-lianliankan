@@ -1,5 +1,7 @@
 // 主题配置文件
 import type { Theme, ThemeConfig } from './types';
+import { effectsMap } from '../effects/effects';
+import { audioMap } from '../audio/sounds';
 
 // 水果主题
 export const fruitTheme: Theme = {
@@ -48,6 +50,8 @@ export const fruitTheme: Theme = {
     buttonColor: '#ffffff',
     buttonHoverColor: '#f5f5f5',
   },
+  effects: effectsMap.get('fruit'),
+  audio: audioMap.get('fruit'),
 };
 
 // 汽车主题
@@ -97,6 +101,8 @@ export const carTheme: Theme = {
     buttonColor: '#ffffff',
     buttonHoverColor: '#f5f5f5',
   },
+  effects: effectsMap.get('car'),
+  audio: audioMap.get('car'),
 };
 
 // 人物主题
@@ -146,6 +152,8 @@ export const peopleTheme: Theme = {
     buttonColor: '#ffffff',
     buttonHoverColor: '#f5f5f5',
   },
+  effects: effectsMap.get('people'),
+  audio: audioMap.get('people'),
 };
 
 // 化妆品主题
@@ -195,6 +203,8 @@ export const cosmeticTheme: Theme = {
     buttonColor: '#ffffff',
     buttonHoverColor: '#f5f5f5',
   },
+  effects: effectsMap.get('cosmetic'),
+  audio: audioMap.get('cosmetic'),
 };
 
 // 主题配置

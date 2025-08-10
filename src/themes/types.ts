@@ -1,21 +1,23 @@
 // 主题系统类型定义
+import type { ThemeEffects } from '../effects/types';
+import type { ThemeAudio } from '../audio/types';
 
 export interface Theme {
   /** 主题唯一标识符 */
   id: string;
-  
+
   /** 主题显示名称 */
   name: string;
-  
+
   /** 主题描述 */
   description: string;
-  
+
   /** emoji图标数组，用于游戏格子 */
   icons: string[];
-  
+
   /** 对应图标的背景颜色数组 */
   colors: string[];
-  
+
   /** 可选的UI主题颜色配置 */
   uiColors?: {
     /** 主要颜色 */
@@ -31,6 +33,12 @@ export interface Theme {
     /** 按钮悬停颜色 */
     buttonHoverColor: string;
   };
+
+  /** 主题特效配置 */
+  effects?: ThemeEffects;
+
+  /** 主题音效配置 */
+  audio?: ThemeAudio;
 }
 
 export interface ThemeConfig {

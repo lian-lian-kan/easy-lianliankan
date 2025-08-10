@@ -3,10 +3,14 @@ import './App.css';
 import BoardView from './components/Board';
 import GitHubIcon from './components/GitHubIcon';
 import ThemeSelector from './components/ThemeSelector';
+import EffectLayer from './components/EffectLayer';
 import type { Board, Coord } from './game/engine';
 import { createBoard, findPath, removePair, reshuffle, findAnyHint } from './game/engine';
 import type { Theme } from './themes/types';
 import { themeManager } from './themes/ThemeManager';
+import { effectManager } from './effects/EffectManager';
+import { audioManager } from './audio/AudioManager';
+import type { EffectInstance } from './effects/types';
 
 const ROWS = 12;
 const COLS = 8;
@@ -19,6 +23,7 @@ function App() {
   const [moves, setMoves] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [, setCurrentTheme] = useState<Theme>(themeManager.getCurrentTheme());
+  const [activeEffects, setActiveEffects] = useState<EffectInstance[]>([]);
 
   // auto-reshuffle if deadlocked on mount
   useEffect(() => {
@@ -27,6 +32,49 @@ function App() {
       reshuffle(copy);
       setBoard(copy);
     }
+  }, []);
+
+  // 初始化音效系统
+  useEffect(() => {
+    const initAudio = async () => {
+      const currentTheme = themeManager.getCurrentTheme();
+      if (currentTheme.audio) {
+        try {
+          await audioManager.preloadAudio(currentTheme.audio.eliminateSound);
+          if (currentTheme.audio.selectSound) {
+            await audioManager.preloadAudio(currentTheme.audio.selectSound);
+          }
+          if (currentTheme.audio.hintSound) {
+            await audioManager.preloadAudio(currentTheme.audio.hintSound);
+          }
+          if (currentTheme.audio.winSound) {
+            await audioManager.preloadAudio(currentTheme.audio.winSound);
+          }
+        } catch (error) {
+          console.warn('Failed to preload audio:', error);
+        }
+      }
+    };
+    initAudio();
+  }, []);
+
+  // 监听特效事件
+  useEffect(() => {
+    const handleEffectStart = (effect: EffectInstance) => {
+      setActiveEffects(prev => [...prev, effect]);
+    };
+
+    const handleEffectEnd = (effect: EffectInstance) => {
+      setActiveEffects(prev => prev.filter(e => e.id !== effect.id));
+    };
+
+    effectManager.on('effectStart', handleEffectStart);
+    effectManager.on('effectEnd', handleEffectEnd);
+
+    return () => {
+      effectManager.off('effectStart', handleEffectStart);
+      effectManager.off('effectEnd', handleEffectEnd);
+    };
   }, []);
 
   const remaining = useMemo(() => board.flat().filter(v => v !== 0).length, [board]);
@@ -48,8 +96,9 @@ function App() {
       setBoard(next);
       setScore(s => s + 10);
       setSelected(null);
-      setMessage('消除了一个配对！');
-      setTimeout(() => setMessage(null), 800);
+
+      // 触发消除特效和音效
+      triggerEliminateEffects([selected, p]);
       // auto win check
       if (next.flat().every(v => v === 0)) {
         setMessage('恭喜通关！');
@@ -92,6 +141,54 @@ function App() {
     setCurrentTheme(theme);
     // 主题切换时强制重新渲染棋盘
     setBoard(board => [...board.map(row => [...row])]);
+
+    // 预加载新主题的音效
+    if (theme.audio) {
+      audioManager.preloadAudio(theme.audio.eliminateSound).catch(console.warn);
+      if (theme.audio.selectSound) {
+        audioManager.preloadAudio(theme.audio.selectSound).catch(console.warn);
+      }
+      if (theme.audio.hintSound) {
+        audioManager.preloadAudio(theme.audio.hintSound).catch(console.warn);
+      }
+      if (theme.audio.winSound) {
+        audioManager.preloadAudio(theme.audio.winSound).catch(console.warn);
+      }
+    }
+  }
+
+  // 触发消除特效和音效
+  function triggerEliminateEffects(coords: Coord[]) {
+    const currentTheme = themeManager.getCurrentTheme();
+
+    coords.forEach(coord => {
+      // 计算特效位置
+      const boardElement = document.querySelector('.board-container');
+      const tileElements = boardElement?.querySelectorAll('.board-tile');
+      if (tileElements) {
+        const tileIndex = coord.r * COLS + coord.c;
+        const tileElement = tileElements[tileIndex] as HTMLElement;
+        if (tileElement) {
+          const rect = tileElement.getBoundingClientRect();
+          const position = {
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+
+          // 播放特效
+          if (currentTheme.effects?.eliminateEffect) {
+            effectManager.playEffect(currentTheme.effects.eliminateEffect, position);
+          }
+        }
+      }
+    });
+
+    // 播放音效
+    if (currentTheme.audio?.eliminateSound) {
+      audioManager.playAudio(currentTheme.audio.eliminateSound.id);
+    }
   }
 
   return (
@@ -114,6 +211,10 @@ function App() {
         )}
       </header>
       <BoardView board={board} selected={selected} onSelect={onSelect} />
+      <EffectLayer
+        effects={activeEffects}
+        onEffectEnd={(effectId) => effectManager.endEffect(effectId)}
+      />
     </div>
   );
 }
