@@ -1,0 +1,19 @@
+{
+  "levels": [
+    {"id": 1, "name": "热身", "mode": "classic", "rows": 8, "cols": 6, "kinds": 6, "time_limit": 90, "unlock_requirement": 0},
+    {"id": 2, "name": "提速", "mode": "rush", "rows": 10, "cols": 6, "kinds": 7, "time_limit": 100, "unlock_requirement": 1},
+    {"id": 3, "name": "连击", "mode": "combo", "rows": 10, "cols": 7, "kinds": 8, "time_limit": 110, "unlock_requirement": 2},
+    {"id": 4, "name": "压迫", "mode": "rush", "rows": 12, "cols": 7, "kinds": 8, "time_limit": 120, "unlock_requirement": 3},
+    {"id": 5, "name": "终局", "mode": "endurance", "rows": 12, "cols": 8, "kinds": 9, "time_limit": 130, "unlock_requirement": 4},
+    {"id": 6, "name": "破阵", "mode": "combo", "rows": 10, "cols": 10, "kinds": 10, "time_limit": 136, "unlock_requirement": 5},
+    {"id": 7, "name": "双线冲刺", "mode": "rush", "rows": 12, "cols": 9, "kinds": 10, "time_limit": 144, "unlock_requirement": 6},
+    {"id": 8, "name": "迷城", "mode": "endurance", "rows": 14, "cols": 8, "kinds": 11, "time_limit": 152, "unlock_requirement": 7},
+    {"id": 9, "name": "高压连段", "mode": "combo", "rows": 12, "cols": 10, "kinds": 11, "time_limit": 160, "unlock_requirement": 8},
+    {"id": 10, "name": "王座", "mode": "endurance", "rows": 13, "cols": 10, "kinds": 12, "time_limit": 168, "unlock_requirement": 9},
+    {"id": 11, "name": "极限挑战", "mode": "rush", "rows": 14, "cols": 10, "kinds": 12, "time_limit": 165, "unlock_requirement": 10},
+    {"id": 12, "name": "记忆大师", "mode": "classic", "rows": 12, "cols": 12, "kinds": 14, "time_limit": 180, "unlock_requirement": 11},
+    {"id": 13, "name": "闪电战", "mode": "rush", "rows": 10, "cols": 10, "kinds": 10, "time_limit": 120, "unlock_requirement": 12},
+    {"id": 14, "name": "连击风暴", "mode": "combo", "rows": 12, "cols": 10, "kinds": 13, "time_limit": 160, "unlock_requirement": 13},
+    {"id": 15, "name": "终极试炼", "mode": "endurance", "rows": 14, "cols": 12, "kinds": 15, "time_limit": 200, "unlock_requirement": 14}
+  ]
+}

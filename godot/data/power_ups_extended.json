@@ -1,0 +1,81 @@
+{
+  "power_ups": [
+    {
+      "id": "time_freeze",
+      "name": "时间冻结",
+      "icon": "⏱️",
+      "description": "暂停时间5秒",
+      "duration": 5.0,
+      "max_charges": 3,
+      "shortcut": "1",
+      "price": 100
+    },
+    {
+      "id": "auto_match",
+      "name": "自动匹配",
+      "icon": "🎯",
+      "description": "自动找到并消除一对",
+      "max_charges": 3,
+      "shortcut": "2",
+      "price": 150
+    },
+    {
+      "id": "reshuffle",
+      "name": "洗牌",
+      "icon": "🔄",
+      "description": "重新排列所有方块",
+      "max_charges": 3,
+      "shortcut": "3",
+      "price": 80
+    },
+    {
+      "id": "magnifier",
+      "name": "放大镜",
+      "icon": "🔍",
+      "description": "高亮显示3个可消除对",
+      "max_charges": 2,
+      "cooldown": 30.0,
+      "shortcut": "4",
+      "price": 120
+    },
+    {
+      "id": "time_sand",
+      "name": "时光沙漏",
+      "icon": "⏰",
+      "description": "时间+15秒",
+      "max_charges": 1,
+      "per_level_limit": 1,
+      "shortcut": "5",
+      "price": 200
+    },
+    {
+      "id": "bomb",
+      "name": "炸弹",
+      "icon": "💣",
+      "description": "随机消除一对",
+      "max_charges": 5,
+      "shortcut": "6",
+      "price": 50
+    },
+    {
+      "id": "rainbow_chain",
+      "name": "彩虹链",
+      "icon": "🌈",
+      "description": "无视路径直接消除（连击10+自动触发）",
+      "max_charges": 0,
+      "auto_trigger_combo": 10,
+      "shortcut": "",
+      "price": 0
+    },
+    {
+      "id": "super_shuffle",
+      "name": "超级洗牌",
+      "icon": "🔀",
+      "description": "保证有解的洗牌",
+      "max_charges": 2,
+      "per_level_limit": 2,
+      "shortcut": "7",
+      "price": 150
+    }
+  ]
+}

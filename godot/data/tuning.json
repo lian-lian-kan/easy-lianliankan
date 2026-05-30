@@ -1,0 +1,16 @@
+{
+  "base_score": 10,
+  "message_timeout_ms": 1000,
+  "path_preview_ms": 420,
+  "hint_preview_ms": 1400,
+  "error_flash_ms": 420,
+  "combo_window_ms": 2600,
+  "max_combo": 8,
+  "combo_burst_ms": 820,
+  "level_advance_ms": 1200,
+  "combo_progress_tick_ms": 100,
+  "time_danger_seconds": 10,
+  "hint_time_cost_seconds": 1,
+  "auto_eliminate_time_cost_seconds": 2,
+  "shuffle_time_cost_seconds": 1
+}

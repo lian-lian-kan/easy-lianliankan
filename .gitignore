@@ -50,3 +50,11 @@ npm-shrinkwrap.json
 
 # TypeScript
 *.tsbuildinfo
+
+# Local runtime artifacts
+.npm-cache/
+.pm2/
+
+# Godot generated artifacts
+godot/.godot/
+public/godot/

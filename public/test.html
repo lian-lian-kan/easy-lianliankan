@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Godot Test</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; }
+        #log { background: #f0f0f0; padding: 10px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; }
+        iframe { width: 100%; height: 500px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Godot Game Test</h1>
+    <div id="log">Loading...</div>
+    <iframe id="game-frame" src="/demo/godot/index.html"></iframe>
+    <script>
+        const log = document.getElementById('log');
+        function addLog(msg) {
+            log.textContent += new Date().toISOString() + ' - ' + msg + '\n';
+        }
+
+        // Capture console messages from iframe
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'console') {
+                addLog('[' + e.data.level + '] ' + e.data.message);
+            }
+        });
+
+        // Check if iframe loaded
+        const frame = document.getElementById('game-frame');
+        frame.onload = function() {
+            addLog('Iframe loaded');
+        };
+        frame.onerror = function(err) {
+            addLog('Iframe error: ' + err);
+        };
+
+        // Log page visibility
+        document.addEventListener('visibilitychange', function() {
+            addLog('Visibility changed: ' + document.visibilityState);
+        });
+
+        addLog('Test page loaded');
+    </script>
+</body>
+</html>

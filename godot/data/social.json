@@ -1,0 +1,45 @@
+{
+  "social": {
+    "share_reward": {"type": "coin", "amount": 50, "max_per_day": 3},
+    "invite_reward": {
+      "inviter": {"type": "gem", "amount": 10},
+      "invitee": {"type": "coin", "amount": 500}
+    },
+    "friend_gift": {
+      "send_limit": 5,
+      "receive_limit": 3,
+      "reward": {"type": "energy", "amount": 1}
+    },
+    "ask_for_help": {
+      "cooldown_hours": 24,
+      "reward": {"type": "hint", "amount": 1}
+    }
+  },
+  "leaderboards": [
+    {
+      "id": "total_score",
+      "name": "总分榜",
+      "type": "global",
+      "reset_period": "weekly",
+      "reward_top": 100
+    },
+    {
+      "id": "level_speedrun",
+      "name": "关卡速通榜",
+      "type": "per_level",
+      "reset_period": "never"
+    },
+    {
+      "id": "endless_depth",
+      "name": "无尽模式深度榜",
+      "type": "global",
+      "reset_period": "monthly"
+    },
+    {
+      "id": "friends",
+      "name": "好友榜",
+      "type": "friends_only",
+      "reset_period": "weekly"
+    }
+  ]
+}

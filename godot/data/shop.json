@@ -1,0 +1,54 @@
+{
+  "shop": {
+    "items": [
+      {
+        "id": "theme_pack_basic",
+        "name": "基础主题包",
+        "type": "theme_bundle",
+        "price": {"currency": "coin", "amount": 1000},
+        "contents": ["fruit", "car", "animal"]
+      },
+      {
+        "id": "theme_pack_premium",
+        "name": "高级主题包",
+        "type": "theme_bundle",
+        "price": {"currency": "gem", "amount": 100},
+        "contents": ["cosmetic", "anime", "maruko"]
+      },
+      {
+        "id": "power_up_bundle",
+        "name": "道具大礼包",
+        "type": "power_up_bundle",
+        "price": {"currency": "coin", "amount": 500},
+        "contents": {
+          "time_freeze": 3,
+          "auto_match": 3,
+          "reshuffle": 3,
+          "magnifier": 2
+        }
+      },
+      {
+        "id": "energy_refill",
+        "name": "体力补充",
+        "type": "energy",
+        "price": {"currency": "coin", "amount": 100},
+        "amount": 1
+      },
+      {
+        "id": "energy_refill_gem",
+        "name": "体力大补充",
+        "type": "energy",
+        "price": {"currency": "gem", "amount": 10},
+        "amount": 5
+      },
+      {
+        "id": "double_coin_card",
+        "name": "双倍金币卡",
+        "type": "booster",
+        "price": {"currency": "coin", "amount": 200},
+        "duration_minutes": 60,
+        "effect": "coin_x2"
+      }
+    ]
+  }
+}

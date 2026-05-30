@@ -1,0 +1,43 @@
+{
+  "game_modes": {
+    "time_attack": {
+      "mode_id": "time_attack",
+      "name": "限时挑战",
+      "description": "与时间赛跑，消除得时间",
+      "initial_time": 60,
+      "time_bonus_per_match": 3,
+      "combo_time_bonus": 1,
+      "fever_mode_threshold": 5,
+      "fever_multiplier": 1.5,
+      "time_chest_interval": 10,
+      "time_chest_bonus": 10,
+      "unlock_level": 5
+    },
+    "endless": {
+      "mode_id": "endless",
+      "name": "无尽模式",
+      "description": "挑战极限，看你能走多远",
+      "base_kinds": 6,
+      "kinds_increment_every": 5,
+      "board_expansion_every": 3,
+      "max_rows": 16,
+      "max_cols": 14,
+      "max_kinds": 20,
+      "unlock_level": 8
+    },
+    "memory": {
+      "mode_id": "memory",
+      "name": "盲盒模式",
+      "description": "考验你的记忆力",
+      "preview_seconds": 5,
+      "face_up_duration": 1.0,
+      "difficulty_tiers": [
+        {"level_range": [1, 3], "preview": 5.0, "face_up": 1.0},
+        {"level_range": [4, 6], "preview": 4.0, "face_up": 0.8},
+        {"level_range": [7, 9], "preview": 3.0, "face_up": 0.6},
+        {"level_range": [10, 999], "preview": 2.0, "face_up": 0.5}
+      ],
+      "unlock_level": 10
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "economy": {
+    "coin_rewards": {
+      "base_formula": "score * difficulty_multiplier * time_bonus_multiplier",
+      "difficulty_multiplier": {
+        "easy": 1.0,
+        "normal": 1.2,
+        "hard": 1.5,
+        "expert": 2.0
+      },
+      "time_bonus_multiplier": {
+        "above_50_percent": 1.5,
+        "above_25_percent": 1.2,
+        "below_25_percent": 1.0,
+        "time_out": 0.5
+      },
+      "first_clear_bonus": 50,
+      "perfect_clear_bonus": 100
+    },
+    "daily_rewards": [
+      {"day": 1, "reward": {"type": "coin", "amount": 50}},
+      {"day": 2, "reward": {"type": "coin", "amount": 100}},
+      {"day": 3, "reward": {"type": "coin", "amount": 150}},
+      {"day": 4, "reward": {"type": "coin", "amount": 200}},
+      {"day": 5, "reward": {"type": "coin", "amount": 300}},
+      {"day": 6, "reward": {"type": "coin", "amount": 400}},
+      {"day": 7, "reward": {"type": "theme", "theme_id": "random_locked"}}
+    ],
+    "cycle_reset": true
+  },
+  "energy_system": {
+    "max_energy": 5,
+    "recovery_time_minutes": 20,
+    "cost_per_game": 1,
+    "cost_on_failure": 0,
+    "refill_methods": {
+      "natural_recovery": true,
+      "coin_purchase": {"cost": 100, "amount": 1},
+      "gem_purchase": {"cost": 10, "amount": 5},
+      "friend_gift": {"max_per_day": 3, "amount": 1},
+      "ad_reward": {"max_per_day": 5, "amount": 1}
+    },
+    "max_overflow": 10
+  }
+}
