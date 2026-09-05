@@ -404,3 +404,26 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
   - Board readability improved, but final mobile scale behavior still appears constrained by Godot Web canvas resize policy (`canvasResizePolicy`) rather than tile clamp alone.
 - Next suggestions:
   - If further mobile upscaling is required, evaluate export-side canvas/stretch policy tuning in Godot project settings and generated web bootstrap config.
+
+## 2026-09-06 (mobile-rescue + CI 修复)
+- Context: 项目评估发现 HEAD 源码是 Godot 3 / Godot 4 API 混合体，无法编译；此前导出产物(3/23)已过期且被 gitignore；CI(deploy.yml) 仍引用已删除的 npm 构建，5/30 起 Pages 部署持续失败，线上是 1 月旧版。
+- Working goal: 让源码在 Godot 3.6.2 下可编译可导出、修复核心玩法 bug、恢复移动端优先的部署链路。
+- 修复清单:
+  - game.gd: 清除约 120 处 Godot 4 API（custom_minimum_size/is_empty/horizontal_alignment/Time.get_ticks_msec/offset_*/set_anchors_preset/Control.size 等），统一为 Godot 3 等价写法。
+  - 关键玩法 bug: _find_any_hint 中寻路代码被错误缩进进 `if...continue` 分支内成为死代码 → 提示永远找不到可消对、每次消除后整盘强制重排。已修复并新增回归测试。
+  - 运行时崩溃: Array.reverse() → invert()（消除一对即崩）；DynamicFontData 直接当字体用 → 正确包 DynamicFont + add_fallback(NotoColorEmoji)；show_percentage → percent_visible；button_pressed → pressed；rotation_degrees → rect_rotation。
+  - 特效系统重写: 9 个特效函数中 Tween 从未 start()/节点永不释放/缩进断裂/参数错乱（残留 "interval skipped" 等半成品转换痕迹），新增 _make_fx_tween 工厂统一管理创建与释放，洗牌波/粒子/圆环/连击爆字全部恢复并支持 delay 分步动画。
+  - 字号: 方块 emoji 字号随方块尺寸缩放（tile*0.52, clamp 14-44），手机上更易读；连击爆字/关卡横幅按等级字号。
+  - export_presets.cfg: platform="Web" → "HTML5"（Godot 3 平台名）；挂载自定义 HTML shell（res://shell/mobile_shell.html），把原先只存在于 gitignore 产物里的移动端增强（DPR 封顶/视觉视口同步/加载看门狗/WebGL 上下文丢失恢复/safe-area）固化为仓库模板。
+  - CLI: Godot 3 没有 --export-release（G4 参数，传入会被静默忽略并直接运行游戏），正确为 --export。
+  - CI: deploy.yml 重写为纯 Godot 流水线（无 npm）：安装 3.6.2 headless + Web 模板（带缓存）→ headless 测试 → import → export → 发布 public/ 到 Pages。
+  - server.js: 增加 gzip（wasm/pck 压缩率约 75%）+ query string 剥离 + Cache-Control；入口页 public/index.html 去掉 1.5s 人工延迟改为立即跳转。
+- 新增测试: godot/tests/board_logic_test.gd（寻路 0/1/2 转弯/封死判定/hint/洗牌保持牌集/开局可解）。
+- Validation:
+  - board_logic_test / progression_test / path_overlay_input_passthrough_test 全部通过（Godot 3.6.2 headless）。
+  - progression_test.gd 修复了 G4 的 `Variant` 类型注解（此前从未在 G3 下运行过）。
+  - Web 导出产物见 public/godot/（本 worktree）。
+- Next suggestions:
+  - 移动端真机验证（iOS Safari 内存上限、低性能设备帧率）。
+  - 主题切换/商店/体力等管理器有 UI 无入口（coins/energy/daily_reward/shop/leaderboard 已实现但 game.gd 未接入），考虑按休闲定位取舍。
+  - pck 体积 25MB：字体 26MB 占大头，可评估子集化 NotoSansSC（只打包常用汉字+emoji 图标改用图片图集）。

@@ -57,4 +57,5 @@ npm-shrinkwrap.json
 
 # Godot generated artifacts
 godot/.godot/
+godot/.import/
 public/godot/

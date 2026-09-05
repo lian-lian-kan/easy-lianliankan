@@ -170,16 +170,8 @@
         const isSecure = isSecureContextForH5();
 
         if (hasWebGL && hasWasm) {
-            statusEl.className = 'supported';
-            statusEl.textContent = isSecure
-                ? '✅ 环境检测通过'
-                : '⚠️ 环境检测通过（建议 HTTPS）';
-            supportedContent.style.display = 'block';
-
-            // Redirect to game after 1.5 seconds
-            setTimeout(() => {
-                window.location.href = './godot/index.html';
-            }, 1500);
+            // Supported: jump straight into the game, no artificial delay.
+            window.location.replace('./godot/index.html');
         } else {
             statusEl.className = 'unsupported';
             if (!hasWasm) {

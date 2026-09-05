@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+html, body {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	overscroll-behavior: none;
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+body {
+	color: white;
+	background-color: black;
+	box-sizing: border-box;
+	padding:
+		env(safe-area-inset-top)
+		env(safe-area-inset-right)
+		env(safe-area-inset-bottom)
+		env(safe-area-inset-left);
+	touch-action: manipulation;
+}
+
+#canvas {
+	display: block;
+	width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+	height: calc(var(--app-height, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+	touch-action: none;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: #242424;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+	display: none;
+}
+
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
+}
+
+.status-action {
+	background: #2563eb;
+	color: #ffffff;
+	border: 0;
+	border-radius: 0.5rem;
+	font-size: 0.95rem;
+	font-weight: 600;
+	line-height: 1;
+	margin-top: 0.75rem;
+	padding: 0.6rem 0.9rem;
+	cursor: pointer;
+}
+		</style>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+$GODOT_HEAD_INCLUDE
+
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			Your browser does not support JavaScript.
+		</noscript>
+
+		<div id="status">
+			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = false;
+const MOBILE_UA_RE = /Android|iPhone|iPad|iPod|HarmonyOS|Mobile/i;
+const IS_MOBILE_DEVICE = MOBILE_UA_RE.test(navigator.userAgent || '');
+if (IS_MOBILE_DEVICE) {
+	const cores = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 2));
+	GODOT_CONFIG.emscriptenPoolSize = Math.max(1, Math.min(2, cores));
+	GODOT_CONFIG.godotPoolSize = Math.max(1, Math.min(2, cores));
+}
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	function syncViewportHeight() {
+		const nextHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+		document.documentElement.style.setProperty('--app-height', `${Math.round(nextHeight)}px`);
+	}
+
+	function applyDprCapForMobile() {
+		const params = new URLSearchParams(window.location.search);
+		const requestedCap = parseFloat(params.get('dpr') || '');
+		const defaultCap = 2.0;
+		const shouldAutoCap = /Android|iPhone|iPad|iPod|HarmonyOS/i.test(navigator.userAgent);
+		const cap = Number.isFinite(requestedCap) && requestedCap > 0
+			? requestedCap
+			: (shouldAutoCap ? defaultCap : NaN);
+		if (!Number.isFinite(cap)) {
+			return;
+		}
+		const originalDpr = window.devicePixelRatio || 1;
+		if (originalDpr <= cap) {
+			return;
+		}
+		try {
+			Object.defineProperty(window, 'devicePixelRatio', {
+				configurable: true,
+				get: () => cap,
+			});
+			console.info(`[H5] devicePixelRatio capped from ${originalDpr} to ${cap}`);
+		} catch (err) {
+			console.warn('[H5] unable to cap devicePixelRatio', err);
+		}
+	}
+
+	applyDprCapForMobile();
+	syncViewportHeight();
+	window.addEventListener('resize', syncViewportHeight, { passive: true });
+	if (window.visualViewport) {
+		window.visualViewport.addEventListener('resize', syncViewportHeight, { passive: true });
+	}
+	window.addEventListener('orientationchange', () => {
+		setTimeout(() => {
+			syncViewportHeight();
+			window.dispatchEvent(new Event('resize'));
+			window.scrollTo(0, 0);
+		}, 120);
+	}, { passive: true });
+
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
+	const canvas = document.getElementById('canvas');
+
+	let initializing = true;
+	let statusMode = '';
+	let didStartEngine = false;
+	let lastProgressAt = Date.now();
+	let watchdogTimer = null;
+
+	function setStatusMode(mode) {
+		if (mode === 'hidden') {
+			if (statusOverlay && statusOverlay.parentNode) {
+				statusOverlay.remove();
+			}
+			initializing = false;
+			statusMode = mode;
+			return;
+		}
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function appendRetryActionButton() {
+		const retryButton = document.createElement('button');
+		retryButton.type = 'button';
+		retryButton.className = 'status-action';
+		retryButton.textContent = '刷新重试';
+		retryButton.addEventListener('click', () => {
+			window.location.reload();
+		});
+		statusNotice.appendChild(retryButton);
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		appendRetryActionButton();
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	canvas.addEventListener('webglcontextlost', (event) => {
+		event.preventDefault();
+		setStatusNotice('图形上下文已丢失，正在等待恢复。若长时间无响应，请刷新页面。');
+		appendRetryActionButton();
+		setStatusMode('notice');
+	});
+
+	canvas.addEventListener('webglcontextrestored', () => {
+		setStatusNotice('图形上下文已恢复，正在重新加载游戏。');
+		setStatusMode('notice');
+		setTimeout(() => {
+			window.location.reload();
+		}, 280);
+	});
+
+	document.addEventListener('visibilitychange', () => {
+		if (!document.hidden) {
+			syncViewportHeight();
+			window.dispatchEvent(new Event('resize'));
+		}
+	});
+
+	function startLoadWatchdog() {
+		const stallThreshold = IS_MOBILE_DEVICE ? 40000 : 55000;
+		watchdogTimer = window.setInterval(() => {
+			if (!initializing || didStartEngine) {
+				return;
+			}
+			const elapsed = Date.now() - lastProgressAt;
+			if (elapsed < stallThreshold) {
+				return;
+			}
+			setStatusNotice('加载时间较长，可能是网络或设备性能限制。请稍后重试。');
+			appendRetryActionButton();
+			setStatusMode('notice');
+			initializing = false;
+		}, 3000);
+	}
+
+	startLoadWatchdog();
+
+	if (!Engine.isWebGLAvailable()) {
+		const iosHint = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+			? '\n\niOS 提示:\n1) 请使用 Safari 15+。\n2) 关闭低电量模式后重试。\n3) 若曾添加到桌面，请删除旧快捷方式后重新打开。'
+			: '';
+		displayFailureNotice('WebGL not available\n当前浏览器不支持 WebGL，无法运行游戏。' + iosHint);
+	} else {
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				lastProgressAt = Date.now();
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			didStartEngine = true;
+			if (watchdogTimer !== null) {
+				clearInterval(watchdogTimer);
+			}
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>

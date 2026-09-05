@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _assert_equal(actual: Variant, expected: Variant, message: String) -> bool:
+func _assert_equal(actual, expected, message: String) -> bool:
 	if actual == expected:
 		return true
 	push_error(message + " | actual=" + str(actual) + " expected=" + str(expected))

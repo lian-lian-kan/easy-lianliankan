@@ -99,6 +99,9 @@ var stat_values = {}
 var stats_flow_container
 var controls_flow_container
 var progression_flow_container
+var root_vbox
+var header_box
+var level_progress_caption_label
 var power_ups_container  # 道具显示容器
 var power_up_labels = {}
 
@@ -151,7 +154,7 @@ func _process(delta):
 func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key_event := event as InputEventKey
-		match key_event.keycode:
+		match key_event.scancode:
 			KEY_P:
 				_on_pause_pressed()
 				accept_event()
@@ -219,13 +222,13 @@ func _update_modal_panel_sizes(viewport_size, is_portrait):
 	var max_height = viewport_size.y * (0.90 if is_portrait else 0.82)
 
 	if onboarding_panel:
-		onboarding_panel.custom_minimum_size = Vector2(min(320.0, max_width), min(400.0, max_height))
+		onboarding_panel.rect_min_size = Vector2(min(320.0, max_width), min(400.0, max_height))
 	if settings_panel:
-		settings_panel.custom_minimum_size = Vector2(min(360.0, max_width), min(320.0, max_height))
+		settings_panel.rect_min_size = Vector2(min(360.0, max_width), min(320.0, max_height))
 	if achievements_panel:
-		achievements_panel.custom_minimum_size = Vector2(min(400.0, max_width), min(480.0, max_height))
+		achievements_panel.rect_min_size = Vector2(min(400.0, max_width), min(480.0, max_height))
 	if pause_panel:
-		pause_panel.custom_minimum_size = Vector2(min(320.0, max_width), min(280.0, max_height))
+		pause_panel.rect_min_size = Vector2(min(320.0, max_width), min(280.0, max_height))
 
 func _update_layout_for_screen_size():
 	if board_wrapper == null or board_grid == null:
@@ -240,10 +243,12 @@ func _update_layout_for_screen_size():
 
 	# Give board more vertical room on mobile and wide desktop.
 	if is_mobile:
+		# Portrait relies on EXPAND_FILL for remaining space; keep the min small to avoid overflow.
 		var mobile_ratio = BOARD_RATIO_MOBILE_PORTRAIT if is_portrait else BOARD_RATIO_MOBILE_LANDSCAPE
-		board_wrapper.custom_minimum_size = Vector2(0, max(BOARD_MIN_HEIGHT, viewport_size.y * mobile_ratio))
+		var ratio = 0.42 if is_portrait else mobile_ratio
+		board_wrapper.rect_min_size = Vector2(0, min(max(BOARD_MIN_HEIGHT, viewport_size.y * ratio), viewport_size.y * 0.62))
 	else:
-		board_wrapper.custom_minimum_size = Vector2(0, max(420.0, viewport_size.y * BOARD_RATIO_DESKTOP))
+		board_wrapper.rect_min_size = Vector2(0, max(420.0, viewport_size.y * BOARD_RATIO_DESKTOP))
 
 	# Adjust margins based on screen size
 	var margin_value = 6 if is_compact_height else (8 if is_mobile else 16)
@@ -276,25 +281,25 @@ func _update_layout_for_screen_size():
 		stats_flow_container.add_constant_override("h_separation", 4 if is_mobile else 6)
 		stats_flow_container.add_constant_override("v_separation", 6 if is_mobile else 6)
 
-	var stat_card_size = Vector2(76, 54) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
-	var stat_value_size = 18 if is_mobile and is_portrait else (20 if is_mobile else 22)
+	var stat_card_size = Vector2(66, 44) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
+	var stat_value_size = 16 if is_mobile and is_portrait else (20 if is_mobile else 22)
 	var stat_title_size = 10 if is_mobile else 11
 	for key in stat_values.keys():
 		var card = stat_values[key]["card"]
 		var title_small = stat_values[key]["title"]
 		var value_label = stat_values[key]["value"]
-		card.custom_minimum_size = stat_card_size
-		title_small.custom_minimum_size = Vector2(0, stat_title_size + 4)
-		value_label.custom_minimum_size = Vector2(0, stat_value_size + 6)
+		card.rect_min_size = stat_card_size
+		title_small.rect_min_size = Vector2(0, stat_title_size + 4)
+		value_label.rect_min_size = Vector2(0, stat_value_size + 6)
 
 	var control_min = Vector2(72, 34) if is_mobile and is_compact_height else (Vector2(76, 36) if is_mobile and is_portrait else (Vector2(80, 36) if is_mobile else Vector2(88, 42)))
 	if icon_set_option:
-		icon_set_option.custom_minimum_size = Vector2(108 if is_mobile else 122, control_min.y)
+		icon_set_option.rect_min_size = Vector2(108 if is_mobile else 122, control_min.y)
 	if level_select_option:
-		level_select_option.custom_minimum_size = Vector2(130 if is_mobile else 172, control_min.y)
+		level_select_option.rect_min_size = Vector2(130 if is_mobile else 172, control_min.y)
 	for button in [hint_button, auto_button, shuffle_button, pause_button, reset_button, jump_level_button, clear_progress_button]:
 		if button:
-			button.custom_minimum_size = control_min
+			button.rect_min_size = control_min
 
 	if controls_flow_container:
 		controls_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
@@ -303,28 +308,67 @@ func _update_layout_for_screen_size():
 		progression_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
 		progression_flow_container.add_constant_override("v_separation", 6 if is_mobile else 8)
 
+	# Portrait phones: compress the header so the board fits the visible canvas.
+	if is_mobile and is_portrait:
+		if root_vbox:
+			root_vbox.add_constant_override("separation", 4)
+		if header_box:
+			header_box.add_constant_override("separation", 3)
+		if level_progress_caption_label:
+			level_progress_caption_label.visible = false
+		if jump_level_button:
+			jump_level_button.visible = false
+		if clear_progress_button:
+			clear_progress_button.visible = false
+		if level_select_option:
+			level_select_option.rect_min_size = Vector2(150, control_min.y)
+		if combo_progress_bar:
+			combo_progress_bar.rect_min_size = Vector2(0, 4)
+		# Single row of the 4 essential cards keeps the header to one stat line.
+		for hidden_key in ["level_score", "moves", "best_total_score", "best_combo"]:
+			if stat_values.has(hidden_key) and stat_values[hidden_key].has("card"):
+				stat_values[hidden_key]["card"].visible = false
+	else:
+		for hidden_key in ["level_score", "moves", "best_total_score", "best_combo"]:
+			if stat_values.has(hidden_key) and stat_values[hidden_key].has("card"):
+				stat_values[hidden_key]["card"].visible = true
+		if level_progress_caption_label:
+			level_progress_caption_label.visible = true
+		if jump_level_button:
+			jump_level_button.visible = true
+		if clear_progress_button:
+			clear_progress_button.visible = true
+
 	_update_modal_panel_sizes(viewport_size, is_portrait)
 
 const EMBEDDED_FONT = preload("res://fonts/NotoSansSC-Regular.ttf")
 const EMOJI_FONT = preload("res://fonts/NotoColorEmoji.ttf")
 
-func _init_font():
-	# For Web exports, use embedded font files for Chinese and Emoji support
-	if EMBEDDED_FONT:
-		game_font = EMBEDDED_FONT
-		# Add emoji font as fallback
-		if EMOJI_FONT:
-			var fallbacks = [EMOJI_FONT]
-			game_font.fallbacks = fallbacks
-	else:
-		# Fallback to embedded font if available
-		game_font = EMBEDDED_FONT if EMBEDDED_FONT else null
+var _font_cache = {}
 
-	# Apply font via theme
+func _font_at_size(px):
+	px = int(max(8, px))
+	if _font_cache.has(px):
+		return _font_cache[px]
+	var font = DynamicFont.new()
+	font.font_data = EMBEDDED_FONT
+	font.size = px
+	font.use_filter = true
+	if EMOJI_FONT:
+		font.add_fallback(EMOJI_FONT)
+	_font_cache[px] = font
+	return font
+
+func _init_font():
+	# Web export: bundled CJK font with color-emoji fallback so tiles render everywhere.
+	game_font = _font_at_size(16)
+
 	var theme = Theme.new()
 	theme.set_font("font", "Label", game_font)
 	theme.set_font("font", "Button", game_font)
 	theme.set_font("font", "OptionButton", game_font)
+	theme.set_font("font", "PopupMenu", game_font)
+	theme.set_font("font", "CheckBox", game_font)
 	self.theme = theme
 
 func _load_config():
@@ -332,9 +376,9 @@ func _load_config():
 	tuning = _load_tuning()
 	icon_sets = _load_icon_sets()
 
-	if campaign_levels.is_empty():
+	if campaign_levels.empty():
 		campaign_levels = _default_campaign_levels()
-	if icon_sets.is_empty():
+	if icon_sets.empty():
 		icon_sets = _default_icon_sets()
 
 func _load_json_file(path: String):
@@ -579,16 +623,16 @@ func _default_icon_sets():
 	]
 
 func _build_ui():
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_margins_preset(Control.PRESET_WIDE)
 
 	# Add gradient background
 	var bg_rect = ColorRect.new()
-	bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_rect.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	bg_rect.color = Color("f8fafc")
 	add_child(bg_rect)
 
 	var margin = MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	margin.add_constant_override("margin_left", 16)
 	margin.add_constant_override("margin_right", 16)
 	margin.add_constant_override("margin_top", 16)
@@ -601,6 +645,7 @@ func _build_ui():
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_constant_override("separation", 12)
 	margin.add_child(root)
+	root_vbox = root
 
 	# Header panel with glass morphism effect
 	var header_panel = PanelContainer.new()
@@ -608,7 +653,7 @@ func _build_ui():
 	_apply_glass_style(header_panel, Color("ffffff"), 0.9)
 	root.add_child(header_panel)
 
-	var header_box = VBoxContainer.new()
+	header_box = VBoxContainer.new()
 	header_box.add_constant_override("separation", 8)
 	header_panel.add_child(header_box)
 
@@ -641,9 +686,9 @@ func _build_ui():
 	status_chip_label = Label.new()
 	status_chip_label.text = "进行中"
 	status_chip_label.add_font_override("font", game_font)
-	status_chip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_chip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_chip_label.custom_minimum_size = Vector2(90, 32)
+	status_chip_label.align = Label.ALIGN_CENTER
+	status_chip_label.valign = Label.VALIGN_CENTER
+	status_chip_label.rect_min_size = Vector2(90, 32)
 	status_chip_label.add_color_override("font_color", Color("059669"))
 	# Add status badge style
 	var status_style = StyleBoxFlat.new()
@@ -652,19 +697,19 @@ func _build_ui():
 	status_chip_label.add_stylebox_override("normal", status_style)
 	title_row.add_child(status_chip_label)
 
-	var level_progress_label = Label.new()
-	level_progress_label.text = "闯关进度"
-	level_progress_label.add_font_override("font", game_font)
-	level_progress_label.add_color_override("font_color", Color("64748b"))
-	header_box.add_child(level_progress_label)
+	level_progress_caption_label = Label.new()
+	level_progress_caption_label.text = "闯关进度"
+	level_progress_caption_label.add_font_override("font", game_font)
+	level_progress_caption_label.add_color_override("font_color", Color("64748b"))
+	header_box.add_child(level_progress_caption_label)
 
 	level_progress_bar = ProgressBar.new()
 	level_progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	level_progress_bar.min_value = 0
 	level_progress_bar.max_value = 100
 	level_progress_bar.value = 0
-	level_progress_bar.show_percentage = false
-	level_progress_bar.custom_minimum_size = Vector2(0, 12)
+	level_progress_bar.percent_visible = false
+	level_progress_bar.rect_min_size = Vector2(0, 12)
 	# Style progress bar
 	var progress_bg = StyleBoxFlat.new()
 	progress_bg.bg_color = Color("e2e8f0")
@@ -716,8 +761,8 @@ func _build_ui():
 	combo_progress_bar.min_value = 0
 	combo_progress_bar.max_value = 100
 	combo_progress_bar.value = 0
-	combo_progress_bar.show_percentage = false
-	combo_progress_bar.custom_minimum_size = Vector2(0, 10)
+	combo_progress_bar.percent_visible = false
+	combo_progress_bar.rect_min_size = Vector2(0, 10)
 	# Style combo bar
 	var combo_bg = StyleBoxFlat.new()
 	combo_bg.bg_color = Color("e2e8f0")
@@ -737,7 +782,7 @@ func _build_ui():
 
 	icon_set_option = OptionButton.new()
 	icon_set_option.add_font_override("font", game_font)
-	icon_set_option.custom_minimum_size = Vector2(140, 42)
+	icon_set_option.rect_min_size = Vector2(140, 42)
 	icon_set_option.connect("item_selected", self, "_on_icon_set_selected")
 	# Style the dropdown
 	var dropdown_style = StyleBoxFlat.new()
@@ -786,7 +831,7 @@ func _build_ui():
 
 	level_select_option = OptionButton.new()
 	level_select_option.add_font_override("font", game_font)
-	level_select_option.custom_minimum_size = Vector2(172, 42)
+	level_select_option.rect_min_size = Vector2(172, 42)
 	level_select_option.connect("item_selected", self, "_on_level_select_changed")
 	level_select_option.add_stylebox_override("normal", dropdown_style)
 	level_select_option.add_color_override("font_color", Color("475569"))
@@ -817,11 +862,13 @@ func _build_ui():
 	board_wrapper = Control.new()
 	board_wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_wrapper.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	board_wrapper.custom_minimum_size = Vector2(0, 400)
+	board_wrapper.rect_min_size = Vector2(0, 400)
 	root.add_child(board_wrapper)
+	# Let the board absorb ALL remaining height instead of overflowing the canvas.
+	board_wrapper.size_flags_stretch_ratio = 1.0
 
 	var board_panel = PanelContainer.new()
-	board_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	board_panel.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	# Apply game board style
 	var board_style = StyleBoxFlat.new()
 	board_style.bg_color = Color("ffffff")
@@ -835,11 +882,11 @@ func _build_ui():
 	board_wrapper.add_child(board_panel)
 
 	var board_inner = Control.new()
-	board_inner.set_anchors_preset(Control.PRESET_FULL_RECT)
+	board_inner.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	board_panel.add_child(board_inner)
 
 	board_center = CenterContainer.new()
-	board_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	board_center.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	board_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_inner.add_child(board_center)
@@ -853,31 +900,31 @@ func _build_ui():
 	board_center.add_child(board_grid)
 
 	path_overlay = PATH_OVERLAY_SCRIPT.new()
-	path_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	path_overlay.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	path_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board_inner.add_child(path_overlay)
 
 	effect_layer = Control.new()
-	effect_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	effect_layer.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	effect_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board_inner.add_child(effect_layer)
 
 	stage_panel_label = Label.new()
 	stage_panel_label.add_font_override("font", game_font)
-	stage_panel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stage_panel_label.align = Label.ALIGN_CENTER
 	stage_panel_label.add_color_override("font_color", Color("374151"))
 	stage_panel_label.visible = false
 	root.add_child(stage_panel_label)
 
 	combo_burst_label = Label.new()
 	combo_burst_label.add_font_override("font", game_font)
-	combo_burst_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_burst_label.align = Label.ALIGN_CENTER
 	combo_burst_label.add_color_override("font_color", Color("b45309"))
 	combo_burst_label.visible = false
-	combo_burst_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	combo_burst_label.offset_top = 88
-	combo_burst_label.offset_left = 0
-	combo_burst_label.offset_right = 0
+	combo_burst_label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
+	combo_burst_label.margin_top = 88
+	combo_burst_label.margin_left = 0
+	combo_burst_label.margin_right = 0
 	add_child(combo_burst_label)
 
 	_populate_icon_set_options()
@@ -890,8 +937,8 @@ func _build_ui():
 
 func _build_onboarding_panel():
 	onboarding_panel = PanelContainer.new()
-	onboarding_panel.set_anchors_preset(Control.PRESET_CENTER)
-	onboarding_panel.custom_minimum_size = Vector2(320, 400)
+	onboarding_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
+	onboarding_panel.rect_min_size = Vector2(320, 400)
 	onboarding_panel.visible = false
 	_apply_glass_style(onboarding_panel, Color("ffffff"), 0.95)
 	add_child(onboarding_panel)
@@ -912,7 +959,7 @@ func _build_onboarding_panel():
 
 	var title = Label.new()
 	title.text = "🎮 欢迎来到连连看"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.align = Label.ALIGN_CENTER
 	title.add_color_override("font_color", Color("1e293b"))
 	content.add_child(title)
 
@@ -934,19 +981,19 @@ func _build_onboarding_panel():
 
 		var section_content = Label.new()
 		section_content.text = section.content
-		section_content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		section_content.autowrap = true
 		section_content.add_color_override("font_color", Color("64748b"))
 		section_content.add_font_override("font", game_font)
 		content.add_child(section_content)
 
 	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8)
+	spacer.rect_min_size = Vector2(0, 8)
 	content.add_child(spacer)
 
 	var got_it_button = Button.new()
 	got_it_button.text = "知道了，开始游戏"
 	got_it_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	got_it_button.custom_minimum_size = Vector2(0, 44)
+	got_it_button.rect_min_size = Vector2(0, 44)
 	got_it_button.add_font_override("font", game_font)
 	got_it_button.connect("pressed", self, "_on_onboarding_dismissed")
 	content.add_child(got_it_button)
@@ -969,8 +1016,8 @@ func _on_onboarding_dismissed():
 
 func _build_settings_panel():
 	settings_panel = PanelContainer.new()
-	settings_panel.set_anchors_preset(Control.PRESET_CENTER)
-	settings_panel.custom_minimum_size = Vector2(360, 320)
+	settings_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
+	settings_panel.rect_min_size = Vector2(360, 320)
 	settings_panel.visible = false
 	_apply_glass_style(settings_panel, Color("ffffff"), 0.95)
 	add_child(settings_panel)
@@ -993,7 +1040,7 @@ func _build_settings_panel():
 	# Title
 	var title = Label.new()
 	title.text = "⚙️ 设置"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.align = Label.ALIGN_CENTER
 	title.add_color_override("font_color", Color("1e293b"))
 	content.add_child(title)
 
@@ -1021,14 +1068,14 @@ func _build_settings_panel():
 	content.add_child(mute_row.container)
 
 	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8)
+	spacer.rect_min_size = Vector2(0, 8)
 	content.add_child(spacer)
 
 	# Close button
 	var close_button = Button.new()
 	close_button.text = "关闭"
 	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close_button.custom_minimum_size = Vector2(0, 44)
+	close_button.rect_min_size = Vector2(0, 44)
 	close_button.add_font_override("font", game_font)
 	close_button.connect("pressed", self, "_on_settings_close")
 	content.add_child(close_button)
@@ -1039,7 +1086,7 @@ func _create_volume_row(label_text, initial_value):
 
 	var label = Label.new()
 	label.text = label_text
-	label.custom_minimum_size = Vector2(80, 0)
+	label.rect_min_size = Vector2(80, 0)
 	label.add_color_override("font_color", Color("334155"))
 	label.add_font_override("font", game_font)
 	container.add_child(label)
@@ -1066,7 +1113,7 @@ func _create_toggle_row(label_text, initial_value):
 	container.add_child(label)
 
 	var toggle = CheckBox.new()
-	toggle.button_pressed = initial_value
+	toggle.pressed = initial_value
 	container.add_child(toggle)
 
 	return {"container": container, "toggle": toggle}
@@ -1102,8 +1149,8 @@ func _on_mute_toggled(muted):
 
 func _build_achievements_panel():
 	achievements_panel = PanelContainer.new()
-	achievements_panel.set_anchors_preset(Control.PRESET_CENTER)
-	achievements_panel.custom_minimum_size = Vector2(400, 480)
+	achievements_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
+	achievements_panel.rect_min_size = Vector2(400, 480)
 	achievements_panel.visible = false
 	_apply_glass_style(achievements_panel, Color("ffffff"), 0.95)
 	add_child(achievements_panel)
@@ -1126,7 +1173,7 @@ func _build_achievements_panel():
 	# Title
 	var title = Label.new()
 	title.text = "🏆 成就"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.align = Label.ALIGN_CENTER
 	title.add_color_override("font_color", Color("1e293b"))
 	content.add_child(title)
 
@@ -1143,14 +1190,14 @@ func _build_achievements_panel():
 		achievements_list.add_child(item)
 
 	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8)
+	spacer.rect_min_size = Vector2(0, 8)
 	content.add_child(spacer)
 
 	# Close button
 	var close_button = Button.new()
 	close_button.text = "关闭"
 	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close_button.custom_minimum_size = Vector2(0, 44)
+	close_button.rect_min_size = Vector2(0, 44)
 	close_button.add_font_override("font", game_font)
 	close_button.connect("pressed", self, "_on_achievements_close")
 	content.add_child(close_button)
@@ -1209,8 +1256,8 @@ func _on_achievements_close():
 
 func _build_pause_panel():
 	pause_panel = PanelContainer.new()
-	pause_panel.set_anchors_preset(Control.PRESET_CENTER)
-	pause_panel.custom_minimum_size = Vector2(320, 280)
+	pause_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
+	pause_panel.rect_min_size = Vector2(320, 280)
 	pause_panel.visible = false
 	_apply_glass_style(pause_panel, Color("ffffff"), 0.98)
 	add_child(pause_panel)
@@ -1233,14 +1280,14 @@ func _build_pause_panel():
 	# Title
 	var title = Label.new()
 	title.text = "⏸️ 游戏暂停"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.align = Label.ALIGN_CENTER
 	title.add_color_override("font_color", Color("1e293b"))
 	content.add_child(title)
 
 	# Level info
 	var level_info = Label.new()
 	level_info.text = "当前关卡"
-	level_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_info.align = Label.ALIGN_CENTER
 	level_info.add_color_override("font_color", Color("64748b"))
 	level_info.add_font_override("font", game_font)
 	content.add_child(level_info)
@@ -1252,7 +1299,7 @@ func _build_pause_panel():
 	var resume_button = Button.new()
 	resume_button.text = "▶️ 继续游戏 (P)"
 	resume_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	resume_button.custom_minimum_size = Vector2(0, 44)
+	resume_button.rect_min_size = Vector2(0, 44)
 	resume_button.add_font_override("font", game_font)
 	resume_button.connect("pressed", self, "_resume_stage")
 	content.add_child(resume_button)
@@ -1261,7 +1308,7 @@ func _build_pause_panel():
 	var restart_button = Button.new()
 	restart_button.text = "🔄 重新开始"
 	restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	restart_button.custom_minimum_size = Vector2(0, 44)
+	restart_button.rect_min_size = Vector2(0, 44)
 	restart_button.add_font_override("font", game_font)
 	restart_button.connect("pressed", self, "_on_restart_current_level")
 	content.add_child(restart_button)
@@ -1270,7 +1317,7 @@ func _build_pause_panel():
 	var back_button = Button.new()
 	back_button.text = "🏠 返回第1关"
 	back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	back_button.custom_minimum_size = Vector2(0, 44)
+	back_button.rect_min_size = Vector2(0, 44)
 	back_button.add_font_override("font", game_font)
 	back_button.connect("pressed", self, "_on_back_to_first_level")
 	content.add_child(back_button)
@@ -1344,9 +1391,9 @@ func _build_timers():
 func _create_chip_label():
 	var label = Label.new()
 	label.add_font_override("font", game_font)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.custom_minimum_size = Vector2(120, 28)
+	label.align = Label.ALIGN_CENTER
+	label.valign = Label.VALIGN_CENTER
+	label.rect_min_size = Vector2(120, 28)
 	label.add_color_override("font_color", Color("7c3aed"))
 	# Add subtle background
 	var chip_style = StyleBoxFlat.new()
@@ -1359,7 +1406,7 @@ func _create_control_button(text):
 	var button = Button.new()
 	button.add_font_override("font", game_font)
 	button.text = text
-	button.custom_minimum_size = Vector2(88, 42)
+	button.rect_min_size = Vector2(88, 42)
 	button.add_color_override("font_color", Color("ffffff"))
 
 	# Apply gradient button style
@@ -1391,7 +1438,7 @@ func _create_control_button(text):
 
 func _add_stat_card(parent, title, key):
 	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(100, 64)
+	card.rect_min_size = Vector2(100, 64)
 	parent.add_child(card)
 
 	# Apply card style with gradient
@@ -1406,7 +1453,7 @@ func _add_stat_card(parent, title, key):
 	card.add_stylebox_override("panel", card_style)
 
 	var box = VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.alignment = BoxContainer.ALIGN_CENTER
 	box.add_constant_override("separation", 4)
 	card.add_child(box)
 
@@ -1414,14 +1461,14 @@ func _add_stat_card(parent, title, key):
 	title_label.text = title
 	title_label.add_font_override("font", game_font)
 	title_label.add_color_override("font_color", Color("64748b"))
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.align = Label.ALIGN_CENTER
 	box.add_child(title_label)
 
 	var value_label = Label.new()
 	value_label.text = "--"
 	value_label.add_font_override("font", game_font)
 	value_label.add_color_override("font_color", Color("334155"))
-	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	value_label.align = Label.ALIGN_CENTER
 	box.add_child(value_label)
 
 	stat_values[key] = {
@@ -1585,7 +1632,7 @@ func _start_level(next_index, reset_total = false):
 	stage_status = STATUS_PLAYING
 
 	# Reset achievement tracking
-	level_start_time = Time.get_ticks_msec()
+	level_start_time = OS.get_ticks_msec()
 	level_hints_used = 0
 	level_auto_used = 0
 
@@ -1621,7 +1668,7 @@ func _create_playable_board(level):
 	var cols = int(level.get("cols", 6))
 	var kinds = int(level.get("kinds", 6))
 	var created = _create_board(rows, cols, kinds)
-	if _find_any_hint(created).is_empty():
+	if _find_any_hint(created).empty():
 		_reshuffle_board(created)
 	return created
 
@@ -1632,7 +1679,7 @@ func _create_board(rows, cols, kinds):
 
 	var ids = []
 	for i in range(total / 2):
-		var id = (i % max(1, kinds)) + 1
+		var id = (i % int(max(1, kinds))) + 1
 		ids.append(id)
 		ids.append(id)
 
@@ -1660,7 +1707,7 @@ func _render_board():
 		child.queue_free()
 	cell_buttons.clear()
 
-	if board.is_empty():
+	if board.empty():
 		return
 
 	var rows = board.size()
@@ -1672,7 +1719,7 @@ func _render_board():
 		for c in range(cols):
 			var button = Button.new()
 			button.text = ""
-			button.custom_minimum_size = Vector2(52, 52)
+			button.rect_min_size = Vector2(52, 52)
 			button.add_font_override("font", game_font)
 			button.focus_mode = Control.FOCUS_NONE
 			button.set_meta("row", r)
@@ -1686,13 +1733,13 @@ func _render_board():
 	_refresh_board_visuals()
 
 func _update_tile_sizes():
-	if board.is_empty() or cell_buttons.is_empty():
+	if board.empty() or cell_buttons.empty():
 		return
 
 	var rows = board.size()
 	var cols = board[0].size()
-	var h_sep = board_grid.get_theme_constant("h_separation")
-	var v_sep = board_grid.get_theme_constant("v_separation")
+	var h_sep = board_grid.get_constant("h_separation")
+	var v_sep = board_grid.get_constant("v_separation")
 
 	# Get available board area and keep a minimum usable size.
 	var viewport_size = get_viewport_rect().size
@@ -1701,9 +1748,9 @@ func _update_tile_sizes():
 	var is_portrait = flags["is_portrait"]
 	var is_compact_height = flags["is_compact_height"]
 	var padding = 4 if is_mobile and is_compact_height else (6 if is_mobile and is_portrait else (10 if is_mobile else 24))
-	var board_area = board_wrapper.size
+	var board_area = board_wrapper.rect_size
 	if board_area.x <= 1 or board_area.y <= 1:
-		board_area = board_wrapper.custom_minimum_size
+		board_area = board_wrapper.rect_min_size
 	var available = board_area - Vector2(padding * 2, padding * 2)
 	available.x = max(available.x, 120.0)
 	available.y = max(available.y, 120.0)
@@ -1717,16 +1764,17 @@ func _update_tile_sizes():
 	var max_tile = 90 if is_mobile and is_portrait else (76 if is_mobile else 110)
 	var tile = clamp(min(by_width, by_height), min_tile, max_tile)
 
+	var tile_font = _font_at_size(int(clamp(float(tile) * 0.52, 14.0, 44.0)))
 	for r in range(rows):
 		for c in range(cols):
 			var button = cell_buttons[r][c]
-			button.custom_minimum_size = Vector2(tile, tile)
+			button.rect_min_size = Vector2(tile, tile)
 			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			button.add_font_override("font", game_font)
+			button.add_font_override("font", tile_font)
 
 func _refresh_board_visuals():
-	if board.is_empty() or cell_buttons.is_empty():
+	if board.empty() or cell_buttons.empty():
 		return
 
 	var rows = board.size()
@@ -1847,7 +1895,7 @@ func _apply_button_style(button, bg_color, border_color):
 	button.add_stylebox_override("disabled", normal)
 
 func _icon_for(value):
-	if icon_sets.is_empty():
+	if icon_sets.empty():
 		return str(value)
 
 	var icon_set: Dictionary = icon_sets[icon_set_index]
@@ -1858,7 +1906,7 @@ func _icon_for(value):
 	return str(value)
 
 func _color_for(value):
-	if icon_sets.is_empty():
+	if icon_sets.empty():
 		return Color("ffffff")
 
 	var icon_set: Dictionary = icon_sets[icon_set_index]
@@ -1919,7 +1967,7 @@ func _on_tile_pressed(button):
 		return
 
 	var path = _find_path(board, previous, point)
-	if path.is_empty():
+	if path.empty():
 		selected = point
 		hint_tiles.clear()
 		AudioManager.play_error()
@@ -1962,7 +2010,7 @@ func _on_hint_pressed():
 	AudioManager.play_hint()
 
 	var hint = _find_any_hint(board)
-	if hint.is_empty():
+	if hint.empty():
 		_on_shuffle_pressed()
 		return
 
@@ -1985,7 +2033,7 @@ func _on_auto_pressed():
 	level_auto_used += 1
 
 	var hint = _find_any_hint(board)
-	if hint.is_empty():
+	if hint.empty():
 		_on_shuffle_pressed()
 		return
 
@@ -2064,7 +2112,7 @@ func _resume_stage():
 	_hide_pause_panel()
 	_start_second_timer()
 	if combo > 0:
-		combo_expires_ms = Time.get_ticks_msec() + int(tuning.get("combo_window_ms", 2600))
+		combo_expires_ms = OS.get_ticks_msec() + int(tuning.get("combo_window_ms", 2600))
 		combo_reset_timer.stop()
 		combo_reset_timer.wait_time = float(tuning.get("combo_window_ms", 2600)) / 1000.0
 		combo_reset_timer.start()
@@ -2126,23 +2174,22 @@ func _play_eliminate_effects(coords):
 		var star = Label.new()
 		star.text = "✦"
 		star.add_font_override("font", game_font)
-		star.position = center
-		star.pivot_offset = Vector2(8, 8)
-		star.scale = Vector2.ONE
+		star.rect_position = center
+		star.rect_pivot_offset = Vector2(8, 8)
+		star.rect_scale = Vector2.ONE
 		star.modulate = color
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		effect_layer.add_child(star)
 
 		# Tween animation for star effect
-	var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(star, "position", star.position, star.position + Vector2(0, -18 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.interpolate_property(star, "modulate:a", 1.0, 0.0, 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.interpolate_property(star, "scale", Vector2.ONE, Vector2.ONE * (1.35 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_all_completed")
-	star.queue_free()
-	tween.queue_free()
+		var tween = Tween.new()
+		add_child(tween)
+		tween.interpolate_property(star, "rect_position", star.rect_position, star.rect_position + Vector2(0, -18 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+		tween.interpolate_property(star, "modulate:a", 1.0, 0.0, 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+		tween.interpolate_property(star, "rect_scale", Vector2.ONE, Vector2.ONE * (1.35 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+		tween.start()
+		tween.connect("tween_all_completed", star, "queue_free")
+		tween.connect("tween_all_completed", tween, "queue_free")
 
 
 func _animate_select(coord):
@@ -2150,14 +2197,14 @@ func _animate_select(coord):
 	if button == null:
 		return
 
-	button.pivot_offset = button.size * 0.5
+	button.rect_pivot_offset = button.rect_size * 0.5
 	# Tween animation for select effect
 	var tween = Tween.new()
 	add_child(tween)
-	tween.interpolate_property(button, "scale", button.scale, Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	tween.interpolate_property(button, "rect_scale", button.rect_scale, Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 	tween.start()
 	yield(tween, "tween_completed")
-	tween.interpolate_property(button, "scale", button.scale, Vector2.ONE, 0.12, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	tween.interpolate_property(button, "rect_scale", button.rect_scale, Vector2.ONE, 0.12, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 	tween.start()
 	yield(tween, "tween_completed")
 	tween.queue_free()
@@ -2177,56 +2224,52 @@ func _tile_center_in_effect_layer(coord):
 	var button = _try_get_tile_button(coord)
 	if button == null:
 		return Vector2.ZERO
-	return effect_layer.to_local(button.global_position + button.size * 0.5)
+	return effect_layer.to_local(button.rect_global_position + button.rect_size * 0.5)
 
 func _pulse_tile(coord, peak_scale, half_duration, loops = 1):
 	var button = _try_get_tile_button(coord)
 	if button == null:
 		return
-	button.pivot_offset = button.size * 0.5
+	button.rect_pivot_offset = button.rect_size * 0.5
 
 	# Tween animation for pulse effect
 	for _i in range(max(1, loops)):
 		var tween1 = Tween.new()
 		add_child(tween1)
-		tween1.interpolate_property(button, "scale", button.scale, Vector2.ONE * peak_scale, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+		tween1.interpolate_property(button, "rect_scale", button.rect_scale, Vector2.ONE * peak_scale, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 		tween1.start()
 		yield(tween1, "tween_completed")
 		tween1.queue_free()
 		
 		var tween2 = Tween.new()
 		add_child(tween2)
-		tween2.interpolate_property(button, "scale", button.scale, Vector2.ONE, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+		tween2.interpolate_property(button, "rect_scale", button.rect_scale, Vector2.ONE, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
 		tween2.start()
 		yield(tween2, "tween_completed")
 		tween2.queue_free()
+
+func _make_fx_tween(node_to_free = null):
+	var tween = Tween.new()
+	add_child(tween)
+	if node_to_free != null:
+		tween.connect("tween_all_completed", node_to_free, "queue_free")
+	tween.connect("tween_all_completed", tween, "queue_free")
+	return tween
 
 func _shake_tile(coord):
 	var button = _try_get_tile_button(coord)
 	if button == null:
 		return
-	button.pivot_offset = button.size * 0.5
-	button.scale = Vector2(1.04, 1.04)
+	button.rect_pivot_offset = button.rect_size * 0.5
+	button.rect_scale = Vector2(1.04, 1.04)
 
-	# Tween animation for shake effect
-	var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(button, "rotation_degrees", button.rotation_degrees, -6.0, 0.04, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	var tween = _make_fx_tween()
+	tween.interpolate_property(button, "rect_rotation", 0.0, -6.0, 0.04, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.0)
+	tween.interpolate_property(button, "rect_rotation", -6.0, 6.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.04)
+	tween.interpolate_property(button, "rect_rotation", 6.0, -4.0, 0.05, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.10)
+	tween.interpolate_property(button, "rect_rotation", -4.0, 0.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.15)
+	tween.interpolate_property(button, "rect_scale", Vector2(1.04, 1.04), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.15)
 	tween.start()
-	yield(tween, "tween_completed")
-	tween.interpolate_property(button, "rotation_degrees", button.rotation_degrees, 6.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_completed")
-	tween.interpolate_property(button, "rotation_degrees", button.rotation_degrees, -4.0, 0.05, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_completed")
-	tween.interpolate_property(button, "rotation_degrees", button.rotation_degrees, 0.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_completed")
-	tween.interpolate_property(button, "scale", button.scale, Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_completed")
-	tween.queue_free()
 
 func _animate_hint_tiles(coords):
 	for coord in coords:
@@ -2235,7 +2278,7 @@ func _animate_hint_tiles(coords):
 		_spawn_ring_effect(center, Color("0ea5e9"), 0.26, 12.0)
 
 func _animate_shuffle_wave():
-	if board.is_empty():
+	if board.empty():
 		return
 
 	var rows = board.size()
@@ -2248,24 +2291,23 @@ func _animate_shuffle_wave():
 			if button == null:
 				continue
 
-			button.pivot_offset = button.size * 0.5
+			button.rect_pivot_offset = button.rect_size * 0.5
 			var delay = float(r + c) * 0.012 + rand_range(0.0, 0.03)
 
-			var tween = Tween.new()
-	add_child(tween)
-			# (interval skipped - manual implementation needed)
-	tween.interpolate_property(button, "scale", button.scale, Vector2(0.82, 0.82), 0.07, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.interpolate_property(button, "scale", Vector2(0.82, 0.82), Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.interpolate_property(button, "scale", Vector2(1.08, 1.08), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+			var tween = _make_fx_tween()
+			tween.interpolate_property(button, "rect_scale", Vector2.ONE, Vector2(0.82, 0.82), 0.07, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
+			tween.interpolate_property(button, "rect_scale", Vector2(0.82, 0.82), Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay + 0.07)
+			tween.interpolate_property(button, "rect_scale", Vector2(1.08, 1.08), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay + 0.15)
+			tween.start()
 
 func _spawn_ring_effect(center, color, duration, base_size):
 	if center == Vector2.ZERO:
 		return
 
 	var ring = Panel.new()
-	ring.size = Vector2.ONE * base_size
-	ring.position = center - ring.size * 0.5
-	ring.pivot_offset = ring.size * 0.5
+	ring.rect_size = Vector2.ONE * base_size
+	ring.rect_position = center - ring.rect_size * 0.5
+	ring.rect_pivot_offset = ring.rect_size * 0.5
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var style = StyleBoxFlat.new()
@@ -2276,18 +2318,18 @@ func _spawn_ring_effect(center, color, duration, base_size):
 	ring.add_stylebox_override("panel", style)
 	effect_layer.add_child(ring)
 
-	var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(ring, "scale", ring.scale, Vector2(1.9, 1.9, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT), duration)
-	tween.connect("tween_completed", self, "_on_tween_done") # was: ring.queue_free
+	var tween = _make_fx_tween(ring)
+	tween.interpolate_property(ring, "rect_scale", Vector2.ONE, Vector2(1.9, 1.9), duration, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	tween.interpolate_property(ring, "modulate:a", 1.0, 0.0, duration, Tween.TRANS_LINEAR, Tween.EASE_IN)
+	tween.start()
 
 func _spawn_particle_burst(center, color, particle_count, intensity):
-	var count = max(4, particle_count)
+	var count = int(max(4, particle_count))
 	for _i in range(count):
 		var particle = Label.new()
 		particle.text = "•"
 		particle.add_font_override("font", game_font)
-		particle.position = center
+		particle.rect_position = center
 		particle.modulate = color
 		particle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		effect_layer.add_child(particle)
@@ -2296,22 +2338,21 @@ func _spawn_particle_burst(center, color, particle_count, intensity):
 		var distance = rand_range(16.0, 44.0) * intensity
 		var target = center + Vector2(cos(angle), sin(angle)) * distance
 
-		var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(particle, "position", particle.position, target, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.connect("tween_completed", self, "_on_tween_done") # was: particle.queue_free
+		var tween = _make_fx_tween(particle)
+		tween.interpolate_property(particle, "rect_position", center, target, 0.3, Tween.TRANS_QUAD, Tween.EASE_OUT)
+		tween.interpolate_property(particle, "modulate:a", 1.0, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN)
+		tween.start()
 
 func _spawn_combo_particle_burst(center, color, particle_count, combo_level):
-	var count = max(8, particle_count)
+	var count = int(max(8, particle_count))
 	var shapes = ["•", "✦", "★", "◆"]
-	var shape_index = min(combo_level / 3, shapes.size() - 1)
+	var shape_index = int(min(combo_level / 3, shapes.size() - 1))
 
 	for _i in range(count):
 		var particle = Label.new()
 		particle.text = shapes[shape_index]
 		particle.add_font_override("font", game_font)
-		particle.position = center
-		var size = int(8 + rand_range(0.0, 8.0) + combo_level * 0.5)
+		particle.rect_position = center
 		particle.modulate = color
 		particle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		effect_layer.add_child(particle)
@@ -2320,13 +2361,15 @@ func _spawn_combo_particle_burst(center, color, particle_count, combo_level):
 		var distance = rand_range(20.0, 60.0 + combo_level * 3.0)
 		var target = center + Vector2(cos(angle), sin(angle)) * distance
 
-		var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(particle, "position", particle.position, target, 0.4, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.connect("tween_completed", self, "_on_tween_done") # was: particle.queue_free
+		var tween = _make_fx_tween(particle)
+		tween.interpolate_property(particle, "rect_position", center, target, 0.4, Tween.TRANS_QUAD, Tween.EASE_OUT)
+		tween.interpolate_property(particle, "modulate:a", 1.0, 0.0, 0.4, Tween.TRANS_LINEAR, Tween.EASE_IN)
+		if combo_level >= 7:
+			tween.interpolate_property(particle, "rect_rotation", 0.0, rand_range(-180.0, 180.0), 0.4, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+		tween.start()
 
 func _spawn_board_particles(count, color, intensity):
-	var area = effect_layer.size
+	var area = effect_layer.rect_size
 	if area.x <= 0 or area.y <= 0:
 		return
 
@@ -2334,7 +2377,7 @@ func _spawn_board_particles(count, color, intensity):
 		var sparkle = Label.new()
 		sparkle.text = "✦"
 		sparkle.add_font_override("font", game_font)
-		sparkle.position = Vector2(
+		sparkle.rect_position = Vector2(
 			rand_range(16.0, max(16.0, area.x - 16.0)),
 			rand_range(24.0, max(24.0, area.y - 16.0))
 		)
@@ -2342,31 +2385,33 @@ func _spawn_board_particles(count, color, intensity):
 		sparkle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		effect_layer.add_child(sparkle)
 
-		var tween = Tween.new()
-	add_child(tween)
-	var drift = Vector2(rand_range(-32.0, 32.0), rand_range(-84.0, -28.0))
-	tween.interpolate_property(sparkle, "position", sparkle.position, sparkle.position + drift, 0.52, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.connect("tween_completed", self, "_on_tween_done") # was: sparkle.queue_free
+		var drift = Vector2(rand_range(-32.0, 32.0), rand_range(-84.0, -28.0)) * intensity
+		var tween = _make_fx_tween(sparkle)
+		tween.interpolate_property(sparkle, "rect_position", sparkle.rect_position, sparkle.rect_position + drift, 0.52, Tween.TRANS_QUAD, Tween.EASE_OUT)
+		tween.interpolate_property(sparkle, "modulate:a", 1.0, 0.0, 0.52, Tween.TRANS_LINEAR, Tween.EASE_IN)
+		tween.start()
 
 func _show_stage_callout(text, color, font_size):
 	var label = Label.new()
 	label.text = text
-	label.add_font_override("font", game_font)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	label.offset_top = 108
-	label.offset_left = 0
-	label.offset_right = 0
-	label.modulate = Color(1, 1, 1, 0.95)
+	label.add_font_override("font", _font_at_size(font_size))
+	label.align = Label.ALIGN_CENTER
+	label.valign = Label.VALIGN_CENTER
+	label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
+	label.margin_top = 150
+	label.margin_left = 0
+	label.margin_right = 0
+	label.margin_bottom = 190
+	label.modulate = Color(1, 1, 1, 0.0)
 	label.add_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
 
-	var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(label, "offset_top", label.offset_top, 74.0, 0.35, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.connect("tween_completed", self, "_on_tween_done") # was: label.queue_free
+	var tween = _make_fx_tween(label)
+	tween.interpolate_property(label, "margin_top", 150.0, 116.0, 0.35, Tween.TRANS_QUAD, Tween.EASE_OUT)
+	tween.interpolate_property(label, "modulate:a", 0.0, 0.95, 0.2, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	tween.interpolate_property(label, "modulate:a", 0.95, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN, 1.1)
+	tween.start()
 
 func _play_level_intro_animation(level):
 	var level_id = int(level.get("id", level_index + 1))
@@ -2375,7 +2420,7 @@ func _play_level_intro_animation(level):
 	_animate_board_spawn()
 
 func _animate_board_spawn():
-	if board.is_empty():
+	if board.empty():
 		return
 
 	var rows = board.size()
@@ -2391,16 +2436,16 @@ func _animate_board_spawn():
 			if button == null:
 				continue
 
-			button.pivot_offset = button.size * 0.5
-			button.scale = Vector2(0.72, 0.72)
+			button.rect_pivot_offset = button.rect_size * 0.5
+			button.rect_scale = Vector2(0.72, 0.72)
 			button.modulate.a = 0.0
 
 			var dist = abs(float(r) - center_r) + abs(float(c) - center_c)
-			var tween = Tween.new()
-			add_child(tween)
-			# (interval skipped - manual implementation needed)
-			tween.interpolate_property(button, "modulate:a", button.modulate.a, 1.0, 0.09, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-			tween.interpolate_property(button, "scale", button.scale, Vector2.ONE, 0.09, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+			var delay = dist * 0.025
+			var tween = _make_fx_tween()
+			tween.interpolate_property(button, "modulate:a", 0.0, 1.0, 0.09, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
+			tween.interpolate_property(button, "rect_scale", Vector2(0.72, 0.72), Vector2.ONE, 0.09, Tween.TRANS_BACK, Tween.EASE_OUT, delay)
+			tween.start()
 
 func _play_stage_clear_celebration(is_final_clear):
 	var burst_color = Color("f59e0b") if is_final_clear else Color("22c55e")
@@ -2418,28 +2463,29 @@ func _show_combo_burst(text):
 	var font_size = 18
 
 	if combo_num >= 10:
-		color = Color("dc2626")  # Red for 10+ combo
+		color = Color("dc2626")
 		font_size = 28
 	elif combo_num >= 7:
-		color = Color("7c3aed")  # Purple for 7+ combo
+		color = Color("7c3aed")
 		font_size = 24
 	elif combo_num >= 5:
-		color = Color("2563eb")  # Blue for 5+ combo
+		color = Color("2563eb")
 		font_size = 22
 	elif combo_num >= 3:
-		color = Color("059669")  # Green for 3+ combo
+		color = Color("059669")
 		font_size = 20
 
+	combo_burst_label.add_font_override("font", _font_at_size(font_size))
 	combo_burst_label.text = text
 	combo_burst_label.visible = true
 	combo_burst_label.modulate = Color(1, 1, 1, 1)
-	combo_burst_label.offset_top = 88
+	combo_burst_label.margin_top = 88
 	combo_burst_label.add_color_override("font_color", color)
 
-	var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(combo_burst_label, "offset_top", combo_burst_label.offset_top, 68.0, 0.22, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.connect("tween_completed", self, "_on_tween_done") # was: func( :
+	var tween = _make_fx_tween()
+	tween.interpolate_property(combo_burst_label, "margin_top", 88.0, 68.0, 0.22, Tween.TRANS_QUAD, Tween.EASE_OUT)
+	tween.interpolate_property(combo_burst_label, "modulate:a", 1.0, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN, 0.6)
+	tween.start()
 
 func _show_path(path, preview_type, duration_ms):
 	var points = _path_to_overlay_points(path)
@@ -2452,15 +2498,15 @@ func _show_path(path, preview_type, duration_ms):
 
 func _path_to_overlay_points(path):
 	var result = []
-	if cell_buttons.is_empty():
+	if cell_buttons.empty():
 		return result
-	if cell_buttons[0].is_empty():
+	if cell_buttons[0].empty():
 		return result
 
 	var first_button = cell_buttons[0][0]
-	var first_center = path_overlay.to_local(first_button.global_position + first_button.size * 0.5)
-	var step_x = first_button.size.x + board_grid.get_theme_constant("h_separation")
-	var step_y = first_button.size.y + board_grid.get_theme_constant("v_separation")
+	var first_center = path_overlay.to_local(first_button.rect_global_position + first_button.rect_size * 0.5)
+	var step_x = first_button.rect_size.x + board_grid.get_constant("h_separation")
+	var step_y = first_button.rect_size.y + board_grid.get_constant("v_separation")
 
 	for item in path:
 		var point = item
@@ -2554,7 +2600,7 @@ func _activate_time_freeze():
 
 func _activate_auto_match():
 	var hint = _find_any_hint(board)
-	if hint.is_empty():
+	if hint.empty():
 		_show_message("没有可自动消除的对子", 1.0)
 		return
 	var a = hint["a"]
@@ -2628,7 +2674,7 @@ func _consume_time_cost(seconds):
 		_on_time_up()
 
 func _apply_combo_gain(base_score):
-	var now_ms = Time.get_ticks_msec()
+	var now_ms = OS.get_ticks_msec()
 	var combo_window = int(tuning.get("combo_window_ms", 2600))
 	var max_combo = int(tuning.get("max_combo", 8))
 	var score_multiplier = float(_current_level().get("score_multiplier", 1.0))
@@ -2675,7 +2721,7 @@ func _update_combo_progress():
 		combo_progress_bar.value = 0
 		return
 
-	var remain = max(0, combo_expires_ms - Time.get_ticks_msec())
+	var remain = max(0, combo_expires_ms - OS.get_ticks_msec())
 	var window_ms = max(1, int(tuning.get("combo_window_ms", 2600)))
 	var progress = (float(remain) / float(window_ms)) * 100.0
 	combo_progress_bar.value = progress
@@ -2728,7 +2774,7 @@ func _resolve_after_board_changed():
 		_check_achievements_on_clear()
 		return
 
-	if _find_any_hint(board).is_empty():
+	if _find_any_hint(board).empty():
 		_reshuffle_board(board)
 		_show_message("无解，已自动重排", 1.0)
 		_refresh_board_visuals()
@@ -2852,7 +2898,7 @@ func _update_time_warning_pulse(_delta):
 	if not _is_time_danger():
 		return
 
-	var tick = float(Time.get_ticks_msec()) / 1000.0
+	var tick = float(OS.get_ticks_msec()) / 1000.0
 	var pulse = 0.5 + 0.5 * sin(tick * 8.0)
 	var intensity = 0.8 + pulse * 0.2
 
@@ -2928,7 +2974,7 @@ func _format_time_seconds(time_seconds):
 # Achievement system
 
 func _check_achievements_on_clear():
-	var level_clear_time = (Time.get_ticks_msec() - level_start_time) / 1000.0
+	var level_clear_time = (OS.get_ticks_msec() - level_start_time) / 1000.0
 	var new_unlocks = []
 
 	# Check and update level best time
@@ -2978,8 +3024,8 @@ func _check_achievements_on_clear():
 func _show_achievement_notification(achievement_name):
 	# Create floating achievement notification
 	var notification = PanelContainer.new()
-	notification.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	notification.offset_top = 60
+	notification.set_anchors_and_margins_preset(Control.PRESET_CENTER_TOP)
+	notification.margin_top = 60
 	_apply_glass_style(notification, Color("fef3c7"), 0.95)
 	add_child(notification)
 
@@ -3128,7 +3174,7 @@ func _reconstruct_path(cur, parent, start):
 		steps.append(Vector2(parsed[0], parsed[1]))
 		key = parent[key]
 
-	steps.reverse()
+	steps.invert()
 	var path: Array = [start]
 	for item in steps:
 		path.append(item)
@@ -3168,13 +3214,13 @@ func _find_any_hint(board_state):
 					if int(board_state[r2][c2]) != value:
 						continue
 
-						var path = _find_path(board_state, Vector2(r1, c1), Vector2(r2, c2))
-						if not path.is_empty():
-							return {
-								"a": Vector2(r1, c1),
-								"b": Vector2(r2, c2),
-								"path": path
-							}
+					var path = _find_path(board_state, Vector2(r1, c1), Vector2(r2, c2))
+					if not path.empty():
+						return {
+							"a": Vector2(r1, c1),
+							"b": Vector2(r2, c2),
+							"path": path
+						}
 
 	return {}
 
@@ -3201,5 +3247,5 @@ func _reshuffle_board(board_state):
 					board_state[r][c] = tiles[index]
 					index += 1
 
-		if not _find_any_hint(board_state).is_empty():
+		if not _find_any_hint(board_state).empty():
 			return
