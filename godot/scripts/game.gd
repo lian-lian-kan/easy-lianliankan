@@ -565,10 +565,10 @@ func _patch_progress_state(patch):
 		_populate_level_select_options()
 
 func _progress_best_score():
-	return int(progression_state.get("best_total_score", 0))
+	return PROGRESSION_SCRIPT.best_score(progression_state)
 
 func _progress_best_combo():
-	return int(progression_state.get("best_combo", 0))
+	return PROGRESSION_SCRIPT.best_combo(progression_state)
 
 func _default_tuning():
 	return {

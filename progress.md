@@ -585,3 +585,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round G：道具槽显示并入 stats_hud + 架构文档)
 - Context: 道具槽显示逻辑（_update_power_ups_display 循环体）从 game.gd 委托给 stats_hud.gd 的 update_power_up 静态函数（数量文本/可用性着色/暖宝宝冰雪专属隐藏）。新增 docs/architecture.md 架构总览：模块布局表、提取手法五步、已知债务清单。
 - Validation: 12 项 headless 测试全绿；导出成功。
+
+## 2026-09-07 (代码质量 Round H：best 值访问器下沉 progression.gd)
+- Context: _progress_best_score/_progress_best_combo 从 game.gd 移为 progression.gd 静态纯函数 best_score(state)/best_combo(state)，game.gd 留薄封装；补 progression 模块访问器覆盖。
+- Validation: 12 项 headless 测试全绿；导出成功。

@@ -285,3 +285,10 @@ static func get_unlocked_achievements(state) :
 
 static func get_all_achievements() :
 	return ACHIEVEMENTS.duplicate()
+
+# Best-score/combo accessors over a (normalized) progress state.
+static func best_score(state) -> int:
+	return int(state.get("best_total_score", 0))
+
+static func best_combo(state) -> int:
+	return int(state.get("best_combo", 0))
