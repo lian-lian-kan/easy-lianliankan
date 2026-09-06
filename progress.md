@@ -427,3 +427,18 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
   - 移动端真机验证（iOS Safari 内存上限、低性能设备帧率）。
   - 主题切换/商店/体力等管理器有 UI 无入口（coins/energy/daily_reward/shop/leaderboard 已实现但 game.gd 未接入），考虑按休闲定位取舍。
   - pck 体积 25MB：字体 26MB 占大头，可评估子集化 NotoSansSC（只打包常用汉字+emoji 图标改用图片图集）。
+
+## 2026-09-06 (字体子集化减体积)
+- Context: pck 27.3MB 中约 27MB 是全量字体（NotoSansSC 16.4MB + NotoColorEmoji 10.7MB），手机端首次加载慢；而游戏实际只渲染 692 个不同字符（376 汉字 + 216 emoji 区符号 + 127 拉丁）。
+- 方案: 新增 godot/tools/subset_fonts.py（fontTools/pyftsubset），扫描 godot 下全部 .gd/.json/project.godot 提取实际字符集生成两个子集字体：
+  - NotoSansSC-Regular.ttf: 16.4MB → 0.22MB（覆盖全部源字符 + ASCII + CJK 标点 + 全角 + 符号区块兜底）。
+  - NotoColorEmoji.ttf: 10.7MB → 2.26MB（icon_sets.json 全部 emoji + VS16/ZWJ/键帽连接符 + 肤色修饰符 + 区域指示符；CBDT/CBLC 彩色位图表保留并校验）。
+  - 覆盖率断言：源字符若未被任一子集覆盖则脚本报错退出，防止上线豆腐块；符号区块字符同时进两个子集互为兜底。
+  - 全量字体保留在 godot/fonts/full/（.gdignore 挡在 res:// 外不参与导入打包，gitignore 只提交 .gdignore 占位），加新文案/图标后重跑脚本即可再生成。
+- Validation:
+  - pck 27.3MB → 2.66MB（-90%）；本地 gzip 传输 2.4MB。
+  - 3 个 headless 测试全绿；--export "Web" 无报错。
+  - 390×844 移动视口浏览器实测：欢迎弹窗/顶栏/统计卡/提示文案（请先选择相同图案、自动消除 +15）/按钮/设置入口文字全部正常渲染无缺字，emoji 方块彩色显示，点击选中-配对-消除-计分-倒计时流程可玩。
+- Next suggestions:
+  - 阶段横幅「第X关 XXX」在竖屏布局下与倒计时卡片重叠，可考虑上移或缩短显示时长。
+  - wasm 19.8MB（gzip 后 5.3MB）来自官方模板无法裁剪；如需进一步提速可评估 Godot 4.3+ 的单线程 wasm 体积优化或 CDN/Service Worker 预缓存。

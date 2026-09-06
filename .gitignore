@@ -59,3 +59,5 @@ npm-shrinkwrap.json
 godot/.godot/
 godot/.import/
 public/godot/
+godot/fonts/full/*
+!godot/fonts/full/.gdignore
