@@ -1,8 +1,9 @@
 extends SceneTree
 
-# Mode display metadata tests: labels and intro texts for every mode.
+# Mode display metadata tests: labels, intro texts, and the record table.
 
 const SM = preload("res://scripts/special_modes.gd")
+const PROGRESSION = preload("res://scripts/progression.gd")
 
 var failures := 0
 
@@ -40,6 +41,30 @@ func _init() -> void:
 			push_error("intro missing for " + mode)
 	check(intros_ok, "intro_text covers all 8 special modes")
 	check(SM.intro_text("nope") == "特殊模式开始", "unknown mode falls back to the default intro")
+
+	# --- RECORD_MODES: keys consistent with progression, achievements defined.
+	var defined_ids = {}
+	for a in PROGRESSION.ACHIEVEMENTS:
+		defined_ids[a["id"]] = true
+	check(SM.RECORD_MODES.size() == 10, "record table covers 10 modes")
+	var table_ok = true
+	var ach_ok = true
+	for mode in SM.RECORD_MODES:
+		var rec = SM.RECORD_MODES[mode]
+		if rec["patch_key"] != mode + "_result" or rec["best_key"] != mode + "_best_score":
+			table_ok = false
+		for a in rec["achievements"]:
+			if not defined_ids.has(a):
+				ach_ok = false
+	check(table_ok, "record table patch/best keys follow <mode>_result/<mode>_best_score")
+	check(ach_ok, "all table achievements are defined in progression")
+
+	# --- bonus_achievements
+	check(SM.bonus_achievements("frost", {"frost_uses": 0}) == ["frost_no_power"], "frost with no warm patches earns the bonus achievement")
+	check(SM.bonus_achievements("frost", {"frost_uses": 2}) == [], "frost with warm patches earns none")
+	check(SM.bonus_achievements("moves", {"moves_left": 20, "move_budget": 56}) == ["moves_saver"], "moves with 20+ left earns moves_saver")
+	check(SM.bonus_achievements("moves", {"moves_left": 5, "move_budget": 56}) == [], "moves below threshold earns none")
+	check(SM.bonus_achievements("race", {}) == [], "race has no conditional bonus")
 
 	if failures == 0:
 		print("mode_meta_test: ALL PASSED")

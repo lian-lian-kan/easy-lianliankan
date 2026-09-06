@@ -3371,70 +3371,17 @@ func _unlock_achievements(ids):
 
 func _record_special_completion():
 	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
-	if special_mode == "stack":
-		_patch_progress_state({"stack_result": total_score})
-		_unlock_achievements(["stack_first"])
-		stage_panel_label.text = "叠层挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("stack_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "gravity":
-		_patch_progress_state({"gravity_result": total_score})
-		_unlock_achievements(["gravity_first"])
-		stage_panel_label.text = "重力挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("gravity_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "fog":
-		_patch_progress_state({"fog_result": total_score})
-		_unlock_achievements(["fog_first"])
-		stage_panel_label.text = "迷雾散尽！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("fog_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "chain":
-		_patch_progress_state({"chain_result": total_score})
-		_unlock_achievements(["chain_first"])
-		stage_panel_label.text = "锁链尽断！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("chain_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "zen":
-		_patch_progress_state({"zen_result": total_score})
-		_unlock_achievements(["zen_first"])
-		stage_panel_label.text = "休闲一局完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("zen_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "hell":
-		_patch_progress_state({"hell_result": total_score})
-		_unlock_achievements(["hell_first"])
-		stage_panel_label.text = "地狱挑战通关！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("hell_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "moves":
-		_patch_progress_state({"moves_result": total_score})
-		var move_achievements = ["moves_first"]
-		if moves_left >= int(_current_level().get("move_budget", 0)) / 5:
-			move_achievements.append("moves_saver")
-		_unlock_achievements(move_achievements)
-		stage_panel_label.text = "步数挑战完成！剩余%d步奖励%d分 · 最佳 %d" % [moves_left, moves_left * 20, int(progression_state.get("moves_best_score", 0))]
-		stage_panel_label.visible = true
-		return
-	if special_mode == "race":
-		_patch_progress_state({"race_result": total_score})
-		_unlock_achievements(["race_first"])
-		stage_panel_label.text = "战胜机器人！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("race_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "frost":
-		_patch_progress_state({"frost_result": total_score})
-		var frost_achievements = ["frost_first"]
-		if frost_uses == 0:
-			frost_achievements.append("frost_no_power")
-		_unlock_achievements(frost_achievements)
-		stage_panel_label.text = "冰雪挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("frost_best_score", 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "memory":
-		_patch_progress_state({"memory_result": total_score})
-		_unlock_achievements(["memory_first"])
-		stage_panel_label.text = "盲盒挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("memory_best_score", 0)))
+	var record = SPECIAL_MODES_SCRIPT.RECORD_MODES.get(special_mode, {})
+	if not record.empty():
+		_patch_progress_state({record["patch_key"]: total_score})
+		var achievements = record["achievements"].duplicate()
+		achievements.append_array(SPECIAL_MODES_SCRIPT.bonus_achievements(special_mode, {
+			"frost_uses": frost_uses,
+			"moves_left": moves_left,
+			"move_budget": int(_current_level().get("move_budget", 0)),
+		}))
+		_unlock_achievements(achievements)
+		stage_panel_label.text = record["label"] + "完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get(record["best_key"], 0)))
 		stage_panel_label.visible = true
 		return
 	if special_mode == "daily":

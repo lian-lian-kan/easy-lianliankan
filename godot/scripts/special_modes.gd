@@ -410,3 +410,27 @@ static func mode_label(mode: String) -> String:
 
 static func intro_text(mode_id: String) -> String:
 	return str(INTRO_TEXTS.get(mode_id, "特殊模式开始"))
+
+# ---- 特殊模式结算表：纪录补丁键 / 首通成就 / 面板标题 ----
+
+const RECORD_MODES = {
+	"stack": {"label": "叠层挑战", "patch_key": "stack_result", "best_key": "stack_best_score", "achievements": ["stack_first"]},
+	"gravity": {"label": "重力挑战", "patch_key": "gravity_result", "best_key": "gravity_best_score", "achievements": ["gravity_first"]},
+	"fog": {"label": "迷雾散尽", "patch_key": "fog_result", "best_key": "fog_best_score", "achievements": ["fog_first"]},
+	"chain": {"label": "锁链尽断", "patch_key": "chain_result", "best_key": "chain_best_score", "achievements": ["chain_first"]},
+	"zen": {"label": "休闲一局", "patch_key": "zen_result", "best_key": "zen_best_score", "achievements": ["zen_first"]},
+	"hell": {"label": "地狱挑战", "patch_key": "hell_result", "best_key": "hell_best_score", "achievements": ["hell_first"]},
+	"moves": {"label": "步数挑战", "patch_key": "moves_result", "best_key": "moves_best_score", "achievements": ["moves_first"]},
+	"race": {"label": "竞速对战", "patch_key": "race_result", "best_key": "race_best_score", "achievements": ["race_first"]},
+	"frost": {"label": "冰雪挑战", "patch_key": "frost_result", "best_key": "frost_best_score", "achievements": ["frost_first"]},
+	"memory": {"label": "盲盒挑战", "patch_key": "memory_result", "best_key": "memory_best_score", "achievements": ["memory_first"]},
+}
+
+# 结算后按模式语境补发的条件成就。
+static func bonus_achievements(mode: String, context := {}) -> Array:
+	var bonus = []
+	if mode == "frost" and int(context.get("frost_uses", 1)) == 0:
+		bonus.append("frost_no_power")
+	if mode == "moves" and int(context.get("moves_left", 0)) >= int(context.get("move_budget", 1)) / 5:
+		bonus.append("moves_saver")
+	return bonus

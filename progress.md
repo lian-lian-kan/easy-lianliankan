@@ -593,3 +593,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round I：最后两个纯逻辑助手迁入 board_engine)
 - Context: _format_time_seconds（新纪录用时的百分秒格式化）与 _contains_coord（坐标包含判断）迁入 board_engine.gd 静态函数，game.gd 留薄封装；board_engine_test 补百分秒格式化（65.5→01:05.50）与坐标包含正反用例。至此 game.gd 中已无散落的纯算法函数。
 - Validation: 12 项 headless 测试全绿；导出成功。
+
+## 2026-09-07 (代码质量 Round J：结算分支收敛为 RECORD_MODES 数据表)
+- Context: _record_special_completion 里 10 个特殊模式各写一遍 patch/unlock/文案（约 90 行重复 match 分支），收敛为 special_modes.gd 的 RECORD_MODES 数据表（patch_key/best_key/achievements/label）+ bonus_achievements 条件成就纯函数（frost 免暖宝宝、moves 达标节步大师）。game.gd 结算函数缩为 ~35 行通用路径 + daily/time_attack 专属分支。
+- Validation: 13 项 headless 测试全绿（mode_meta_test 扩展：结算表 10 模式 patch/best 键名规范、成就均已在 progression 定义、bonus_achievements 四分支）。导出成功。
