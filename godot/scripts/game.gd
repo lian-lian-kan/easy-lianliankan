@@ -92,6 +92,13 @@ var frost_uses = 0
 # Ice binds to the POSITION: reshuffles swap tiles under the ice sheet.
 var board_armor = []
 
+# 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
+var moves_left = 0
+var race_ai_pairs = 0
+var race_total_pairs = 0
+var race_elapsed = 0
+var race_timer
+
 # Sakura petals drifting over the background, confetti on stage clear.
 var _petal_layer
 var _petal_timer
@@ -281,7 +288,7 @@ func _update_modal_panel_sizes(viewport_size, is_portrait):
 	if pause_panel:
 		pause_panel.rect_min_size = Vector2(min(320.0, max_width), min(280.0, max_height))
 	if modes_panel:
-		modes_panel.rect_min_size = Vector2(min(360.0, max_width), min(460.0, max_height))
+		modes_panel.rect_min_size = Vector2(min(360.0, max_width), min(700.0, max_height))
 
 	# Panels are mounted inside full-rect CenterContainer holders (see
 	# _mount_modal_panel), so dynamic content never knocks them off-center.
@@ -843,6 +850,7 @@ func _build_ui():
 	_add_stat_card(stats_flow_container, "连击", "combo")
 	_add_stat_card(stats_flow_container, "历史高分", "best_total_score")
 	_add_stat_card(stats_flow_container, "历史连击", "best_combo")
+	_add_stat_card(stats_flow_container, "对手", "race")
 
 	# Power-ups display container
 	# Single row, centered. On phones the [1]-[7] shortcut chips are hidden
@@ -1442,7 +1450,7 @@ func _build_pause_panel():
 
 func _build_modes_panel():
 	modes_panel = PanelContainer.new()
-	modes_panel.rect_min_size = Vector2(340, 440)
+	modes_panel.rect_min_size = Vector2(340, 640)
 	modes_panel.visible = false
 	_apply_glass_style(modes_panel, Color("ffffff"), 0.95)
 	_mount_modal_panel(modes_panel)
@@ -1470,7 +1478,7 @@ func _build_modes_panel():
 
 	# Mode rows are rebuilt on every open; keep them in a dedicated box.
 	var rows_box = VBoxContainer.new()
-	rows_box.add_constant_override("separation", 10)
+	rows_box.add_constant_override("separation", 7)
 	content.add_child(rows_box)
 
 	var spacer = Control.new()
@@ -1527,6 +1535,26 @@ func _refresh_modes_panel():
 			"detail": "冰冻方块要消除两次 · 最佳%d分" % int(progression_state.get("frost_best_score", 0))
 		},
 		{
+			"id": "zen",
+			"title": "🍵 休闲模式",
+			"detail": "没有时限，纯享受 · 最佳%d分" % int(progression_state.get("zen_best_score", 0))
+		},
+		{
+			"id": "hell",
+			"title": "🔥 地狱模式",
+			"detail": "大盘少图案超紧时间 · 最佳%d分" % int(progression_state.get("hell_best_score", 0))
+		},
+		{
+			"id": "moves",
+			"title": "🧮 步数挑战",
+			"detail": "步数有限精打细算 · 最佳%d分" % int(progression_state.get("moves_best_score", 0))
+		},
+		{
+			"id": "race",
+			"title": "🤖 竞速对战",
+			"detail": "和机器人抢消·先完成者胜 · 最佳%d分" % int(progression_state.get("race_best_score", 0))
+		},
+		{
 			"id": "endless",
 			"title": "∞ 无尽模式",
 			"detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [
@@ -1539,7 +1567,7 @@ func _refresh_modes_panel():
 		var unlocked = SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
 		var button = Button.new()
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.rect_min_size = Vector2(0, 56)
+		button.rect_min_size = Vector2(0, 52)
 		button.add_font_override("font", game_font)
 		if unlocked:
 			button.text = row["title"] + "\n" + row["detail"]
@@ -1651,6 +1679,12 @@ func _build_timers():
 	memory_hide_timer.connect("timeout", self, "_on_memory_hide_timeout")
 	add_child(memory_hide_timer)
 
+	race_timer = Timer.new()
+	race_timer.wait_time = 1.0
+	race_timer.one_shot = false
+	race_timer.connect("timeout", self, "_on_race_tick")
+	add_child(race_timer)
+
 func _create_chip_label():
 	var label = Label.new()
 	label.add_font_override("font", game_font)
@@ -1709,7 +1743,8 @@ func _add_stat_card(parent, title, key):
 		"total_score": Color("fff0f6"), "level_score": Color("ffe9f0"),
 		"moves": Color("f3f0ff"), "remaining": Color("e7f5ff"),
 		"time_left": Color("fff4e6"), "combo": Color("fff0f6"),
-		"best_total_score": Color("fff9db"), "best_combo": Color("ffe9f0")
+		"best_total_score": Color("fff9db"), "best_combo": Color("ffe9f0"),
+		"race": Color("e6fcf5")
 	}
 	var card_style = StyleBoxFlat.new()
 	card_style.bg_color = pastel_by_key.get(key, Color("ffffff"))
@@ -1920,6 +1955,8 @@ func _start_special_mode(mode_id):
 	elif mode_id == "frost":
 		var tier = SPECIAL_MODES_SCRIPT.frost_tier(config, int(progression_state.get("highest_unlocked_level_index", 0)) + 1)
 		level = SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
+	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race":
+		level = SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
 	else:
 		level = SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
 	special_mode = mode_id
@@ -1934,7 +1971,11 @@ func _start_special_mode(mode_id):
 			"daily": "每日挑战开始！今天的棋盘人人相同",
 			"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
 			"endless": "无尽模式第1轮！棋盘会越滚越大",
-			"frost": "冰雪挑战！❄️ 结霜的方块要消除两次，🔥暖宝宝可以直接解冻"
+			"frost": "冰雪挑战！❄️ 结霜的方块要消除两次，🔥暖宝宝可以直接解冻",
+			"zen": "休闲模式！没有时限，慢慢享受",
+			"hell": "地狱模式！大盘少图案，时间极紧",
+			"moves": "步数挑战！每消一对花 1 步，省着用",
+			"race": "竞速对战！抢在机器人前面消完全部"
 		}
 		_show_message(str(intro.get(mode_id, "特殊模式开始")), 1.8)
 
@@ -1960,6 +2001,15 @@ func _reset_level_session(level, reset_total = false):
 	moves = 0
 	level_score = 0
 	time_left = int(level.get("time_limit", 90))
+	moves_left = int(level.get("move_budget", 0))
+	race_ai_pairs = 0
+	race_elapsed = 0
+	race_total_pairs = int(_remaining_tiles_count() / 2)
+	if race_timer:
+		if special_mode == "race":
+			race_timer.start()
+		else:
+			race_timer.stop()
 	stage_status = STATUS_PLAYING
 
 	# Reset achievement tracking
@@ -2433,6 +2483,7 @@ func _on_memory_tile_pressed(point, r, c):
 	_play_eliminate_effects([a, b])
 
 	_apply_match_damage(a, b)
+	_consume_move()
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -2525,6 +2576,7 @@ func _on_tile_pressed(button):
 	_play_eliminate_effects([a, b])
 
 	_apply_match_damage(a, b)
+	_consume_move()
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -2589,6 +2641,7 @@ func _on_auto_pressed():
 	_damage_tile(b, cracked)
 	# Frozen tiles survive as blockers, so judge the clear AFTER the damage.
 	var will_clear = _remaining_tiles_count() == 0
+	_consume_move()
 
 	selected = Vector2(-1, -1)
 	hint_tiles.clear()
@@ -3222,6 +3275,16 @@ func _init_power_ups(level):
 		power_ups["bomb"] = 1
 		power_ups["rainbow"] = 1
 		power_ups["warm_patch"] = 3 if special_mode == "frost" else 0
+	if special_mode == "hell":
+		# 地狱: strip back to the bare basics.
+		power_ups["time_freeze"] = 1
+		power_ups["reshuffle"] = 1
+		power_ups["auto_match"] = 0
+		power_ups["magnifier"] = 0
+		power_ups["time_sand"] = 0
+		power_ups["bomb"] = 0
+		power_ups["rainbow"] = 0
+		power_ups["warm_patch"] = 0
 
 func _use_power_up(power_up_type):
 	# Re-press cancels an armed click-targeted power-up and refunds the
@@ -3380,6 +3443,66 @@ func _execute_warm_patch(point):
 
 # One successful match hits both tiles. Frozen cells (armor 1) crack instead
 # of clearing and need a second match; cracked tiles keep blocking paths.
+# 步数挑战: every removed pair costs one move; running dry loses.
+func _consume_move():
+	if special_mode != "moves" or stage_status != STATUS_PLAYING:
+		return
+	moves_left = max(0, moves_left - 1)
+	_refresh_ui()
+	if moves_left <= 0 and _remaining_tiles_count() > 0:
+		_fail_moves_exhausted()
+
+func _fail_moves_exhausted():
+	if stage_status != STATUS_PLAYING:
+		return
+	stage_status = STATUS_FAILED
+	AudioManager.play_fail()
+	_reset_combo()
+	selected = Vector2(-1, -1)
+	hint_tiles.clear()
+	error_tiles.clear()
+	second_timer.stop()
+	stage_panel_label.text = "步数用完了！还剩 %d 对没消除\n点击「重开」再战，或「暂停」后返回玩法" % int(_remaining_tiles_count() / 2)
+	stage_panel_label.visible = true
+	_show_message("步数耗尽，挑战失败", 1.8)
+	_refresh_ui()
+	_refresh_board_visuals()
+
+# 竞速对战: the AI clears one pair per ai_interval seconds.
+func _on_race_tick():
+	if special_mode != "race" or stage_status != STATUS_PLAYING:
+		return
+	var interval = max(1.0, float(_current_level().get("ai_interval", 8.5)))
+	race_elapsed += 1
+	if race_elapsed < int(interval):
+		return
+	race_elapsed = 0
+	race_ai_pairs = min(race_total_pairs, race_ai_pairs + 1)
+	AudioManager.play_select()
+	_refresh_ui()
+	if race_ai_pairs >= race_total_pairs:
+		_fail_race_lost()
+
+func _fail_race_lost():
+	if stage_status != STATUS_PLAYING:
+		return
+	stage_status = STATUS_FAILED
+	AudioManager.play_fail()
+	_reset_combo()
+	selected = Vector2(-1, -1)
+	hint_tiles.clear()
+	error_tiles.clear()
+	second_timer.stop()
+	if race_timer:
+		race_timer.stop()
+	stage_panel_label.text = "对手先完成了！你消除了 %d/%d 对\n点击「重开」再战" % [race_total_pairs - int(_remaining_tiles_count() / 2), race_total_pairs]
+	stage_panel_label.visible = true
+	_show_message("惜败！再快一点点", 1.8)
+	_refresh_ui()
+	_refresh_board_visuals()
+
+# One successful match hits both tiles. Frozen cells (armor 1) crack instead
+# of clearing and need a second match; cracked tiles keep blocking paths.
 func _apply_match_damage(a, b):
 	var cracked = []
 	_damage_tile(a, cracked)
@@ -3433,6 +3556,7 @@ func _execute_bomb(point):
 	if _is_frost_mode():
 		board_armor[point.x][point.y] = 0
 		board_armor[partner.x][partner.y] = 0
+	_consume_move()
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -3474,6 +3598,7 @@ func _execute_rainbow_click(point):
 	if _is_frost_mode():
 		board_armor[a.x][a.y] = 0
 		board_armor[b.x][b.y] = 0
+	_consume_move()
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -3500,8 +3625,8 @@ func _on_second_tick():
 	if time_frozen:
 		return
 
-	# Endless mode has no clock at all.
-	if special_mode == "endless":
+	# Endless/zen/moves/race have no countdown clock at all.
+	if special_mode == "endless" or int(_current_level().get("time_limit", 90)) <= 0:
 		return
 
 	time_left = max(0, time_left - 1)
@@ -3548,8 +3673,8 @@ func _on_time_up():
 	_refresh_board_visuals()
 
 func _consume_time_cost(seconds):
-	# Endless mode has no clock, so tool time costs don't apply.
-	if special_mode == "endless":
+	# Clockless modes (endless/zen/moves/race) have no time to drain.
+	if special_mode == "endless" or int(_current_level().get("time_limit", 90)) <= 0:
 		return
 	if seconds <= 0 or stage_status != STATUS_PLAYING:
 		return
@@ -3687,6 +3812,11 @@ func _resolve_after_board_changed():
 		_refresh_board_visuals()
 
 func _resolve_special_clear():
+	# 步数挑战: unused moves convert into bonus score.
+	if special_mode == "moves":
+		var move_bonus = moves_left * 20
+		total_score += move_bonus
+		level_score += move_bonus
 	var time_bonus_multiplier = float(_current_level().get("time_bonus_multiplier", 2.0))
 	var time_bonus = int(round(float(time_left) * time_bonus_multiplier))
 	total_score += time_bonus
@@ -3694,6 +3824,8 @@ func _resolve_special_clear():
 
 	_reset_combo()
 	second_timer.stop()
+	if race_timer:
+		race_timer.stop()
 	stage_panel_label.visible = false
 	AudioManager.play_win()
 
@@ -3729,6 +3861,33 @@ func _unlock_achievements(ids):
 
 func _record_special_completion():
 	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	if special_mode == "zen":
+		_patch_progress_state({"zen_result": total_score})
+		_unlock_achievements(["zen_first"])
+		stage_panel_label.text = "休闲一局完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("zen_best_score", 0)))
+		stage_panel_label.visible = true
+		return
+	if special_mode == "hell":
+		_patch_progress_state({"hell_result": total_score})
+		_unlock_achievements(["hell_first"])
+		stage_panel_label.text = "地狱挑战通关！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("hell_best_score", 0)))
+		stage_panel_label.visible = true
+		return
+	if special_mode == "moves":
+		_patch_progress_state({"moves_result": total_score})
+		var move_achievements = ["moves_first"]
+		if moves_left >= int(_current_level().get("move_budget", 0)) / 5:
+			move_achievements.append("moves_saver")
+		_unlock_achievements(move_achievements)
+		stage_panel_label.text = "步数挑战完成！剩余%d步奖励%d分 · 最佳 %d" % [moves_left, moves_left * 20, int(progression_state.get("moves_best_score", 0))]
+		stage_panel_label.visible = true
+		return
+	if special_mode == "race":
+		_patch_progress_state({"race_result": total_score})
+		_unlock_achievements(["race_first"])
+		stage_panel_label.text = "战胜机器人！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("race_best_score", 0)))
+		stage_panel_label.visible = true
+		return
 	if special_mode == "frost":
 		_patch_progress_state({"frost_result": total_score})
 		var frost_achievements = ["frost_first"]
@@ -3815,6 +3974,16 @@ func _refresh_ui():
 		subtitle_label.text = "限时挑战 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
 	elif special_mode == "memory":
 		subtitle_label.text = "盲盒模式 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))
+	elif special_mode == "frost":
+		subtitle_label.text = "冰雪挑战 · 最佳%d分" % int(progression_state.get("frost_best_score", 0))
+	elif special_mode == "zen":
+		subtitle_label.text = "休闲模式 · 最佳%d分" % int(progression_state.get("zen_best_score", 0))
+	elif special_mode == "hell":
+		subtitle_label.text = "地狱模式 · 最佳%d分" % int(progression_state.get("hell_best_score", 0))
+	elif special_mode == "moves":
+		subtitle_label.text = "步数挑战 · 最佳%d分 · 剩余%d步" % [int(progression_state.get("moves_best_score", 0)), moves_left]
+	elif special_mode == "race":
+		subtitle_label.text = "竞速对战 · 最佳%d分" % int(progression_state.get("race_best_score", 0))
 	else:
 		subtitle_label.text = "第" + str(level_id) + "/" + str(campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(campaign_levels.size())
 	desc_label.text = description
@@ -3851,10 +4020,15 @@ func _refresh_ui():
 	_set_stat_text("level_score", str(level_score))
 	_set_stat_text("moves", str(moves))
 	_set_stat_text("remaining", str(_remaining_tiles_count() / 2))
-	_set_stat_text("time_left", "∞" if special_mode == "endless" else _format_time(time_left))
+	_set_stat_text("time_left", "∞" if int(_current_level().get("time_limit", 90)) <= 0 else _format_time(time_left))
 	_set_stat_text("combo", "x" + str(max(combo, 1)))
 	_set_stat_text("best_total_score", str(_progress_best_score()))
 	_set_stat_text("best_combo", "x" + str(_progress_best_combo()))
+
+	# 对手 card only shows during the AI race.
+	if stat_values.has("race"):
+		stat_values["race"]["card"].visible = special_mode == "race"
+		_set_stat_text("race", "%d/%d" % [race_ai_pairs, race_total_pairs])
 
 	_set_time_card_state(_is_time_danger())
 
@@ -3903,7 +4077,7 @@ func _set_stat_text(key, value):
 
 
 func _is_time_danger():
-	if special_mode == "endless":
+	if special_mode == "endless" or int(_current_level().get("time_limit", 90)) <= 0:
 		return false
 	return stage_status == STATUS_PLAYING and time_left <= int(tuning.get("time_danger_seconds", 10))
 
@@ -3969,6 +4143,14 @@ func _mode_label(mode):
 			return "盲盒模式"
 		"frost":
 			return "冰雪挑战"
+		"zen":
+			return "休闲模式"
+		"hell":
+			return "地狱模式"
+		"moves":
+			return "步数挑战"
+		"race":
+			return "竞速对战"
 		_:
 			return "未知"
 

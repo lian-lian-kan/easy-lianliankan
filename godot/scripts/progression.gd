@@ -17,7 +17,12 @@ const ACHIEVEMENTS = [
 	{"id": "endless_round_5", "name": "无尽探索者", "desc": "无尽模式达到第5轮"},
 	{"id": "time_attack_1000", "name": "限时高手", "desc": "限时挑战得分达到1000"},
 	{"id": "frost_first", "name": "冰雪初融", "desc": "完成一局冰雪挑战"},
-	{"id": "frost_no_power", "name": "寒冰骑士", "desc": "不使用暖宝宝完成一局冰雪挑战"}
+	{"id": "frost_no_power", "name": "寒冰骑士", "desc": "不使用暖宝宝完成一局冰雪挑战"},
+	{"id": "zen_first", "name": "闲云野鹤", "desc": "完成一局休闲模式"},
+	{"id": "hell_first", "name": "地狱行者", "desc": "通关一次地狱模式"},
+	{"id": "moves_first", "name": "精打细算", "desc": "完成一局步数挑战"},
+	{"id": "moves_saver", "name": "节步大师", "desc": "步数挑战中保留20%以上步数通关"},
+	{"id": "race_first", "name": "初胜机器人", "desc": "竞速对战中击败机器人"}
 ]
 
 
@@ -35,7 +40,11 @@ static func default_progress(level_count: int) :
 		"endless_best": {"round": 0, "score": 0},
 		"time_attack_best_score": 0,
 		"memory_best_score": 0,
-		"frost_best_score": 0
+		"frost_best_score": 0,
+		"zen_best_score": 0,
+		"hell_best_score": 0,
+		"moves_best_score": 0,
+		"race_best_score": 0
 	}
 
 
@@ -75,6 +84,10 @@ static func normalize_progress(raw, level_count: int) :
 		normalized["time_attack_best_score"] = max(0, int(raw.get("time_attack_best_score", 0)))
 		normalized["memory_best_score"] = max(0, int(raw.get("memory_best_score", 0)))
 		normalized["frost_best_score"] = max(0, int(raw.get("frost_best_score", 0)))
+		normalized["zen_best_score"] = max(0, int(raw.get("zen_best_score", 0)))
+		normalized["hell_best_score"] = max(0, int(raw.get("hell_best_score", 0)))
+		normalized["moves_best_score"] = max(0, int(raw.get("moves_best_score", 0)))
+		normalized["race_best_score"] = max(0, int(raw.get("race_best_score", 0)))
 
 	normalized["current_level_index"] = clamp(int(normalized["current_level_index"]), 0, max_level_index)
 	normalized["highest_unlocked_level_index"] = clamp(int(normalized["highest_unlocked_level_index"]), 0, max_level_index)
@@ -139,6 +152,14 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		next_state["memory_best_score"] = max(int(next_state["memory_best_score"]), max(0, int(patch["memory_result"])))
 	if patch.has("frost_result"):
 		next_state["frost_best_score"] = max(int(next_state["frost_best_score"]), max(0, int(patch["frost_result"])))
+	if patch.has("zen_result"):
+		next_state["zen_best_score"] = max(int(next_state["zen_best_score"]), max(0, int(patch["zen_result"])))
+	if patch.has("hell_result"):
+		next_state["hell_best_score"] = max(int(next_state["hell_best_score"]), max(0, int(patch["hell_result"])))
+	if patch.has("moves_result"):
+		next_state["moves_best_score"] = max(int(next_state["moves_best_score"]), max(0, int(patch["moves_result"])))
+	if patch.has("race_result"):
+		next_state["race_best_score"] = max(int(next_state["race_best_score"]), max(0, int(patch["race_result"])))
 
 	next_state["version"] = SAVE_VERSION
 	return next_state
@@ -156,7 +177,11 @@ static func same_progress(a, b, level_count: int) :
 		and _dicts_equal(aa.get("endless_best", {}), bb.get("endless_best", {})) \
 		and int(aa.get("time_attack_best_score", 0)) == int(bb.get("time_attack_best_score", 0)) \
 		and int(aa.get("memory_best_score", 0)) == int(bb.get("memory_best_score", 0)) \
-		and int(aa.get("frost_best_score", 0)) == int(bb.get("frost_best_score", 0))
+		and int(aa.get("frost_best_score", 0)) == int(bb.get("frost_best_score", 0)) \
+		and int(aa.get("zen_best_score", 0)) == int(bb.get("zen_best_score", 0)) \
+		and int(aa.get("hell_best_score", 0)) == int(bb.get("hell_best_score", 0)) \
+		and int(aa.get("moves_best_score", 0)) == int(bb.get("moves_best_score", 0)) \
+		and int(aa.get("race_best_score", 0)) == int(bb.get("race_best_score", 0))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :

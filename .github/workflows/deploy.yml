@@ -57,7 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           G=~/godot-bin/godot
-          for t in board_logic_test progression_test path_overlay_input_passthrough_test special_modes_test power_ups_probe frost_probe; do
+          for t in board_logic_test progression_test path_overlay_input_passthrough_test special_modes_test power_ups_probe frost_probe variants_probe; do
             echo "== $t"
             timeout 120 "$G" --no-window --path godot -s "res://tests/${t}.gd"
           done

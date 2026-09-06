@@ -68,6 +68,48 @@ const DEFAULT_CONFIGS = {
 			{"level_range": [6, 10], "frost_ratio": 0.3, "rows": 10, "cols": 8, "kinds": 9, "time_base": 130},
 			{"level_range": [11, 999], "frost_ratio": 0.38, "rows": 10, "cols": 9, "kinds": 11, "time_base": 150}
 		]
+	},
+	"zen": {
+		"mode_id": "zen",
+		"name": "休闲模式",
+		"description": "没有时限，慢慢享受",
+		"unlock_level": 1,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 7,
+		"time_limit": 0
+	},
+	"hell": {
+		"mode_id": "hell",
+		"name": "地狱模式",
+		"description": "大盘少图案，时间极紧",
+		"unlock_level": 12,
+		"rows": 12,
+		"cols": 8,
+		"kinds": 12,
+		"time_limit": 100
+	},
+	"moves": {
+		"mode_id": "moves",
+		"name": "步数挑战",
+		"description": "步数有限，精打细算",
+		"unlock_level": 14,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 0,
+		"move_budget": 56
+	},
+	"race": {
+		"mode_id": "race",
+		"name": "竞速对战",
+		"description": "和机器人比谁先消完",
+		"unlock_level": 15,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 0,
+		"ai_interval": 8.5
 	}
 }
 
@@ -256,6 +298,28 @@ static func build_frost_level(config, tier: Dictionary):
 		"time_limit": time_limit,
 		"frost_ratio": clamp(float(tier.get("frost_ratio", 0.3)), 0.0, 0.6)
 	}
+
+
+# Classic-rules boards with different knobs: zen/hell change board and
+# clock pressure, moves adds a pair budget, race adds the AI interval.
+static func build_classic_style_level(config, mode_id: String):
+	var rows = int(config.get("rows", 10))
+	var cols = int(config.get("cols", 8))
+	var kinds = int(config.get("kinds", 8))
+	var level = {
+		"id": 1,
+		"name": str(config.get("name", mode_id)),
+		"mode": mode_id,
+		"rows": rows,
+		"cols": cols,
+		"kinds": kinds,
+		"time_limit": int(config.get("time_limit", 90))
+	}
+	if config.has("move_budget"):
+		level["move_budget"] = int(config.get("move_budget", 56))
+	if config.has("ai_interval"):
+		level["ai_interval"] = float(config.get("ai_interval", 8.5))
+	return level
 
 
 static func is_mode_unlocked(mode_id: String, config, highest_unlocked_level_index: int) :
