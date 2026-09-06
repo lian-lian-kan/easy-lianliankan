@@ -1733,10 +1733,7 @@ func _color_for(value):
 	return Color("ffffff")
 
 func _contains_coord(list, coord):
-	for item in list:
-		if item == coord:
-			return true
-	return false
+	return BOARD_ENGINE.contains_coord(list, coord)
 
 
 func _is_memory_mode():
@@ -3637,10 +3634,7 @@ func _format_time(seconds):
 	return BOARD_ENGINE.format_time(seconds)
 
 func _format_time_seconds(time_seconds):
-	var mm = int(time_seconds) / 60
-	var ss = int(time_seconds) % 60
-	var ms = int((time_seconds - int(time_seconds)) * 100)
-	return "%02d:%02d.%02d" % [mm, ss, ms]
+	return BOARD_ENGINE.format_time_seconds(time_seconds)
 
 # Achievement system
 

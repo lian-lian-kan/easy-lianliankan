@@ -589,3 +589,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round H：best 值访问器下沉 progression.gd)
 - Context: _progress_best_score/_progress_best_combo 从 game.gd 移为 progression.gd 静态纯函数 best_score(state)/best_combo(state)，game.gd 留薄封装；补 progression 模块访问器覆盖。
 - Validation: 12 项 headless 测试全绿；导出成功。
+
+## 2026-09-07 (代码质量 Round I：最后两个纯逻辑助手迁入 board_engine)
+- Context: _format_time_seconds（新纪录用时的百分秒格式化）与 _contains_coord（坐标包含判断）迁入 board_engine.gd 静态函数，game.gd 留薄封装；board_engine_test 补百分秒格式化（65.5→01:05.50）与坐标包含正反用例。至此 game.gd 中已无散落的纯算法函数。
+- Validation: 12 项 headless 测试全绿；导出成功。

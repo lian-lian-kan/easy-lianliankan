@@ -287,3 +287,16 @@ static func compact_columns(board_state):
 					moved = true
 				write -= 1
 	return moved
+
+# Millisecond-precision time format for best-time labels.
+static func format_time_seconds(time_seconds):
+	var mm = int(time_seconds) / 60
+	var ss = int(time_seconds) % 60
+	var ms = int((time_seconds - int(time_seconds)) * 100)
+	return "%02d:%02d.%02d" % [mm, ss, ms]
+
+static func contains_coord(list, coord):
+	for item in list:
+		if item == coord:
+			return true
+	return false
