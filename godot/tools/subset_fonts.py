@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
-"""Subset the bundled Noto fonts to the characters the game actually uses.
+"""Subset the bundled fonts to the characters the game actually uses.
 
-The full NotoSansSC-Regular.ttf (16MB) and NotoColorEmoji.ttf (10MB) ship
-with tens of thousands of glyphs; the game renders fewer than 700 distinct
-characters. Subsetting them keeps the exported .pck small enough for mobile
-first-load, while the full originals stay in fonts/full/ (gitignored) for
-regeneration.
+Full sources (tens of thousands of glyphs) ship in fonts/full/ (gitignored);
+only the subsets under fonts/ are packed into the exported .pck. The game
+links them as a fallback chain: ZCOOL KuaiLe (cute display face) ->
+NotoSansSC (full CJK coverage) -> NotoColorEmoji.
 
 Coverage policy (fail loudly rather than ship tofu):
-  - Sans subset:  every scanned char below U+1F000, plus ASCII, CJK
+  - Sans / display subsets: every scanned char below U+1F000, plus ASCII, CJK
     punctuation, fullwidth forms, and the symbol blocks (arrows / shapes /
-    dingbats) so UI glyphs never depend on the emoji fallback.
+    dingbats) so UI glyphs never depend on the emoji fallback. ZCOOL KuaiLe
+    only CONTAINS a few thousand glyphs, so for it we subset the intersection
+    with its cmap (best effort) and REQUIRE coverage of the core UI text;
+    anything else silently falls back to NotoSansSC at runtime.
   - Emoji subset: every scanned char in the emoji blocks, plus ZWJ / VS16 /
     keycap connectors, skin-tone modifiers, regional indicators, and the
     ASCII digits needed by keycap ligatures.
-Chars found in the symbol blocks go into BOTH subsets; whichever font wins
-the lookup, the glyph exists.
+Chars found in the symbol blocks go into BOTH text subsets; whichever font
+wins the lookup, the glyph exists.
 
 Regenerating after adding new in-game text or icons:
   python3 tools/subset_fonts.py
 Full-font sources (place into godot/fonts/full/):
   NotoSansSC-Regular.ttf  https://fonts.google.com/noto (Noto Sans SC, weight 400)
   NotoColorEmoji.ttf      https://github.com/googlefonts/noto-emoji
+  ZCOOLKuaiLe-Regular.ttf https://github.com/google/fonts/tree/main/ofl/zcoolkuaile
 """
 
 import os
@@ -35,6 +38,23 @@ GODOT_DIR = Path(__file__).resolve().parent.parent
 FONTS_DIR = GODOT_DIR / "fonts"
 FULL_DIR = FONTS_DIR / "full"
 SCAN_EXTS = {".gd", ".json", ".godot"}
+
+# Per-font guard thresholds: the trap this guards against is bootstrapping a
+# worktree by copying the committed SUBSET as the "full" font, which silently
+# produces subset-of-subset tofu for any newly added text. Thresholds sit
+# clearly between real full sizes and subset sizes.
+FONTS = [
+    {"name": "NotoSansSC-Regular.ttf", "min_full_bytes": 5_000_000, "role": "sans"},
+    {"name": "NotoColorEmoji.ttf", "min_full_bytes": 5_000_000, "role": "emoji"},
+    {"name": "ZCOOLKuaiLe-Regular.ttf", "min_full_bytes": 1_000_000, "role": "display"},
+]
+# Chars the core UI must render in the cute face (not fall back to Noto),
+# as a hard gate on the display subset.
+DISPLAY_CORE_TEXT = (
+    "连连看每日挑战限时无尽盲盒记忆模式开始返回继续重玩下一关暂停设置成就玩法"
+    "提示自动洗牌放大镜时光沙漏炸弹彩虹分数时间目标连击最佳剩余关卡 Progress "
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+)
 
 
 def collect_source_chars():
@@ -78,6 +98,15 @@ def build_emoji_text(source_chars):
     return "".join(chr(cp) for cp in sorted(cps))
 
 
+def font_cmap(path):
+    font = TTFont(str(path), lazy=True)
+    cmap = set()
+    for table in font["cmap"].tables:
+        cmap.update(table.cmap.keys())
+    font.close()
+    return cmap
+
+
 def subset_font(src, dst, text):
     options = subset.Options()
     options.layout_features = ["*"]
@@ -95,10 +124,24 @@ def subset_font(src, dst, text):
     return dst.stat().st_size
 
 
+def bootstrap_full(full, live, min_full_bytes):
+    if full.exists():
+        return
+    if not live.exists():
+        print("FAIL: missing both %s and %s" % (full, live))
+        sys.exit(1)
+    full.write_bytes(live.read_bytes())
+    if full.stat().st_size < min_full_bytes:
+        print("FAIL: %s looks like an already-subsetted font (%d bytes); "
+              "put the genuine full font there first" % (full, full.stat().st_size))
+        sys.exit(1)
+
+
 def main():
     source_chars, scanned = collect_source_chars()
     sans_text = build_sans_text(source_chars)
     emoji_text = build_emoji_text(source_chars)
+    role_text = {"sans": sans_text, "emoji": emoji_text}
 
     sans_cps = set(ord(c) for c in sans_text)
     emoji_cps = set(ord(c) for c in emoji_text)
@@ -112,32 +155,43 @@ def main():
         sys.exit(1)
 
     FULL_DIR.mkdir(parents=True, exist_ok=True)
-    # .gdignore keeps the 27MB originals out of res://, so Godot never
+    # .gdignore keeps the full originals out of res://, so Godot never
     # imports or packs them; only the subsets under fonts/ ship.
     (FULL_DIR / ".gdignore").touch()
-    for name in ("NotoSansSC-Regular.ttf", "NotoColorEmoji.ttf"):
+
+    for cfg in FONTS:
+        name = cfg["name"]
         full = FULL_DIR / name
         live = FONTS_DIR / name
-        if not full.exists():
-            if not live.exists():
-                print("FAIL: missing both %s and %s" % (full, live))
-                sys.exit(1)
-            full.write_bytes(live.read_bytes())
-        if full.stat().st_size < 5 * 1000 * 1000:
+        bootstrap_full(full, live, cfg["min_full_bytes"])
+        if full.stat().st_size < cfg["min_full_bytes"]:
             print("FAIL: %s looks like an already-subsetted font (%d bytes); "
                   "put the genuine full font there first" % (full, full.stat().st_size))
             sys.exit(1)
-        text = sans_text if "Sans" in name else emoji_text
+
+        text = role_text.get(cfg["role"], sans_text)
         before = full.stat().st_size
+        if cfg["role"] == "display":
+            # Best effort: keep only the chars this face actually contains.
+            covered = font_cmap(full)
+            wanted = set(ord(c) for c in text)
+            missing = sorted(wanted - covered)
+            core_missing = [c for c in DISPLAY_CORE_TEXT if ord(c) in set(missing)]
+            if core_missing:
+                print("FAIL: display font lacks core UI glyphs: %r" % "".join(core_missing))
+                sys.exit(1)
+            text = "".join(chr(cp) for cp in sorted(wanted & covered))
+            print("%s: %d of %d requested chars in face (%d fall back to Noto)"
+                  % (name, len(wanted) - len(missing), len(wanted), len(missing)))
         after = subset_font(full, live, text)
         print("%s: %.1fMB -> %.1fMB" % (name, before / 1e6, after / 1e6))
 
     # The emoji font is CBDT/CBLC bitmap; make sure the color tables survived.
     emoji_font = TTFont(str(FONTS_DIR / "NotoColorEmoji.ttf"))
-    missing = [t for t in ("CBDT", "CBLC", "cmap") if t not in emoji_font]
+    missing_tables = [t for t in ("CBDT", "CBLC", "cmap") if t not in emoji_font]
     emoji_font.close()
-    if missing:
-        print("FAIL: emoji subset lost tables: %s" % missing)
+    if missing_tables:
+        print("FAIL: emoji subset lost tables: %s" % missing_tables)
         sys.exit(1)
 
     print("scanned %d files, %d source chars; sans=%d cps, emoji=%d cps"

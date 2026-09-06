@@ -81,6 +81,14 @@ var power_ups: Dictionary = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0}
 var time_frozen = false
 var time_freeze_timer
 
+# Armed click-targeted power-ups (炸弹/彩虹): arm -> next board click executes.
+var bomb_pending = false
+var rainbow_pending = false
+
+# Sakura petals drifting over the background, confetti on stage clear.
+var _petal_layer
+var _petal_timer
+
 var title_label
 var subtitle_label
 var desc_label
@@ -221,6 +229,12 @@ func _unhandled_input(event):
 			KEY_5:
 				_use_power_up("time_sand")
 				accept_event()
+			KEY_6:
+				_use_power_up("bomb")
+				accept_event()
+			KEY_7:
+				_use_power_up("rainbow")
+				accept_event()
 			KEY_ESCAPE:
 				if OS.window_fullscreen:
 					OS.window_fullscreen = false
@@ -309,6 +323,12 @@ func _update_layout_for_screen_size():
 	if desc_label:
 		desc_label.visible = not is_mobile
 
+	# Power-up shortcut chips only make sense with a keyboard.
+	for power_up_id in power_up_labels:
+		var labels = power_up_labels[power_up_id]
+		if labels.has("shortcut") and labels["shortcut"] != null:
+			labels["shortcut"].visible = not is_mobile
+
 	# Adjust tile separation based on screen size
 	if is_mobile and is_compact_height:
 		board_grid.add_constant_override("h_separation", 4)
@@ -384,6 +404,7 @@ func _update_layout_for_screen_size():
 
 	_update_modal_panel_sizes(viewport_size, is_portrait)
 
+const DISPLAY_FONT = preload("res://fonts/ZCOOLKuaiLe-Regular.ttf")
 const EMBEDDED_FONT = preload("res://fonts/NotoSansSC-Regular.ttf")
 const EMOJI_FONT = preload("res://fonts/NotoColorEmoji.ttf")
 
@@ -394,9 +415,12 @@ func _font_at_size(px):
 	if _font_cache.has(px):
 		return _font_cache[px]
 	var font = DynamicFont.new()
-	font.font_data = EMBEDDED_FONT
+	# Cute rounded face first; Noto covers glyphs KuaiLe lacks, emoji last.
+	font.font_data = DISPLAY_FONT if DISPLAY_FONT else EMBEDDED_FONT
 	font.size = px
 	font.use_filter = true
+	if EMBEDDED_FONT:
+		font.add_fallback(EMBEDDED_FONT)
 	if EMOJI_FONT:
 		font.add_fallback(EMOJI_FONT)
 	_font_cache[px] = font
@@ -689,6 +713,12 @@ func _build_ui():
 	bg_rect.color = Color("fff0f6")
 	add_child(bg_rect)
 
+	_petal_layer = Control.new()
+	_petal_layer.set_anchors_and_margins_preset(Control.PRESET_WIDE)
+	_petal_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_petal_layer)
+	_build_petals()
+
 	var margin = MarginContainer.new()
 	margin.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	margin.add_constant_override("margin_left", 16)
@@ -805,9 +835,11 @@ func _build_ui():
 	_add_stat_card(stats_flow_container, "历史连击", "best_combo")
 
 	# Power-ups display container
+	# Single row, centered. On phones the [1]-[7] shortcut chips are hidden
+	# (keyboard-only affordance) so all 7 power-ups fit a 390px width.
 	power_ups_container = HBoxContainer.new()
 	power_ups_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	power_ups_container.add_constant_override("separation", 16)
+	power_ups_container.add_constant_override("separation", 8)
 	header_box.add_child(power_ups_container)
 
 	# Create power-up labels
@@ -816,6 +848,8 @@ func _build_ui():
 	_create_power_up_label("reshuffle", "🔄", "3")
 	_create_power_up_label("magnifier", "🔍", "4")
 	_create_power_up_label("time_sand", "⏳", "5")
+	_create_power_up_label("bomb", "💣", "6")
+	_create_power_up_label("rainbow", "🌈", "7")
 
 	combo_progress_bar = ProgressBar.new()
 	combo_progress_bar.min_value = 0
@@ -1698,7 +1732,7 @@ func _add_stat_card(parent, title, key):
 
 func _create_power_up_label(power_up_id, icon, shortcut):
 	var hbox = HBoxContainer.new()
-	hbox.add_constant_override("separation", 4)
+	hbox.add_constant_override("separation", 3)
 	power_ups_container.add_child(hbox)
 
 	var icon_label = Label.new()
@@ -1708,12 +1742,14 @@ func _create_power_up_label(power_up_id, icon, shortcut):
 	var count_label = Label.new()
 	count_label.text = "x0"
 	count_label.add_color_override("font_color", Color("8f6b80"))
-	count_label.add_font_override("font", game_font)
+	count_label.add_font_override("font", _font_at_size(14))
 	hbox.add_child(count_label)
 
 	var shortcut_label = Label.new()
 	shortcut_label.text = "[" + shortcut + "]"
 	shortcut_label.add_color_override("font_color", Color("c2a3b2"))
+	# Keyboard-only affordance: pointless on touch phones, wastes width.
+	shortcut_label.visible = not _viewport_flags(get_viewport_rect().size)["is_mobile"]
 	hbox.add_child(shortcut_label)
 
 	power_up_labels[power_up_id] = {
@@ -2092,6 +2128,16 @@ func _refresh_board_visuals():
 				bg = Color("d0ebff")
 				border = Color("3b82f6")
 				has_effect = true
+			elif bomb_pending:
+				# Armed bomb: warm glow on every tile invites the pick.
+				bg = bg.linear_interpolate(Color("fff3bf"), 0.45)
+				border = Color("ffd43b")
+				has_effect = true
+			elif rainbow_pending:
+				# Armed rainbow: violet shimmer while choosing two tiles.
+				bg = bg.linear_interpolate(Color("f3d9fa"), 0.4)
+				border = Color("da77f2")
+				has_effect = true
 
 			if is_selected:
 				border = Color("ff8fab")
@@ -2339,6 +2385,14 @@ func _on_tile_pressed(button):
 		return
 
 	var point = Vector2(r, c)
+
+	# Armed click-targeted power-ups take over the next board click.
+	if bomb_pending:
+		_execute_bomb(point)
+		return
+	if rainbow_pending:
+		_execute_rainbow_click(point)
+		return
 
 	if _is_memory_mode():
 		_on_memory_tile_pressed(point, r, c)
@@ -2883,6 +2937,73 @@ func _animate_board_spawn():
 			tween.interpolate_property(button, "rect_scale", Vector2(0.72, 0.72), Vector2.ONE, 0.09, Tween.TRANS_BACK, Tween.EASE_OUT, delay)
 			tween.start()
 
+const PETAL_ICONS = ["🌸", "🌸", "🌸", "🌺", "💗", "✨"]
+
+func _build_petals():
+	_petal_timer = Timer.new()
+	_petal_timer.wait_time = 1.1
+	_petal_timer.one_shot = false
+	_petal_timer.connect("timeout", self, "_on_petal_tick")
+	add_child(_petal_timer)
+	_petal_timer.start()
+	# A few petals already mid-fall so the scene never starts empty.
+	for _i in range(4):
+		_spawn_petal(true)
+
+func _on_petal_tick():
+	if _petal_layer == null or not is_inside_tree():
+		return
+	if _petal_layer.get_child_count() < 12:
+		_spawn_petal(false)
+
+func _spawn_petal(start_mid_fall):
+	var petal = Label.new()
+	petal.text = PETAL_ICONS[randi() % PETAL_ICONS.size()]
+	petal.add_font_override("font", _font_at_size(int(12 + randi() % 14)))
+	petal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	petal.modulate = Color(1, 1, 1, 0.0)
+	_petal_layer.add_child(petal)
+
+	var view_size = _petal_layer.rect_size
+	if view_size.x <= 0.0:
+		view_size = Vector2(360, 640)
+	var x = randf() * max(1.0, view_size.x - 24.0)
+	var start_y = rand_range(-140.0, -30.0)
+	if start_mid_fall:
+		start_y = rand_range(-140.0, view_size.y * 0.5)
+	var duration = rand_range(7.0, 13.0)
+	petal.rect_position = Vector2(x, start_y)
+
+	var fall = _make_fx_tween(petal)
+	fall.interpolate_property(petal, "modulate:a", 0.0, rand_range(0.45, 0.8), 0.8, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	fall.interpolate_property(petal, "rect_position:y", start_y, view_size.y + 50.0, duration, Tween.TRANS_LINEAR, Tween.EASE_IN)
+	fall.interpolate_property(petal, "rect_position:x", x, x + rand_range(-46.0, 46.0), duration, Tween.TRANS_SINE, Tween.EASE_IN_OUT)
+	fall.interpolate_property(petal, "rect_rotation", 0.0, rand_range(-160.0, 160.0), duration, Tween.TRANS_SINE, Tween.EASE_IN_OUT)
+	fall.start()
+
+func _spawn_confetti(count):
+	if _petal_layer == null or not is_inside_tree():
+		return
+	var icons = ["🎉", "🎊", "🌸", "💖", "✨", "🌟"]
+	var view_size = _petal_layer.rect_size
+	if view_size.x <= 0.0:
+		view_size = Vector2(360, 640)
+	for _i in range(count):
+		var piece = Label.new()
+		piece.text = icons[randi() % icons.size()]
+		piece.add_font_override("font", _font_at_size(int(14 + randi() % 16)))
+		piece.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		piece.rect_position = Vector2(randf() * max(1.0, view_size.x - 20.0), rand_range(-90.0, -20.0))
+		_petal_layer.add_child(piece)
+		var duration = rand_range(1.6, 3.2)
+		var tween = _make_fx_tween(piece)
+		var from_x = piece.rect_position.x
+		tween.interpolate_property(piece, "rect_position:y", piece.rect_position.y, view_size.y + 40.0, duration, Tween.TRANS_QUAD, Tween.EASE_IN)
+		tween.interpolate_property(piece, "rect_position:x", from_x, from_x + rand_range(-90.0, 90.0), duration, Tween.TRANS_SINE, Tween.EASE_IN_OUT)
+		tween.interpolate_property(piece, "rect_rotation", 0.0, rand_range(-220.0, 220.0), duration, Tween.TRANS_LINEAR)
+		tween.interpolate_property(piece, "modulate:a", 1.0, 0.0, 0.5, Tween.TRANS_LINEAR, Tween.EASE_IN, max(0.1, duration - 0.5))
+		tween.start()
+
 func _play_stage_clear_celebration(is_final_clear):
 	var burst_color = Color("ff8fab") if is_final_clear else Color("22c55e")
 	var text = "全部通关!" if is_final_clear else "过关!"
@@ -2891,6 +3012,7 @@ func _play_stage_clear_celebration(is_final_clear):
 
 	_show_stage_callout(text, burst_color, 24 if is_final_clear else 21)
 	_spawn_board_particles(particle_count, burst_color, intensity)
+	_spawn_confetti(36 if is_final_clear else 22)
 
 func _show_combo_burst(text):
 	# Enhanced combo burst with dynamic styling based on combo level
@@ -2991,7 +3113,9 @@ func _on_message_timeout():
 
 func _init_power_ups(level):
 	# Reset power-ups
-	power_ups = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "magnifier": 0, "time_sand": 0}
+	power_ups = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "magnifier": 0, "time_sand": 0, "bomb": 0, "rainbow": 0}
+	bomb_pending = false
+	rainbow_pending = false
 
 	# Grant power-ups based on level difficulty
 	var level_id = int(level.get("id", 1))
@@ -3010,6 +3134,10 @@ func _init_power_ups(level):
 		power_ups["magnifier"] = 1
 	if level_id >= 8:
 		power_ups["time_sand"] = 1
+	if level_id >= 10:
+		power_ups["bomb"] = 1
+	if level_id >= 12:
+		power_ups["rainbow"] = 1
 	if mode == "rush":
 		power_ups["time_freeze"] += 1
 	if mode == "endurance":
@@ -3022,8 +3150,27 @@ func _init_power_ups(level):
 		power_ups["auto_match"] = 1
 		power_ups["magnifier"] = 1 if special_mode == "memory" else 0
 		power_ups["time_sand"] = 1 if special_mode == "time_attack" else 0
+		power_ups["bomb"] = 1
+		power_ups["rainbow"] = 1
 
 func _use_power_up(power_up_type):
+	# Re-press cancels an armed click-targeted power-up and refunds the
+	# charge: nothing is spent until the bomb/rainbow actually lands.
+	if power_up_type == "bomb" and bomb_pending:
+		bomb_pending = false
+		power_ups["bomb"] += 1
+		_show_message("已收回炸弹", 0.8)
+		_refresh_ui()
+		_refresh_board_visuals()
+		return
+	if power_up_type == "rainbow" and rainbow_pending:
+		rainbow_pending = false
+		selected = Vector2(-1, -1)
+		power_ups["rainbow"] += 1
+		_show_message("已收回彩虹", 0.8)
+		_refresh_ui()
+		_refresh_board_visuals()
+		return
 	if power_ups.get(power_up_type, 0) <= 0:
 		return
 	if stage_status != STATUS_PLAYING:
@@ -3043,6 +3190,10 @@ func _use_power_up(power_up_type):
 			_activate_magnifier()
 		"time_sand":
 			_activate_time_sand()
+		"bomb":
+			_activate_bomb()
+		"rainbow":
+			_activate_rainbow()
 
 	power_ups[power_up_type] -= 1
 	_refresh_ui()
@@ -3106,6 +3257,100 @@ func _activate_time_sand():
 	time_left = min(999, time_left + 15)
 	_show_message("⏳ 时光沙漏：时间 +15 秒", 1.4)
 	_refresh_ui()
+
+func _activate_bomb():
+	bomb_pending = true
+	rainbow_pending = false
+	selected = Vector2(-1, -1)
+	_show_message("💥 炸弹已就绪：点击任意方块，与它的同伴一起消失", 2.6)
+	_refresh_board_visuals()
+
+func _activate_rainbow():
+	rainbow_pending = true
+	bomb_pending = false
+	selected = Vector2(-1, -1)
+	_show_message("🌈 彩虹已就绪：点击两枚方块，图案不同也能消除", 2.6)
+	_refresh_board_visuals()
+
+func _execute_bomb(point):
+	var kind = int(board[point.x][point.y])
+	var partner = Vector2(-1, -1)
+	for r in range(board.size()):
+		for c in range(board[r].size()):
+			if int(board[r][c]) == kind and not (r == point.x and c == point.y):
+				partner = Vector2(r, c)
+				break
+		if partner.x >= 0:
+			break
+	bomb_pending = false
+	if partner.x < 0:
+		power_ups["bomb"] += 1
+		_show_message("没有可配对的方块，炸弹已退回", 1.2)
+		return
+
+	selected = Vector2(-1, -1)
+	hint_tiles.clear()
+	error_tiles.clear()
+	moves += 1
+
+	AudioManager.play_shuffle()
+	_show_path(_board_edge_path(point, partner), "eliminate", int(tuning.get("path_preview_ms", 420)))
+	_play_eliminate_effects([point, partner])
+	_show_message("💥 轰！", 0.8)
+
+	var score_result = _apply_combo_gain(int(tuning.get("base_score", 10)))
+	if score_result["combo"] > 1:
+		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
+
+	board[point.x][point.y] = 0
+	board[partner.x][partner.y] = 0
+
+	_refresh_ui()
+	_refresh_board_visuals()
+	_resolve_after_board_changed()
+
+func _execute_rainbow_click(point):
+	if selected.x < 0:
+		selected = point
+		hint_tiles.clear()
+		AudioManager.play_select()
+		_animate_select(point)
+		_refresh_board_visuals()
+		return
+	if selected == point:
+		selected = Vector2(-1, -1)
+		_refresh_board_visuals()
+		return
+
+	var a = selected
+	var b = point
+	selected = Vector2(-1, -1)
+	rainbow_pending = false
+	hint_tiles.clear()
+	error_tiles.clear()
+	moves += 1
+
+	AudioManager.play_eliminate_combo(combo)
+	_show_path(_board_edge_path(a, b), "eliminate", int(tuning.get("path_preview_ms", 420)))
+	_play_eliminate_effects([a, b])
+	_show_message("🌈 彩虹消除 +✨", 0.9)
+
+	var score_result = _apply_combo_gain(int(tuning.get("base_score", 10)))
+	if score_result["combo"] > 1:
+		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
+
+	board[a.x][a.y] = 0
+	board[b.x][b.y] = 0
+
+	_refresh_ui()
+	_refresh_board_visuals()
+	_resolve_after_board_changed()
+
+func _board_edge_path(a, b):
+	# Bomb/rainbow pairs have no connectable path; draw a playful via-top
+	# route instead. (-1, col) is the row just above the board, the same
+	# edge convention _find_path uses for routes that leave the grid.
+	return [a, Vector2(-1, min(a.y, b.y)), b]
 
 func _on_time_freeze_timeout():
 	time_frozen = false
