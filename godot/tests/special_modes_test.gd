@@ -124,5 +124,37 @@ func _init() -> void:
 	var different = PROGRESSION.apply_update(reloaded, 15, {"endless_result": {"round": 9, "score": 5}})
 	_assert_equal(PROGRESSION.same_progress(different, reloaded, 15), false, "same_progress false when records differ")
 
+	# --- memory mode ---
+	var mem_configs = SPECIAL_MODES.normalize_configs({"game_modes": {"memory": {
+		"difficulty_tiers": [
+			{"level_range": [1, 3], "preview": 5.0, "face_up": 1.0},
+			{"level_range": [4, 6], "preview": 4.0, "face_up": 0.8},
+			{"level_range": [7, 999], "preview": 3.0, "face_up": 0.5}
+		]
+	}}})
+	var mem_cfg = mem_configs["memory"]
+	_assert_equal(float(SPECIAL_MODES.memory_tier(mem_cfg, 2)["preview"]), 5.0, "memory tier 1 preview")
+	_assert_equal(float(SPECIAL_MODES.memory_tier(mem_cfg, 5)["face_up"]), 0.8, "memory tier 2 face up")
+	_assert_equal(float(SPECIAL_MODES.memory_tier(mem_cfg, 50)["preview"]), 3.0, "memory tier 3 preview")
+	_assert_equal(float(SPECIAL_MODES.memory_tier(mem_cfg, 1)["preview"]), 5.0, "memory tier falls back inside range")
+	# A config without tiers falls back to the flat defaults.
+	_assert_equal(float(SPECIAL_MODES.memory_tier(configs["memory"], 99)["preview"]), 5.0, "memory tier default fallback")
+	var mem = SPECIAL_MODES.build_memory_level(mem_cfg, SPECIAL_MODES.memory_tier(mem_cfg, 2))
+	_assert_equal(str(mem["mode"]), "memory", "memory level mode id")
+	_assert_equal(int(mem["rows"]), 8, "memory rows")
+	_assert_equal(int(mem["time_limit"]), 60 + int(8 * 8 * 1.5), "memory time scales with tiles")
+	_assert_equal(float(mem["memory_preview"]), 5.0, "memory preview carried into level")
+	_assert_equal(float(mem["memory_face_up"]), 1.0, "memory face_up carried into level")
+	# Unlock gate uses the standard rule (level 10).
+	_assert_equal(SPECIAL_MODES.is_mode_unlocked("memory", mem_cfg, 8), false, "memory locked below level 10")
+	_assert_equal(SPECIAL_MODES.is_mode_unlocked("memory", mem_cfg, 9), true, "memory unlocked at level 10")
+
+	var mem_state = PROGRESSION.apply_update(state, 15, {"memory_result": 650})
+	mem_state = PROGRESSION.apply_update(mem_state, 15, {"memory_result": 420})
+	_assert_equal(int(mem_state["memory_best_score"]), 650, "memory best score keeps max")
+	var ach_state = PROGRESSION.unlock_achievement(mem_state, "memory_first")
+	_assert_equal(PROGRESSION.has_achievement(ach_state, "memory_first"), true, "memory achievement unlocks")
+	_assert_equal(PROGRESSION.get_achievement_info("memory_first")["name"], "盲盒初体验", "memory achievement info resolvable")
+
 	print("special_modes_test: ALL PASSED (", checks, " checks)")
 	quit(0)

@@ -43,6 +43,14 @@ var special_mode = ""
 var special_level = {}
 var endless_round = 1
 
+# Memory (盲盒) session state
+var memory_previewing = false
+var memory_lock = false
+var memory_revealed = {}
+var memory_pending_hide = []
+var memory_preview_timer
+var memory_hide_timer
+
 var board = []
 var cell_buttons = []
 
@@ -206,6 +214,12 @@ func _unhandled_input(event):
 				accept_event()
 			KEY_3:
 				_use_power_up("reshuffle")
+				accept_event()
+			KEY_4:
+				_use_power_up("magnifier")
+				accept_event()
+			KEY_5:
+				_use_power_up("time_sand")
 				accept_event()
 			KEY_ESCAPE:
 				if OS.window_fullscreen:
@@ -800,6 +814,8 @@ func _build_ui():
 	_create_power_up_label("time_freeze", "⏱️", "1")
 	_create_power_up_label("auto_match", "🎯", "2")
 	_create_power_up_label("reshuffle", "🔄", "3")
+	_create_power_up_label("magnifier", "🔍", "4")
+	_create_power_up_label("time_sand", "⏳", "5")
 
 	combo_progress_bar = ProgressBar.new()
 	combo_progress_bar.min_value = 0
@@ -1454,6 +1470,11 @@ func _refresh_modes_panel():
 			"detail": "60秒起，消除得时间 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
 		},
 		{
+			"id": "memory",
+			"title": "🎁 盲盒模式",
+			"detail": "记忆翻牌配对 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))
+		},
+		{
 			"id": "endless",
 			"title": "∞ 无尽模式",
 			"detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [
@@ -1566,6 +1587,16 @@ func _build_timers():
 	time_freeze_timer.one_shot = true
 	time_freeze_timer.connect("timeout", self, "_on_time_freeze_timeout")
 	add_child(time_freeze_timer)
+
+	memory_preview_timer = Timer.new()
+	memory_preview_timer.one_shot = true
+	memory_preview_timer.connect("timeout", self, "_on_memory_preview_timeout")
+	add_child(memory_preview_timer)
+
+	memory_hide_timer = Timer.new()
+	memory_hide_timer.one_shot = true
+	memory_hide_timer.connect("timeout", self, "_on_memory_hide_timeout")
+	add_child(memory_hide_timer)
 
 func _create_chip_label():
 	var label = Label.new()
@@ -1820,6 +1851,9 @@ func _start_special_mode(mode_id):
 		level = SPECIAL_MODES_SCRIPT.build_daily_level(today)
 	elif mode_id == "time_attack":
 		level = SPECIAL_MODES_SCRIPT.build_time_attack_level(config)
+	elif mode_id == "memory":
+		var tier = SPECIAL_MODES_SCRIPT.memory_tier(config, int(progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		level = SPECIAL_MODES_SCRIPT.build_memory_level(config, tier)
 	else:
 		level = SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
 	special_mode = mode_id
@@ -1827,12 +1861,15 @@ func _start_special_mode(mode_id):
 	special_level = level
 	_reset_level_session(level, true)
 	print("[Game] special mode started: " + mode_id)
-	var intro = {
-		"daily": "每日挑战开始！今天的棋盘人人相同",
-		"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
-		"endless": "无尽模式第1轮！棋盘会越滚越大"
-	}
-	_show_message(str(intro.get(mode_id, "特殊模式开始")), 1.8)
+	if mode_id == "memory":
+		_show_message("盲盒模式！记住 %d 秒预览，然后凭记忆配对" % int(ceil(float(level.get("memory_preview", 5.0)))), 2.0)
+	else:
+		var intro = {
+			"daily": "每日挑战开始！今天的棋盘人人相同",
+			"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
+			"endless": "无尽模式第1轮！棋盘会越滚越大"
+		}
+		_show_message(str(intro.get(mode_id, "特殊模式开始")), 1.8)
 
 func _exit_special_mode():
 	_start_level(level_index, false)
@@ -1862,6 +1899,16 @@ func _reset_level_session(level, reset_total = false):
 	_init_power_ups(level)
 	time_frozen = false
 
+	# Reset memory-mode state
+	memory_previewing = false
+	memory_lock = false
+	memory_revealed.clear()
+	memory_pending_hide.clear()
+	if memory_hide_timer:
+		memory_hide_timer.stop()
+	if memory_preview_timer:
+		memory_preview_timer.stop()
+
 	if reset_total:
 		total_score = 0
 
@@ -1873,8 +1920,12 @@ func _reset_level_session(level, reset_total = false):
 	_render_board()
 	_sync_level_select_selection()
 	_refresh_ui()
-	_start_second_timer()
-	_play_level_intro_animation(level)
+	if _is_memory_mode():
+		_play_level_intro_animation(level)
+		_start_memory_preview()
+	else:
+		_start_second_timer()
+		_play_level_intro_animation(level)
 
 func _current_level():
 	if special_mode != "":
@@ -2010,11 +2061,17 @@ func _refresh_board_visuals():
 				_apply_tile_style(button, Color("f1f5f9"), Color("cbd5e1"), false)
 				continue
 
-			button.text = _icon_for(value)
-			button.disabled = not playing
-
+			var face_down = _is_memory_mode() and not memory_previewing 				and not memory_revealed.has(_memory_key(Vector2(r, c))) 				and not (selected.x == r and selected.y == c)
 			var bg = _color_for(value)
 			var border = Color("ffffff")
+			if face_down:
+				button.text = "❓"
+				bg = Color("475569")
+				border = Color("334155")
+			else:
+				button.text = _icon_for(value)
+			button.disabled = not playing
+
 			var is_selected = (selected.x == r and selected.y == c)
 			var has_effect = false
 
@@ -2141,6 +2198,116 @@ func _contains_coord(list, coord):
 	return false
 
 
+func _is_memory_mode():
+	return special_mode == "memory"
+
+func _memory_key(coord):
+	return str(int(coord.x)) + "," + str(int(coord.y))
+
+func _start_memory_preview():
+	memory_previewing = true
+	memory_lock = true
+	memory_revealed.clear()
+	second_timer.stop()
+	_refresh_board_visuals()
+	var preview = float(special_level.get("memory_preview", 5.0))
+	_show_message("记住所有图案！%d 秒后翻面" % int(ceil(preview)), 2.0)
+	memory_preview_timer.wait_time = max(1.0, preview)
+	memory_preview_timer.start()
+
+func _on_memory_preview_timeout():
+	memory_previewing = false
+	memory_lock = false
+	_refresh_board_visuals()
+	_show_message("翻面！凭记忆消除吧", 1.2)
+	if stage_status == STATUS_PLAYING:
+		second_timer.start()
+
+func _memory_schedule_hide(coords, delay):
+	memory_pending_hide = coords.duplicate()
+	memory_lock = true
+	memory_hide_timer.stop()
+	memory_hide_timer.wait_time = max(0.2, delay)
+	memory_hide_timer.start()
+
+func _on_memory_hide_timeout():
+	for coord in memory_pending_hide:
+		memory_revealed.erase(_memory_key(coord))
+	memory_pending_hide.clear()
+	memory_lock = false
+	_refresh_board_visuals()
+
+func _on_memory_tile_pressed(point, r, c):
+	if memory_previewing or memory_lock:
+		return
+	if selected.x < 0:
+		selected = point
+		memory_revealed[_memory_key(point)] = true
+		hint_tiles.clear()
+		error_tiles.clear()
+		AudioManager.play_select()
+		_animate_select(point)
+		_refresh_board_visuals()
+		return
+	if selected == point:
+		selected = Vector2(-1, -1)
+		_refresh_board_visuals()
+		return
+
+	moves += 1
+	var previous = selected
+	var selected_value = int(board[previous.x][previous.y])
+	var target_value = int(board[r][c])
+
+	if selected_value != target_value:
+		# Reveal both briefly so the player learns the positions, then hide.
+		selected = Vector2(-1, -1)
+		memory_revealed[_memory_key(previous)] = true
+		memory_revealed[_memory_key(point)] = true
+		hint_tiles.clear()
+		AudioManager.play_error()
+		_flash_error_tiles([previous, point])
+		_show_message("不一样，记住位置", 0.8)
+		_memory_schedule_hide([previous, point], float(special_level.get("memory_face_up", 1.0)))
+		_refresh_ui()
+		_refresh_board_visuals()
+		return
+
+	var path = _find_path(board, previous, point)
+	if path.empty():
+		selected = point
+		memory_revealed[_memory_key(point)] = true
+		hint_tiles.clear()
+		AudioManager.play_error()
+		_flash_error_tiles([previous, point])
+		_show_message("路径不通：最多只能拐2次弯", 0.9)
+		_refresh_board_visuals()
+		return
+
+	var a = previous
+	var b = point
+	selected = Vector2(-1, -1)
+	hint_tiles.clear()
+	error_tiles.clear()
+	memory_revealed.erase(_memory_key(a))
+	memory_revealed.erase(_memory_key(b))
+
+	AudioManager.play_eliminate_combo(combo)
+	var score_result = _apply_combo_gain(int(tuning.get("base_score", 10)))
+	if score_result["combo"] > 1:
+		_show_message("连击 x" + str(score_result["combo"]) + " +" + str(score_result["gain"]), 0.88)
+		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
+
+	_show_path(path, "eliminate", int(tuning.get("path_preview_ms", 420)))
+	_play_eliminate_effects([a, b])
+
+	board[a.x][a.y] = 0
+	board[b.x][b.y] = 0
+
+	_refresh_ui()
+	_refresh_board_visuals()
+	_resolve_after_board_changed()
+
 func _on_tile_pressed(button):
 	if stage_status != STATUS_PLAYING:
 		return
@@ -2152,6 +2319,10 @@ func _on_tile_pressed(button):
 		return
 
 	var point = Vector2(r, c)
+
+	if _is_memory_mode():
+		_on_memory_tile_pressed(point, r, c)
+		return
 
 	if selected.x < 0:
 		selected = point
@@ -2230,6 +2401,20 @@ func _on_hint_pressed():
 	var hint = _find_any_hint(board)
 	if hint.empty():
 		_on_shuffle_pressed()
+		return
+
+	if _is_memory_mode():
+		memory_revealed[_memory_key(hint["a"])] = true
+		memory_revealed[_memory_key(hint["b"])] = true
+		hint_tiles = [hint["a"], hint["b"]]
+		error_tiles.clear()
+		var mem_path: Array = hint["path"]
+		_show_path(mem_path, "hint", int(tuning.get("hint_preview_ms", 1400)))
+		_animate_hint_tiles(hint_tiles)
+		_show_message("已翻开一组可消除方块", 1.1)
+		_memory_schedule_hide([hint["a"], hint["b"]], float(special_level.get("memory_face_up", 1.0)) * 1.5)
+		_refresh_ui()
+		_refresh_board_visuals()
 		return
 
 	selected = hint["a"]
@@ -2445,7 +2630,7 @@ func _tile_center_in_effect_layer(coord):
 	var button = _try_get_tile_button(coord)
 	if button == null:
 		return Vector2.ZERO
-	return effect_layer.to_local(button.rect_global_position + button.rect_size * 0.5)
+	return effect_layer.get_global_transform().affine_inverse() * (button.rect_global_position + button.rect_size * 0.5)
 
 func _pulse_tile(coord, peak_scale, half_duration, loops = 1):
 	var button = _try_get_tile_button(coord)
@@ -2642,6 +2827,8 @@ func _play_level_intro_animation(level):
 		_show_stage_callout("无尽模式 · 第%d轮" % endless_round, Color("059669"), 19)
 	elif special_mode == "time_attack":
 		_show_stage_callout("限时挑战", Color("dc2626"), 19)
+	elif special_mode == "memory":
+		_show_stage_callout("盲盒模式", Color("0891b2"), 19)
 	else:
 		var level_id = int(level.get("id", level_index + 1))
 		var level_name = str(level.get("name", "关卡"))
@@ -2733,7 +2920,10 @@ func _path_to_overlay_points(path):
 		return result
 
 	var first_button = cell_buttons[0][0]
-	var first_center = path_overlay.to_local(first_button.rect_global_position + first_button.rect_size * 0.5)
+	# Control has no to_local(); map the global tile center through the
+	# overlay's inverse transform instead.
+	var overlay_inv = path_overlay.get_global_transform().affine_inverse()
+	var first_center = overlay_inv * (first_button.rect_global_position + first_button.rect_size * 0.5)
 	var step_x = first_button.rect_size.x + board_grid.get_constant("h_separation")
 	var step_y = first_button.rect_size.y + board_grid.get_constant("v_separation")
 
@@ -2781,7 +2971,7 @@ func _on_message_timeout():
 
 func _init_power_ups(level):
 	# Reset power-ups
-	power_ups = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0}
+	power_ups = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "magnifier": 0, "time_sand": 0}
 
 	# Grant power-ups based on level difficulty
 	var level_id = int(level.get("id", 1))
@@ -2796,6 +2986,10 @@ func _init_power_ups(level):
 		power_ups["auto_match"] = 1
 	if level_id >= 5:
 		power_ups["time_freeze"] = 2
+	if level_id >= 6:
+		power_ups["magnifier"] = 1
+	if level_id >= 8:
+		power_ups["time_sand"] = 1
 	if mode == "rush":
 		power_ups["time_freeze"] += 1
 	if mode == "endurance":
@@ -2806,11 +3000,16 @@ func _init_power_ups(level):
 		power_ups["time_freeze"] = 2
 		power_ups["reshuffle"] = 2
 		power_ups["auto_match"] = 1
+		power_ups["magnifier"] = 1 if special_mode == "memory" else 0
+		power_ups["time_sand"] = 1 if special_mode == "time_attack" else 0
 
 func _use_power_up(power_up_type):
 	if power_ups.get(power_up_type, 0) <= 0:
 		return
 	if stage_status != STATUS_PLAYING:
+		return
+	if power_up_type == "time_sand" and special_mode == "endless":
+		_show_message("无尽模式没有时间限制", 1.0)
 		return
 
 	match power_up_type:
@@ -2820,6 +3019,10 @@ func _use_power_up(power_up_type):
 			_activate_auto_match()
 		"reshuffle":
 			_activate_reshuffle()
+		"magnifier":
+			_activate_magnifier()
+		"time_sand":
+			_activate_time_sand()
 
 	power_ups[power_up_type] -= 1
 	_refresh_ui()
@@ -2853,6 +3056,36 @@ func _activate_reshuffle():
 	_reshuffle_board(board)
 	_show_message("🔄 棋盘已重排", 1.0)
 	_refresh_board_visuals()
+
+func _activate_magnifier():
+	# Highlight up to 3 connectable pairs; in memory mode they also flip over.
+	var working = []
+	for row in board:
+		working.append(row.duplicate())
+	var coords = []
+	for _i in range(3):
+		var hint = _find_any_hint(working)
+		if hint.empty():
+			break
+		coords.append(hint["a"])
+		coords.append(hint["b"])
+		working[hint["a"].x][hint["a"].y] = 0
+		working[hint["b"].x][hint["b"].y] = 0
+	if coords.empty():
+		_show_message("没有可以高亮的对子", 1.0)
+		return
+	hint_tiles = coords
+	for coord in coords:
+		if _is_memory_mode():
+			memory_revealed[_memory_key(coord)] = true
+	_animate_hint_tiles(coords)
+	_show_message("🔍 放大镜：高亮 %d 组可消对子" % int(coords.size() / 2.0), 1.4)
+	_refresh_board_visuals()
+
+func _activate_time_sand():
+	time_left = min(999, time_left + 15)
+	_show_message("⏳ 时光沙漏：时间 +15 秒", 1.4)
+	_refresh_ui()
 
 func _on_time_freeze_timeout():
 	time_frozen = false
@@ -2994,8 +3227,15 @@ func _update_combo_progress():
 
 
 func _resolve_after_board_changed():
+	# Special sessions resolve only when the board is actually cleared;
+	# partial eliminations still need the deadlock reshuffle check.
 	if special_mode != "":
-		_resolve_special_clear()
+		if _remaining_tiles_count() == 0:
+			_resolve_special_clear()
+		elif _find_any_hint(board).empty():
+			_reshuffle_board(board)
+			_show_message("无解，已自动重排", 1.0)
+			_refresh_board_visuals()
 		return
 	if _remaining_tiles_count() == 0:
 		var time_bonus_multiplier = float(_current_level().get("time_bonus_multiplier", 2.0))
@@ -3061,6 +3301,8 @@ func _resolve_special_clear():
 
 	if special_mode == "endless":
 		_patch_progress_state({"endless_result": {"round": endless_round, "score": total_score}})
+		if endless_round >= 5:
+			_unlock_achievements(["endless_round_5"])
 		var finished_round = endless_round
 		endless_round += 1
 		special_level = SPECIAL_MODES_SCRIPT.build_endless_level(game_mode_configs.get("endless", {}), endless_round)
@@ -3075,8 +3317,26 @@ func _resolve_special_clear():
 	_refresh_ui()
 	_refresh_board_visuals()
 
+func _unlock_achievements(ids):
+	var new_unlocks = []
+	for achievement_id in ids:
+		if not PROGRESSION_SCRIPT.has_achievement(progression_state, achievement_id):
+			progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, achievement_id)
+			new_unlocks.append(achievement_id)
+	if new_unlocks.size() > 0:
+		_save_progress_state()
+		for achievement_id in new_unlocks:
+			var info = PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
+			_show_achievement_notification(info["name"])
+
 func _record_special_completion():
 	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	if special_mode == "memory":
+		_patch_progress_state({"memory_result": total_score})
+		_unlock_achievements(["memory_first"])
+		stage_panel_label.text = "盲盒挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("memory_best_score", 0)))
+		stage_panel_label.visible = true
+		return
 	if special_mode == "daily":
 		_patch_progress_state({
 			"daily_result": {
@@ -3087,9 +3347,13 @@ func _record_special_completion():
 		})
 		var daily = progression_state.get("daily_challenge", {})
 		stage_panel_label.text = "今日挑战完成！得分 " + str(total_score) + " · 连胜 " + str(int(daily.get("streak", 0))) + " 天\n明天还有新的棋盘，点击「重开」可再玩今日棋盘"
+		if int(daily.get("streak", 0)) >= 7:
+			_unlock_achievements(["daily_streak_7"])
 	elif special_mode == "time_attack":
 		_patch_progress_state({"time_attack_result": total_score})
 		stage_panel_label.text = "限时挑战结束！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("time_attack_best_score", 0)))
+		if total_score >= 1000:
+			_unlock_achievements(["time_attack_1000"])
 	else:
 		stage_panel_label.text = "挑战完成！得分 " + str(total_score)
 	stage_panel_label.visible = true
@@ -3142,6 +3406,8 @@ func _refresh_ui():
 		]
 	elif special_mode == "time_attack":
 		subtitle_label.text = "限时挑战 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
+	elif special_mode == "memory":
+		subtitle_label.text = "盲盒模式 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))
 	else:
 		subtitle_label.text = "第" + str(level_id) + "/" + str(campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(campaign_levels.size())
 	desc_label.text = description
@@ -3289,6 +3555,8 @@ func _mode_label(mode):
 			return "限时挑战"
 		"endless":
 			return "无尽模式"
+		"memory":
+			return "盲盒模式"
 		_:
 			return "未知"
 

@@ -38,6 +38,19 @@ const DEFAULT_CONFIGS = {
 		"name": "每日挑战",
 		"description": "每天一副棋盘，全网相同",
 		"unlock_level": 1
+	},
+	"memory": {
+		"mode_id": "memory",
+		"name": "盲盒模式",
+		"description": "先记忆，再盲配",
+		"preview_seconds": 5.0,
+		"face_up_duration": 1.0,
+		"unlock_level": 10,
+		"rows": 8,
+		"cols": 8,
+		"kinds": 8,
+		"time_base": 60,
+		"time_per_tile": 1.5
 	}
 }
 
@@ -138,6 +151,47 @@ static func build_endless_level(config, round_index: int):
 		"kinds": min(kinds + extra_rounds * int(config.get("kinds_increment_every", 1)), int(config.get("max_kinds", 20))),
 		"time_limit": 0,
 		"round_index": round_index
+	}
+
+
+# Pick the memory difficulty tier whose level_range covers the player's
+# campaign progress (1-based); falls back to the config defaults.
+static func memory_tier(config, progress_level: int) -> Dictionary:
+	var tiers = config.get("difficulty_tiers", [])
+	if typeof(tiers) == TYPE_ARRAY:
+		for tier in tiers:
+			if typeof(tier) != TYPE_DICTIONARY or not tier.has("level_range"):
+				continue
+			var range_data = tier["level_range"]
+			if typeof(range_data) != TYPE_ARRAY or range_data.size() < 2:
+				continue
+			if int(progress_level) >= int(range_data[0]) and int(progress_level) <= int(range_data[1]):
+				return {
+					"preview": float(tier.get("preview", config.get("preview_seconds", 5.0))),
+					"face_up": float(tier.get("face_up", config.get("face_up_duration", 1.0)))
+				}
+	return {
+		"preview": float(config.get("preview_seconds", 5.0)),
+		"face_up": float(config.get("face_up_duration", 1.0))
+	}
+
+
+static func build_memory_level(config, tier: Dictionary):
+	var rows = int(config.get("rows", 8))
+	var cols = int(config.get("cols", 8))
+	var kinds = int(config.get("kinds", 8))
+	# Clock is generous: it only punishes dithering, not thinking.
+	var time_limit = int(config.get("time_base", 60)) + int(rows * cols * float(config.get("time_per_tile", 1.5)))
+	return {
+		"id": 1,
+		"name": str(config.get("name", "盲盒模式")),
+		"mode": "memory",
+		"rows": rows,
+		"cols": cols,
+		"kinds": kinds,
+		"time_limit": time_limit,
+		"memory_preview": float(tier.get("preview", 5.0)),
+		"memory_face_up": float(tier.get("face_up", 1.0))
 	}
 
 
