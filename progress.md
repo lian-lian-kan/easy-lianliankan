@@ -546,3 +546,11 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: 用户实测报告——统计卡数值（总分/倒计时等）文本变宽时把卡片最小宽度撑大，统计流重新换行、头部高度变化，下面棋盘跟着上下弹。根因：Godot Label 的最小宽度随文本增长，直接进 VBox 会传导到 PanelContainer 的 min size。
 - 修复：_add_stat_card 里数值 Label 改放进固定 88×24 的 Control 裁剪容器（rect_clip_content + PRESET_WIDE 居中锚定），卡片最小尺寸恒定 100×64，文本再长也只是容器内居中/裁切，不影响布局。注意 Godot 3 属性名是 rect_clip_content（clip_contents 是 G4 的）。
 - Validation: 10 项测试全绿（新增 stat_probe：注入 7 位分数/超长时间后卡片尺寸与统计流高度不变、短值同样稳定）；离屏截图确认 总分9876543 不改变任何布局。期间排障：clip_contents 属性名（G3/G4 API 差异）；一个 clip 崩溃轮遗留的僵尸 Godot 进程占住项目导致导出静默失败（kill 后恢复）。
+
+## 2026-09-07 (代码质量 Round A：提取 board_engine.gd 纯逻辑模块 + 全局代码审查)
+- Context: 质量专项启动（高内聚低耦合、大文件拆分、重构配满测试）。审查报告见 docs/code_review.md：game.gd 4764 行/209 函数为巨石文件；5 个 manager 未接线仍以 autoload 注册；test_game.gd 为死代码；另修复 _create_board 奇数尺寸越界隐患。
+- 本轮：从 game.gd 抽出 16 个纯算法函数（路径 BFS 及其 4 个助手、提示查找、重排、洗牌、棋盘生成、可玩棋盘、重力压实、迷雾环、时间格式化、计数）到 scripts/board_engine.gd（静态 Reference、零场景依赖）；game.gd 留同名薄封装（board_logic_test 等外部调用方零改动）。提示/重排/生成的 playable 过滤参数化为 (filter_obj, filter_method)，迷雾/锁链语义保持。create_board 增加奇数尺寸守卫（尾部空格代替越界崩溃）。
+- game.gd 4764 → 约 4560 行；新增 board_engine.gd 约 240 行纯逻辑。
+- 覆盖：新增 board_engine_test.gd —— 16 个公共函数全分支断言（直连/绕行/围死/异种/空格/越界路径、提示过滤阻塞与放行、重排奇偶与过滤器、生成奇偶尺寸、重力移动与不动、环数、时间格式、洗牌保元素）。
+- Validation: 11 项 headless 测试全绿（原 10 项回归 + board_engine_test）。导出成功。
+- Next: Round B 抽 UI 面板构建（settings/achievements/modes/pause/onboarding）；Round C 抽特效子系统；Round D 处理 5 个未接线 manager 与 test_game.gd 死代码。

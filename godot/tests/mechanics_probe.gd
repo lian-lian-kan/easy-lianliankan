@@ -154,8 +154,9 @@ func _init() -> void:
 		copy[partner.x][partner.y] = int(game.board[partner.x][partner.y])
 		check(game._find_any_hint(copy).empty(), "hints skip chained pairs")
 		game.board_chain[partner.x][partner.y] = 0
+		game.board_chain[chained_cell.x][chained_cell.y] = 0
 		var hint = game._find_any_hint(copy)
-		check(not hint.empty() or partner.distance_to(chained_cell) > 2.0, "unchained pairs become hintable")
+		check(not hint.empty(), "unchained pairs become hintable")
 	# adjacent clear breaks the chain
 	game._break_chains_around([chained_cell + Vector2(0, 1)])
 	var broke = int(game.board_chain[chained_cell.x][chained_cell.y]) == 0
