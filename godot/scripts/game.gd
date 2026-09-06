@@ -1800,12 +1800,22 @@ func _add_stat_card(parent, title, key):
 	title_label.align = Label.ALIGN_CENTER
 	box.add_child(title_label)
 
+	# The value lives in a fixed-size clipped holder: a Label's minimum
+	# width grows with its text, and a wider card rewraps the stat flow
+	# and shoves the board around on every score change.
+	var value_holder = Control.new()
+	value_holder.rect_min_size = Vector2(88, 24)
+	value_holder.rect_clip_content = true
+	box.add_child(value_holder)
+
 	var value_label = Label.new()
 	value_label.text = "--"
 	value_label.add_font_override("font", game_font)
 	value_label.add_color_override("font_color", Color("7a5064"))
 	value_label.align = Label.ALIGN_CENTER
-	box.add_child(value_label)
+	value_label.valign = Label.VALIGN_CENTER
+	value_label.set_anchors_and_margins_preset(Control.PRESET_WIDE)
+	value_holder.add_child(value_label)
 
 	stat_values[key] = {
 		"card": card,
