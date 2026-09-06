@@ -16,6 +16,8 @@ const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
 
 const UI_PANELS = preload("res://scripts/ui_panels.gd")
 
+const STATS_HUD = preload("res://scripts/stats_hud.gd")
+
 const DIRS = [
 	Vector2(-1, 0),
 	Vector2(1, 0),
@@ -1179,62 +1181,7 @@ func _create_control_button(text):
 	return button
 
 func _add_stat_card(parent, title, key):
-	var card = PanelContainer.new()
-	card.rect_min_size = Vector2(100, 64)
-	parent.add_child(card)
-
-	# Apply macaron pastel card style
-	var pastel_by_key = {
-		"total_score": Color("fff0f6"), "level_score": Color("ffe9f0"),
-		"moves": Color("f3f0ff"), "remaining": Color("e7f5ff"),
-		"time_left": Color("fff4e6"), "combo": Color("fff0f6"),
-		"best_total_score": Color("fff9db"), "best_combo": Color("ffe9f0"),
-		"race": Color("e6fcf5")
-	}
-	var card_style = StyleBoxFlat.new()
-	card_style.bg_color = pastel_by_key.get(key, Color("ffffff"))
-	card_style.set_corner_radius_all(16)
-	card_style.shadow_color = Color("00000010")
-	card_style.shadow_size = 6
-	card_style.shadow_offset = Vector2(0, 3)
-	card_style.set_border_width_all(1)
-	card_style.border_color = Color("ffd9e8")
-	card.add_stylebox_override("panel", card_style)
-
-	var box = VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGN_CENTER
-	box.add_constant_override("separation", 4)
-	card.add_child(box)
-
-	var title_label = Label.new()
-	title_label.text = title
-	title_label.add_font_override("font", game_font)
-	title_label.add_color_override("font_color", Color("8f6b80"))
-	title_label.align = Label.ALIGN_CENTER
-	box.add_child(title_label)
-
-	# The value lives in a fixed-size clipped holder: a Label's minimum
-	# width grows with its text, and a wider card rewraps the stat flow
-	# and shoves the board around on every score change.
-	var value_holder = Control.new()
-	value_holder.rect_min_size = Vector2(88, 24)
-	value_holder.rect_clip_content = true
-	box.add_child(value_holder)
-
-	var value_label = Label.new()
-	value_label.text = "--"
-	value_label.add_font_override("font", game_font)
-	value_label.add_color_override("font_color", Color("7a5064"))
-	value_label.align = Label.ALIGN_CENTER
-	value_label.valign = Label.VALIGN_CENTER
-	value_label.set_anchors_and_margins_preset(Control.PRESET_WIDE)
-	value_holder.add_child(value_label)
-
-	stat_values[key] = {
-		"card": card,
-		"title": title_label,
-		"value": value_label
-	}
+	STATS_HUD.add_card(self, parent, title, key)
 
 func _create_power_up_label(power_up_id, icon, shortcut):
 	var hbox = HBoxContainer.new()
@@ -3678,11 +3625,7 @@ func _update_power_ups_display():
 			labels["box"].visible = _is_frost_mode()
 
 func _set_stat_text(key, value):
-	if not stat_values.has(key):
-		return
-	var value_label = stat_values[key]["value"]
-	value_label.text = value
-
+	STATS_HUD.set_text(self, key, value)
 
 func _is_time_danger():
 	if special_mode == "endless" or int(_current_level().get("time_limit", 90)) <= 0:
@@ -3690,46 +3633,10 @@ func _is_time_danger():
 	return stage_status == STATUS_PLAYING and time_left <= int(tuning.get("time_danger_seconds", 10))
 
 func _update_time_warning_pulse(_delta):
-	if not stat_values.has("time_left"):
-		return
-
-	var card = stat_values["time_left"]["card"]
-	if not _is_time_danger():
-		return
-
-	var tick = float(OS.get_ticks_msec()) / 1000.0
-	var pulse = 0.5 + 0.5 * sin(tick * 8.0)
-	var intensity = 0.8 + pulse * 0.2
-
-	var card_style = StyleBoxFlat.new()
-	card_style.bg_color = Color(1.0, intensity * 0.89, intensity * 0.89, 1.0)
-	card_style.set_corner_radius_all(12)
-	card_style.shadow_color = Color("00000010")
-	card_style.shadow_size = 6
-	card_style.shadow_offset = Vector2(0, 3)
-	card_style.set_border_width_all(1)
-	card_style.border_color = Color("ffc9c9")
-	card.add_stylebox_override("panel", card_style)
+	STATS_HUD.pulse(self, _is_time_danger(), _delta)
 
 func _set_time_card_state(is_danger):
-	if not stat_values.has("time_left"):
-		return
-	var card = stat_values["time_left"]["card"]
-	var card_style = StyleBoxFlat.new()
-	card_style.set_corner_radius_all(12)
-	card_style.shadow_color = Color("00000010")
-	card_style.shadow_size = 6
-	card_style.shadow_offset = Vector2(0, 3)
-	card_style.set_border_width_all(1)
-
-	if is_danger:
-		card_style.bg_color = Color("ffe3e3")
-		card_style.border_color = Color("ffc9c9")
-	else:
-		card_style.bg_color = Color("fff4e6")
-		card_style.border_color = Color("ffd9e8")
-
-	card.add_stylebox_override("panel", card_style)
+	STATS_HUD.set_card_state(self, is_danger)
 
 func _mode_label(mode):
 	match mode:

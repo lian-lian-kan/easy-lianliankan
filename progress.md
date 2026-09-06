@@ -567,3 +567,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round D：UI 面板构建抽到 ui_panels.gd)
 - Context: P8 整改。onboarding/settings/achievements/pause/modes 五个面板构建函数（约 470 行）从 game.gd 抽到 scripts/ui_panels.gd 静态工厂（每个 build_X(game) 接收游戏节点：信号绑定 game 方法、字体/样式助手/进度状态经 game.<成员> 访问）。game.gd 留同名薄封装 + UI_PANELS preload。缺失标识符用"godot --check-only 解析循环"自动发现并补白名单。
 - Validation: panels_probe（新建）断言五面板结构与 modes 13 卡；11+1 项测试全绿；导出成功。
+
+## 2026-09-07 (代码质量 Round E：提取 stats_hud.gd 统计 HUD)
+- Context: 继续巨石拆分。统计卡构建/文本设置/倒计时告警样式（_add_stat_card/_set_stat_text/_set_time_card_state/_update_time_warning_pulse 四函数 + PASTEL_BY_KEY 配色表）从 game.gd 抽到 scripts/stats_hud.gd 静态模块；函数设计为显式收参（pulse(game, is_danger, delta) 返回是否施加脉冲），便于直测。game.gd 留同名薄封装。
+- 模块保障：卡片最小尺寸恒定（100,64），数值在固定 88x24 裁剪容器内——延续布局抖动修复。
+- Validation: 12 项 headless 测试全绿（stat_probe 扩展：直测 add_card 注册与恒定尺寸、set_text 长值、set_card_state 红染/米色返回值、pulse 安全/危险两分支）。导出成功。
+- 教训：本轮回合中曾因跨度锚点错误（end 锚用了文件后方的函数、把两函数之间约 2000 行误删）导致 worktree 损坏——依赖"锚点必须在语义上相邻"的核验后重建 worktree 重做，未合入任何损坏版本。

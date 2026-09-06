@@ -1,7 +1,9 @@
 extends SceneTree
 
-# Stat cards must keep a constant size when value text changes length;
-# otherwise the reflowing header shoves the board up and down.
+# Stat HUD tests: card sizes must stay constant when value text changes
+# (no layout jitter), plus direct coverage of scripts/stats_hud.gd.
+
+const STATS_HUD = preload("res://scripts/stats_hud.gd")
 
 var failures := 0
 
@@ -48,6 +50,23 @@ func _init() -> void:
 		yield(self, "idle_frame")
 	check(abs(flow.rect_size.y - flow_h) < 0.5, "flow height stable with short values")
 	check(card.rect_size == card_size, "card size stable with short values")
+
+	# --- Direct module coverage: stats_hud.gd
+	STATS_HUD.add_card(game, flow, "测试卡", "probe_card")
+	check(game.stat_values.has("probe_card"), "add_card registers the key")
+	check(game.stat_values["probe_card"]["card"].rect_min_size == Vector2(100, 64), "probe card keeps the constant min size")
+	STATS_HUD.set_text(game, "probe_card", "8888888888")
+	check(game.stat_values["probe_card"]["value"].text == "8888888888", "set_text applies long values")
+	STATS_HUD.set_text(game, "nope_key", "x")
+	check(true, "set_text on unknown key is a safe no-op")
+
+	var danger_bg = STATS_HUD.set_card_state(game, true)
+	check(danger_bg == Color("ffe3e3"), "danger card state applies red tint")
+	var safe_bg = STATS_HUD.set_card_state(game, false)
+	check(safe_bg == Color("fff4e6"), "safe card state restores cream tint")
+
+	check(STATS_HUD.pulse(game, false, 0.016) == false, "pulse is a no-op when safe")
+	check(STATS_HUD.pulse(game, true, 0.016) == true, "pulse applies when dangerous")
 
 	if failures == 0:
 		print("stat_probe: ALL PASSED")
