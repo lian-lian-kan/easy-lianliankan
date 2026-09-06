@@ -383,3 +383,30 @@ static func unlock_requirement_text(mode_id: String, config) :
 	if mode_id == "daily":
 		return ""
 	return "完成第" + str(int(config.get("unlock_level", 1))) + "关解锁"
+
+# ---- 模式展示元数据（标签 / 开场文案）----
+
+const MODE_LABELS = {
+	"classic": "经典", "rush": "冲刺", "combo": "连击", "endurance": "耐力",
+	"daily": "每日挑战", "time_attack": "限时挑战", "endless": "无尽模式",
+	"memory": "盲盒模式", "frost": "冰雪挑战", "zen": "休闲模式",
+	"hell": "地狱模式", "moves": "步数挑战", "race": "竞速对战",
+	"stack": "叠层模式", "gravity": "重力模式", "fog": "迷雾模式", "chain": "锁链模式"
+}
+
+const INTRO_TEXTS = {
+	"daily": "每日挑战开始！今天的棋盘人人相同",
+	"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
+	"endless": "无尽模式第1轮！棋盘会越滚越大",
+	"frost": "冰雪挑战！❄️ 结霜的方块要消除两次，🔥暖宝宝可以直接解冻",
+	"zen": "休闲模式！没有时限，慢慢享受",
+	"hell": "地狱模式！大盘少图案，时间极紧",
+	"moves": "步数挑战！每消一对花 1 步，省着用",
+	"race": "竞速对战！抢在机器人前面消完全部"
+}
+
+static func mode_label(mode: String) -> String:
+	return str(MODE_LABELS.get(mode, '未知'))
+
+static func intro_text(mode_id: String) -> String:
+	return str(INTRO_TEXTS.get(mode_id, "特殊模式开始"))

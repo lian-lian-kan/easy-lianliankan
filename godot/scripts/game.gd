@@ -1370,21 +1370,7 @@ func _start_special_mode(mode_id):
 	if mode_id == "memory":
 		_show_message("盲盒模式！记住 %d 秒预览，然后凭记忆配对" % int(ceil(float(level.get("memory_preview", 5.0)))), 2.0)
 	else:
-		var intro = {
-			"daily": "每日挑战开始！今天的棋盘人人相同",
-			"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
-			"endless": "无尽模式第1轮！棋盘会越滚越大",
-			"frost": "冰雪挑战！❄️ 结霜的方块要消除两次，🔥暖宝宝可以直接解冻",
-			"zen": "休闲模式！没有时限，慢慢享受",
-			"hell": "地狱模式！大盘少图案，时间极紧",
-			"moves": "步数挑战！每消一对花 1 步，省着用",
-			"race": "竞速对战！抢在机器人前面消完全部",
-			"stack": "叠层模式！紫色边框的方块下面还压着一块",
-			"gravity": "重力模式！消除后上方的方块会掉下来",
-			"fog": "迷雾模式！边缘被雾住了，消除推进视野",
-			"chain": "锁链模式！消除旁边的方块来解开灰锁"
-		}
-		_show_message(str(intro.get(mode_id, "特殊模式开始")), 1.8)
+		_show_message(SPECIAL_MODES_SCRIPT.intro_text(mode_id), 1.8)
 
 func _exit_special_mode():
 	_start_level(level_index, false)
@@ -3639,43 +3625,7 @@ func _set_time_card_state(is_danger):
 	STATS_HUD.set_card_state(self, is_danger)
 
 func _mode_label(mode):
-	match mode:
-		"classic":
-			return "经典"
-		"rush":
-			return "冲刺"
-		"combo":
-			return "连击"
-		"endurance":
-			return "耐力"
-		"daily":
-			return "每日挑战"
-		"time_attack":
-			return "限时挑战"
-		"endless":
-			return "无尽模式"
-		"memory":
-			return "盲盒模式"
-		"frost":
-			return "冰雪挑战"
-		"zen":
-			return "休闲模式"
-		"hell":
-			return "地狱模式"
-		"moves":
-			return "步数挑战"
-		"race":
-			return "竞速对战"
-		"stack":
-			return "叠层模式"
-		"gravity":
-			return "重力模式"
-		"fog":
-			return "迷雾模式"
-		"chain":
-			return "锁链模式"
-		_:
-			return "未知"
+	return SPECIAL_MODES_SCRIPT.mode_label(mode)
 
 func _status_label(status):
 	match status:

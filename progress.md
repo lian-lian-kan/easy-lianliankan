@@ -573,3 +573,11 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 模块保障：卡片最小尺寸恒定（100,64），数值在固定 88x24 裁剪容器内——延续布局抖动修复。
 - Validation: 12 项 headless 测试全绿（stat_probe 扩展：直测 add_card 注册与恒定尺寸、set_text 长值、set_card_state 红染/米色返回值、pulse 安全/危险两分支）。导出成功。
 - 教训：本轮回合中曾因跨度锚点错误（end 锚用了文件后方的函数、把两函数之间约 2000 行误删）导致 worktree 损坏——依赖"锚点必须在语义上相邻"的核验后重建 worktree 重做，未合入任何损坏版本。
+
+## 2026-09-07 (代码质量 Round F：模式展示元数据下沉 special_modes.gd)
+- Context: 模式标签（17 个模式的中文名）与开场文案（8 种特殊模式）原本散在 game.gd 的 match 表与字典里，与展示耦合。下沉为 special_modes.gd 纯函数 mode_label(mode) / intro_text(mode_id)（MODE_LABELS / INTRO_TEXTS 常量表），game.gd 留薄封装；未知模式回落「未知」/「特殊模式开始」。盲盒开场文案因含运行时预览秒数保留在 game.gd 专属分支。
+- Validation: 13 项 headless 测试全绿（新增 mode_meta_test：17 标签逐一断言、未知回落、8 种开场文案非默认）。
+
+## 2026-09-07 (代码质量 Round F：模式展示元数据下沉 special_modes.gd)
+- Context: 模式标签（17 个模式的中文名）与开场文案（8 种特殊模式）原本散在 game.gd 的 match 表与字典里，与展示耦合。下沉为 special_modes.gd 纯函数 mode_label(mode) / intro_text(mode_id)（MODE_LABELS / INTRO_TEXTS 常量表），game.gd 留薄封装；未知模式回落「未知」/「特殊模式开始」。盲盒开场文案因含运行时预览秒数保留在 game.gd 专属分支。
+- Validation: 13 项 headless 测试全绿（新增 mode_meta_test：17 标签逐一断言、未知回落、8 种开场文案非默认）。
