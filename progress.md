@@ -554,3 +554,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 覆盖：新增 board_engine_test.gd —— 16 个公共函数全分支断言（直连/绕行/围死/异种/空格/越界路径、提示过滤阻塞与放行、重排奇偶与过滤器、生成奇偶尺寸、重力移动与不动、环数、时间格式、洗牌保元素）。
 - Validation: 11 项 headless 测试全绿（原 10 项回归 + board_engine_test）。导出成功。
 - Next: Round B 抽 UI 面板构建（settings/achievements/modes/pause/onboarding）；Round C 抽特效子系统；Round D 处理 5 个未接线 manager 与 test_game.gd 死代码。
+
+## 2026-09-07 (代码质量 Round B：移除 6 个死 subsystem 与 stub)
+- Context: 审计确认 coins/energy/daily_reward/leaderboard/shop/theme 七个 manager（含 theme_manager）为 autoload 注册但全仓库零调用的死代码（启动即实例化，浪费启动时间与内存），test_game.gd 为无引用 stub。
+- 移除：上述 6 个 autoload 注册 + 7 个脚本文件（git 历史可找回；未来做签到×主题解锁时从历史恢复再接线）。autoload 只保留 AudioManager。子集字体随之缩小（死代码字符清除）。
+- Validation: 10 项 headless 测试全绿 + 导出成功 + web entry 通过。

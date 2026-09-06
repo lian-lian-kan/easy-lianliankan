@@ -27,12 +27,6 @@ config/icon="res://icon.svg"
 [autoload]
 
 AudioManager="*res://scripts/audio_manager.gd"
-CoinsManager="*res://scripts/coins_manager.gd"
-EnergyManager="*res://scripts/energy_manager.gd"
-DailyRewardManager="*res://scripts/daily_reward_manager.gd"
-ThemeManager="*res://scripts/theme_manager.gd"
-LeaderboardManager="*res://scripts/leaderboard_manager.gd"
-ShopManager="*res://scripts/shop_manager.gd"
 
 [display]
 
