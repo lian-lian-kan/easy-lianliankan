@@ -19,8 +19,8 @@ const DIRS = [
 	Vector2(0, 1)
 ]
 
-const PATH_COLOR_HINT = Color("0ea5e9")
-const PATH_COLOR_ELIMINATE = Color("ff7a00")
+const PATH_COLOR_HINT = Color("74c0fc")
+const PATH_COLOR_ELIMINATE = Color("ff6f9c")
 const PATH_OVERLAY_SCRIPT = preload("res://scripts/path_overlay.gd")
 const PROGRESSION_SCRIPT = preload("res://scripts/progression.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
@@ -686,7 +686,7 @@ func _build_ui():
 	# Add gradient background
 	var bg_rect = ColorRect.new()
 	bg_rect.set_anchors_and_margins_preset(Control.PRESET_WIDE)
-	bg_rect.color = Color("f8fafc")
+	bg_rect.color = Color("fff0f6")
 	add_child(bg_rect)
 
 	var margin = MarginContainer.new()
@@ -724,20 +724,20 @@ func _build_ui():
 	title_row.add_child(title_col)
 
 	title_label = Label.new()
-	title_label.text = "连连看 H5"
+	title_label.text = "连连看 🎀"
 	title_label.add_font_override("font", game_font)
-	title_label.add_color_override("font_color", Color("7c3aed"))
+	title_label.add_color_override("font_color", Color("e64980"))
 	title_col.add_child(title_label)
 
 	subtitle_label = Label.new()
 	subtitle_label.text = "第1/1关 · 初始化"
 	subtitle_label.add_font_override("font", game_font)
-	subtitle_label.add_color_override("font_color", Color("64748b"))
+	subtitle_label.add_color_override("font_color", Color("8f6b80"))
 	title_col.add_child(subtitle_label)
 
 	desc_label = Label.new()
 	desc_label.add_font_override("font", game_font)
-	desc_label.add_color_override("font_color", Color("94a3b8"))
+	desc_label.add_color_override("font_color", Color("c2a3b2"))
 	desc_label.text = ""
 	title_col.add_child(desc_label)
 
@@ -747,10 +747,10 @@ func _build_ui():
 	status_chip_label.align = Label.ALIGN_CENTER
 	status_chip_label.valign = Label.VALIGN_CENTER
 	status_chip_label.rect_min_size = Vector2(90, 32)
-	status_chip_label.add_color_override("font_color", Color("059669"))
+	status_chip_label.add_color_override("font_color", Color("0ca678"))
 	# Add status badge style
 	var status_style = StyleBoxFlat.new()
-	status_style.bg_color = Color("d1fae5")
+	status_style.bg_color = Color("e6fcf5")
 	status_style.set_corner_radius_all(16)
 	status_chip_label.add_stylebox_override("normal", status_style)
 	title_row.add_child(status_chip_label)
@@ -758,7 +758,7 @@ func _build_ui():
 	level_progress_caption_label = Label.new()
 	level_progress_caption_label.text = "闯关进度"
 	level_progress_caption_label.add_font_override("font", game_font)
-	level_progress_caption_label.add_color_override("font_color", Color("64748b"))
+	level_progress_caption_label.add_color_override("font_color", Color("8f6b80"))
 	header_box.add_child(level_progress_caption_label)
 
 	level_progress_bar = ProgressBar.new()
@@ -770,11 +770,11 @@ func _build_ui():
 	level_progress_bar.rect_min_size = Vector2(0, 12)
 	# Style progress bar
 	var progress_bg = StyleBoxFlat.new()
-	progress_bg.bg_color = Color("e2e8f0")
+	progress_bg.bg_color = Color("ffd9e8")
 	progress_bg.set_corner_radius_all(6)
 	level_progress_bar.add_stylebox_override("background", progress_bg)
 	var progress_fill = StyleBoxFlat.new()
-	progress_fill.bg_color = Color("8b5cf6")
+	progress_fill.bg_color = Color("f783ac")
 	progress_fill.set_corner_radius_all(6)
 	level_progress_bar.add_stylebox_override("fill", progress_fill)
 	header_box.add_child(level_progress_bar)
@@ -825,11 +825,11 @@ func _build_ui():
 	combo_progress_bar.rect_min_size = Vector2(0, 10)
 	# Style combo bar
 	var combo_bg = StyleBoxFlat.new()
-	combo_bg.bg_color = Color("e2e8f0")
+	combo_bg.bg_color = Color("ffd9e8")
 	combo_bg.set_corner_radius_all(5)
 	combo_progress_bar.add_stylebox_override("background", combo_bg)
 	var combo_fill = StyleBoxFlat.new()
-	combo_fill.bg_color = Color("f59e0b")
+	combo_fill.bg_color = Color("ff8fab")
 	combo_fill.set_corner_radius_all(5)
 	combo_progress_bar.add_stylebox_override("fill", combo_fill)
 	header_box.add_child(combo_progress_bar)
@@ -852,9 +852,9 @@ func _build_ui():
 	dropdown_style.shadow_size = 4
 	dropdown_style.shadow_offset = Vector2(0, 2)
 	dropdown_style.set_border_width_all(1)
-	dropdown_style.border_color = Color("e2e8f0")
+	dropdown_style.border_color = Color("ffd9e8")
 	icon_set_option.add_stylebox_override("normal", dropdown_style)
-	icon_set_option.add_color_override("font_color", Color("475569"))
+	icon_set_option.add_color_override("font_color", Color("8f6b80"))
 	controls_flow_container.add_child(icon_set_option)
 
 	hint_button = _create_control_button("提示")
@@ -890,7 +890,7 @@ func _build_ui():
 	var level_select_label = Label.new()
 	level_select_label.text = "关卡："
 	level_select_label.add_font_override("font", game_font)
-	level_select_label.add_color_override("font_color", Color("64748b"))
+	level_select_label.add_color_override("font_color", Color("8f6b80"))
 	progression_flow_container.add_child(level_select_label)
 
 	level_select_option = OptionButton.new()
@@ -898,7 +898,7 @@ func _build_ui():
 	level_select_option.rect_min_size = Vector2(172, 42)
 	level_select_option.connect("item_selected", self, "_on_level_select_changed")
 	level_select_option.add_stylebox_override("normal", dropdown_style)
-	level_select_option.add_color_override("font_color", Color("475569"))
+	level_select_option.add_color_override("font_color", Color("8f6b80"))
 	progression_flow_container.add_child(level_select_option)
 
 	jump_level_button = _create_control_button("跳转关卡")
@@ -919,7 +919,7 @@ func _build_ui():
 
 	message_label = Label.new()
 	message_label.add_font_override("font", game_font)
-	message_label.add_color_override("font_color", Color("92400e"))
+	message_label.add_color_override("font_color", Color("d6336c"))
 	message_label.visible = false
 	header_box.add_child(message_label)
 
@@ -936,12 +936,12 @@ func _build_ui():
 	# Apply game board style
 	var board_style = StyleBoxFlat.new()
 	board_style.bg_color = Color("ffffff")
-	board_style.set_corner_radius_all(20)
+	board_style.set_corner_radius_all(26)
 	board_style.shadow_color = Color("00000015")
 	board_style.shadow_size = 10
 	board_style.shadow_offset = Vector2(0, 5)
 	board_style.set_border_width_all(2)
-	board_style.border_color = Color("e2e8f0")
+	board_style.border_color = Color("ffd9e8")
 	board_panel.add_stylebox_override("panel", board_style)
 	board_wrapper.add_child(board_panel)
 
@@ -976,14 +976,14 @@ func _build_ui():
 	stage_panel_label = Label.new()
 	stage_panel_label.add_font_override("font", game_font)
 	stage_panel_label.align = Label.ALIGN_CENTER
-	stage_panel_label.add_color_override("font_color", Color("374151"))
+	stage_panel_label.add_color_override("font_color", Color("6d4a5e"))
 	stage_panel_label.visible = false
 	root.add_child(stage_panel_label)
 
 	combo_burst_label = Label.new()
 	combo_burst_label.add_font_override("font", game_font)
 	combo_burst_label.align = Label.ALIGN_CENTER
-	combo_burst_label.add_color_override("font_color", Color("b45309"))
+	combo_burst_label.add_color_override("font_color", Color("e67700"))
 	combo_burst_label.visible = false
 	combo_burst_label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
 	combo_burst_label.margin_top = 88
@@ -1024,7 +1024,7 @@ func _build_onboarding_panel():
 	var title = Label.new()
 	title.text = "🎮 欢迎来到连连看"
 	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("1e293b"))
+	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
 
 	var line = HSeparator.new()
@@ -1039,14 +1039,14 @@ func _build_onboarding_panel():
 	for section in sections:
 		var section_title = Label.new()
 		section_title.text = section.title
-		section_title.add_color_override("font_color", Color("334155"))
+		section_title.add_color_override("font_color", Color("7a5064"))
 		section_title.add_font_override("font", game_font)
 		content.add_child(section_title)
 
 		var section_content = Label.new()
 		section_content.text = section.content
 		section_content.autowrap = true
-		section_content.add_color_override("font_color", Color("64748b"))
+		section_content.add_color_override("font_color", Color("8f6b80"))
 		section_content.add_font_override("font", game_font)
 		content.add_child(section_content)
 
@@ -1061,6 +1061,7 @@ func _build_onboarding_panel():
 	got_it_button.add_font_override("font", game_font)
 	got_it_button.connect("pressed", self, "_on_onboarding_dismissed")
 	content.add_child(got_it_button)
+	_style_dialog_buttons(onboarding_panel)
 
 func _show_onboarding_if_needed():
 	var has_seen_onboarding = progression_state.get(ONBOARDING_SEEN_KEY, false)
@@ -1105,7 +1106,7 @@ func _build_settings_panel():
 	var title = Label.new()
 	title.text = "⚙️ 设置"
 	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("1e293b"))
+	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
 
 	var line = HSeparator.new()
@@ -1151,7 +1152,7 @@ func _create_volume_row(label_text, initial_value):
 	var label = Label.new()
 	label.text = label_text
 	label.rect_min_size = Vector2(80, 0)
-	label.add_color_override("font_color", Color("334155"))
+	label.add_color_override("font_color", Color("7a5064"))
 	label.add_font_override("font", game_font)
 	container.add_child(label)
 
@@ -1172,7 +1173,7 @@ func _create_toggle_row(label_text, initial_value):
 	var label = Label.new()
 	label.text = label_text
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.add_color_override("font_color", Color("334155"))
+	label.add_color_override("font_color", Color("7a5064"))
 	label.add_font_override("font", game_font)
 	container.add_child(label)
 
@@ -1237,7 +1238,7 @@ func _build_achievements_panel():
 	var title = Label.new()
 	title.text = "🏆 成就"
 	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("1e293b"))
+	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
 
 	var line = HSeparator.new()
@@ -1343,14 +1344,14 @@ func _build_pause_panel():
 	var title = Label.new()
 	title.text = "⏸️ 游戏暂停"
 	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("1e293b"))
+	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
 
 	# Level info
 	var level_info = Label.new()
 	level_info.text = "当前关卡"
 	level_info.align = Label.ALIGN_CENTER
-	level_info.add_color_override("font_color", Color("64748b"))
+	level_info.add_color_override("font_color", Color("8f6b80"))
 	level_info.add_font_override("font", game_font)
 	content.add_child(level_info)
 
@@ -1419,7 +1420,7 @@ func _build_modes_panel():
 	title.text = "🎮 玩法模式"
 	title.align = Label.ALIGN_CENTER
 	title.add_font_override("font", game_font)
-	title.add_color_override("font_color", Color("1e293b"))
+	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
 
 	# Mode rows are rebuilt on every open; keep them in a dedicated box.
@@ -1438,6 +1439,7 @@ func _build_modes_panel():
 	close_button.add_font_override("font", game_font)
 	close_button.connect("pressed", self, "_on_modes_close_pressed")
 	content.add_child(close_button)
+	_style_dialog_buttons(modes_panel)
 
 func _refresh_modes_panel():
 	if modes_panel == null:
@@ -1494,6 +1496,7 @@ func _refresh_modes_panel():
 			button.connect("pressed", self, "_on_special_mode_pressed", [row["id"]])
 		else:
 			button.text = row["title"] + "\n" + SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
+		_style_dialog_buttons(button)
 		rows_box.add_child(button)
 
 func _on_modes_pressed():
@@ -1604,11 +1607,11 @@ func _create_chip_label():
 	label.align = Label.ALIGN_CENTER
 	label.valign = Label.VALIGN_CENTER
 	label.rect_min_size = Vector2(120, 28)
-	label.add_color_override("font_color", Color("7c3aed"))
+	label.add_color_override("font_color", Color("e64980"))
 	# Add subtle background
 	var chip_style = StyleBoxFlat.new()
-	chip_style.bg_color = Color("ede9fe")
-	chip_style.set_corner_radius_all(14)
+	chip_style.bg_color = Color("ffe3ef")
+	chip_style.set_corner_radius_all(18)
 	label.add_stylebox_override("normal", chip_style)
 	return label
 
@@ -1621,22 +1624,22 @@ func _create_control_button(text):
 
 	# Apply gradient button style
 	var normal = StyleBoxFlat.new()
-	normal.bg_color = Color("6366f1")
-	normal.set_corner_radius_all(10)
-	normal.shadow_color = Color("6366f140")
+	normal.bg_color = Color("f06ba8")
+	normal.set_corner_radius_all(20)
+	normal.shadow_color = Color("f06ba840")
 	normal.shadow_size = 6
 	normal.shadow_offset = Vector2(0, 3)
 
 	var hover = StyleBoxFlat.new()
-	hover.bg_color = Color("818cf8")
-	hover.set_corner_radius_all(10)
-	hover.shadow_color = Color("6366f160")
+	hover.bg_color = Color("ff9ec4")
+	hover.set_corner_radius_all(20)
+	hover.shadow_color = Color("f06ba860")
 	hover.shadow_size = 8
 	hover.shadow_offset = Vector2(0, 4)
 
 	var pressed = StyleBoxFlat.new()
-	pressed.bg_color = Color("4f46e5")
-	pressed.set_corner_radius_all(10)
+	pressed.bg_color = Color("d6336c")
+	pressed.set_corner_radius_all(20)
 
 	button.add_stylebox_override("normal", normal)
 	button.add_stylebox_override("hover", hover)
@@ -1651,15 +1654,21 @@ func _add_stat_card(parent, title, key):
 	card.rect_min_size = Vector2(100, 64)
 	parent.add_child(card)
 
-	# Apply card style with gradient
+	# Apply macaron pastel card style
+	var pastel_by_key = {
+		"total_score": Color("fff0f6"), "level_score": Color("ffe9f0"),
+		"moves": Color("f3f0ff"), "remaining": Color("e7f5ff"),
+		"time_left": Color("fff4e6"), "combo": Color("fff0f6"),
+		"best_total_score": Color("fff9db"), "best_combo": Color("ffe9f0")
+	}
 	var card_style = StyleBoxFlat.new()
-	card_style.bg_color = Color("ffffff")
-	card_style.set_corner_radius_all(12)
+	card_style.bg_color = pastel_by_key.get(key, Color("ffffff"))
+	card_style.set_corner_radius_all(16)
 	card_style.shadow_color = Color("00000010")
 	card_style.shadow_size = 6
 	card_style.shadow_offset = Vector2(0, 3)
 	card_style.set_border_width_all(1)
-	card_style.border_color = Color("e2e8f0")
+	card_style.border_color = Color("ffd9e8")
 	card.add_stylebox_override("panel", card_style)
 
 	var box = VBoxContainer.new()
@@ -1670,14 +1679,14 @@ func _add_stat_card(parent, title, key):
 	var title_label = Label.new()
 	title_label.text = title
 	title_label.add_font_override("font", game_font)
-	title_label.add_color_override("font_color", Color("64748b"))
+	title_label.add_color_override("font_color", Color("8f6b80"))
 	title_label.align = Label.ALIGN_CENTER
 	box.add_child(title_label)
 
 	var value_label = Label.new()
 	value_label.text = "--"
 	value_label.add_font_override("font", game_font)
-	value_label.add_color_override("font_color", Color("334155"))
+	value_label.add_color_override("font_color", Color("7a5064"))
 	value_label.align = Label.ALIGN_CENTER
 	box.add_child(value_label)
 
@@ -1698,13 +1707,13 @@ func _create_power_up_label(power_up_id, icon, shortcut):
 
 	var count_label = Label.new()
 	count_label.text = "x0"
-	count_label.add_color_override("font_color", Color("64748b"))
+	count_label.add_color_override("font_color", Color("8f6b80"))
 	count_label.add_font_override("font", game_font)
 	hbox.add_child(count_label)
 
 	var shortcut_label = Label.new()
 	shortcut_label.text = "[" + shortcut + "]"
-	shortcut_label.add_color_override("font_color", Color("94a3b8"))
+	shortcut_label.add_color_override("font_color", Color("c2a3b2"))
 	hbox.add_child(shortcut_label)
 
 	power_up_labels[power_up_id] = {
@@ -2058,7 +2067,7 @@ func _refresh_board_visuals():
 			if value == 0:
 				button.text = ""
 				button.disabled = true
-				_apply_tile_style(button, Color("f1f5f9"), Color("cbd5e1"), false)
+				_apply_tile_style(button, Color("fff5f8"), Color("ffc2d4"), false)
 				continue
 
 			var face_down = _is_memory_mode() and not memory_previewing 				and not memory_revealed.has(_memory_key(Vector2(r, c))) 				and not (selected.x == r and selected.y == c)
@@ -2066,8 +2075,8 @@ func _refresh_board_visuals():
 			var border = Color("ffffff")
 			if face_down:
 				button.text = "❓"
-				bg = Color("475569")
-				border = Color("334155")
+				bg = Color("ffc2d4")
+				border = Color("f09ebb")
 			else:
 				button.text = _icon_for(value)
 			button.disabled = not playing
@@ -2076,16 +2085,16 @@ func _refresh_board_visuals():
 			var has_effect = false
 
 			if _contains_coord(error_tiles, Vector2(r, c)):
-				bg = Color("fee2e2")
-				border = Color("ef4444")
+				bg = Color("ffe3e3")
+				border = Color("ff8787")
 				has_effect = true
 			elif _contains_coord(hint_tiles, Vector2(r, c)):
-				bg = Color("dbeafe")
+				bg = Color("d0ebff")
 				border = Color("3b82f6")
 				has_effect = true
 
 			if is_selected:
-				border = Color("f59e0b")
+				border = Color("ff8fab")
 				has_effect = true
 
 			_apply_tile_style(button, bg, border, has_effect or is_selected)
@@ -2095,7 +2104,7 @@ func _apply_tile_style(button, bg_color, border_color, highlight):
 	normal.bg_color = bg_color
 	normal.border_color = border_color
 	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(10)
+	normal.set_corner_radius_all(14)
 
 	if highlight:
 		normal.shadow_color = border_color
@@ -2132,7 +2141,7 @@ func _apply_glass_style(panel, bg_color, alpha):
 	style.bg_color = Color(bg_color.r, bg_color.g, bg_color.b, alpha)
 	style.set_corner_radius_all(16)
 	style.set_border_width_all(1)
-	style.border_color = Color("e2e8f0")
+	style.border_color = Color("ffd9e8")
 	style.shadow_color = Color("00000020")
 	style.shadow_size = 8
 	style.shadow_offset = Vector2(0, 4)
@@ -2161,13 +2170,24 @@ func _apply_button_style(button, bg_color, border_color):
 	pressed.bg_color = bg_color.darkened(0.05)
 	pressed.border_color = border_color.darkened(0.05)
 	pressed.set_border_width_all(2)
-	pressed.set_corner_radius_all(12)
+	pressed.set_corner_radius_all(16)
 
 	button.add_stylebox_override("normal", normal)
 	button.add_stylebox_override("pressed", pressed)
 	button.add_stylebox_override("focus", normal)
 	button.add_stylebox_override("hover", hover)
 	button.add_stylebox_override("disabled", normal)
+
+func _style_dialog_buttons(node):
+	# Dialog buttons join the rose palette instead of the default gray.
+	if node is Button:
+		_apply_button_style(node, Color("f06ba8"), Color("d6336c"))
+		node.add_color_override("font_color", Color("ffffff"))
+		node.add_color_override("font_hover_color", Color("ffffff"))
+		node.add_color_override("font_pressed_color", Color("ffffff"))
+		node.add_color_override("font_focus_color", Color("ffffff"))
+	for child in node.get_children():
+		_style_dialog_buttons(child)
 
 func _icon_for(value):
 	if icon_sets.empty():
@@ -2554,15 +2574,15 @@ func _play_eliminate_effects(coords):
 		particle_color = Color("ffd700")
 		particle_count = int(30 * effect_intensity)
 	elif combo >= 7:
-		color = Color("7c3aed")  # Purple
-		particle_color = Color("a855f7")
+		color = Color("e64980")  # Purple
+		particle_color = Color("e64980")
 		particle_count = int(24 * effect_intensity)
 	elif combo >= 5:
-		color = Color("2563eb")  # Blue
+		color = Color("e64980")  # Blue
 		particle_color = Color("60a5fa")
 		particle_count = int(18 * effect_intensity)
 	elif combo >= 3:
-		color = Color("059669")  # Green
+		color = Color("0ca678")  # Green
 		particle_color = Color("34d399")
 		particle_count = int(12 * effect_intensity)
 
@@ -2616,7 +2636,7 @@ func _animate_select(coord):
 	tween.queue_free()
 
 	var center = _tile_center_in_effect_layer(coord)
-	_spawn_ring_effect(center, Color("f97316"), 0.18, 12.0)
+	_spawn_ring_effect(center, Color("ff6f9c"), 0.18, 12.0)
 
 func _try_get_tile_button(coord):
 	if coord.x < 0 or coord.x >= cell_buttons.size():
@@ -2681,7 +2701,7 @@ func _animate_hint_tiles(coords):
 	for coord in coords:
 		_pulse_tile(coord, 1.09, 0.08, 2)
 		var center = _tile_center_in_effect_layer(coord)
-		_spawn_ring_effect(center, Color("0ea5e9"), 0.26, 12.0)
+		_spawn_ring_effect(center, Color("74c0fc"), 0.26, 12.0)
 
 func _animate_shuffle_wave():
 	if board.empty():
@@ -2822,17 +2842,17 @@ func _show_stage_callout(text, color, font_size):
 func _play_level_intro_animation(level):
 	if special_mode == "daily":
 		var d = OS.get_date()
-		_show_stage_callout("每日挑战 · %d月%d日" % [int(d.month), int(d.day)], Color("7c3aed"), 19)
+		_show_stage_callout("每日挑战 · %d月%d日" % [int(d.month), int(d.day)], Color("9775fa"), 19)
 	elif special_mode == "endless":
-		_show_stage_callout("无尽模式 · 第%d轮" % endless_round, Color("059669"), 19)
+		_show_stage_callout("无尽模式 · 第%d轮" % endless_round, Color("0ca678"), 19)
 	elif special_mode == "time_attack":
-		_show_stage_callout("限时挑战", Color("dc2626"), 19)
+		_show_stage_callout("限时挑战", Color("f06565"), 19)
 	elif special_mode == "memory":
-		_show_stage_callout("盲盒模式", Color("0891b2"), 19)
+		_show_stage_callout("盲盒模式", Color("3bc9db"), 19)
 	else:
 		var level_id = int(level.get("id", level_index + 1))
 		var level_name = str(level.get("name", "关卡"))
-		_show_stage_callout("第" + str(level_id) + "关 · " + level_name, Color("2563eb"), 19)
+		_show_stage_callout("第" + str(level_id) + "关 · " + level_name, Color("e64980"), 19)
 	_animate_board_spawn()
 
 func _animate_board_spawn():
@@ -2864,7 +2884,7 @@ func _animate_board_spawn():
 			tween.start()
 
 func _play_stage_clear_celebration(is_final_clear):
-	var burst_color = Color("f59e0b") if is_final_clear else Color("22c55e")
+	var burst_color = Color("ff8fab") if is_final_clear else Color("22c55e")
 	var text = "全部通关!" if is_final_clear else "过关!"
 	var particle_count = 28 if is_final_clear else 16
 	var intensity = 1.2 if is_final_clear else 1.0
@@ -2875,20 +2895,20 @@ func _play_stage_clear_celebration(is_final_clear):
 func _show_combo_burst(text):
 	# Enhanced combo burst with dynamic styling based on combo level
 	var combo_num = combo
-	var color = Color("b45309")  # Default amber
+	var color = Color("e67700")  # Default amber
 	var font_size = 18
 
 	if combo_num >= 10:
-		color = Color("dc2626")
+		color = Color("f06565")
 		font_size = 28
 	elif combo_num >= 7:
-		color = Color("7c3aed")
+		color = Color("e64980")
 		font_size = 24
 	elif combo_num >= 5:
-		color = Color("2563eb")
+		color = Color("e64980")
 		font_size = 22
 	elif combo_num >= 3:
-		color = Color("059669")
+		color = Color("0ca678")
 		font_size = 20
 
 	combo_burst_label.add_font_override("font", _font_at_size(font_size))
@@ -2946,7 +2966,7 @@ func _flash_error_tiles(coords):
 		error_tiles.append(point)
 		_shake_tile(point)
 		var center = _tile_center_in_effect_layer(point)
-		_spawn_ring_effect(center, Color("ef4444"), 0.22, 12.0)
+		_spawn_ring_effect(center, Color("ff8787"), 0.22, 12.0)
 
 	error_timer.stop()
 	error_timer.start(float(tuning.get("error_flash_ms", 420)) / 1000.0)
@@ -3389,7 +3409,7 @@ func _refresh_ui():
 	var description = str(level.get("description", ""))
 	var unlocked_level_count = int(progression_state.get("highest_unlocked_level_index", 0)) + 1
 
-	title_label.text = "连连看 H5"
+	title_label.text = "连连看 🎀"
 	if special_mode == "daily":
 		var daily = progression_state.get("daily_challenge", {})
 		var now_date = OS.get_date()
@@ -3417,20 +3437,20 @@ func _refresh_ui():
 	var status_style = StyleBoxFlat.new()
 	status_style.set_corner_radius_all(16)
 	if stage_status == STATUS_PLAYING:
-		status_chip_label.add_color_override("font_color", Color("059669"))
-		status_style.bg_color = Color("d1fae5")
+		status_chip_label.add_color_override("font_color", Color("0ca678"))
+		status_style.bg_color = Color("e6fcf5")
 	elif stage_status == STATUS_PAUSED:
-		status_chip_label.add_color_override("font_color", Color("b45309"))
-		status_style.bg_color = Color("fef3c7")
+		status_chip_label.add_color_override("font_color", Color("e67700"))
+		status_style.bg_color = Color("fff3bf")
 	elif stage_status == STATUS_CLEARED:
-		status_chip_label.add_color_override("font_color", Color("7c3aed"))
-		status_style.bg_color = Color("ede9fe")
+		status_chip_label.add_color_override("font_color", Color("e64980"))
+		status_style.bg_color = Color("ffe3ef")
 	elif stage_status == STATUS_FAILED:
-		status_chip_label.add_color_override("font_color", Color("dc2626"))
-		status_style.bg_color = Color("fee2e2")
+		status_chip_label.add_color_override("font_color", Color("f06565"))
+		status_style.bg_color = Color("ffe3e3")
 	else:
-		status_chip_label.add_color_override("font_color", Color("059669"))
-		status_style.bg_color = Color("d1fae5")
+		status_chip_label.add_color_override("font_color", Color("0ca678"))
+		status_style.bg_color = Color("e6fcf5")
 	status_chip_label.add_stylebox_override("normal", status_style)
 
 	mode_chip_label.text = "模式：" + _mode_label(mode)
@@ -3516,7 +3536,7 @@ func _update_time_warning_pulse(_delta):
 	card_style.shadow_size = 6
 	card_style.shadow_offset = Vector2(0, 3)
 	card_style.set_border_width_all(1)
-	card_style.border_color = Color("fecaca")
+	card_style.border_color = Color("ffc9c9")
 	card.add_stylebox_override("panel", card_style)
 
 func _set_time_card_state(is_danger):
@@ -3531,11 +3551,11 @@ func _set_time_card_state(is_danger):
 	card_style.set_border_width_all(1)
 
 	if is_danger:
-		card_style.bg_color = Color("fee2e2")
-		card_style.border_color = Color("fecaca")
+		card_style.bg_color = Color("ffe3e3")
+		card_style.border_color = Color("ffc9c9")
 	else:
-		card_style.bg_color = Color("ffffff")
-		card_style.border_color = Color("e2e8f0")
+		card_style.bg_color = Color("fff4e6")
+		card_style.border_color = Color("ffd9e8")
 
 	card.add_stylebox_override("panel", card_style)
 
@@ -3641,7 +3661,7 @@ func _show_achievement_notification(achievement_name):
 	var notification = PanelContainer.new()
 	notification.set_anchors_and_margins_preset(Control.PRESET_CENTER_TOP)
 	notification.margin_top = 60
-	_apply_glass_style(notification, Color("fef3c7"), 0.95)
+	_apply_glass_style(notification, Color("fff3bf"), 0.95)
 	add_child(notification)
 
 	var hbox = HBoxContainer.new()
@@ -3657,7 +3677,7 @@ func _show_achievement_notification(achievement_name):
 
 	var label = Label.new()
 	label.text = "🏆 成就解锁：" + achievement_name
-	label.add_color_override("font_color", Color("92400e"))
+	label.add_color_override("font_color", Color("d6336c"))
 	label.add_font_override("font", game_font)
 	margin.add_child(label)
 
