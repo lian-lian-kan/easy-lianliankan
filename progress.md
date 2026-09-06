@@ -581,3 +581,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round F：模式展示元数据下沉 special_modes.gd)
 - Context: 模式标签（17 个模式的中文名）与开场文案（8 种特殊模式）原本散在 game.gd 的 match 表与字典里，与展示耦合。下沉为 special_modes.gd 纯函数 mode_label(mode) / intro_text(mode_id)（MODE_LABELS / INTRO_TEXTS 常量表），game.gd 留薄封装；未知模式回落「未知」/「特殊模式开始」。盲盒开场文案因含运行时预览秒数保留在 game.gd 专属分支。
 - Validation: 13 项 headless 测试全绿（新增 mode_meta_test：17 标签逐一断言、未知回落、8 种开场文案非默认）。
+
+## 2026-09-07 (代码质量 Round G：道具槽显示并入 stats_hud + 架构文档)
+- Context: 道具槽显示逻辑（_update_power_ups_display 循环体）从 game.gd 委托给 stats_hud.gd 的 update_power_up 静态函数（数量文本/可用性着色/暖宝宝冰雪专属隐藏）。新增 docs/architecture.md 架构总览：模块布局表、提取手法五步、已知债务清单。
+- Validation: 12 项 headless 测试全绿；导出成功。

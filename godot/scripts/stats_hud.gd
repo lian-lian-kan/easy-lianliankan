@@ -65,6 +65,18 @@ static func add_card(game, parent, title, key):
 		"value": value_label
 	}
 
+# 道具槽显示：数量文本、可用性着色与暖宝宝始终的冰雪专属隐藏。
+static func update_power_up(game, power_up_id, count):
+	var labels = game.power_up_labels[power_up_id]
+	labels["count"].text = "x" + str(count)
+	# Gray out if no power-ups available
+	var has_power_up = count > 0
+	labels["icon"].modulate = Color(1, 1, 1, 1.0 if has_power_up else 0.4)
+	labels["count"].add_color_override("font_color", Color("059669" if has_power_up else "94a3b8"))
+	# 暖宝宝 is frost-only; hide its slot everywhere else to save width.
+	if power_up_id == "warm_patch" and labels.has("box"):
+		labels["box"].visible = game._is_frost_mode()
+
 static func set_text(game, key, value):
 	if not game.stat_values.has(key):
 		return

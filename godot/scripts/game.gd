@@ -3599,16 +3599,7 @@ func _refresh_ui():
 
 func _update_power_ups_display():
 	for power_up_id in power_up_labels.keys():
-		var count = power_ups.get(power_up_id, 0)
-		var labels = power_up_labels[power_up_id]
-		labels["count"].text = "x" + str(count)
-		# Gray out if no power-ups available
-		var has_power_up = count > 0
-		labels["icon"].modulate = Color(1, 1, 1, 1.0 if has_power_up else 0.4)
-		labels["count"].add_color_override("font_color", Color("059669" if has_power_up else "94a3b8"))
-		# 暖宝宝 is frost-only; hide its slot everywhere else to save width.
-		if power_up_id == "warm_patch" and labels.has("box"):
-			labels["box"].visible = _is_frost_mode()
+		STATS_HUD.update_power_up(self, power_up_id, power_ups.get(power_up_id, 0))
 
 func _set_stat_text(key, value):
 	STATS_HUD.set_text(self, key, value)
