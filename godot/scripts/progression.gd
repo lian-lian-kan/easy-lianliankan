@@ -22,7 +22,11 @@ const ACHIEVEMENTS = [
 	{"id": "hell_first", "name": "地狱行者", "desc": "通关一次地狱模式"},
 	{"id": "moves_first", "name": "精打细算", "desc": "完成一局步数挑战"},
 	{"id": "moves_saver", "name": "节步大师", "desc": "步数挑战中保留20%以上步数通关"},
-	{"id": "race_first", "name": "初胜机器人", "desc": "竞速对战中击败机器人"}
+	{"id": "race_first", "name": "初胜机器人", "desc": "竞速对战中击败机器人"},
+	{"id": "stack_first", "name": "叠层达人", "desc": "完成一局叠层模式"},
+	{"id": "gravity_first", "name": "引力达人", "desc": "完成一局重力模式"},
+	{"id": "fog_first", "name": "拨云见日", "desc": "完成一局迷雾模式"},
+	{"id": "chain_first", "name": "斩断锁链", "desc": "完成一局锁链模式"}
 ]
 
 
@@ -44,7 +48,11 @@ static func default_progress(level_count: int) :
 		"zen_best_score": 0,
 		"hell_best_score": 0,
 		"moves_best_score": 0,
-		"race_best_score": 0
+		"race_best_score": 0,
+		"stack_best_score": 0,
+		"gravity_best_score": 0,
+		"fog_best_score": 0,
+		"chain_best_score": 0
 	}
 
 
@@ -88,6 +96,10 @@ static func normalize_progress(raw, level_count: int) :
 		normalized["hell_best_score"] = max(0, int(raw.get("hell_best_score", 0)))
 		normalized["moves_best_score"] = max(0, int(raw.get("moves_best_score", 0)))
 		normalized["race_best_score"] = max(0, int(raw.get("race_best_score", 0)))
+		normalized["stack_best_score"] = max(0, int(raw.get("stack_best_score", 0)))
+		normalized["gravity_best_score"] = max(0, int(raw.get("gravity_best_score", 0)))
+		normalized["fog_best_score"] = max(0, int(raw.get("fog_best_score", 0)))
+		normalized["chain_best_score"] = max(0, int(raw.get("chain_best_score", 0)))
 
 	normalized["current_level_index"] = clamp(int(normalized["current_level_index"]), 0, max_level_index)
 	normalized["highest_unlocked_level_index"] = clamp(int(normalized["highest_unlocked_level_index"]), 0, max_level_index)
@@ -160,6 +172,14 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		next_state["moves_best_score"] = max(int(next_state["moves_best_score"]), max(0, int(patch["moves_result"])))
 	if patch.has("race_result"):
 		next_state["race_best_score"] = max(int(next_state["race_best_score"]), max(0, int(patch["race_result"])))
+	if patch.has("stack_result"):
+		next_state["stack_best_score"] = max(int(next_state["stack_best_score"]), max(0, int(patch["stack_result"])))
+	if patch.has("gravity_result"):
+		next_state["gravity_best_score"] = max(int(next_state["gravity_best_score"]), max(0, int(patch["gravity_result"])))
+	if patch.has("fog_result"):
+		next_state["fog_best_score"] = max(int(next_state["fog_best_score"]), max(0, int(patch["fog_result"])))
+	if patch.has("chain_result"):
+		next_state["chain_best_score"] = max(int(next_state["chain_best_score"]), max(0, int(patch["chain_result"])))
 
 	next_state["version"] = SAVE_VERSION
 	return next_state
@@ -181,7 +201,11 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("zen_best_score", 0)) == int(bb.get("zen_best_score", 0)) \
 		and int(aa.get("hell_best_score", 0)) == int(bb.get("hell_best_score", 0)) \
 		and int(aa.get("moves_best_score", 0)) == int(bb.get("moves_best_score", 0)) \
-		and int(aa.get("race_best_score", 0)) == int(bb.get("race_best_score", 0))
+		and int(aa.get("race_best_score", 0)) == int(bb.get("race_best_score", 0)) \
+		and int(aa.get("stack_best_score", 0)) == int(bb.get("stack_best_score", 0)) \
+		and int(aa.get("gravity_best_score", 0)) == int(bb.get("gravity_best_score", 0)) \
+		and int(aa.get("fog_best_score", 0)) == int(bb.get("fog_best_score", 0)) \
+		and int(aa.get("chain_best_score", 0)) == int(bb.get("chain_best_score", 0))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :

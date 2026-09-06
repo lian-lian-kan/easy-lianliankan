@@ -110,6 +110,49 @@ const DEFAULT_CONFIGS = {
 		"kinds": 8,
 		"time_limit": 0,
 		"ai_interval": 8.5
+	},
+	"stack": {
+		"mode_id": "stack",
+		"name": "叠层模式",
+		"description": "上层压着下层，先消上层",
+		"unlock_level": 15,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 150,
+		"stack_ratio": 0.25
+	},
+	"gravity": {
+		"mode_id": "gravity",
+		"name": "重力模式",
+		"description": "消除后上方方块掉落补位",
+		"unlock_level": 15,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 120
+	},
+	"fog": {
+		"mode_id": "fog",
+		"name": "迷雾模式",
+		"description": "边缘迷雾随消除退散",
+		"unlock_level": 15,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 150,
+		"fog_layers": 2
+	},
+	"chain": {
+		"mode_id": "chain",
+		"name": "锁链模式",
+		"description": "相邻消除才能解锁锁链",
+		"unlock_level": 15,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 140,
+		"chain_ratio": 0.22
 	}
 }
 
@@ -319,6 +362,12 @@ static func build_classic_style_level(config, mode_id: String):
 		level["move_budget"] = int(config.get("move_budget", 56))
 	if config.has("ai_interval"):
 		level["ai_interval"] = float(config.get("ai_interval", 8.5))
+	if config.has("stack_ratio"):
+		level["stack_ratio"] = float(config.get("stack_ratio", 0.25))
+	if config.has("fog_layers"):
+		level["fog_layers"] = int(config.get("fog_layers", 2))
+	if config.has("chain_ratio"):
+		level["chain_ratio"] = float(config.get("chain_ratio", 0.22))
 	return level
 
 

@@ -92,6 +92,11 @@ var frost_uses = 0
 # Ice binds to the POSITION: reshuffles swap tiles under the ice sheet.
 var board_armor = []
 
+# 叠层/重力/迷雾/锁链: optional board mechanics on classic rules.
+var board_lower = []      # stack: hidden tiles under their covers
+var board_chain = []      # chain: 1 = chained (unlock via adjacent clears)
+var _fog_layers = 0       # fog: current outer-ring count
+
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
 var moves_left = 0
 var race_ai_pairs = 0
@@ -1463,6 +1468,7 @@ func _build_modes_panel():
 	margin.add_constant_override("margin_right", 20)
 	margin.add_constant_override("margin_top", 20)
 	margin.add_constant_override("margin_bottom", 20)
+	margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(margin)
 
 	var content = VBoxContainer.new()
@@ -1477,9 +1483,15 @@ func _build_modes_panel():
 	content.add_child(title)
 
 	# Mode rows are rebuilt on every open; keep them in a dedicated box.
+	# ScrollContainer keeps thirteen mode cards usable on short screens.
+	var rows_scroll = ScrollContainer.new()
+	rows_scroll.scroll_horizontal_enabled = false
+	rows_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(rows_scroll)
 	var rows_box = VBoxContainer.new()
+	rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rows_box.add_constant_override("separation", 7)
-	content.add_child(rows_box)
+	rows_scroll.add_child(rows_box)
 
 	var spacer = Control.new()
 	spacer.rect_min_size = Vector2(0, 6)
@@ -1500,7 +1512,7 @@ func _refresh_modes_panel():
 	# modes_panel content chain: vbox -> margin -> content; content children:
 	# [title, rows_box, spacer, close_button]
 	var content = modes_panel.get_child(0).get_child(0).get_child(0)
-	var rows_box = content.get_child(1)
+	var rows_box = content.get_child(1).get_child(0)
 	for child in rows_box.get_children():
 		rows_box.remove_child(child)
 		child.queue_free()
@@ -1553,6 +1565,26 @@ func _refresh_modes_panel():
 			"id": "race",
 			"title": "🤖 竞速对战",
 			"detail": "和机器人抢消·先完成者胜 · 最佳%d分" % int(progression_state.get("race_best_score", 0))
+		},
+		{
+			"id": "stack",
+			"title": "🥞 叠层模式",
+			"detail": "上层压下层先消上层 · 最佳%d分" % int(progression_state.get("stack_best_score", 0))
+		},
+		{
+			"id": "gravity",
+			"title": "🍎 重力模式",
+			"detail": "消除后方块掉落补位 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))
+		},
+		{
+			"id": "fog",
+			"title": "🌫️ 迷雾模式",
+			"detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))
+		},
+		{
+			"id": "chain",
+			"title": "⛓️ 锁链模式",
+			"detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))
 		},
 		{
 			"id": "endless",
@@ -1955,7 +1987,8 @@ func _start_special_mode(mode_id):
 	elif mode_id == "frost":
 		var tier = SPECIAL_MODES_SCRIPT.frost_tier(config, int(progression_state.get("highest_unlocked_level_index", 0)) + 1)
 		level = SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
-	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race":
+	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
+				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain":
 		level = SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
 	else:
 		level = SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
@@ -1975,7 +2008,11 @@ func _start_special_mode(mode_id):
 			"zen": "休闲模式！没有时限，慢慢享受",
 			"hell": "地狱模式！大盘少图案，时间极紧",
 			"moves": "步数挑战！每消一对花 1 步，省着用",
-			"race": "竞速对战！抢在机器人前面消完全部"
+			"race": "竞速对战！抢在机器人前面消完全部",
+			"stack": "叠层模式！紫色边框的方块下面还压着一块",
+			"gravity": "重力模式！消除后上方的方块会掉下来",
+			"fog": "迷雾模式！边缘被雾住了，消除推进视野",
+			"chain": "锁链模式！消除旁边的方块来解开灰锁"
 		}
 		_show_message(str(intro.get(mode_id, "特殊模式开始")), 1.8)
 
@@ -1986,6 +2023,13 @@ func _exit_special_mode():
 func _reset_level_session(level, reset_total = false):
 	board = _create_playable_board(level)
 	board_armor = _build_frost_armor(board, level)
+	board_lower = []
+	board_chain = []
+	_fog_layers = 0
+	if _is_stack_mode():
+		_build_stack_layers(float(level.get("stack_ratio", 0.25)))
+	if _is_chain_mode():
+		_build_chain_locks(float(level.get("chain_ratio", 0.22)))
 	frost_pending = false
 	frost_uses = 0
 	bomb_pending = false
@@ -2042,6 +2086,7 @@ func _reset_level_session(level, reset_total = false):
 	_render_board()
 	_sync_level_select_selection()
 	_refresh_ui()
+	_refresh_board_visuals()
 	if _is_memory_mode():
 		_play_level_intro_animation(level)
 		_start_memory_preview()
@@ -2197,6 +2242,11 @@ func _refresh_board_visuals():
 			var is_selected = (selected.x == r and selected.y == c)
 			var frozen = _is_frost_mode() and r < board_armor.size() \
 					and c < board_armor[r].size() and int(board_armor[r][c]) > 0
+			var fogged = _is_fogged(Vector2(r, c))
+			var chained = _is_chain_mode() and r < board_chain.size() \
+					and c < board_chain[r].size() and int(board_chain[r][c]) > 0
+			var stacked = _is_stack_mode() and r < board_lower.size() \
+					and c < board_lower[r].size() and int(board_lower[r][c]) > 0
 			if frozen:
 				# Ice sheet: cool white-blue face with a frost border.
 				bg = bg.linear_interpolate(Color("e7f5ff"), 0.72)
@@ -2212,6 +2262,18 @@ func _refresh_board_visuals():
 				border = Color("3b82f6")
 				has_effect = true
 			elif frozen:
+				has_effect = true
+			elif fogged:
+				# Fog hides the icon entirely until the rings recede.
+				button.text = "❓"
+				bg = Color("e9ecef")
+				border = Color("adb5bd")
+			elif chained:
+				border = Color("868e96")
+				bg = bg.linear_interpolate(Color("e9ecef"), 0.35)
+				has_effect = true
+			elif stacked:
+				border = Color("9775fa")
 				has_effect = true
 			elif bomb_pending:
 				# Armed bomb: warm glow on every tile invites the pick.
@@ -2357,6 +2419,37 @@ func _is_memory_mode():
 func _is_frost_mode():
 	return special_mode == "frost"
 
+func _is_stack_mode():
+	return special_mode == "stack"
+
+func _is_gravity_mode():
+	return special_mode == "gravity"
+
+func _is_fog_mode():
+	return special_mode == "fog"
+
+func _is_chain_mode():
+	return special_mode == "chain"
+
+func _cell_ring(r, c):
+	var rows = board.size()
+	var cols = board[0].size()
+	return min(min(r, rows - 1 - r), min(c, cols - 1 - c))
+
+func _is_fogged(coord):
+	if not _is_fog_mode():
+		return false
+	return _cell_ring(coord.x, coord.y) < _fog_layers
+
+# 迷雾/锁链 make a tile unselectable; clicks, hints and auto tools skip it.
+func _is_coord_playable(coord):
+	if _is_fogged(coord):
+		return false
+	if _is_chain_mode() and coord.x < board_chain.size() and coord.y < board_chain[coord.x].size() \
+				and int(board_chain[coord.x][coord.y]) > 0:
+		return false
+	return true
+
 func _build_frost_armor(new_board, level):
 	# Frost levels stamp a ratio of occupied cells as frozen. Ice binds to
 	# the position (tiles reshuffle beneath the ice sheet), so it is a plain
@@ -2501,6 +2594,13 @@ func _on_tile_pressed(button):
 
 	var point = Vector2(r, c)
 
+	if not _is_coord_playable(point):
+		if _is_fogged(point):
+			_show_message("迷雾遮住了这块，先消除里面的方块", 1.0)
+		else:
+			_show_message("⛓️ 先消除它旁边的方块来解锁", 1.0)
+		return
+
 	# Armed click-targeted power-ups take over the next board click.
 	if frost_pending:
 		_execute_warm_patch(point)
@@ -2637,8 +2737,10 @@ func _on_auto_pressed():
 	var hint_path: Array = hint["path"]
 
 	var cracked = []
-	_damage_tile(a, cracked)
-	_damage_tile(b, cracked)
+	var removed = []
+	_damage_tile(a, cracked, removed)
+	_damage_tile(b, cracked, removed)
+	_break_chains_around(removed)
 	# Frozen tiles survive as blockers, so judge the clear AFTER the damage.
 	var will_clear = _remaining_tiles_count() == 0
 	_consume_move()
@@ -3501,26 +3603,152 @@ func _fail_race_lost():
 	_refresh_ui()
 	_refresh_board_visuals()
 
+# 叠层: lift a share of tiles onto a visible cover with a buried twin.
+func _build_stack_layers(ratio):
+	board_lower = []
+	for r in range(board.size()):
+		var row = []
+		for c in range(board[r].size()):
+			row.append(0)
+		board_lower.append(row)
+	var filled = []
+	for r in range(board.size()):
+		for c in range(board[r].size()):
+			if int(board[r][c]) != 0:
+				filled.append(Vector2(r, c))
+	filled.shuffle()
+	var target = clamp(int(round(filled.size() * ratio)), 0, int(filled.size() / 2))
+	var used = {}
+	var i = 0
+	var covered = 0
+	while covered < target and i < filled.size():
+		var cover_cell = filled[i]
+		i += 1
+		if used.has(cover_cell):
+			continue
+		var donor = Vector2(-1, -1)
+		for j in range(i, filled.size()):
+			var cand = filled[j]
+			if cand != cover_cell and not used.has(cand):
+				donor = cand
+				break
+		if donor.x < 0:
+			break
+		board_lower[cover_cell.x][cover_cell.y] = int(board[cover_cell.x][cover_cell.y])
+		board[cover_cell.x][cover_cell.y] = int(board[donor.x][donor.y])
+		board[donor.x][donor.y] = 0
+		used[cover_cell] = true
+		used[donor] = true
+		covered += 1
+
+# 锁链: chain a share of tiles; adjacent clears break the chains.
+func _build_chain_locks(ratio):
+	board_chain = []
+	for r in range(board.size()):
+		var row = []
+		for c in range(board[r].size()):
+			row.append(0)
+		board_chain.append(row)
+	var filled = []
+	for r in range(board.size()):
+		for c in range(board[r].size()):
+			if int(board[r][c]) != 0:
+				filled.append(Vector2(r, c))
+	filled.shuffle()
+	var target = clamp(int(round(filled.size() * ratio)), 0, filled.size())
+	for i in range(target):
+		var cell = filled[i]
+		board_chain[cell.x][cell.y] = 1
+
+func _chains_remaining():
+	var count = 0
+	for row in board_chain:
+		for value in row:
+			count += int(value != 0)
+	return count
+
+func _dissolve_all_chains():
+	for r in range(board_chain.size()):
+		for c in range(board_chain[r].size()):
+			board_chain[r][c] = 0
+	_show_message("⛓️ 死局解除，锁链全部崩解！", 1.4)
+	_refresh_board_visuals()
+
+func _break_chains_around(coords):
+	if not _is_chain_mode() or coords == null:
+		return
+	var broke = false
+	for coord in coords:
+		for dir in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]:
+			var n = coord + dir
+			if n.x < 0 or n.y < 0 or n.x >= board.size() or n.y >= board[0].size():
+				continue
+			if int(board_chain[n.x][n.y]) > 0:
+				board_chain[n.x][n.y] = int(board_chain[n.x][n.y]) - 1
+				broke = true
+	if broke:
+		_show_message("⛓️ 邻近的锁链松开了", 0.9)
+
+# 重力: columns compact downward after clears.
+func _apply_gravity():
+	var moved = false
+	for c in range(board[0].size()):
+		var write = board.size() - 1
+		for r in range(board.size() - 1, -1, -1):
+			if int(board[r][c]) != 0:
+				if r != write:
+					board[write][c] = int(board[r][c])
+					board[r][c] = 0
+					moved = true
+				write -= 1
+	if moved:
+		selected = Vector2(-1, -1)
+		hint_tiles.clear()
+		error_tiles.clear()
+	return moved
+
+func _update_fog():
+	if not _is_fog_mode():
+		_fog_layers = 0
+		return
+	var max_layers = int(_current_level().get("fog_layers", 2))
+	_fog_layers = clamp(int(_remaining_tiles_count() / 2 / 12), 0, max_layers)
+
+func _pop_stack_at(coord):
+	if not _is_stack_mode() or coord.x >= board_lower.size() or coord.y >= board_lower[coord.x].size():
+		return
+	if int(board_lower[coord.x][coord.y]) != 0:
+		board[coord.x][coord.y] = int(board_lower[coord.x][coord.y])
+		board_lower[coord.x][coord.y] = 0
+
 # One successful match hits both tiles. Frozen cells (armor 1) crack instead
 # of clearing and need a second match; cracked tiles keep blocking paths.
 func _apply_match_damage(a, b):
 	var cracked = []
-	_damage_tile(a, cracked)
-	_damage_tile(b, cracked)
+	var removed = []
+	_damage_tile(a, cracked, removed)
+	_damage_tile(b, cracked, removed)
+	_break_chains_around(removed)
 	if cracked.size() > 0:
 		AudioManager.play_shuffle()
 		_show_message("❄️ 冰层碎裂！再消一次", 1.0)
 	return cracked
 
-func _damage_tile(coord, cracked):
+func _damage_tile(coord, cracked, removed = null):
 	if _is_frost_mode() and coord.x < board_armor.size() and coord.y < board_armor[coord.x].size() \
 			and int(board_armor[coord.x][coord.y]) > 0:
 		board_armor[coord.x][coord.y] = int(board_armor[coord.x][coord.y]) - 1
 		cracked.append(coord)
 		return
 	board[coord.x][coord.y] = 0
+	if removed != null:
+		removed.append(coord)
+	_pop_stack_at(coord)
 
 func _execute_bomb(point):
+	if not _is_coord_playable(point):
+		_show_message("这块消不掉，先解锁/驱雾再炸", 1.2)
+		return
 	var kind = int(board[point.x][point.y])
 	var partner = Vector2(-1, -1)
 	for r in range(board.size()):
@@ -3556,6 +3784,9 @@ func _execute_bomb(point):
 	if _is_frost_mode():
 		board_armor[point.x][point.y] = 0
 		board_armor[partner.x][partner.y] = 0
+	_pop_stack_at(point)
+	_pop_stack_at(partner)
+	_break_chains_around([point, partner])
 	_consume_move()
 
 	_refresh_ui()
@@ -3563,6 +3794,9 @@ func _execute_bomb(point):
 	_resolve_after_board_changed()
 
 func _execute_rainbow_click(point):
+	if not _is_coord_playable(point):
+		_show_message("这块消不掉，先解锁/驱雾再选", 1.2)
+		return
 	if selected.x < 0:
 		selected = point
 		hint_tiles.clear()
@@ -3598,6 +3832,9 @@ func _execute_rainbow_click(point):
 	if _is_frost_mode():
 		board_armor[a.x][a.y] = 0
 		board_armor[b.x][b.y] = 0
+	_pop_stack_at(a)
+	_pop_stack_at(b)
+	_break_chains_around([a, b])
 	_consume_move()
 
 	_refresh_ui()
@@ -3750,12 +3987,24 @@ func _update_combo_progress():
 
 
 func _resolve_after_board_changed():
+	# 重力模式: compact columns before any win/lose evaluation.
+	if _is_gravity_mode() and _apply_gravity():
+		_refresh_board_visuals()
 	# Special sessions resolve only when the board is actually cleared;
 	# partial eliminations still need the deadlock reshuffle check.
 	if special_mode != "":
 		if _remaining_tiles_count() == 0:
 			_resolve_special_clear()
 		elif _find_any_hint(board).empty():
+			if _is_fog_mode() and _fog_layers > 0:
+				# Fog would trap the last tiles: recede a ring instead.
+				_fog_layers -= 1
+				_show_message("迷雾退散了一层！", 1.2)
+				_refresh_board_visuals()
+				return
+			if _is_chain_mode() and _chains_remaining() > 0:
+				_dissolve_all_chains()
+				return
 			_reshuffle_board(board)
 			_show_message("无解，已自动重排", 1.0)
 			_refresh_board_visuals()
@@ -3861,6 +4110,30 @@ func _unlock_achievements(ids):
 
 func _record_special_completion():
 	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	if special_mode == "stack":
+		_patch_progress_state({"stack_result": total_score})
+		_unlock_achievements(["stack_first"])
+		stage_panel_label.text = "叠层挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("stack_best_score", 0)))
+		stage_panel_label.visible = true
+		return
+	if special_mode == "gravity":
+		_patch_progress_state({"gravity_result": total_score})
+		_unlock_achievements(["gravity_first"])
+		stage_panel_label.text = "重力挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("gravity_best_score", 0)))
+		stage_panel_label.visible = true
+		return
+	if special_mode == "fog":
+		_patch_progress_state({"fog_result": total_score})
+		_unlock_achievements(["fog_first"])
+		stage_panel_label.text = "迷雾散尽！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("fog_best_score", 0)))
+		stage_panel_label.visible = true
+		return
+	if special_mode == "chain":
+		_patch_progress_state({"chain_result": total_score})
+		_unlock_achievements(["chain_first"])
+		stage_panel_label.text = "锁链尽断！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("chain_best_score", 0)))
+		stage_panel_label.visible = true
+		return
 	if special_mode == "zen":
 		_patch_progress_state({"zen_result": total_score})
 		_unlock_achievements(["zen_first"])
@@ -3984,6 +4257,14 @@ func _refresh_ui():
 		subtitle_label.text = "步数挑战 · 最佳%d分 · 剩余%d步" % [int(progression_state.get("moves_best_score", 0)), moves_left]
 	elif special_mode == "race":
 		subtitle_label.text = "竞速对战 · 最佳%d分" % int(progression_state.get("race_best_score", 0))
+	elif special_mode == "stack":
+		subtitle_label.text = "叠层模式 · 最佳%d分" % int(progression_state.get("stack_best_score", 0))
+	elif special_mode == "gravity":
+		subtitle_label.text = "重力模式 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))
+	elif special_mode == "fog":
+		subtitle_label.text = "迷雾模式 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))
+	elif special_mode == "chain":
+		subtitle_label.text = "锁链模式 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))
 	else:
 		subtitle_label.text = "第" + str(level_id) + "/" + str(campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(campaign_levels.size())
 	desc_label.text = description
@@ -4030,6 +4311,7 @@ func _refresh_ui():
 		stat_values["race"]["card"].visible = special_mode == "race"
 		_set_stat_text("race", "%d/%d" % [race_ai_pairs, race_total_pairs])
 
+	_update_fog()
 	_set_time_card_state(_is_time_danger())
 
 	var input_enabled = stage_status == STATUS_PLAYING
@@ -4151,6 +4433,14 @@ func _mode_label(mode):
 			return "步数挑战"
 		"race":
 			return "竞速对战"
+		"stack":
+			return "叠层模式"
+		"gravity":
+			return "重力模式"
+		"fog":
+			return "迷雾模式"
+		"chain":
+			return "锁链模式"
 		_:
 			return "未知"
 
@@ -4416,11 +4706,15 @@ func _find_any_hint(board_state):
 			var value = int(board_state[r1][c1])
 			if value == 0:
 				continue
+			if not _is_coord_playable(Vector2(r1, c1)):
+				continue
 
 			for r2 in range(r1, rows):
 				var start_c = c1 + 1 if r2 == r1 else 0
 				for c2 in range(start_c, cols):
 					if int(board_state[r2][c2]) != value:
+						continue
+					if not _is_coord_playable(Vector2(r2, c2)):
 						continue
 
 					var path = _find_path(board_state, Vector2(r1, c1), Vector2(r2, c2))
