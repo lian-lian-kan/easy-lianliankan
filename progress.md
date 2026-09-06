@@ -563,3 +563,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round C：提取 fx_layer.gd 特效子系统)
 - Context: 继续巨石拆分。樱花飘落/撒花的发射逻辑（PETAL_ICONS + _build_petals/_on_petal_tick/_spawn_petal/_spawn_confetti 四函数）从 game.gd 抽到 scripts/fx_layer.gd（静态、game 依赖参数化：层/字体/补间/树状态由调用方提供）。game.gd 留同名薄封装，mechanics_probe 的层与撒花断言零改动。
 - Validation: 11 项 headless 测试全绿；导出成功。
+
+## 2026-09-07 (代码质量 Round D：UI 面板构建抽到 ui_panels.gd)
+- Context: P8 整改。onboarding/settings/achievements/pause/modes 五个面板构建函数（约 470 行）从 game.gd 抽到 scripts/ui_panels.gd 静态工厂（每个 build_X(game) 接收游戏节点：信号绑定 game 方法、字体/样式助手/进度状态经 game.<成员> 访问）。game.gd 留同名薄封装 + UI_PANELS preload。缺失标识符用"godot --check-only 解析循环"自动发现并补白名单。
+- Validation: panels_probe（新建）断言五面板结构与 modes 13 卡；11+1 项测试全绿；导出成功。

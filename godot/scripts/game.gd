@@ -14,6 +14,8 @@ const STATUS_COMPLETED = "completed"
 
 const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
 
+const UI_PANELS = preload("res://scripts/ui_panels.gd")
+
 const DIRS = [
 	Vector2(-1, 0),
 	Vector2(1, 0),
@@ -1061,610 +1063,19 @@ func _build_ui():
 	call_deferred("_update_layout_for_screen_size")
 
 func _build_onboarding_panel():
-	onboarding_panel = PanelContainer.new()
-	onboarding_panel.rect_min_size = Vector2(320, 400)
-	onboarding_panel.visible = false
-	_apply_glass_style(onboarding_panel, Color("ffffff"), 0.95)
-	_mount_modal_panel(onboarding_panel)
-
-	var vbox = VBoxContainer.new()
-	onboarding_panel.add_child(vbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 20)
-	margin.add_constant_override("margin_right", 20)
-	margin.add_constant_override("margin_top", 20)
-	margin.add_constant_override("margin_bottom", 20)
-	vbox.add_child(margin)
-
-	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 12)
-	margin.add_child(content)
-
-	var title = Label.new()
-	title.text = "🎮 欢迎来到连连看"
-	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("5c3a4d"))
-	content.add_child(title)
-
-	var line = HSeparator.new()
-	content.add_child(line)
-
-	var sections = [
-		{"title": "🎯 基本玩法", "content": "点击两个相同图案进行连接消除。路径最多可以拐弯 2 次。"},
-		{"title": "🔓 解锁规则", "content": "完成当前关卡即可解锁下一关。已解锁的关卡可以随时切换挑战。"},
-		{"title": "⌨️ 快捷键", "content": "H - 提示  |  A - 自动消除  |  S - 洗牌\nR - 重置  |  P - 暂停  |  [ / ] - 切换关卡"}
-	]
-
-	for section in sections:
-		var section_title = Label.new()
-		section_title.text = section.title
-		section_title.add_color_override("font_color", Color("7a5064"))
-		section_title.add_font_override("font", game_font)
-		content.add_child(section_title)
-
-		var section_content = Label.new()
-		section_content.text = section.content
-		section_content.autowrap = true
-		section_content.add_color_override("font_color", Color("8f6b80"))
-		section_content.add_font_override("font", game_font)
-		content.add_child(section_content)
-
-	var spacer = Control.new()
-	spacer.rect_min_size = Vector2(0, 8)
-	content.add_child(spacer)
-
-	var got_it_button = Button.new()
-	got_it_button.text = "知道了，开始游戏"
-	got_it_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	got_it_button.rect_min_size = Vector2(0, 44)
-	got_it_button.add_font_override("font", game_font)
-	got_it_button.connect("pressed", self, "_on_onboarding_dismissed")
-	content.add_child(got_it_button)
-	_style_dialog_buttons(onboarding_panel)
-
-func _show_onboarding_if_needed():
-	var has_seen_onboarding = progression_state.get(ONBOARDING_SEEN_KEY, false)
-	if not has_seen_onboarding and onboarding_panel != null:
-		onboarding_panel.visible = true
-		stage_status = STATUS_PAUSED
-		if second_timer:
-			second_timer.stop()
-
-func _on_onboarding_dismissed():
-	print("[Game] onboarding dismissed")
-	if onboarding_panel != null:
-		onboarding_panel.visible = false
-	_patch_progress_state({ONBOARDING_SEEN_KEY: true})
-	stage_status = STATUS_PLAYING
-	if second_timer:
-		second_timer.start()
+	UI_PANELS._onboarding_panel(self)
 
 func _build_settings_panel():
-	settings_panel = PanelContainer.new()
-	settings_panel.rect_min_size = Vector2(360, 320)
-	settings_panel.visible = false
-	_apply_glass_style(settings_panel, Color("ffffff"), 0.95)
-	_mount_modal_panel(settings_panel)
-
-	var vbox = VBoxContainer.new()
-	vbox.add_constant_override("separation", 16)
-	settings_panel.add_child(vbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 24)
-	margin.add_constant_override("margin_right", 24)
-	margin.add_constant_override("margin_top", 24)
-	margin.add_constant_override("margin_bottom", 24)
-	vbox.add_child(margin)
-
-	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 16)
-	margin.add_child(content)
-
-	# Title
-	var title = Label.new()
-	title.text = "⚙️ 设置"
-	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("5c3a4d"))
-	content.add_child(title)
-
-	var line = HSeparator.new()
-	content.add_child(line)
-
-	# Master volume
-	var master_row = _create_volume_row("主音量", AudioManager.master_volume)
-	master_row.slider.connect("value_changed", self, "_on_master_volume_changed")
-	content.add_child(master_row.container)
-
-	# Effects enabled
-	var effects_row = _create_toggle_row("音效", AudioManager.effects_enabled)
-	effects_row.toggle.connect("toggled", self, "_on_effects_toggled")
-	content.add_child(effects_row.container)
-
-	# Music enabled
-	var music_row = _create_toggle_row("背景音乐", AudioManager.music_enabled)
-	music_row.toggle.connect("toggled", self, "_on_music_toggled")
-	content.add_child(music_row.container)
-
-	# Mute all
-	var mute_row = _create_toggle_row("静音", AudioManager.muted)
-	mute_row.toggle.connect("toggled", self, "_on_mute_toggled")
-	content.add_child(mute_row.container)
-
-	var spacer = Control.new()
-	spacer.rect_min_size = Vector2(0, 8)
-	content.add_child(spacer)
-
-	# Close button
-	var close_button = Button.new()
-	close_button.text = "关闭"
-	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close_button.rect_min_size = Vector2(0, 44)
-	close_button.add_font_override("font", game_font)
-	close_button.connect("pressed", self, "_on_settings_close")
-	content.add_child(close_button)
-
-func _create_volume_row(label_text, initial_value):
-	var container = HBoxContainer.new()
-	container.add_constant_override("separation", 12)
-
-	var label = Label.new()
-	label.text = label_text
-	label.rect_min_size = Vector2(80, 0)
-	label.add_color_override("font_color", Color("7a5064"))
-	label.add_font_override("font", game_font)
-	container.add_child(label)
-
-	var slider = HSlider.new()
-	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	slider.min_value = 0.0
-	slider.max_value = 1.0
-	slider.step = 0.05
-	slider.value = initial_value
-	container.add_child(slider)
-
-	return {"container": container, "slider": slider}
-
-func _create_toggle_row(label_text, initial_value):
-	var container = HBoxContainer.new()
-	container.add_constant_override("separation", 12)
-
-	var label = Label.new()
-	label.text = label_text
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.add_color_override("font_color", Color("7a5064"))
-	label.add_font_override("font", game_font)
-	container.add_child(label)
-
-	var toggle = CheckBox.new()
-	toggle.pressed = initial_value
-	container.add_child(toggle)
-
-	return {"container": container, "toggle": toggle}
-
-func _on_settings_pressed():
-	if settings_panel == null:
-		return
-	settings_panel.visible = true
-	if stage_status == STATUS_PLAYING:
-		stage_status = STATUS_PAUSED
-		if second_timer:
-			second_timer.stop()
-
-func _on_settings_close():
-	if settings_panel != null:
-		settings_panel.visible = false
-	if stage_status == STATUS_PAUSED:
-		stage_status = STATUS_PLAYING
-		if second_timer:
-			second_timer.start()
-
-func _on_master_volume_changed(value):
-	AudioManager.set_master_volume(value)
-
-func _on_effects_toggled(enabled):
-	AudioManager.set_effects_enabled(enabled)
-
-func _on_music_toggled(enabled):
-	AudioManager.set_music_enabled(enabled)
-
-func _on_mute_toggled(muted):
-	AudioManager.set_muted(muted)
+	UI_PANELS._settings_panel(self)
 
 func _build_achievements_panel():
-	achievements_panel = PanelContainer.new()
-	achievements_panel.rect_min_size = Vector2(400, 480)
-	achievements_panel.visible = false
-	_apply_glass_style(achievements_panel, Color("ffffff"), 0.95)
-	_mount_modal_panel(achievements_panel)
-
-	var vbox = VBoxContainer.new()
-	vbox.add_constant_override("separation", 16)
-	achievements_panel.add_child(vbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 24)
-	margin.add_constant_override("margin_right", 24)
-	margin.add_constant_override("margin_top", 24)
-	margin.add_constant_override("margin_bottom", 24)
-	vbox.add_child(margin)
-
-	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 12)
-	margin.add_child(content)
-
-	# Title
-	var title = Label.new()
-	title.text = "🏆 成就"
-	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("5c3a4d"))
-	content.add_child(title)
-
-	var line = HSeparator.new()
-	content.add_child(line)
-
-	# Achievement list
-	var achievements_list = VBoxContainer.new()
-	achievements_list.add_constant_override("separation", 10)
-	content.add_child(achievements_list)
-
-	for achievement in PROGRESSION_SCRIPT.ACHIEVEMENTS:
-		var item = _create_achievement_item(achievement)
-		achievements_list.add_child(item)
-
-	var spacer = Control.new()
-	spacer.rect_min_size = Vector2(0, 8)
-	content.add_child(spacer)
-
-	# Close button
-	var close_button = Button.new()
-	close_button.text = "关闭"
-	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close_button.rect_min_size = Vector2(0, 44)
-	close_button.add_font_override("font", game_font)
-	close_button.connect("pressed", self, "_on_achievements_close")
-	content.add_child(close_button)
-
-func _create_achievement_item(achievement):
-	var hbox = HBoxContainer.new()
-	hbox.add_constant_override("separation", 12)
-
-	var unlocked = PROGRESSION_SCRIPT.has_achievement(progression_state, achievement["id"])
-
-	# Icon
-	var icon_label = Label.new()
-	icon_label.text = "🏆" if unlocked else "🔒"
-	hbox.add_child(icon_label)
-
-	# Text content
-	var vbox = VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(vbox)
-
-	var name_label = Label.new()
-	name_label.text = achievement["name"]
-	name_label.add_color_override("font_color", Color("059669" if unlocked else "94a3b8"))
-	name_label.add_font_override("font", game_font)
-	vbox.add_child(name_label)
-
-	var desc_label = Label.new()
-	desc_label.text = achievement["desc"]
-	desc_label.add_color_override("font_color", Color("64748b" if unlocked else "cbd5e1"))
-	desc_label.add_font_override("font", game_font)
-	vbox.add_child(desc_label)
-
-	return hbox
-
-func _on_achievements_pressed():
-	if achievements_panel == null:
-		return
-	# Rebuild to update unlock status
-	if achievements_panel.get_child_count() > 0:
-		for child in achievements_panel.get_children():
-			child.queue_free()
-	_build_achievements_panel()
-	achievements_panel.visible = true
-	if stage_status == STATUS_PLAYING:
-		stage_status = STATUS_PAUSED
-		if second_timer:
-			second_timer.stop()
-
-func _on_achievements_close():
-	if achievements_panel != null:
-		achievements_panel.visible = false
-	if stage_status == STATUS_PAUSED:
-		stage_status = STATUS_PLAYING
-		if second_timer:
-			second_timer.start()
+	UI_PANELS._achievements_panel(self)
 
 func _build_pause_panel():
-	pause_panel = PanelContainer.new()
-	pause_panel.rect_min_size = Vector2(320, 280)
-	pause_panel.visible = false
-	_apply_glass_style(pause_panel, Color("ffffff"), 0.98)
-	_mount_modal_panel(pause_panel)
-
-	var vbox = VBoxContainer.new()
-	vbox.add_constant_override("separation", 12)
-	pause_panel.add_child(vbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 24)
-	margin.add_constant_override("margin_right", 24)
-	margin.add_constant_override("margin_top", 24)
-	margin.add_constant_override("margin_bottom", 24)
-	vbox.add_child(margin)
-
-	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 12)
-	margin.add_child(content)
-
-	# Title
-	var title = Label.new()
-	title.text = "⏸️ 游戏暂停"
-	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("5c3a4d"))
-	content.add_child(title)
-
-	# Level info
-	var level_info = Label.new()
-	level_info.text = "当前关卡"
-	level_info.align = Label.ALIGN_CENTER
-	level_info.add_color_override("font_color", Color("8f6b80"))
-	level_info.add_font_override("font", game_font)
-	content.add_child(level_info)
-
-	var line = HSeparator.new()
-	content.add_child(line)
-
-	# Resume button
-	var resume_button = Button.new()
-	resume_button.text = "▶️ 继续游戏 (P)"
-	resume_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	resume_button.rect_min_size = Vector2(0, 44)
-	resume_button.add_font_override("font", game_font)
-	resume_button.connect("pressed", self, "_resume_stage")
-	content.add_child(resume_button)
-
-	# Restart button
-	var restart_button = Button.new()
-	restart_button.text = "🔄 重新开始"
-	restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	restart_button.rect_min_size = Vector2(0, 44)
-	restart_button.add_font_override("font", game_font)
-	restart_button.connect("pressed", self, "_on_restart_current_level")
-	content.add_child(restart_button)
-
-	# Back to level 1 button
-	var back_button = Button.new()
-	back_button.text = "🏠 返回第1关"
-	back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	back_button.rect_min_size = Vector2(0, 44)
-	back_button.add_font_override("font", game_font)
-	back_button.connect("pressed", self, "_on_back_to_first_level")
-	content.add_child(back_button)
-
-	# Exit special session button (daily / time attack / endless)
-	pause_exit_button = Button.new()
-	pause_exit_button.text = "🚪 返回关卡模式"
-	pause_exit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pause_exit_button.rect_min_size = Vector2(0, 44)
-	pause_exit_button.add_font_override("font", game_font)
-	pause_exit_button.connect("pressed", self, "_on_exit_special_pressed")
-	pause_exit_button.visible = false
-	content.add_child(pause_exit_button)
+	UI_PANELS._pause_panel(self)
 
 func _build_modes_panel():
-	modes_panel = PanelContainer.new()
-	modes_panel.rect_min_size = Vector2(340, 640)
-	modes_panel.visible = false
-	_apply_glass_style(modes_panel, Color("ffffff"), 0.95)
-	_mount_modal_panel(modes_panel)
-
-	var vbox = VBoxContainer.new()
-	modes_panel.add_child(vbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 20)
-	margin.add_constant_override("margin_right", 20)
-	margin.add_constant_override("margin_top", 20)
-	margin.add_constant_override("margin_bottom", 20)
-	margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(margin)
-
-	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 10)
-	margin.add_child(content)
-
-	var title = Label.new()
-	title.text = "🎮 玩法模式"
-	title.align = Label.ALIGN_CENTER
-	title.add_font_override("font", game_font)
-	title.add_color_override("font_color", Color("5c3a4d"))
-	content.add_child(title)
-
-	# Mode rows are rebuilt on every open; keep them in a dedicated box.
-	# ScrollContainer keeps thirteen mode cards usable on short screens.
-	var rows_scroll = ScrollContainer.new()
-	rows_scroll.scroll_horizontal_enabled = false
-	rows_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(rows_scroll)
-	var rows_box = VBoxContainer.new()
-	rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rows_box.add_constant_override("separation", 7)
-	rows_scroll.add_child(rows_box)
-
-	var spacer = Control.new()
-	spacer.rect_min_size = Vector2(0, 6)
-	content.add_child(spacer)
-
-	var close_button = Button.new()
-	close_button.text = "关闭"
-	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close_button.rect_min_size = Vector2(0, 44)
-	close_button.add_font_override("font", game_font)
-	close_button.connect("pressed", self, "_on_modes_close_pressed")
-	content.add_child(close_button)
-	_style_dialog_buttons(modes_panel)
-
-func _refresh_modes_panel():
-	if modes_panel == null:
-		return
-	# modes_panel content chain: vbox -> margin -> content; content children:
-	# [title, rows_box, spacer, close_button]
-	var content = modes_panel.get_child(0).get_child(0).get_child(0)
-	var rows_box = content.get_child(1).get_child(0)
-	for child in rows_box.get_children():
-		rows_box.remove_child(child)
-		child.queue_free()
-
-	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
-	var daily = progression_state.get("daily_challenge", {})
-	var endless_best = progression_state.get("endless_best", {})
-	var unlocked_index = int(progression_state.get("highest_unlocked_level_index", 0))
-	var done_today = str(daily.get("last_date", "")) == today
-	var rows = [
-		{
-			"id": "daily",
-			"title": "📅 每日挑战",
-			"detail": "全网同一棋盘 · 连胜%d · 最佳%d分 · %s" % [
-				int(daily.get("streak", 0)), int(daily.get("best_score", 0)),
-				"今日已完成" if done_today else "今日未完成"
-			]
-		},
-		{
-			"id": "time_attack",
-			"title": "⏱️ 限时挑战",
-			"detail": "60秒起，消除得时间 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
-		},
-		{
-			"id": "memory",
-			"title": "🎁 盲盒模式",
-			"detail": "记忆翻牌配对 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))
-		},
-		{
-			"id": "frost",
-			"title": "❄️ 冰雪挑战",
-			"detail": "冰冻方块要消除两次 · 最佳%d分" % int(progression_state.get("frost_best_score", 0))
-		},
-		{
-			"id": "zen",
-			"title": "🍵 休闲模式",
-			"detail": "没有时限，纯享受 · 最佳%d分" % int(progression_state.get("zen_best_score", 0))
-		},
-		{
-			"id": "hell",
-			"title": "🔥 地狱模式",
-			"detail": "大盘少图案超紧时间 · 最佳%d分" % int(progression_state.get("hell_best_score", 0))
-		},
-		{
-			"id": "moves",
-			"title": "🧮 步数挑战",
-			"detail": "步数有限精打细算 · 最佳%d分" % int(progression_state.get("moves_best_score", 0))
-		},
-		{
-			"id": "race",
-			"title": "🤖 竞速对战",
-			"detail": "和机器人抢消·先完成者胜 · 最佳%d分" % int(progression_state.get("race_best_score", 0))
-		},
-		{
-			"id": "stack",
-			"title": "🥞 叠层模式",
-			"detail": "上层压下层先消上层 · 最佳%d分" % int(progression_state.get("stack_best_score", 0))
-		},
-		{
-			"id": "gravity",
-			"title": "🍎 重力模式",
-			"detail": "消除后方块掉落补位 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))
-		},
-		{
-			"id": "fog",
-			"title": "🌫️ 迷雾模式",
-			"detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))
-		},
-		{
-			"id": "chain",
-			"title": "⛓️ 锁链模式",
-			"detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))
-		},
-		{
-			"id": "endless",
-			"title": "∞ 无尽模式",
-			"detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [
-				int(endless_best.get("round", 0)), int(endless_best.get("score", 0))
-			]
-		}
-	]
-	for row in rows:
-		var config = game_mode_configs.get(row["id"], {})
-		var unlocked = SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
-		var button = Button.new()
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.rect_min_size = Vector2(0, 52)
-		button.add_font_override("font", game_font)
-		if unlocked:
-			button.text = row["title"] + "\n" + row["detail"]
-			button.connect("pressed", self, "_on_special_mode_pressed", [row["id"]])
-		else:
-			button.text = row["title"] + "\n" + SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
-		_style_dialog_buttons(button)
-		rows_box.add_child(button)
-
-func _on_modes_pressed():
-	_refresh_modes_panel()
-	if modes_panel:
-		modes_panel.visible = true
-
-func _on_modes_close_pressed():
-	if modes_panel:
-		modes_panel.visible = false
-
-func _on_special_mode_pressed(mode_id):
-	_on_modes_close_pressed()
-	_start_special_mode(mode_id)
-
-func _on_exit_special_pressed():
-	_hide_pause_panel()
-	_exit_special_mode()
-
-func _show_pause_panel():
-	if pause_panel == null:
-		return
-	# Update level info
-	var vbox = pause_panel.get_child(0)
-	var margin = vbox.get_child(0)
-	var content = margin.get_child(0)
-	var level_info = content.get_child(1) as Label
-	var level = _current_level()
-	if special_mode != "":
-		level_info.text = str(level.get("name", "特殊模式")) + " · " + _mode_label(special_mode)
-	else:
-		var level_id = int(level.get("id", level_index + 1))
-		var level_name = str(level.get("name", "关卡"))
-		level_info.text = "第" + str(level_id) + "关 - " + level_name
-	if pause_exit_button:
-		pause_exit_button.visible = special_mode != ""
-
-	pause_panel.visible = true
-
-func _hide_pause_panel():
-	if pause_panel != null:
-		pause_panel.visible = false
-
-func _on_restart_current_level():
-	_hide_pause_panel()
-	if special_mode != "":
-		_start_special_mode(special_mode)
-		_show_message("重新开始挑战", 1.0)
-		return
-	_start_level(level_index, false)
-	_show_message("重新开始当前关卡", 1.0)
-
-func _on_back_to_first_level():
-	_hide_pause_panel()
-	_start_level(0, true)
-	_show_message("返回第1关", 1.0)
+	UI_PANELS._modes_panel(self)
 
 func _build_timers():
 	second_timer = Timer.new()
@@ -4501,3 +3912,230 @@ func _find_any_hint(board_state):
 
 func _reshuffle_board(board_state):
 	BOARD_ENGINE.reshuffle_board(board_state, self, "_is_coord_playable")
+
+# --- UI 面板回调与状态方法（Round D 从 ui_panels.gd 迁回）---
+func _show_onboarding_if_needed():
+	var has_seen_onboarding = progression_state.get(ONBOARDING_SEEN_KEY, false)
+	if not has_seen_onboarding and onboarding_panel != null:
+		onboarding_panel.visible = true
+		stage_status = STATUS_PAUSED
+		if second_timer:
+			second_timer.stop()
+
+func _on_onboarding_dismissed():
+	print("[Game] onboarding dismissed")
+	if onboarding_panel != null:
+		onboarding_panel.visible = false
+	_patch_progress_state({ONBOARDING_SEEN_KEY: true})
+	stage_status = STATUS_PLAYING
+	if second_timer:
+		second_timer.start()
+
+func _on_settings_pressed():
+	if settings_panel == null:
+		return
+	settings_panel.visible = true
+	if stage_status == STATUS_PLAYING:
+		stage_status = STATUS_PAUSED
+		if second_timer:
+			second_timer.stop()
+
+func _on_settings_close():
+	if settings_panel != null:
+		settings_panel.visible = false
+	if stage_status == STATUS_PAUSED:
+		stage_status = STATUS_PLAYING
+		if second_timer:
+			second_timer.start()
+
+func _on_master_volume_changed(value):
+	AudioManager.set_master_volume(value)
+
+func _on_effects_toggled(enabled):
+	AudioManager.set_effects_enabled(enabled)
+
+func _on_music_toggled(enabled):
+	AudioManager.set_music_enabled(enabled)
+
+func _on_mute_toggled(muted):
+	AudioManager.set_muted(muted)
+
+func _on_achievements_pressed():
+	if achievements_panel == null:
+		return
+	# Rebuild to update unlock status
+	if achievements_panel.get_child_count() > 0:
+		for child in achievements_panel.get_children():
+			child.queue_free()
+	_build_achievements_panel()
+	achievements_panel.visible = true
+	if stage_status == STATUS_PLAYING:
+		stage_status = STATUS_PAUSED
+		if second_timer:
+			second_timer.stop()
+
+func _on_achievements_close():
+	if achievements_panel != null:
+		achievements_panel.visible = false
+	if stage_status == STATUS_PAUSED:
+		stage_status = STATUS_PLAYING
+		if second_timer:
+			second_timer.start()
+
+func _refresh_modes_panel():
+	if modes_panel == null:
+		return
+	# modes_panel content chain: vbox -> margin -> content; content children:
+	# [title, rows_box, spacer, close_button]
+	var content = modes_panel.get_child(0).get_child(0).get_child(0)
+	var rows_box = content.get_child(1).get_child(0)
+	for child in rows_box.get_children():
+		rows_box.remove_child(child)
+		child.queue_free()
+
+	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	var daily = progression_state.get("daily_challenge", {})
+	var endless_best = progression_state.get("endless_best", {})
+	var unlocked_index = int(progression_state.get("highest_unlocked_level_index", 0))
+	var done_today = str(daily.get("last_date", "")) == today
+	var rows = [
+		{
+			"id": "daily",
+			"title": "📅 每日挑战",
+			"detail": "全网同一棋盘 · 连胜%d · 最佳%d分 · %s" % [
+				int(daily.get("streak", 0)), int(daily.get("best_score", 0)),
+				"今日已完成" if done_today else "今日未完成"
+			]
+		},
+		{
+			"id": "time_attack",
+			"title": "⏱️ 限时挑战",
+			"detail": "60秒起，消除得时间 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
+		},
+		{
+			"id": "memory",
+			"title": "🎁 盲盒模式",
+			"detail": "记忆翻牌配对 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))
+		},
+		{
+			"id": "frost",
+			"title": "❄️ 冰雪挑战",
+			"detail": "冰冻方块要消除两次 · 最佳%d分" % int(progression_state.get("frost_best_score", 0))
+		},
+		{
+			"id": "zen",
+			"title": "🍵 休闲模式",
+			"detail": "没有时限，纯享受 · 最佳%d分" % int(progression_state.get("zen_best_score", 0))
+		},
+		{
+			"id": "hell",
+			"title": "🔥 地狱模式",
+			"detail": "大盘少图案超紧时间 · 最佳%d分" % int(progression_state.get("hell_best_score", 0))
+		},
+		{
+			"id": "moves",
+			"title": "🧮 步数挑战",
+			"detail": "步数有限精打细算 · 最佳%d分" % int(progression_state.get("moves_best_score", 0))
+		},
+		{
+			"id": "race",
+			"title": "🤖 竞速对战",
+			"detail": "和机器人抢消·先完成者胜 · 最佳%d分" % int(progression_state.get("race_best_score", 0))
+		},
+		{
+			"id": "stack",
+			"title": "🥞 叠层模式",
+			"detail": "上层压下层先消上层 · 最佳%d分" % int(progression_state.get("stack_best_score", 0))
+		},
+		{
+			"id": "gravity",
+			"title": "🍎 重力模式",
+			"detail": "消除后方块掉落补位 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))
+		},
+		{
+			"id": "fog",
+			"title": "🌫️ 迷雾模式",
+			"detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))
+		},
+		{
+			"id": "chain",
+			"title": "⛓️ 锁链模式",
+			"detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))
+		},
+		{
+			"id": "endless",
+			"title": "∞ 无尽模式",
+			"detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [
+				int(endless_best.get("round", 0)), int(endless_best.get("score", 0))
+			]
+		}
+	]
+	for row in rows:
+		var config = game_mode_configs.get(row["id"], {})
+		var unlocked = SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
+		var button = Button.new()
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.rect_min_size = Vector2(0, 52)
+		button.add_font_override("font", game_font)
+		if unlocked:
+			button.text = row["title"] + "\n" + row["detail"]
+			button.connect("pressed", self, "_on_special_mode_pressed", [row["id"]])
+		else:
+			button.text = row["title"] + "\n" + SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
+		_style_dialog_buttons(button)
+		rows_box.add_child(button)
+
+func _on_modes_pressed():
+	_refresh_modes_panel()
+	if modes_panel:
+		modes_panel.visible = true
+
+func _on_modes_close_pressed():
+	if modes_panel:
+		modes_panel.visible = false
+
+func _on_special_mode_pressed(mode_id):
+	_on_modes_close_pressed()
+	_start_special_mode(mode_id)
+
+func _on_exit_special_pressed():
+	_hide_pause_panel()
+	_exit_special_mode()
+
+func _show_pause_panel():
+	if pause_panel == null:
+		return
+	# Update level info
+	var vbox = pause_panel.get_child(0)
+	var margin = vbox.get_child(0)
+	var content = margin.get_child(0)
+	var level_info = content.get_child(1) as Label
+	var level = _current_level()
+	if special_mode != "":
+		level_info.text = str(level.get("name", "特殊模式")) + " · " + _mode_label(special_mode)
+	else:
+		var level_id = int(level.get("id", level_index + 1))
+		var level_name = str(level.get("name", "关卡"))
+		level_info.text = "第" + str(level_id) + "关 - " + level_name
+	if pause_exit_button:
+		pause_exit_button.visible = special_mode != ""
+
+	pause_panel.visible = true
+
+func _hide_pause_panel():
+	if pause_panel != null:
+		pause_panel.visible = false
+
+func _on_restart_current_level():
+	_hide_pause_panel()
+	if special_mode != "":
+		_start_special_mode(special_mode)
+		_show_message("重新开始挑战", 1.0)
+		return
+	_start_level(level_index, false)
+	_show_message("重新开始当前关卡", 1.0)
+
+func _on_back_to_first_level():
+	_hide_pause_panel()
+	_start_level(0, true)
+	_show_message("返回第1关", 1.0)
