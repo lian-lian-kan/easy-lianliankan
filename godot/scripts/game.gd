@@ -77,13 +77,20 @@ var level_hints_used = 0
 var level_auto_used = 0
 
 # Power-ups system
-var power_ups: Dictionary = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0}
+var power_ups: Dictionary = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "warm_patch": 0}
 var time_frozen = false
 var time_freeze_timer
 
-# Armed click-targeted power-ups (炸弹/彩虹): arm -> next board click executes.
+# Armed click-targeted power-ups (炸弹/彩虹/暖宝宝): arm -> next board click executes.
 var bomb_pending = false
 var rainbow_pending = false
+var frost_pending = false
+# Warm patches used this frost session (gates the 寒冰骑士 achievement).
+var frost_uses = 0
+
+# Frost mode: parallel to board, 1 = frozen cell (needs one extra match).
+# Ice binds to the POSITION: reshuffles swap tiles under the ice sheet.
+var board_armor = []
 
 # Sakura petals drifting over the background, confetti on stage clear.
 var _petal_layer
@@ -234,6 +241,9 @@ func _unhandled_input(event):
 				accept_event()
 			KEY_7:
 				_use_power_up("rainbow")
+				accept_event()
+			KEY_8:
+				_use_power_up("warm_patch")
 				accept_event()
 			KEY_ESCAPE:
 				if OS.window_fullscreen:
@@ -839,7 +849,7 @@ func _build_ui():
 	# (keyboard-only affordance) so all 7 power-ups fit a 390px width.
 	power_ups_container = HBoxContainer.new()
 	power_ups_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	power_ups_container.add_constant_override("separation", 8)
+	power_ups_container.add_constant_override("separation", 6)
 	header_box.add_child(power_ups_container)
 
 	# Create power-up labels
@@ -850,6 +860,7 @@ func _build_ui():
 	_create_power_up_label("time_sand", "⏳", "5")
 	_create_power_up_label("bomb", "💣", "6")
 	_create_power_up_label("rainbow", "🌈", "7")
+	_create_power_up_label("warm_patch", "🔥", "8")
 
 	combo_progress_bar = ProgressBar.new()
 	combo_progress_bar.min_value = 0
@@ -1511,6 +1522,11 @@ func _refresh_modes_panel():
 			"detail": "记忆翻牌配对 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))
 		},
 		{
+			"id": "frost",
+			"title": "❄️ 冰雪挑战",
+			"detail": "冰冻方块要消除两次 · 最佳%d分" % int(progression_state.get("frost_best_score", 0))
+		},
+		{
 			"id": "endless",
 			"title": "∞ 无尽模式",
 			"detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [
@@ -1732,7 +1748,7 @@ func _add_stat_card(parent, title, key):
 
 func _create_power_up_label(power_up_id, icon, shortcut):
 	var hbox = HBoxContainer.new()
-	hbox.add_constant_override("separation", 3)
+	hbox.add_constant_override("separation", 2)
 	power_ups_container.add_child(hbox)
 
 	var icon_label = Label.new()
@@ -1742,7 +1758,8 @@ func _create_power_up_label(power_up_id, icon, shortcut):
 	var count_label = Label.new()
 	count_label.text = "x0"
 	count_label.add_color_override("font_color", Color("8f6b80"))
-	count_label.add_font_override("font", _font_at_size(14))
+	# 12px keeps all 8 slots on one 390px row when frost mode adds the 🔥.
+	count_label.add_font_override("font", _font_at_size(12))
 	hbox.add_child(count_label)
 
 	var shortcut_label = Label.new()
@@ -1755,7 +1772,8 @@ func _create_power_up_label(power_up_id, icon, shortcut):
 	power_up_labels[power_up_id] = {
 		"icon": icon_label,
 		"count": count_label,
-		"shortcut": shortcut_label
+		"shortcut": shortcut_label,
+		"box": hbox
 	}
 
 func _populate_icon_set_options():
@@ -1899,6 +1917,9 @@ func _start_special_mode(mode_id):
 	elif mode_id == "memory":
 		var tier = SPECIAL_MODES_SCRIPT.memory_tier(config, int(progression_state.get("highest_unlocked_level_index", 0)) + 1)
 		level = SPECIAL_MODES_SCRIPT.build_memory_level(config, tier)
+	elif mode_id == "frost":
+		var tier = SPECIAL_MODES_SCRIPT.frost_tier(config, int(progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		level = SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
 	else:
 		level = SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
 	special_mode = mode_id
@@ -1912,7 +1933,8 @@ func _start_special_mode(mode_id):
 		var intro = {
 			"daily": "每日挑战开始！今天的棋盘人人相同",
 			"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
-			"endless": "无尽模式第1轮！棋盘会越滚越大"
+			"endless": "无尽模式第1轮！棋盘会越滚越大",
+			"frost": "冰雪挑战！❄️ 结霜的方块要消除两次，🔥暖宝宝可以直接解冻"
 		}
 		_show_message(str(intro.get(mode_id, "特殊模式开始")), 1.8)
 
@@ -1922,6 +1944,11 @@ func _exit_special_mode():
 
 func _reset_level_session(level, reset_total = false):
 	board = _create_playable_board(level)
+	board_armor = _build_frost_armor(board, level)
+	frost_pending = false
+	frost_uses = 0
+	bomb_pending = false
+	rainbow_pending = false
 	selected = Vector2(-1, -1)
 	hint_tiles.clear()
 	error_tiles.clear()
@@ -2118,6 +2145,12 @@ func _refresh_board_visuals():
 			button.disabled = not playing
 
 			var is_selected = (selected.x == r and selected.y == c)
+			var frozen = _is_frost_mode() and r < board_armor.size() \
+					and c < board_armor[r].size() and int(board_armor[r][c]) > 0
+			if frozen:
+				# Ice sheet: cool white-blue face with a frost border.
+				bg = bg.linear_interpolate(Color("e7f5ff"), 0.72)
+				border = Color("a5d8ff")
 			var has_effect = false
 
 			if _contains_coord(error_tiles, Vector2(r, c)):
@@ -2127,6 +2160,8 @@ func _refresh_board_visuals():
 			elif _contains_coord(hint_tiles, Vector2(r, c)):
 				bg = Color("d0ebff")
 				border = Color("3b82f6")
+				has_effect = true
+			elif frozen:
 				has_effect = true
 			elif bomb_pending:
 				# Armed bomb: warm glow on every tile invites the pick.
@@ -2144,6 +2179,8 @@ func _refresh_board_visuals():
 				has_effect = true
 
 			_apply_tile_style(button, bg, border, has_effect or is_selected)
+			# Cool tint sells the frost at a glance, even on tiny tiles.
+			button.modulate = Color(0.86, 0.95, 1.1) if frozen else Color(1, 1, 1)
 
 func _apply_tile_style(button, bg_color, border_color, highlight):
 	var normal = StyleBoxFlat.new()
@@ -2267,6 +2304,34 @@ func _contains_coord(list, coord):
 func _is_memory_mode():
 	return special_mode == "memory"
 
+func _is_frost_mode():
+	return special_mode == "frost"
+
+func _build_frost_armor(new_board, level):
+	# Frost levels stamp a ratio of occupied cells as frozen. Ice binds to
+	# the position (tiles reshuffle beneath the ice sheet), so it is a plain
+	# parallel grid; other modes get all-zero armor.
+	var armor = []
+	for r in range(new_board.size()):
+		var row = []
+		for c in range(new_board[r].size()):
+			row.append(0)
+		armor.append(row)
+	var ratio = float(level.get("frost_ratio", 0.0))
+	if ratio <= 0.0:
+		return armor
+	var cells = []
+	for r in range(new_board.size()):
+		for c in range(new_board[r].size()):
+			if int(new_board[r][c]) != 0:
+				cells.append(Vector2(r, c))
+	cells.shuffle()
+	var target = clamp(int(round(cells.size() * ratio)), 0, cells.size())
+	for i in range(target):
+		var cell = cells[i]
+		armor[cell.x][cell.y] = 1
+	return armor
+
 func _memory_key(coord):
 	return str(int(coord.x)) + "," + str(int(coord.y))
 
@@ -2367,8 +2432,7 @@ func _on_memory_tile_pressed(point, r, c):
 	_show_path(path, "eliminate", int(tuning.get("path_preview_ms", 420)))
 	_play_eliminate_effects([a, b])
 
-	board[a.x][a.y] = 0
-	board[b.x][b.y] = 0
+	_apply_match_damage(a, b)
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -2387,6 +2451,9 @@ func _on_tile_pressed(button):
 	var point = Vector2(r, c)
 
 	# Armed click-targeted power-ups take over the next board click.
+	if frost_pending:
+		_execute_warm_patch(point)
+		return
 	if bomb_pending:
 		_execute_bomb(point)
 		return
@@ -2457,8 +2524,7 @@ func _on_tile_pressed(button):
 	_show_path(path, "eliminate", int(tuning.get("path_preview_ms", 420)))
 	_play_eliminate_effects([a, b])
 
-	board[a.x][a.y] = 0
-	board[b.x][b.y] = 0
+	_apply_match_damage(a, b)
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -2518,12 +2584,11 @@ func _on_auto_pressed():
 	var b = hint["b"]
 	var hint_path: Array = hint["path"]
 
-	var will_clear = false
-	if _remaining_tiles_count() <= 2:
-		will_clear = true
-
-	board[a.x][a.y] = 0
-	board[b.x][b.y] = 0
+	var cracked = []
+	_damage_tile(a, cracked)
+	_damage_tile(b, cracked)
+	# Frozen tiles survive as blockers, so judge the clear AFTER the damage.
+	var will_clear = _remaining_tiles_count() == 0
 
 	selected = Vector2(-1, -1)
 	hint_tiles.clear()
@@ -2903,6 +2968,8 @@ func _play_level_intro_animation(level):
 		_show_stage_callout("限时挑战", Color("f06565"), 19)
 	elif special_mode == "memory":
 		_show_stage_callout("盲盒模式", Color("3bc9db"), 19)
+	elif special_mode == "frost":
+		_show_stage_callout("冰雪挑战 · %d%% 方块结了冰" % int(round(float(level.get("frost_ratio", 0.3)) * 100)), Color("4dabf7"), 19)
 	else:
 		var level_id = int(level.get("id", level_index + 1))
 		var level_name = str(level.get("name", "关卡"))
@@ -3113,9 +3180,11 @@ func _on_message_timeout():
 
 func _init_power_ups(level):
 	# Reset power-ups
-	power_ups = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "magnifier": 0, "time_sand": 0, "bomb": 0, "rainbow": 0}
+	power_ups = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "magnifier": 0, "time_sand": 0, "bomb": 0, "rainbow": 0, "warm_patch": 0}
 	bomb_pending = false
 	rainbow_pending = false
+	frost_pending = false
+	frost_uses = 0
 
 	# Grant power-ups based on level difficulty
 	var level_id = int(level.get("id", 1))
@@ -3152,10 +3221,11 @@ func _init_power_ups(level):
 		power_ups["time_sand"] = 1 if special_mode == "time_attack" else 0
 		power_ups["bomb"] = 1
 		power_ups["rainbow"] = 1
+		power_ups["warm_patch"] = 3 if special_mode == "frost" else 0
 
 func _use_power_up(power_up_type):
 	# Re-press cancels an armed click-targeted power-up and refunds the
-	# charge: nothing is spent until the bomb/rainbow actually lands.
+	# charge: nothing is spent until the bomb/rainbow/patch actually lands.
 	if power_up_type == "bomb" and bomb_pending:
 		bomb_pending = false
 		power_ups["bomb"] += 1
@@ -3171,12 +3241,22 @@ func _use_power_up(power_up_type):
 		_refresh_ui()
 		_refresh_board_visuals()
 		return
+	if power_up_type == "warm_patch" and frost_pending:
+		frost_pending = false
+		power_ups["warm_patch"] += 1
+		_show_message("已收回暖宝宝", 0.8)
+		_refresh_ui()
+		_refresh_board_visuals()
+		return
 	if power_ups.get(power_up_type, 0) <= 0:
 		return
 	if stage_status != STATUS_PLAYING:
 		return
 	if power_up_type == "time_sand" and special_mode == "endless":
 		_show_message("无尽模式没有时间限制", 1.0)
+		return
+	if power_up_type == "warm_patch" and not _is_frost_mode():
+		_show_message("暖宝宝只有冰雪模式用得上", 1.0)
 		return
 
 	match power_up_type:
@@ -3194,6 +3274,8 @@ func _use_power_up(power_up_type):
 			_activate_bomb()
 		"rainbow":
 			_activate_rainbow()
+		"warm_patch":
+			_activate_warm_patch()
 
 	power_ups[power_up_type] -= 1
 	_refresh_ui()
@@ -3261,6 +3343,7 @@ func _activate_time_sand():
 func _activate_bomb():
 	bomb_pending = true
 	rainbow_pending = false
+	frost_pending = false
 	selected = Vector2(-1, -1)
 	_show_message("💥 炸弹已就绪：点击任意方块，与它的同伴一起消失", 2.6)
 	_refresh_board_visuals()
@@ -3268,9 +3351,51 @@ func _activate_bomb():
 func _activate_rainbow():
 	rainbow_pending = true
 	bomb_pending = false
+	frost_pending = false
 	selected = Vector2(-1, -1)
 	_show_message("🌈 彩虹已就绪：点击两枚方块，图案不同也能消除", 2.6)
 	_refresh_board_visuals()
+
+func _activate_warm_patch():
+	frost_pending = true
+	bomb_pending = false
+	rainbow_pending = false
+	selected = Vector2(-1, -1)
+	_show_message("🔥 暖宝宝已就绪：点一块结霜的方块解冻", 2.6)
+	_refresh_board_visuals()
+
+func _execute_warm_patch(point):
+	# Not-ice target: stay armed so the charge isn't wasted on a misclick.
+	if int(board_armor[point.x][point.y]) <= 0:
+		_show_message("这块没有结冰，选一块淡蓝色的冰", 1.3)
+		return
+	frost_pending = false
+	frost_uses += 1
+	board_armor[point.x][point.y] = 0
+	AudioManager.play_hint()
+	_play_eliminate_effects([point])
+	_show_message("🔥 冰融化了！", 1.1)
+	_refresh_ui()
+	_refresh_board_visuals()
+
+# One successful match hits both tiles. Frozen cells (armor 1) crack instead
+# of clearing and need a second match; cracked tiles keep blocking paths.
+func _apply_match_damage(a, b):
+	var cracked = []
+	_damage_tile(a, cracked)
+	_damage_tile(b, cracked)
+	if cracked.size() > 0:
+		AudioManager.play_shuffle()
+		_show_message("❄️ 冰层碎裂！再消一次", 1.0)
+	return cracked
+
+func _damage_tile(coord, cracked):
+	if _is_frost_mode() and coord.x < board_armor.size() and coord.y < board_armor[coord.x].size() \
+			and int(board_armor[coord.x][coord.y]) > 0:
+		board_armor[coord.x][coord.y] = int(board_armor[coord.x][coord.y]) - 1
+		cracked.append(coord)
+		return
+	board[coord.x][coord.y] = 0
 
 func _execute_bomb(point):
 	var kind = int(board[point.x][point.y])
@@ -3302,8 +3427,12 @@ func _execute_bomb(point):
 	if score_result["combo"] > 1:
 		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
 
+	# Explosions shatter ice along with the tile.
 	board[point.x][point.y] = 0
 	board[partner.x][partner.y] = 0
+	if _is_frost_mode():
+		board_armor[point.x][point.y] = 0
+		board_armor[partner.x][partner.y] = 0
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -3339,8 +3468,12 @@ func _execute_rainbow_click(point):
 	if score_result["combo"] > 1:
 		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
 
+	# Rainbow light pierces ice: board and armor both go.
 	board[a.x][a.y] = 0
 	board[b.x][b.y] = 0
+	if _is_frost_mode():
+		board_armor[a.x][a.y] = 0
+		board_armor[b.x][b.y] = 0
 
 	_refresh_ui()
 	_refresh_board_visuals()
@@ -3596,6 +3729,15 @@ func _unlock_achievements(ids):
 
 func _record_special_completion():
 	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	if special_mode == "frost":
+		_patch_progress_state({"frost_result": total_score})
+		var frost_achievements = ["frost_first"]
+		if frost_uses == 0:
+			frost_achievements.append("frost_no_power")
+		_unlock_achievements(frost_achievements)
+		stage_panel_label.text = "冰雪挑战完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("frost_best_score", 0)))
+		stage_panel_label.visible = true
+		return
 	if special_mode == "memory":
 		_patch_progress_state({"memory_result": total_score})
 		_unlock_achievements(["memory_first"])
@@ -3749,6 +3891,9 @@ func _update_power_ups_display():
 		var has_power_up = count > 0
 		labels["icon"].modulate = Color(1, 1, 1, 1.0 if has_power_up else 0.4)
 		labels["count"].add_color_override("font_color", Color("059669" if has_power_up else "94a3b8"))
+		# 暖宝宝 is frost-only; hide its slot everywhere else to save width.
+		if power_up_id == "warm_patch" and labels.has("box"):
+			labels["box"].visible = _is_frost_mode()
 
 func _set_stat_text(key, value):
 	if not stat_values.has(key):
@@ -3822,6 +3967,8 @@ func _mode_label(mode):
 			return "无尽模式"
 		"memory":
 			return "盲盒模式"
+		"frost":
+			return "冰雪挑战"
 		_:
 			return "未知"
 

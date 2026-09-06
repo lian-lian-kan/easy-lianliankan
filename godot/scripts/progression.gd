@@ -15,7 +15,9 @@ const ACHIEVEMENTS = [
 	{"id": "memory_first", "name": "盲盒初体验", "desc": "完成一局盲盒模式"},
 	{"id": "daily_streak_7", "name": "七日之约", "desc": "每日挑战连胜达到7天"},
 	{"id": "endless_round_5", "name": "无尽探索者", "desc": "无尽模式达到第5轮"},
-	{"id": "time_attack_1000", "name": "限时高手", "desc": "限时挑战得分达到1000"}
+	{"id": "time_attack_1000", "name": "限时高手", "desc": "限时挑战得分达到1000"},
+	{"id": "frost_first", "name": "冰雪初融", "desc": "完成一局冰雪挑战"},
+	{"id": "frost_no_power", "name": "寒冰骑士", "desc": "不使用暖宝宝完成一局冰雪挑战"}
 ]
 
 
@@ -32,7 +34,8 @@ static func default_progress(level_count: int) :
 		"daily_challenge": {"last_date": "", "streak": 0, "best_streak": 0, "best_score": 0},
 		"endless_best": {"round": 0, "score": 0},
 		"time_attack_best_score": 0,
-		"memory_best_score": 0
+		"memory_best_score": 0,
+		"frost_best_score": 0
 	}
 
 
@@ -71,6 +74,7 @@ static func normalize_progress(raw, level_count: int) :
 			}
 		normalized["time_attack_best_score"] = max(0, int(raw.get("time_attack_best_score", 0)))
 		normalized["memory_best_score"] = max(0, int(raw.get("memory_best_score", 0)))
+		normalized["frost_best_score"] = max(0, int(raw.get("frost_best_score", 0)))
 
 	normalized["current_level_index"] = clamp(int(normalized["current_level_index"]), 0, max_level_index)
 	normalized["highest_unlocked_level_index"] = clamp(int(normalized["highest_unlocked_level_index"]), 0, max_level_index)
@@ -133,6 +137,8 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		next_state["time_attack_best_score"] = max(int(next_state["time_attack_best_score"]), max(0, int(patch["time_attack_result"])))
 	if patch.has("memory_result"):
 		next_state["memory_best_score"] = max(int(next_state["memory_best_score"]), max(0, int(patch["memory_result"])))
+	if patch.has("frost_result"):
+		next_state["frost_best_score"] = max(int(next_state["frost_best_score"]), max(0, int(patch["frost_result"])))
 
 	next_state["version"] = SAVE_VERSION
 	return next_state
@@ -149,7 +155,8 @@ static func same_progress(a, b, level_count: int) :
 		and _dicts_equal(aa.get("daily_challenge", {}), bb.get("daily_challenge", {})) \
 		and _dicts_equal(aa.get("endless_best", {}), bb.get("endless_best", {})) \
 		and int(aa.get("time_attack_best_score", 0)) == int(bb.get("time_attack_best_score", 0)) \
-		and int(aa.get("memory_best_score", 0)) == int(bb.get("memory_best_score", 0))
+		and int(aa.get("memory_best_score", 0)) == int(bb.get("memory_best_score", 0)) \
+		and int(aa.get("frost_best_score", 0)) == int(bb.get("frost_best_score", 0))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :

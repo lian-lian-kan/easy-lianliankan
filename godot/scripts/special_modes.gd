@@ -51,6 +51,23 @@ const DEFAULT_CONFIGS = {
 		"kinds": 8,
 		"time_base": 60,
 		"time_per_tile": 1.5
+	},
+	"frost": {
+		"mode_id": "frost",
+		"name": "冰雪挑战",
+		"description": "冰冻方块要消除两次",
+		"unlock_level": 13,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 9,
+		"time_base": 110,
+		"time_per_tile": 1.0,
+		"frost_ratio": 0.3,
+		"difficulty_tiers": [
+			{"level_range": [1, 5], "frost_ratio": 0.22, "rows": 8, "cols": 8, "kinds": 8, "time_base": 110},
+			{"level_range": [6, 10], "frost_ratio": 0.3, "rows": 10, "cols": 8, "kinds": 9, "time_base": 130},
+			{"level_range": [11, 999], "frost_ratio": 0.38, "rows": 10, "cols": 9, "kinds": 11, "time_base": 150}
+		]
 	}
 }
 
@@ -192,6 +209,52 @@ static func build_memory_level(config, tier: Dictionary):
 		"time_limit": time_limit,
 		"memory_preview": float(tier.get("preview", 5.0)),
 		"memory_face_up": float(tier.get("face_up", 1.0))
+	}
+
+
+# Pick the frost difficulty tier covering the player's campaign progress;
+# mirrors memory_tier.
+static func frost_tier(config, progress_level: int) -> Dictionary:
+	var tiers = config.get("difficulty_tiers", [])
+	if typeof(tiers) == TYPE_ARRAY:
+		for tier in tiers:
+			if typeof(tier) != TYPE_DICTIONARY or not tier.has("level_range"):
+				continue
+			var range_data = tier["level_range"]
+			if typeof(range_data) != TYPE_ARRAY or range_data.size() < 2:
+				continue
+			if int(progress_level) >= int(range_data[0]) and int(progress_level) <= int(range_data[1]):
+				return {
+					"frost_ratio": float(tier.get("frost_ratio", config.get("frost_ratio", 0.3))),
+					"rows": int(tier.get("rows", config.get("rows", 10))),
+					"cols": int(tier.get("cols", config.get("cols", 8))),
+					"kinds": int(tier.get("kinds", config.get("kinds", 9))),
+					"time_base": int(tier.get("time_base", config.get("time_base", 110)))
+				}
+	return {
+		"frost_ratio": float(config.get("frost_ratio", 0.3)),
+		"rows": int(config.get("rows", 10)),
+		"cols": int(config.get("cols", 8)),
+		"kinds": int(config.get("kinds", 9)),
+		"time_base": int(config.get("time_base", 110))
+	}
+
+
+static func build_frost_level(config, tier: Dictionary):
+	var rows = int(tier.get("rows", 10))
+	var cols = int(tier.get("cols", 8))
+	var kinds = int(tier.get("kinds", 9))
+	# Same generous formula as memory: thinking time, not punish time.
+	var time_limit = int(tier.get("time_base", 110)) + int(rows * cols * float(config.get("time_per_tile", 1.0)))
+	return {
+		"id": 1,
+		"name": str(config.get("name", "冰雪挑战")),
+		"mode": "frost",
+		"rows": rows,
+		"cols": cols,
+		"kinds": kinds,
+		"time_limit": time_limit,
+		"frost_ratio": clamp(float(tier.get("frost_ratio", 0.3)), 0.0, 0.6)
 	}
 
 
