@@ -2,6 +2,8 @@ extends Reference
 
 const SAVE_VERSION = 1
 
+const SPECIAL_MODES = preload("res://scripts/special_modes.gd")
+
 # Achievement definitions
 const ACHIEVEMENTS = [
 	{"id": "first_clear", "name": "初次通关", "desc": "完成第1关"},
@@ -22,7 +24,10 @@ static func default_progress(level_count: int) :
 		"best_combo": 0,
 		"achievements": [],
 		"onboarding_seen": false,
-		"level_best_times": {}  # Level index -> best time in seconds
+		"level_best_times": {},  # Level index -> best time in seconds
+		"daily_challenge": {"last_date": "", "streak": 0, "best_streak": 0, "best_score": 0},
+		"endless_best": {"round": 0, "score": 0},
+		"time_attack_best_score": 0
 	}
 
 
@@ -44,6 +49,22 @@ static func normalize_progress(raw, level_count: int) :
 		var raw_best_times = raw.get("level_best_times", {})
 		if typeof(raw_best_times) == TYPE_DICTIONARY:
 			normalized["level_best_times"] = raw_best_times.duplicate()
+		# Load special mode records
+		var raw_daily = raw.get("daily_challenge", {})
+		if typeof(raw_daily) == TYPE_DICTIONARY:
+			normalized["daily_challenge"] = {
+				"last_date": str(raw_daily.get("last_date", "")),
+				"streak": max(0, int(raw_daily.get("streak", 0))),
+				"best_streak": max(0, int(raw_daily.get("best_streak", 0))),
+				"best_score": max(0, int(raw_daily.get("best_score", 0)))
+			}
+		var raw_endless = raw.get("endless_best", {})
+		if typeof(raw_endless) == TYPE_DICTIONARY:
+			normalized["endless_best"] = {
+				"round": max(0, int(raw_endless.get("round", 0))),
+				"score": max(0, int(raw_endless.get("score", 0)))
+			}
+		normalized["time_attack_best_score"] = max(0, int(raw.get("time_attack_best_score", 0)))
 
 	normalized["current_level_index"] = clamp(int(normalized["current_level_index"]), 0, max_level_index)
 	normalized["highest_unlocked_level_index"] = clamp(int(normalized["highest_unlocked_level_index"]), 0, max_level_index)
@@ -83,6 +104,28 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 			if new_time < current_best:
 				next_state["level_best_times"][level_idx] = new_time
 
+	# Special mode records. A daily result carries the date context so the
+	# streak can bridge month/year boundaries correctly.
+	if patch.has("daily_result"):
+		var daily = patch["daily_result"]
+		if typeof(daily) == TYPE_DICTIONARY and daily.has("date") and daily.has("yesterday"):
+			var date = str(daily["date"])
+			var yesterday = str(daily["yesterday"])
+			var streak = SPECIAL_MODES.next_daily_streak(
+				str(next_state["daily_challenge"]["last_date"]), date, yesterday,
+				int(next_state["daily_challenge"]["streak"]))
+			next_state["daily_challenge"]["last_date"] = date
+			next_state["daily_challenge"]["streak"] = streak
+			next_state["daily_challenge"]["best_streak"] = max(int(next_state["daily_challenge"]["best_streak"]), streak)
+			next_state["daily_challenge"]["best_score"] = max(int(next_state["daily_challenge"]["best_score"]), max(0, int(daily.get("score", 0))))
+	if patch.has("endless_result"):
+		var endless = patch["endless_result"]
+		if typeof(endless) == TYPE_DICTIONARY:
+			next_state["endless_best"]["round"] = max(int(next_state["endless_best"]["round"]), max(0, int(endless.get("round", 0))))
+			next_state["endless_best"]["score"] = max(int(next_state["endless_best"]["score"]), max(0, int(endless.get("score", 0))))
+	if patch.has("time_attack_result"):
+		next_state["time_attack_best_score"] = max(int(next_state["time_attack_best_score"]), max(0, int(patch["time_attack_result"])))
+
 	next_state["version"] = SAVE_VERSION
 	return next_state
 
@@ -94,7 +137,19 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa["highest_unlocked_level_index"]) == int(bb["highest_unlocked_level_index"]) \
 		and int(aa["best_total_score"]) == int(bb["best_total_score"]) \
 		and int(aa["best_combo"]) == int(bb["best_combo"]) \
-		and _arrays_equal(aa.get("achievements", []), bb.get("achievements", []))
+		and _arrays_equal(aa.get("achievements", []), bb.get("achievements", [])) \
+		and _dicts_equal(aa.get("daily_challenge", {}), bb.get("daily_challenge", {})) \
+		and _dicts_equal(aa.get("endless_best", {}), bb.get("endless_best", {})) \
+		and int(aa.get("time_attack_best_score", 0)) == int(bb.get("time_attack_best_score", 0))
+
+
+static func _dicts_equal(a: Dictionary, b: Dictionary) :
+	if a.size() != b.size():
+		return false
+	for key in a.keys():
+		if not b.has(key) or a[key] != b[key]:
+			return false
+	return true
 
 
 static func _arrays_equal(a: Array, b: Array) :

@@ -3,6 +3,7 @@ extends Control
 const CAMPAIGN_PATH = "res://data/campaign.json"
 const TUNING_PATH = "res://data/tuning.json"
 const ICON_SETS_PATH = "res://data/icon_sets.json"
+const GAME_MODES_PATH = "res://data/game_modes.json"
 const PROGRESS_SAVE_PATH = "user://campaign_progress.json"
 
 const STATUS_PLAYING = "playing"
@@ -22,6 +23,7 @@ const PATH_COLOR_HINT = Color("0ea5e9")
 const PATH_COLOR_ELIMINATE = Color("ff7a00")
 const PATH_OVERLAY_SCRIPT = preload("res://scripts/path_overlay.gd")
 const PROGRESSION_SCRIPT = preload("res://scripts/progression.gd")
+const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
 const MOBILE_SHORT_SIDE_MAX = 768.0
 const MOBILE_COMPACT_HEIGHT_MAX = 460.0
 const BOARD_RATIO_MOBILE_PORTRAIT = 0.60
@@ -33,6 +35,13 @@ var campaign_levels = []
 var tuning = {}
 var icon_sets = []
 var icon_set_index = 0
+var game_mode_configs = {}
+
+# Special session state ("daily" / "time_attack" / "endless"); empty means
+# the normal campaign flow. special_level is the virtual level dict in play.
+var special_mode = ""
+var special_level = {}
+var endless_round = 1
 
 var board = []
 var cell_buttons = []
@@ -123,6 +132,10 @@ const ONBOARDING_SEEN_KEY = "onboarding_seen"
 var settings_panel  # 设置面板
 var achievements_panel  # 成就面板
 var pause_panel  # 暂停面板
+var modes_panel  # 玩法模式面板
+var modes_content  # 玩法模式面板行容器
+var pause_exit_button  # 特殊模式退出按钮
+var modes_button  # 玩法模式入口按钮
 
 func _ready():
 	print("[Game] _ready() started")
@@ -229,6 +242,22 @@ func _update_modal_panel_sizes(viewport_size, is_portrait):
 		achievements_panel.rect_min_size = Vector2(min(400.0, max_width), min(480.0, max_height))
 	if pause_panel:
 		pause_panel.rect_min_size = Vector2(min(320.0, max_width), min(280.0, max_height))
+	if modes_panel:
+		modes_panel.rect_min_size = Vector2(min(360.0, max_width), min(460.0, max_height))
+
+	# Panels are mounted inside full-rect CenterContainer holders (see
+	# _mount_modal_panel), so dynamic content never knocks them off-center.
+
+# A CenterContainer holder keeps dialogs centered whatever their content
+# size does; mouse_filter IGNORE lets board clicks pass through when the
+# dialog is hidden.
+func _mount_modal_panel(panel):
+	var holder = CenterContainer.new()
+	holder.set_anchors_and_margins_preset(Control.PRESET_WIDE)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(holder)
+	holder.add_child(panel)
+	return holder
 
 func _update_layout_for_screen_size():
 	if board_wrapper == null or board_grid == null:
@@ -297,7 +326,7 @@ func _update_layout_for_screen_size():
 		icon_set_option.rect_min_size = Vector2(108 if is_mobile else 122, control_min.y)
 	if level_select_option:
 		level_select_option.rect_min_size = Vector2(130 if is_mobile else 172, control_min.y)
-	for button in [hint_button, auto_button, shuffle_button, pause_button, reset_button, jump_level_button, clear_progress_button]:
+	for button in [hint_button, auto_button, shuffle_button, pause_button, reset_button, jump_level_button, clear_progress_button, modes_button]:
 		if button:
 			button.rect_min_size = control_min
 
@@ -375,11 +404,15 @@ func _load_config():
 	campaign_levels = _load_campaign_levels()
 	tuning = _load_tuning()
 	icon_sets = _load_icon_sets()
+	game_mode_configs = _load_game_mode_configs()
 
 	if campaign_levels.empty():
 		campaign_levels = _default_campaign_levels()
 	if icon_sets.empty():
 		icon_sets = _default_icon_sets()
+
+func _load_game_mode_configs():
+	return SPECIAL_MODES_SCRIPT.normalize_configs(_load_json_file(GAME_MODES_PATH))
 
 func _load_json_file(path: String):
 	var file = File.new()
@@ -441,6 +474,17 @@ func _save_progress_state():
 	progression_state = normalized
 
 func _patch_progress_state(patch):
+	# Special sessions only persist their own records, never campaign progress
+	# or the campaign best-score/combo candidates.
+	if special_mode != "":
+		var filtered = patch.duplicate()
+		filtered.erase("score_candidate")
+		filtered.erase("combo_candidate")
+		filtered.erase("current_level_index")
+		filtered.erase("highest_unlocked_level_index")
+		if filtered.empty():
+			return
+		patch = filtered
 	var prev_current = int(progression_state.get("current_level_index", 0))
 	var prev_unlocked = int(progression_state.get("highest_unlocked_level_index", 0))
 	var next_state = PROGRESSION_SCRIPT.apply_update(progression_state, campaign_levels.size(), patch)
@@ -823,6 +867,10 @@ func _build_ui():
 	progression_flow_container.add_constant_override("v_separation", 8)
 	header_box.add_child(progression_flow_container)
 
+	modes_button = _create_control_button("🎮 玩法")
+	modes_button.connect("pressed", self, "_on_modes_pressed")
+	progression_flow_container.add_child(modes_button)
+
 	var level_select_label = Label.new()
 	level_select_label.text = "关卡："
 	level_select_label.add_font_override("font", game_font)
@@ -933,15 +981,15 @@ func _build_ui():
 	_build_settings_panel()
 	_build_achievements_panel()
 	_build_pause_panel()
+	_build_modes_panel()
 	call_deferred("_update_layout_for_screen_size")
 
 func _build_onboarding_panel():
 	onboarding_panel = PanelContainer.new()
-	onboarding_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
 	onboarding_panel.rect_min_size = Vector2(320, 400)
 	onboarding_panel.visible = false
 	_apply_glass_style(onboarding_panel, Color("ffffff"), 0.95)
-	add_child(onboarding_panel)
+	_mount_modal_panel(onboarding_panel)
 
 	var vbox = VBoxContainer.new()
 	onboarding_panel.add_child(vbox)
@@ -1007,6 +1055,7 @@ func _show_onboarding_if_needed():
 			second_timer.stop()
 
 func _on_onboarding_dismissed():
+	print("[Game] onboarding dismissed")
 	if onboarding_panel != null:
 		onboarding_panel.visible = false
 	_patch_progress_state({ONBOARDING_SEEN_KEY: true})
@@ -1016,11 +1065,10 @@ func _on_onboarding_dismissed():
 
 func _build_settings_panel():
 	settings_panel = PanelContainer.new()
-	settings_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
 	settings_panel.rect_min_size = Vector2(360, 320)
 	settings_panel.visible = false
 	_apply_glass_style(settings_panel, Color("ffffff"), 0.95)
-	add_child(settings_panel)
+	_mount_modal_panel(settings_panel)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_constant_override("separation", 16)
@@ -1149,11 +1197,10 @@ func _on_mute_toggled(muted):
 
 func _build_achievements_panel():
 	achievements_panel = PanelContainer.new()
-	achievements_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
 	achievements_panel.rect_min_size = Vector2(400, 480)
 	achievements_panel.visible = false
 	_apply_glass_style(achievements_panel, Color("ffffff"), 0.95)
-	add_child(achievements_panel)
+	_mount_modal_panel(achievements_panel)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_constant_override("separation", 16)
@@ -1256,11 +1303,10 @@ func _on_achievements_close():
 
 func _build_pause_panel():
 	pause_panel = PanelContainer.new()
-	pause_panel.set_anchors_and_margins_preset(Control.PRESET_CENTER)
 	pause_panel.rect_min_size = Vector2(320, 280)
 	pause_panel.visible = false
 	_apply_glass_style(pause_panel, Color("ffffff"), 0.98)
-	add_child(pause_panel)
+	_mount_modal_panel(pause_panel)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_constant_override("separation", 12)
@@ -1322,6 +1368,130 @@ func _build_pause_panel():
 	back_button.connect("pressed", self, "_on_back_to_first_level")
 	content.add_child(back_button)
 
+	# Exit special session button (daily / time attack / endless)
+	pause_exit_button = Button.new()
+	pause_exit_button.text = "🚪 返回关卡模式"
+	pause_exit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pause_exit_button.rect_min_size = Vector2(0, 44)
+	pause_exit_button.add_font_override("font", game_font)
+	pause_exit_button.connect("pressed", self, "_on_exit_special_pressed")
+	pause_exit_button.visible = false
+	content.add_child(pause_exit_button)
+
+func _build_modes_panel():
+	modes_panel = PanelContainer.new()
+	modes_panel.rect_min_size = Vector2(340, 440)
+	modes_panel.visible = false
+	_apply_glass_style(modes_panel, Color("ffffff"), 0.95)
+	_mount_modal_panel(modes_panel)
+
+	var vbox = VBoxContainer.new()
+	modes_panel.add_child(vbox)
+
+	var margin = MarginContainer.new()
+	margin.add_constant_override("margin_left", 20)
+	margin.add_constant_override("margin_right", 20)
+	margin.add_constant_override("margin_top", 20)
+	margin.add_constant_override("margin_bottom", 20)
+	vbox.add_child(margin)
+
+	var content = VBoxContainer.new()
+	content.add_constant_override("separation", 10)
+	margin.add_child(content)
+
+	var title = Label.new()
+	title.text = "🎮 玩法模式"
+	title.align = Label.ALIGN_CENTER
+	title.add_font_override("font", game_font)
+	title.add_color_override("font_color", Color("1e293b"))
+	content.add_child(title)
+
+	# Mode rows are rebuilt on every open; keep them in a dedicated box.
+	var rows_box = VBoxContainer.new()
+	rows_box.add_constant_override("separation", 10)
+	content.add_child(rows_box)
+
+	var spacer = Control.new()
+	spacer.rect_min_size = Vector2(0, 6)
+	content.add_child(spacer)
+
+	var close_button = Button.new()
+	close_button.text = "关闭"
+	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	close_button.rect_min_size = Vector2(0, 44)
+	close_button.add_font_override("font", game_font)
+	close_button.connect("pressed", self, "_on_modes_close_pressed")
+	content.add_child(close_button)
+
+func _refresh_modes_panel():
+	if modes_panel == null:
+		return
+	# modes_panel content chain: vbox -> margin -> content; content children:
+	# [title, rows_box, spacer, close_button]
+	var content = modes_panel.get_child(0).get_child(0).get_child(0)
+	var rows_box = content.get_child(1)
+	for child in rows_box.get_children():
+		rows_box.remove_child(child)
+		child.queue_free()
+
+	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	var daily = progression_state.get("daily_challenge", {})
+	var endless_best = progression_state.get("endless_best", {})
+	var unlocked_index = int(progression_state.get("highest_unlocked_level_index", 0))
+	var done_today = str(daily.get("last_date", "")) == today
+	var rows = [
+		{
+			"id": "daily",
+			"title": "📅 每日挑战",
+			"detail": "全网同一棋盘 · 连胜%d · 最佳%d分 · %s" % [
+				int(daily.get("streak", 0)), int(daily.get("best_score", 0)),
+				"今日已完成" if done_today else "今日未完成"
+			]
+		},
+		{
+			"id": "time_attack",
+			"title": "⏱️ 限时挑战",
+			"detail": "60秒起，消除得时间 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
+		},
+		{
+			"id": "endless",
+			"title": "∞ 无尽模式",
+			"detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [
+				int(endless_best.get("round", 0)), int(endless_best.get("score", 0))
+			]
+		}
+	]
+	for row in rows:
+		var config = game_mode_configs.get(row["id"], {})
+		var unlocked = SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
+		var button = Button.new()
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.rect_min_size = Vector2(0, 56)
+		button.add_font_override("font", game_font)
+		if unlocked:
+			button.text = row["title"] + "\n" + row["detail"]
+			button.connect("pressed", self, "_on_special_mode_pressed", [row["id"]])
+		else:
+			button.text = row["title"] + "\n" + SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
+		rows_box.add_child(button)
+
+func _on_modes_pressed():
+	_refresh_modes_panel()
+	if modes_panel:
+		modes_panel.visible = true
+
+func _on_modes_close_pressed():
+	if modes_panel:
+		modes_panel.visible = false
+
+func _on_special_mode_pressed(mode_id):
+	_on_modes_close_pressed()
+	_start_special_mode(mode_id)
+
+func _on_exit_special_pressed():
+	_hide_pause_panel()
+	_exit_special_mode()
+
 func _show_pause_panel():
 	if pause_panel == null:
 		return
@@ -1331,9 +1501,14 @@ func _show_pause_panel():
 	var content = margin.get_child(0)
 	var level_info = content.get_child(1) as Label
 	var level = _current_level()
-	var level_id = int(level.get("id", level_index + 1))
-	var level_name = str(level.get("name", "关卡"))
-	level_info.text = "第" + str(level_id) + "关 - " + level_name
+	if special_mode != "":
+		level_info.text = str(level.get("name", "特殊模式")) + " · " + _mode_label(special_mode)
+	else:
+		var level_id = int(level.get("id", level_index + 1))
+		var level_name = str(level.get("name", "关卡"))
+		level_info.text = "第" + str(level_id) + "关 - " + level_name
+	if pause_exit_button:
+		pause_exit_button.visible = special_mode != ""
 
 	pause_panel.visible = true
 
@@ -1343,6 +1518,10 @@ func _hide_pause_panel():
 
 func _on_restart_current_level():
 	_hide_pause_panel()
+	if special_mode != "":
+		_start_special_mode(special_mode)
+		_show_message("重新开始挑战", 1.0)
+		return
 	_start_level(level_index, false)
 	_show_message("重新开始当前关卡", 1.0)
 
@@ -1614,9 +1793,52 @@ func _on_clear_progress_pressed():
 
 
 func _start_level(next_index, reset_total = false):
+	# Entering a campaign level always leaves any special session.
+	special_mode = ""
+	special_level = {}
+	endless_round = 1
 	level_index = clamp(next_index, 0, campaign_levels.size() - 1)
 	var level = _current_level()
+	_reset_level_session(level, reset_total)
+	_patch_progress_state({"current_level_index": level_index})
 
+	var level_id = int(level.get("id", level_index + 1))
+	var level_name = str(level.get("name", "关卡"))
+	var mode = str(level.get("mode", "classic"))
+	_show_message("进入第" + str(level_id) + "关：" + level_name + "（" + _mode_label(mode) + "） · 快捷键 H/A/S/P/F/R/[ ]/Enter", 1.35)
+
+func _start_special_mode(mode_id):
+	var config = game_mode_configs.get(mode_id, {})
+	if not SPECIAL_MODES_SCRIPT.is_mode_unlocked(mode_id, config, int(progression_state.get("highest_unlocked_level_index", 0))):
+		_show_message(SPECIAL_MODES_SCRIPT.unlock_requirement_text(mode_id, config), 1.8)
+		return
+	# Build the virtual level first; only touch session state once it exists.
+	var level
+	if mode_id == "daily":
+		var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+		seed(SPECIAL_MODES_SCRIPT.seed_for_day(today))
+		level = SPECIAL_MODES_SCRIPT.build_daily_level(today)
+	elif mode_id == "time_attack":
+		level = SPECIAL_MODES_SCRIPT.build_time_attack_level(config)
+	else:
+		level = SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
+	special_mode = mode_id
+	endless_round = 1
+	special_level = level
+	_reset_level_session(level, true)
+	print("[Game] special mode started: " + mode_id)
+	var intro = {
+		"daily": "每日挑战开始！今天的棋盘人人相同",
+		"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
+		"endless": "无尽模式第1轮！棋盘会越滚越大"
+	}
+	_show_message(str(intro.get(mode_id, "特殊模式开始")), 1.8)
+
+func _exit_special_mode():
+	_start_level(level_index, false)
+	_show_message("已返回关卡模式", 1.0)
+
+func _reset_level_session(level, reset_total = false):
 	board = _create_playable_board(level)
 	selected = Vector2(-1, -1)
 	hint_tiles.clear()
@@ -1642,7 +1864,6 @@ func _start_level(next_index, reset_total = false):
 
 	if reset_total:
 		total_score = 0
-	_patch_progress_state({"current_level_index": level_index})
 
 	_reset_combo()
 	_hide_message()
@@ -1655,12 +1876,9 @@ func _start_level(next_index, reset_total = false):
 	_start_second_timer()
 	_play_level_intro_animation(level)
 
-	var level_id = int(level.get("id", level_index + 1))
-	var level_name = str(level.get("name", "关卡"))
-	var mode = str(level.get("mode", "classic"))
-	_show_message("进入第" + str(level_id) + "关：" + level_name + "（" + _mode_label(mode) + "） · 快捷键 H/A/S/P/F/R/[ ]/Enter", 1.35)
-
 func _current_level():
+	if special_mode != "":
+		return special_level
 	return campaign_levels[level_index]
 
 func _create_playable_board(level):
@@ -2129,6 +2347,9 @@ func _toggle_fullscreen_mode():
 		_show_message("已进入全屏", 0.8)
 
 func _on_reset_pressed():
+	if special_mode != "":
+		_start_special_mode(special_mode)
+		return
 	if stage_status == STATUS_COMPLETED:
 		_start_level(0, true)
 		return
@@ -2414,9 +2635,17 @@ func _show_stage_callout(text, color, font_size):
 	tween.start()
 
 func _play_level_intro_animation(level):
-	var level_id = int(level.get("id", level_index + 1))
-	var level_name = str(level.get("name", "关卡"))
-	_show_stage_callout("第" + str(level_id) + "关 · " + level_name, Color("2563eb"), 19)
+	if special_mode == "daily":
+		var d = OS.get_date()
+		_show_stage_callout("每日挑战 · %d月%d日" % [int(d.month), int(d.day)], Color("7c3aed"), 19)
+	elif special_mode == "endless":
+		_show_stage_callout("无尽模式 · 第%d轮" % endless_round, Color("059669"), 19)
+	elif special_mode == "time_attack":
+		_show_stage_callout("限时挑战", Color("dc2626"), 19)
+	else:
+		var level_id = int(level.get("id", level_index + 1))
+		var level_name = str(level.get("name", "关卡"))
+		_show_stage_callout("第" + str(level_id) + "关 · " + level_name, Color("2563eb"), 19)
 	_animate_board_spawn()
 
 func _animate_board_spawn():
@@ -2572,6 +2801,12 @@ func _init_power_ups(level):
 	if mode == "endurance":
 		power_ups["reshuffle"] += 1
 
+	# Special sessions get a friendly fixed loadout.
+	if special_mode != "":
+		power_ups["time_freeze"] = 2
+		power_ups["reshuffle"] = 2
+		power_ups["auto_match"] = 1
+
 func _use_power_up(power_up_type):
 	if power_ups.get(power_up_type, 0) <= 0:
 		return
@@ -2634,6 +2869,10 @@ func _on_second_tick():
 	if time_frozen:
 		return
 
+	# Endless mode has no clock at all.
+	if special_mode == "endless":
+		return
+
 	time_left = max(0, time_left - 1)
 	_refresh_ui()
 
@@ -2642,6 +2881,19 @@ func _on_second_tick():
 
 func _on_time_up():
 	if stage_status != STATUS_PLAYING:
+		return
+	if special_mode != "":
+		stage_status = STATUS_FAILED
+		AudioManager.play_fail()
+		_reset_combo()
+		selected = Vector2(-1, -1)
+		hint_tiles.clear()
+		error_tiles.clear()
+		second_timer.stop()
+		stage_panel_label.text = "挑战失败！得分 " + str(total_score) + "\n点击「重开」再战，或「暂停」后返回关卡"
+		stage_panel_label.visible = true
+		_refresh_ui()
+		_refresh_board_visuals()
 		return
 	_patch_progress_state({
 		"current_level_index": level_index,
@@ -2665,6 +2917,9 @@ func _on_time_up():
 	_refresh_board_visuals()
 
 func _consume_time_cost(seconds):
+	# Endless mode has no clock, so tool time costs don't apply.
+	if special_mode == "endless":
+		return
 	if seconds <= 0 or stage_status != STATUS_PLAYING:
 		return
 
@@ -2693,6 +2948,17 @@ func _apply_combo_gain(base_score):
 	# New combo formula: base 1.5x, +0.5x per combo level
 	var combo_multiplier = 1.5 + (combo - 1) * 0.5
 	var gain = int(scaled_base * combo_multiplier)
+
+	# Time attack: matches refund time and a hot streak ignites fever mode.
+	if special_mode == "time_attack":
+		var attack_cfg = game_mode_configs.get("time_attack", {})
+		if combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
+			gain = int(round(gain * float(attack_cfg.get("fever_multiplier", 1.5))))
+			_show_message("🔥 Fever x" + str(combo), 0.8)
+		var refund = int(attack_cfg.get("time_bonus_per_match", 3))
+		if combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
+			refund += int(attack_cfg.get("combo_time_bonus", 1))
+		time_left = min(999, time_left + refund)
 
 	total_score += gain
 	level_score += gain
@@ -2728,6 +2994,9 @@ func _update_combo_progress():
 
 
 func _resolve_after_board_changed():
+	if special_mode != "":
+		_resolve_special_clear()
+		return
 	if _remaining_tiles_count() == 0:
 		var time_bonus_multiplier = float(_current_level().get("time_bonus_multiplier", 2.0))
 		var time_bonus = int(round(float(time_left) * time_bonus_multiplier))
@@ -2779,8 +3048,59 @@ func _resolve_after_board_changed():
 		_show_message("无解，已自动重排", 1.0)
 		_refresh_board_visuals()
 
+func _resolve_special_clear():
+	var time_bonus_multiplier = float(_current_level().get("time_bonus_multiplier", 2.0))
+	var time_bonus = int(round(float(time_left) * time_bonus_multiplier))
+	total_score += time_bonus
+	level_score += time_bonus
+
+	_reset_combo()
+	second_timer.stop()
+	stage_panel_label.visible = false
+	AudioManager.play_win()
+
+	if special_mode == "endless":
+		_patch_progress_state({"endless_result": {"round": endless_round, "score": total_score}})
+		var finished_round = endless_round
+		endless_round += 1
+		special_level = SPECIAL_MODES_SCRIPT.build_endless_level(game_mode_configs.get("endless", {}), endless_round)
+		stage_status = STATUS_CLEARED
+		_play_stage_clear_celebration(false)
+		_show_message("第" + str(finished_round) + "轮完成！时间奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
+	else:
+		_record_special_completion()
+		stage_status = STATUS_COMPLETED
+		_play_stage_clear_celebration(true)
+
+	_refresh_ui()
+	_refresh_board_visuals()
+
+func _record_special_completion():
+	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	if special_mode == "daily":
+		_patch_progress_state({
+			"daily_result": {
+				"date": today,
+				"yesterday": SPECIAL_MODES_SCRIPT.yesterday_string(OS.get_date()),
+				"score": total_score
+			}
+		})
+		var daily = progression_state.get("daily_challenge", {})
+		stage_panel_label.text = "今日挑战完成！得分 " + str(total_score) + " · 连胜 " + str(int(daily.get("streak", 0))) + " 天\n明天还有新的棋盘，点击「重开」可再玩今日棋盘"
+	elif special_mode == "time_attack":
+		_patch_progress_state({"time_attack_result": total_score})
+		stage_panel_label.text = "限时挑战结束！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("time_attack_best_score", 0)))
+	else:
+		stage_panel_label.text = "挑战完成！得分 " + str(total_score)
+	stage_panel_label.visible = true
+
 func _on_level_advance_timeout():
 	if stage_status != STATUS_CLEARED:
+		return
+	if special_mode == "endless":
+		# Next endless round keeps the running total score.
+		_reset_level_session(special_level, false)
+		_show_message("第" + str(endless_round) + "轮开始", 1.2)
 		return
 	if pending_level_index < 0:
 		return
@@ -2806,7 +3126,24 @@ func _refresh_ui():
 	var unlocked_level_count = int(progression_state.get("highest_unlocked_level_index", 0)) + 1
 
 	title_label.text = "连连看 H5"
-	subtitle_label.text = "第" + str(level_id) + "/" + str(campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(campaign_levels.size())
+	if special_mode == "daily":
+		var daily = progression_state.get("daily_challenge", {})
+		var now_date = OS.get_date()
+		var done_today = str(daily.get("last_date", "")) == SPECIAL_MODES_SCRIPT.date_string(now_date)
+		subtitle_label.text = "每日挑战 · %d月%d日 · 连胜%d · 最佳%d · %s" % [
+			int(now_date.month), int(now_date.day),
+			int(daily.get("streak", 0)), int(daily.get("best_score", 0)),
+			"今日已完成" if done_today else "今日未完成"
+		]
+	elif special_mode == "endless":
+		var endless_best = progression_state.get("endless_best", {})
+		subtitle_label.text = "无尽模式 · 第%d轮 · 最佳第%d轮 · 最高%d分" % [
+			endless_round, int(endless_best.get("round", 0)), int(endless_best.get("score", 0))
+		]
+	elif special_mode == "time_attack":
+		subtitle_label.text = "限时挑战 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
+	else:
+		subtitle_label.text = "第" + str(level_id) + "/" + str(campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(campaign_levels.size())
 	desc_label.text = description
 
 	status_chip_label.text = _status_label(stage_status)
@@ -2834,12 +3171,14 @@ func _refresh_ui():
 	kinds_chip_label.text = "图案种类：" + str(level.get("kinds", 0))
 
 	level_progress_bar.value = (float(level_index + 1) / float(max(1, campaign_levels.size()))) * 100.0
+	if special_mode != "":
+		level_progress_bar.value = 100.0
 
 	_set_stat_text("total_score", str(total_score))
 	_set_stat_text("level_score", str(level_score))
 	_set_stat_text("moves", str(moves))
 	_set_stat_text("remaining", str(_remaining_tiles_count() / 2))
-	_set_stat_text("time_left", _format_time(time_left))
+	_set_stat_text("time_left", "∞" if special_mode == "endless" else _format_time(time_left))
 	_set_stat_text("combo", "x" + str(max(combo, 1)))
 	_set_stat_text("best_total_score", str(_progress_best_score()))
 	_set_stat_text("best_combo", "x" + str(_progress_best_combo()))
@@ -2888,6 +3227,8 @@ func _set_stat_text(key, value):
 
 
 func _is_time_danger():
+	if special_mode == "endless":
+		return false
 	return stage_status == STATUS_PLAYING and time_left <= int(tuning.get("time_danger_seconds", 10))
 
 func _update_time_warning_pulse(_delta):
@@ -2942,6 +3283,12 @@ func _mode_label(mode):
 			return "连击"
 		"endurance":
 			return "耐力"
+		"daily":
+			return "每日挑战"
+		"time_attack":
+			return "限时挑战"
+		"endless":
+			return "无尽模式"
 		_:
 			return "未知"
 

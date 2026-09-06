@@ -123,6 +123,10 @@ def main():
                 print("FAIL: missing both %s and %s" % (full, live))
                 sys.exit(1)
             full.write_bytes(live.read_bytes())
+        if full.stat().st_size < 5 * 1000 * 1000:
+            print("FAIL: %s looks like an already-subsetted font (%d bytes); "
+                  "put the genuine full font there first" % (full, full.stat().st_size))
+            sys.exit(1)
         text = sans_text if "Sans" in name else emoji_text
         before = full.stat().st_size
         after = subset_font(full, live, text)

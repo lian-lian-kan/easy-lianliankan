@@ -442,3 +442,21 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Next suggestions:
   - 阶段横幅「第X关 XXX」在竖屏布局下与倒计时卡片重叠，可考虑上移或缩短显示时长。
   - wasm 19.8MB（gzip 后 5.3MB）来自官方模板无法裁剪；如需进一步提速可评估 Godot 4.3+ 的单线程 wasm 体积优化或 CDN/Service Worker 预缓存。
+
+## 2026-09-06 (玩法扩展：每日挑战 / 限时挑战 / 无尽模式)
+- Context: data/game_modes.json 定义了限时挑战/无尽/盲盒三模式但 game.gd 零接入，也没有每日挑战；玩法只有 15 关战役。本次接入其中两个+新增每日挑战（H5 移动端优先）。
+- 新增 special_modes.gd（纯逻辑、可 headless 测试）：
+  - 每日挑战：按日期 seed（hash("lianliankan-daily-YYYY-MM-DD")）确定性生成棋盘，全网同一天同一副；rows 10-14 偶数、kinds 8-12、限时 150-180s；连胜按"昨日→+1、断签→1、同日重记→保持"结算。
+  - 限时挑战：开局 60s，每次消除 +3s、连击≥5 狂热再加 1s 且得分 ×1.5（数据全读 game_modes.json 可调）。
+  - 无尽模式：不限时（计时卡显示 ∞），每轮清盘后棋盘 +2 行列、kinds 递增（上限 16×14/20 种），总分跨轮累计。
+  - 解锁：每日挑战始终开放；限时挑战第 5 关解锁、无尽第 8 关解锁（读配置）。
+- game.gd 接线：新增 special session 架构（special_mode/special_level），_current_level()/计时/得分/结算全链路分支；特殊模式分数不写入战役最佳纪录（_patch_progress_state 过滤）；暂停面板新增「返回关卡模式」；进度行首位新增「🎮 玩法」入口 + 居中玩法面板（含各模式个人最佳）。
+- progression 存档扩展：daily_challenge{last_date,streak,best_streak,best_score}、endless_best{round,score}、time_attack_best_score，含 normalize/apply_update/same_progress 与单测覆盖。
+- 修 bug：弹窗 PRESET_CENTER 在内容尺寸变化后偏出屏幕（引导/设置/成就/暂停/玩法全部中招）→ 所有弹窗改挂全屏 CenterContainer 持有器自动居中。实测 390×844 引导弹窗与玩法面板完美居中。
+- 修 bug：subset_fonts.py 自举时会把仓库里的子集字体当"全量源"（fonts/full/ 不随 git）→ 子集的子集缺新字（连胜/最佳/今日 等豆腐块）。已从 git 历史(d93a10c)恢复真全量字体，并加 <5MB 拒绝自举的防护。
+- 字体重子集：692→720 字符（含 ∞/📅/🚪/🔥 等），pck 2.69→2.71MB。
+- Validation: 4 个 headless 测试全绿（新增 special_modes_test 58 项检查：日期边界/连胜规则/种子确定性/无尽成长上限/解锁边界/存档往返）；headless 探针验证完整玩法链路（每日完成记录 streak=1 ✓ 无尽轮次推进+跨轮总分 ✓ 限时加时+狂热 ✓ 失败/退出 ✓ 特殊分数不污染战役纪录 ✓）；浏览器 390×844 实测玩法面板居中、新字符全部正常渲染、每日挑战副标题「每日挑战 · 9月6日 · 连胜0 · 最佳0 · 今日未完成」正确。
+- Next suggestions:
+  - 盲盒模式（memory）尚未实现；道具系统（放大镜/时光沙漏）仍只有数据。
+  - 特殊模式可加专属成就（如连胜 7 天）。
+  - CI 无头浏览器冒烟测试（GameShell 启动 + canvas 截图）可防渲染回归。
