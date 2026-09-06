@@ -3141,72 +3141,19 @@ func _animate_board_spawn():
 			tween.interpolate_property(button, "rect_scale", Vector2(0.72, 0.72), Vector2.ONE, 0.09, Tween.TRANS_BACK, Tween.EASE_OUT, delay)
 			tween.start()
 
-const PETAL_ICONS = ["🌸", "🌸", "🌸", "🌺", "💗", "✨"]
+const FX = preload("res://scripts/fx_layer.gd")
 
 func _build_petals():
-	_petal_timer = Timer.new()
-	_petal_timer.wait_time = 1.1
-	_petal_timer.one_shot = false
-	_petal_timer.connect("timeout", self, "_on_petal_tick")
-	add_child(_petal_timer)
-	_petal_timer.start()
-	# A few petals already mid-fall so the scene never starts empty.
-	for _i in range(4):
-		_spawn_petal(true)
+	FX.build_petals(self)
 
 func _on_petal_tick():
-	if _petal_layer == null or not is_inside_tree():
-		return
-	if _petal_layer.get_child_count() < 12:
-		_spawn_petal(false)
+	FX.petal_tick(self)
 
 func _spawn_petal(start_mid_fall):
-	var petal = Label.new()
-	petal.text = PETAL_ICONS[randi() % PETAL_ICONS.size()]
-	petal.add_font_override("font", _font_at_size(int(12 + randi() % 14)))
-	petal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	petal.modulate = Color(1, 1, 1, 0.0)
-	_petal_layer.add_child(petal)
-
-	var view_size = _petal_layer.rect_size
-	if view_size.x <= 0.0:
-		view_size = Vector2(360, 640)
-	var x = randf() * max(1.0, view_size.x - 24.0)
-	var start_y = rand_range(-140.0, -30.0)
-	if start_mid_fall:
-		start_y = rand_range(-140.0, view_size.y * 0.5)
-	var duration = rand_range(7.0, 13.0)
-	petal.rect_position = Vector2(x, start_y)
-
-	var fall = _make_fx_tween(petal)
-	fall.interpolate_property(petal, "modulate:a", 0.0, rand_range(0.45, 0.8), 0.8, Tween.TRANS_LINEAR, Tween.EASE_OUT)
-	fall.interpolate_property(petal, "rect_position:y", start_y, view_size.y + 50.0, duration, Tween.TRANS_LINEAR, Tween.EASE_IN)
-	fall.interpolate_property(petal, "rect_position:x", x, x + rand_range(-46.0, 46.0), duration, Tween.TRANS_SINE, Tween.EASE_IN_OUT)
-	fall.interpolate_property(petal, "rect_rotation", 0.0, rand_range(-160.0, 160.0), duration, Tween.TRANS_SINE, Tween.EASE_IN_OUT)
-	fall.start()
+	FX.spawn_petal(self, start_mid_fall)
 
 func _spawn_confetti(count):
-	if _petal_layer == null or not is_inside_tree():
-		return
-	var icons = ["🎉", "🎊", "🌸", "💖", "✨", "🌟"]
-	var view_size = _petal_layer.rect_size
-	if view_size.x <= 0.0:
-		view_size = Vector2(360, 640)
-	for _i in range(count):
-		var piece = Label.new()
-		piece.text = icons[randi() % icons.size()]
-		piece.add_font_override("font", _font_at_size(int(14 + randi() % 16)))
-		piece.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		piece.rect_position = Vector2(randf() * max(1.0, view_size.x - 20.0), rand_range(-90.0, -20.0))
-		_petal_layer.add_child(piece)
-		var duration = rand_range(1.6, 3.2)
-		var tween = _make_fx_tween(piece)
-		var from_x = piece.rect_position.x
-		tween.interpolate_property(piece, "rect_position:y", piece.rect_position.y, view_size.y + 40.0, duration, Tween.TRANS_QUAD, Tween.EASE_IN)
-		tween.interpolate_property(piece, "rect_position:x", from_x, from_x + rand_range(-90.0, 90.0), duration, Tween.TRANS_SINE, Tween.EASE_IN_OUT)
-		tween.interpolate_property(piece, "rect_rotation", 0.0, rand_range(-220.0, 220.0), duration, Tween.TRANS_LINEAR)
-		tween.interpolate_property(piece, "modulate:a", 1.0, 0.0, 0.5, Tween.TRANS_LINEAR, Tween.EASE_IN, max(0.1, duration - 0.5))
-		tween.start()
+	FX.spawn_confetti(self, count)
 
 func _play_stage_clear_celebration(is_final_clear):
 	var burst_color = Color("ff8fab") if is_final_clear else Color("22c55e")

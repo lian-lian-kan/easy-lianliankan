@@ -559,3 +559,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: 审计确认 coins/energy/daily_reward/leaderboard/shop/theme 七个 manager（含 theme_manager）为 autoload 注册但全仓库零调用的死代码（启动即实例化，浪费启动时间与内存），test_game.gd 为无引用 stub。
 - 移除：上述 6 个 autoload 注册 + 7 个脚本文件（git 历史可找回；未来做签到×主题解锁时从历史恢复再接线）。autoload 只保留 AudioManager。子集字体随之缩小（死代码字符清除）。
 - Validation: 10 项 headless 测试全绿 + 导出成功 + web entry 通过。
+
+## 2026-09-07 (代码质量 Round C：提取 fx_layer.gd 特效子系统)
+- Context: 继续巨石拆分。樱花飘落/撒花的发射逻辑（PETAL_ICONS + _build_petals/_on_petal_tick/_spawn_petal/_spawn_confetti 四函数）从 game.gd 抽到 scripts/fx_layer.gd（静态、game 依赖参数化：层/字体/补间/树状态由调用方提供）。game.gd 留同名薄封装，mechanics_probe 的层与撒花断言零改动。
+- Validation: 11 项 headless 测试全绿；导出成功。
