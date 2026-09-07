@@ -299,6 +299,11 @@ const engine = new Engine(GODOT_CONFIG);
 			}
 			initializing = false;
 			statusMode = mode;
+			// CI smoke hook (?smoke=1): beacon the boot completion so a headless
+			// run can verify the engine truly started. No-op in normal play.
+			if (window.location.search.indexOf('smoke=1') !== -1) {
+				try { navigator.sendBeacon('/smoke-boot-ok'); } catch (err) {}
+			}
 			return;
 		}
 		if (statusMode === mode || !initializing) {

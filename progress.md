@@ -691,3 +691,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AC：特殊模式结算迁入 session.gd + 启动日志收敛)
 - Context: _record_special_completion（RECORD_MODES 表结算 + daily/time_attack 分支）迁入 session.gd（与 _resolve_special_clear 同域），game.gd 留同名薄壳；_ready 的 9 条启动 print 收敛为 3 条阶段日志。panels_probe 补 4 项结算断言（zen 纪录与结算面板、daily 落今日戳）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 50 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (Round AD：落地 CI 无头浏览器冒烟测试)
+- Context: architecture.md 债务清单中的 CI 无头浏览器冒烟落地。tools/ci_smoke.sh：本地起 HTTP 服务 + 系统无头 Chrome 加载游戏（?smoke=1 激活信标钩子）+ 轮询 boot beacon 判定引擎真实启动；deploy.yml 在导出后新增 Headless browser smoke 步骤（continue-on-error 观察模式，SMOKE_WAIT=60）。壳的 setStatusMode('hidden') 分支新增信标发送（仅 ?smoke=1 时激活，普通游玩零影响）。
+- 已知限制：本机 ZCode/macOS 无头沙箱无法跑起引擎（display 层限制，与 IAB 冻结同源），冒烟的真实判定环境是 CI 的 ubuntu-latest + SwiftShader WebGL；先观察模式收集数据，稳定后再转为门禁。
+- Validation: 13 项 headless 测试全绿；导出与 web_entry 通过。
