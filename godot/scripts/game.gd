@@ -396,39 +396,6 @@ func _create_chip_label():
 	label.add_stylebox_override("normal", chip_style)
 	return label
 
-func _create_control_button(text):
-	var button = Button.new()
-	button.add_font_override("font", game_font)
-	button.text = text
-	button.rect_min_size = Vector2(88, 42)
-	button.add_color_override("font_color", Color("ffffff"))
-
-	# Apply gradient button style
-	var normal = StyleBoxFlat.new()
-	normal.bg_color = Color("f06ba8")
-	normal.set_corner_radius_all(20)
-	normal.shadow_color = Color("f06ba840")
-	normal.shadow_size = 6
-	normal.shadow_offset = Vector2(0, 3)
-
-	var hover = StyleBoxFlat.new()
-	hover.bg_color = Color("ff9ec4")
-	hover.set_corner_radius_all(20)
-	hover.shadow_color = Color("f06ba860")
-	hover.shadow_size = 8
-	hover.shadow_offset = Vector2(0, 4)
-
-	var pressed = StyleBoxFlat.new()
-	pressed.bg_color = Color("d6336c")
-	pressed.set_corner_radius_all(20)
-
-	button.add_stylebox_override("normal", normal)
-	button.add_stylebox_override("hover", hover)
-	button.add_stylebox_override("pressed", pressed)
-	button.add_stylebox_override("focus", normal)
-	button.connect("pressed", AudioManager, "play_button_click")
-
-	return button
 
 func _add_stat_card(parent, title, key):
 	STATS_HUD.add_card(self, parent, title, key)
@@ -498,29 +465,6 @@ func _level_label_by_index(level_idx):
 	var level: Dictionary = campaign_levels[clamped]
 	return "第" + str(int(level.get("id", clamped + 1))) + "关 · " + str(level.get("name", "关卡"))
 
-func _populate_level_select_options():
-	if level_select_option == null:
-		return
-
-	level_select_option.clear()
-	var best_times = progression_state.get("level_best_times", {})
-	for i in range(campaign_levels.size()):
-		var level: Dictionary = campaign_levels[i]
-		var level_id = int(level.get("id", i + 1))
-		var level_name = str(level.get("name", "关卡"))
-		var unlocked = _is_level_unlocked(i)
-		var label = "第" + str(level_id) + "关 · " + level_name
-		# Add best time if available
-		if best_times.has(str(i)):
-			var best_time = float(best_times[str(i)])
-			label += " ⏱️" + _format_time_seconds(best_time)
-		if not unlocked:
-			label += "（未解锁）"
-		level_select_option.add_item(label)
-		level_select_option.set_item_disabled(i, not unlocked)
-
-	level_select_option.disabled = campaign_levels.size() <= 1
-	_sync_level_select_selection()
 
 func _on_level_select_changed(index):
 	if not _is_level_unlocked(index):
@@ -1547,38 +1491,6 @@ func _check_achievements_on_clear():
 			var info = PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
 			_show_achievement_notification(info["name"])
 
-func _show_achievement_notification(achievement_name):
-	# Create floating achievement notification
-	var notification = PanelContainer.new()
-	notification.set_anchors_and_margins_preset(Control.PRESET_CENTER_TOP)
-	notification.margin_top = 60
-	_apply_glass_style(notification, Color("fff3bf"), 0.95)
-	add_child(notification)
-
-	var hbox = HBoxContainer.new()
-	hbox.add_constant_override("separation", 8)
-	notification.add_child(hbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 16)
-	margin.add_constant_override("margin_right", 16)
-	margin.add_constant_override("margin_top", 12)
-	margin.add_constant_override("margin_bottom", 12)
-	hbox.add_child(margin)
-
-	var label = Label.new()
-	label.text = "🏆 成就解锁：" + achievement_name
-	label.add_color_override("font_color", Color("d6336c"))
-	label.add_font_override("font", game_font)
-	margin.add_child(label)
-
-	# Auto-dismiss after animation
-	var dismiss_timer = Timer.new()
-	dismiss_timer.one_shot = true
-	dismiss_timer.wait_time = 2.5
-	dismiss_timer.connect("timeout", self, "_on_achievement_dismiss", [notification])
-	add_child(dismiss_timer)
-	dismiss_timer.start()
 
 func _on_achievement_dismiss(notification):
 	var tween = Tween.new()
@@ -1612,6 +1524,15 @@ func _compress_path(points):
 
 func _find_any_hint(board_state):
 	return BOARD_ENGINE.find_any_hint(board_state, self, "_is_coord_playable")
+
+func _create_control_button(text):
+	return UI_HUD._create_control_button(self, text)
+
+func _populate_level_select_options():
+	return UI_HUD._populate_level_select_options(self)
+
+func _show_achievement_notification(achievement_name):
+	return UI_HUD._show_achievement_notification(self, achievement_name)
 
 func _reshuffle_board(board_state):
 	BOARD_ENGINE.reshuffle_board(board_state, self, "_is_coord_playable")

@@ -675,3 +675,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: 棋盘出生/洗牌动画 2 函数（_animate_board_spawn/_animate_shuffle_wave）迁入 board_view.gd；提示/自动消辅助 2 函数（_on_hint_pressed/_on_auto_pressed）迁入 game_input.gd，game.gd 留同名薄壳。panels_probe 补 5 项行为断言（出生动画发射 tween、提示高亮一对、自动消登记并消除被提示的一对）。
 - 修复：迁移器把夹在动画函数之间的文件级 const FX 卷入模块并误前缀（const game.FX 非法）——已还原 game.gd；game_input 残留 game.AudioManager 误前缀 8 处一并修正（autoload 恒为裸全局名）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 49 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round Z：控制按钮/关卡下拉/成就通知迁入 ui_hud.gd)
+- Context: UI 构建散点 3 函数（_create_control_button 工厂/_populate_level_select_options 关卡下拉/_show_achievement_notification 成就通知浮层）共 88 行迁入 ui_hud.gd（追加模式），game.gd 留同名薄壳。panels_probe 补 3 项断言（工厂按钮带样式、关卡下拉逐关填充、成就通知面板创建）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 42 断言）；导出与 web_entry 通过。

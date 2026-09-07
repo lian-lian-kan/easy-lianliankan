@@ -659,3 +659,97 @@ static func _show_stage_callout(game, text, color, font_size):
 	tween.interpolate_property(label, "modulate:a", 0.95, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN, 1.1)
 	tween.start()
 
+
+# --- Control factories and notifications (migrated from game.gd) ---
+
+static func _create_control_button(game, text):
+	var button = Button.new()
+	button.add_font_override("font", game.game_font)
+	button.text = text
+	button.rect_min_size = Vector2(88, 42)
+	button.add_color_override("font_color", Color("ffffff"))
+
+	# Apply gradient button style
+	var normal = StyleBoxFlat.new()
+	normal.bg_color = Color("f06ba8")
+	normal.set_corner_radius_all(20)
+	normal.shadow_color = Color("f06ba840")
+	normal.shadow_size = 6
+	normal.shadow_offset = Vector2(0, 3)
+
+	var hover = StyleBoxFlat.new()
+	hover.bg_color = Color("ff9ec4")
+	hover.set_corner_radius_all(20)
+	hover.shadow_color = Color("f06ba860")
+	hover.shadow_size = 8
+	hover.shadow_offset = Vector2(0, 4)
+
+	var pressed = StyleBoxFlat.new()
+	pressed.bg_color = Color("d6336c")
+	pressed.set_corner_radius_all(20)
+
+	button.add_stylebox_override("normal", normal)
+	button.add_stylebox_override("hover", hover)
+	button.add_stylebox_override("pressed", pressed)
+	button.add_stylebox_override("focus", normal)
+	button.connect("pressed", AudioManager, "play_button_click")
+
+	return button
+
+static func _populate_level_select_options(game):
+	if game.level_select_option == null:
+		return
+
+	game.level_select_option.clear()
+	var best_times = game.progression_state.get("level_best_times", {})
+	for i in range(game.campaign_levels.size()):
+		var level: Dictionary = game.campaign_levels[i]
+		var level_id = int(level.get("id", i + 1))
+		var level_name = str(level.get("name", "关卡"))
+		var unlocked = game._is_level_unlocked(i)
+		var label = "第" + str(level_id) + "关 · " + level_name
+		# Add best time if available
+		if best_times.has(str(i)):
+			var best_time = float(best_times[str(i)])
+			label += " ⏱️" + game._format_time_seconds(best_time)
+		if not unlocked:
+			label += "（未解锁）"
+		game.level_select_option.add_item(label)
+		game.level_select_option.set_item_disabled(i, not unlocked)
+
+	game.level_select_option.disabled = game.campaign_levels.size() <= 1
+	game._sync_level_select_selection()
+
+static func _show_achievement_notification(game, achievement_name):
+	# Create floating achievement notification
+	var notification = PanelContainer.new()
+	notification.set_anchors_and_margins_preset(Control.PRESET_CENTER_TOP)
+	notification.margin_top = 60
+	game._apply_glass_style(notification, Color("fff3bf"), 0.95)
+	game.add_child(notification)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_constant_override("separation", 8)
+	notification.add_child(hbox)
+
+	var margin = MarginContainer.new()
+	margin.add_constant_override("margin_left", 16)
+	margin.add_constant_override("margin_right", 16)
+	margin.add_constant_override("margin_top", 12)
+	margin.add_constant_override("margin_bottom", 12)
+	hbox.add_child(margin)
+
+	var label = Label.new()
+	label.text = "🏆 成就解锁：" + achievement_name
+	label.add_color_override("font_color", Color("d6336c"))
+	label.add_font_override("font", game.game_font)
+	margin.add_child(label)
+
+	# Auto-dismiss after animation
+	var dismiss_timer = Timer.new()
+	dismiss_timer.one_shot = true
+	dismiss_timer.wait_time = 2.5
+	dismiss_timer.connect("timeout", game, "_on_achievement_dismiss", [notification])
+	game.add_child(dismiss_timer)
+	dismiss_timer.start()
+

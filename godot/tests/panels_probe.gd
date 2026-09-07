@@ -165,6 +165,15 @@ func _init() -> void:
 	check(int(game.level_auto_used) == autos_before + 1, "auto press registers usage")
 	check(int(game._remaining_tiles_count()) == tiles_before - 2, "auto press eliminates the hinted pair")
 
+	# ui_hud: control button factory, level select population, achievement notification
+	var ctrl_button = game._create_control_button("提示")
+	check(ctrl_button != null && ctrl_button.text == "提示" && ctrl_button.has_stylebox_override("normal"), "control button factory styles its button")
+	game._populate_level_select_options()
+	check(game.level_select_option.get_item_count() == int(game.campaign_levels.size()), "level select populated for every campaign level")
+	var notif_before = game.get_child_count()
+	game._show_achievement_notification("测试成就")
+	check(game.get_child_count() > notif_before, "achievement notification panel created")
+
 	# ui_hud: session timers built and the second timer ticks during play
 	check(game.second_timer != null && game.race_timer != null && game.memory_hide_timer != null && game.time_freeze_timer != null, "all session timers built")
 	check(!game.second_timer.is_stopped(), "second timer ticks during play")
