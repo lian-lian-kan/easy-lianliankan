@@ -321,3 +321,63 @@ static func _on_auto_pressed(game):
 	game._refresh_board_visuals()
 	game._resolve_after_board_changed()
 
+
+static func _on_shuffle_pressed(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+
+	AudioManager.play_shuffle()
+
+	game._animate_shuffle_wave()
+	game._reshuffle_board(game.board)
+	game._spawn_board_particles(14, Color("60a5fa"), 0.9)
+
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+	game._show_message("已洗牌", 0.8)
+	game._consume_time_cost(int(game.tuning.get("shuffle_time_cost_seconds", 1)))
+	game._refresh_ui()
+	game._refresh_board_visuals()
+
+static func _on_reset_pressed(game):
+	if game.special_mode != "":
+		game._start_special_mode(game.special_mode)
+		return
+	if game.stage_status == game.STATUS_COMPLETED:
+		game._start_level(0, true)
+		return
+	game._start_level(game.level_index, false)
+
+static func _on_jump_level_pressed(game):
+	var target = game._selected_level_option_index()
+	if not game._is_level_unlocked(target):
+		game._show_message("该关卡尚未解锁", 0.9)
+		game._sync_level_select_selection()
+		return
+	game._start_level(target, true)
+
+static func _on_pause_pressed(game):
+	if game.stage_status == game.STATUS_PLAYING:
+		game._pause_stage()
+	elif game.stage_status == game.STATUS_PAUSED:
+		game._resume_stage()
+
+static func _cycle_level_selection(game, step):
+	if game.level_select_option == null or game.level_select_option.get_item_count() == 0:
+		return
+	var from_idx = game._selected_level_option_index()
+	var next_idx = game.PROGRESSION_SCRIPT.find_next_unlocked(game.progression_state, from_idx, step, game.campaign_levels.size())
+	game.level_select_option.select(next_idx)
+	game._show_message("已选择" + game._level_label_by_index(next_idx) + "，按 Enter 跳转", 0.9)
+	game._refresh_ui()
+	game._trigger_level_highlight()
+
+static func _toggle_fullscreen_mode(game):
+	if OS.window_fullscreen:
+		OS.window_fullscreen = false
+		game._show_message("已退出全屏", 0.8)
+	else:
+		OS.window_fullscreen = true
+		game._show_message("已进入全屏", 0.8)
+

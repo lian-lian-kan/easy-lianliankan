@@ -437,15 +437,6 @@ func _on_level_select_changed(index):
 		return
 	_refresh_ui()
 
-func _cycle_level_selection(step):
-	if level_select_option == null or level_select_option.get_item_count() == 0:
-		return
-	var from_idx = _selected_level_option_index()
-	var next_idx = PROGRESSION_SCRIPT.find_next_unlocked(progression_state, from_idx, step, campaign_levels.size())
-	level_select_option.select(next_idx)
-	_show_message("已选择" + _level_label_by_index(next_idx) + "，按 Enter 跳转", 0.9)
-	_refresh_ui()
-	_trigger_level_highlight()
 
 func _trigger_level_highlight():
 	if level_select_option == null:
@@ -455,9 +446,6 @@ func _trigger_level_highlight():
 	level_highlight_timer.wait_time = 0.4
 	level_highlight_timer.start()
 
-func _on_level_highlight_timeout():
-	if level_select_option != null:
-		level_select_option.modulate = LEVEL_NORMAL_COLOR
 
 func _start_bgm():
 	AudioManager.start_bgm()
@@ -465,13 +453,6 @@ func _start_bgm():
 func _stop_bgm():
 	AudioManager.stop_bgm()
 
-func _on_jump_level_pressed():
-	var target = _selected_level_option_index()
-	if not _is_level_unlocked(target):
-		_show_message("该关卡尚未解锁", 0.9)
-		_sync_level_select_selection()
-		return
-	_start_level(target, true)
 
 func _on_clear_progress_pressed():
 	progression_state = PROGRESSION_SCRIPT.default_progress(campaign_levels.size())
@@ -640,13 +621,6 @@ func _start_memory_preview():
 	memory_preview_timer.wait_time = max(1.0, preview)
 	memory_preview_timer.start()
 
-func _on_memory_preview_timeout():
-	memory_previewing = false
-	memory_lock = false
-	_refresh_board_visuals()
-	_show_message("翻面！凭记忆消除吧", 1.2)
-	if stage_status == STATUS_PLAYING:
-		second_timer.start()
 
 func _memory_schedule_hide(coords, delay):
 	memory_pending_hide = coords.duplicate()
@@ -655,42 +629,44 @@ func _memory_schedule_hide(coords, delay):
 	memory_hide_timer.wait_time = max(0.2, delay)
 	memory_hide_timer.start()
 
+
+
+
+
+
+
+
+func _on_second_tick():
+	return UI_HUD._on_second_tick(self)
+
+func _on_race_tick():
+	return UI_HUD._on_race_tick(self)
+
+func _on_message_timeout():
+	return UI_HUD._on_message_timeout(self)
+
+func _on_error_timeout():
+	return UI_HUD._on_error_timeout(self)
+
+func _on_combo_reset_timeout():
+	return UI_HUD._on_combo_reset_timeout(self)
+
+func _on_level_highlight_timeout():
+	return UI_HUD._on_level_highlight_timeout(self)
+
+func _on_level_advance_timeout():
+	return UI_HUD._on_level_advance_timeout(self)
+
+func _on_time_freeze_timeout():
+	return UI_HUD._on_time_freeze_timeout(self)
+
+func _on_memory_preview_timeout():
+	return UI_HUD._on_memory_preview_timeout(self)
+
 func _on_memory_hide_timeout():
-	for coord in memory_pending_hide:
-		memory_revealed.erase(_memory_key(coord))
-	memory_pending_hide.clear()
-	memory_lock = false
-	_refresh_board_visuals()
+	return UI_HUD._on_memory_hide_timeout(self)
 
 
-
-
-
-
-
-func _on_shuffle_pressed():
-	if stage_status != STATUS_PLAYING:
-		return
-
-	AudioManager.play_shuffle()
-
-	_animate_shuffle_wave()
-	_reshuffle_board(board)
-	_spawn_board_particles(14, Color("60a5fa"), 0.9)
-
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-	_show_message("已洗牌", 0.8)
-	_consume_time_cost(int(tuning.get("shuffle_time_cost_seconds", 1)))
-	_refresh_ui()
-	_refresh_board_visuals()
-
-func _on_pause_pressed():
-	if stage_status == STATUS_PLAYING:
-		_pause_stage()
-	elif stage_status == STATUS_PAUSED:
-		_resume_stage()
 
 func _pause_stage():
 	if stage_status != STATUS_PLAYING:
@@ -725,22 +701,7 @@ func _on_hint_pressed():
 func _on_auto_pressed():
 	return GAME_INPUT._on_auto_pressed(self)
 
-func _toggle_fullscreen_mode():
-	if OS.window_fullscreen:
-		OS.window_fullscreen = false
-		_show_message("已退出全屏", 0.8)
-	else:
-		OS.window_fullscreen = true
-		_show_message("已进入全屏", 0.8)
 
-func _on_reset_pressed():
-	if special_mode != "":
-		_start_special_mode(special_mode)
-		return
-	if stage_status == STATUS_COMPLETED:
-		_start_level(0, true)
-		return
-	_start_level(level_index, false)
 
 
 
@@ -764,6 +725,24 @@ func _animate_select(coord):
 
 	var center = _tile_center_in_effect_layer(coord)
 	_spawn_ring_effect(center, Color("ff6f9c"), 0.18, 12.0)
+
+func _on_shuffle_pressed():
+	return GAME_INPUT._on_shuffle_pressed(self)
+
+func _on_reset_pressed():
+	return GAME_INPUT._on_reset_pressed(self)
+
+func _on_jump_level_pressed():
+	return GAME_INPUT._on_jump_level_pressed(self)
+
+func _on_pause_pressed():
+	return GAME_INPUT._on_pause_pressed(self)
+
+func _cycle_level_selection(step):
+	return GAME_INPUT._cycle_level_selection(self, step)
+
+func _toggle_fullscreen_mode():
+	return GAME_INPUT._toggle_fullscreen_mode(self)
 
 func _try_get_tile_button(coord):
 	if coord.x < 0 or coord.x >= cell_buttons.size():
@@ -981,14 +960,9 @@ func _flash_error_tiles(coords):
 	error_timer.stop()
 	error_timer.start(float(tuning.get("error_flash_ms", 420)) / 1000.0)
 
-func _on_error_timeout():
-	error_tiles.clear()
-	_refresh_board_visuals()
 
 
 
-func _on_message_timeout():
-	message_label.visible = false
 
 
 
@@ -1014,19 +988,6 @@ func _consume_move():
 
 
 # 竞速对战: the AI clears one pair per ai_interval seconds.
-func _on_race_tick():
-	if special_mode != "race" or stage_status != STATUS_PLAYING:
-		return
-	var interval = max(1.0, float(_current_level().get("ai_interval", 8.5)))
-	race_elapsed += 1
-	if race_elapsed < int(interval):
-		return
-	race_elapsed = 0
-	race_ai_pairs = min(race_total_pairs, race_ai_pairs + 1)
-	AudioManager.play_select()
-	_refresh_ui()
-	if race_ai_pairs >= race_total_pairs:
-		_fail_race_lost()
 
 func _fail_race_lost():
 	if stage_status != STATUS_PLAYING:
@@ -1160,30 +1121,11 @@ func _execute_bomb(point):
 func _execute_rainbow_click(point):
 	return POWERUPS._execute_rainbow_click(self, point)
 
-func _on_time_freeze_timeout():
-	time_frozen = false
-	_show_message("时间恢复流逝", 1.0)
 
 func _start_second_timer():
 	second_timer.stop()
 	second_timer.start()
 
-func _on_second_tick():
-	if stage_status != STATUS_PLAYING:
-		return
-
-	if time_frozen:
-		return
-
-	# Endless/zen/moves/race have no countdown clock at all.
-	if special_mode == "endless" or int(_current_level().get("time_limit", 90)) <= 0:
-		return
-
-	time_left = max(0, time_left - 1)
-	_refresh_ui()
-
-	if time_left <= 0:
-		_on_time_up()
 
 func _on_time_up():
 	if stage_status != STATUS_PLAYING:
@@ -1278,9 +1220,6 @@ func _apply_combo_gain(base_score):
 		"gain": gain
 	}
 
-func _on_combo_reset_timeout():
-	_reset_combo()
-	_refresh_ui()
 
 func _reset_combo():
 	combo = 0
@@ -1367,20 +1306,6 @@ func _resolve_after_board_changed():
 func _resolve_special_clear():
 	return SESSION._resolve_special_clear(self)
 
-func _on_level_advance_timeout():
-	if stage_status != STATUS_CLEARED:
-		return
-	if special_mode == "endless":
-		# Next endless round keeps the running total score.
-		_reset_level_session(special_level, false)
-		_show_message("第" + str(endless_round) + "轮开始", 1.2)
-		return
-	if pending_level_index < 0:
-		return
-
-	var next_index = pending_level_index
-	pending_level_index = -1
-	_start_level(next_index, false)
 
 func _remaining_tiles_count():
 	return BOARD_ENGINE.count_tiles(board)

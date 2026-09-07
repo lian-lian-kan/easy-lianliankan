@@ -753,3 +753,84 @@ static func _show_achievement_notification(game, achievement_name):
 	game.add_child(dismiss_timer)
 	dismiss_timer.start()
 
+
+static func _on_second_tick(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+
+	if game.time_frozen:
+		return
+
+	# Endless/zen/moves/race have no countdown clock at all.
+	if game.special_mode == "endless" or int(game._current_level().get("time_limit", 90)) <= 0:
+		return
+
+	game.time_left = max(0, game.time_left - 1)
+	game._refresh_ui()
+
+	if game.time_left <= 0:
+		game._on_time_up()
+
+static func _on_race_tick(game):
+	if game.special_mode != "race" or game.stage_status != game.STATUS_PLAYING:
+		return
+	var interval = max(1.0, float(game._current_level().get("ai_interval", 8.5)))
+	game.race_elapsed += 1
+	if game.race_elapsed < int(interval):
+		return
+	game.race_elapsed = 0
+	game.race_ai_pairs = min(game.race_total_pairs, game.race_ai_pairs + 1)
+	AudioManager.play_select()
+	game._refresh_ui()
+	if game.race_ai_pairs >= game.race_total_pairs:
+		game._fail_race_lost()
+
+static func _on_message_timeout(game):
+	game.message_label.visible = false
+
+static func _on_error_timeout(game):
+	game.error_tiles.clear()
+	game._refresh_board_visuals()
+
+static func _on_combo_reset_timeout(game):
+	game._reset_combo()
+	game._refresh_ui()
+
+static func _on_level_highlight_timeout(game):
+	if game.level_select_option != null:
+		game.level_select_option.modulate = game.LEVEL_NORMAL_COLOR
+
+static func _on_level_advance_timeout(game):
+	if game.stage_status != game.STATUS_CLEARED:
+		return
+	if game.special_mode == "endless":
+		# Next endless round keeps the running total score.
+		game._reset_level_session(game.special_level, false)
+		game._show_message("第" + str(game.endless_round) + "轮开始", 1.2)
+		return
+	if game.pending_level_index < 0:
+		return
+
+	var next_index = game.pending_level_index
+	game.pending_level_index = -1
+	game._start_level(next_index, false)
+
+static func _on_time_freeze_timeout(game):
+	game.time_frozen = false
+	game._show_message("时间恢复流逝", 1.0)
+
+static func _on_memory_preview_timeout(game):
+	game.memory_previewing = false
+	game.memory_lock = false
+	game._refresh_board_visuals()
+	game._show_message("翻面！凭记忆消除吧", 1.2)
+	if game.stage_status == game.STATUS_PLAYING:
+		game.second_timer.start()
+
+static func _on_memory_hide_timeout(game):
+	for coord in game.memory_pending_hide:
+		game.memory_revealed.erase(game._memory_key(coord))
+	game.memory_pending_hide.clear()
+	game.memory_lock = false
+	game._refresh_board_visuals()
+

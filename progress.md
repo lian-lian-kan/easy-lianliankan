@@ -683,3 +683,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AA：道具/角标标签工厂迁入 stats_hud + 架构文档重写)
 - Context: _create_power_up_label/_create_chip_label 迁入 stats_hud.gd（HUD 显示构建域），game.gd 留同名薄壳；docs/architecture.md 整体重写为当前 16 模块布局（含每模块测试映射）、提取手法补齐五条已踩实的坑、已知债务更新为编排层收尾状态。
 - Validation: 13 项 headless 测试全绿；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AB：计时器回调与按钮/键盘动作归并)
+- Context: 计时器回调 10 函数（second/race tick、message/error/combo/level highlight/advance/freeze/memory timeout）迁入 ui_hud.gd；按钮/键盘动作 6 函数（shuffle/reset/jump/pause 按钮与 cycle_level_selection/toggle_fullscreen）迁入 game_input.gd，game.gd 留同名薄壳（信号 connect 目标仍是 game 实例壳）。panels_probe 补 5 项回调行为断言（消息超时隐藏、冻结超时解冻、秒表扣时、洗牌耗时且保持对局）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 47 断言）；导出与 web_entry 通过。

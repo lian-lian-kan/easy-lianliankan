@@ -165,6 +165,25 @@ func _init() -> void:
 	check(int(game.level_auto_used) == autos_before + 1, "auto press registers usage")
 	check(int(game._remaining_tiles_count()) == tiles_before - 2, "auto press eliminates the hinted pair")
 
+	# ui_hud callbacks: message timeout hides the banner; freeze timeout unfreezes
+	game._show_message("超时测试", 5.0)
+	game._on_message_timeout()
+	check(!game.message_label.visible, "message timeout hides the banner")
+	game.time_frozen = true
+	game._on_time_freeze_timeout()
+	check(!game.time_frozen, "freeze timeout unfreezes time")
+
+	# game_input actions: second tick consumes the clock; shuffle costs time
+	game.stage_status = game.STATUS_PLAYING
+	game.special_mode = ""
+	game.time_frozen = false
+	game.time_left = 30
+	game._on_second_tick()
+	check(int(game.time_left) == 29, "second tick consumes one second")
+	game._on_shuffle_pressed()
+	check(int(game.time_left) == 28, "shuffle costs one second")
+	check(game.stage_status == game.STATUS_PLAYING, "shuffle keeps the stage playing")
+
 	# ui_hud: control button factory, level select population, achievement notification
 	var ctrl_button = game._create_control_button("提示")
 	check(ctrl_button != null && ctrl_button.text == "提示" && ctrl_button.has_stylebox_override("normal"), "control button factory styles its button")
