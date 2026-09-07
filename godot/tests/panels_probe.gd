@@ -83,6 +83,25 @@ func _init() -> void:
 	game._unhandled_input(ev2)
 	check(game.stage_status == game.STATUS_PLAYING, "keyboard P again resumes the stage")
 
+	# session: reset clears transient state and keeps the level playing
+	game.bomb_pending = true
+	game.moves = 99
+	game.selected = Vector2(1, 1)
+	game._reset_level_session(game._current_level(), false)
+	check(!game.bomb_pending && game.selected == Vector2(-1, -1) && int(game.moves) == 0, "session reset clears transient state")
+	check(game.stage_status == game.STATUS_PLAYING, "session reset returns to playing")
+
+	# session: locked special mode rejected; unlocked zen starts; exit returns
+	var saved_unlocked = int(game.progression_state["highest_unlocked_level_index"])
+	game.progression_state["highest_unlocked_level_index"] = 0
+	game._start_special_mode("hell")
+	check(game.special_mode == "", "locked special mode is rejected")
+	game.progression_state["highest_unlocked_level_index"] = saved_unlocked
+	game._start_special_mode("zen")
+	check(game.special_mode == "zen" && game.stage_status == game.STATUS_PLAYING, "zen session starts and plays")
+	game._exit_special_mode()
+	check(game.special_mode == "", "exit returns to campaign mode")
+
 	# fx_layer: eliminate effects emit into the effect layer
 	var fx_before = game.effect_layer.get_child_count()
 	game.combo = 5

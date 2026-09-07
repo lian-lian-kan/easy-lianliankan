@@ -1,0 +1,244 @@
+extends Reference
+
+# Session lifecycle: level session reset, post-move resolution (win/lose/
+# reshuffle/gravity), and special-mode session entry/exit. Statics take the
+# live game node.
+
+static func _start_special_mode(game, mode_id):
+	var config = game.game_mode_configs.get(mode_id, {})
+	if not game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(mode_id, config, int(game.progression_state.get("highest_unlocked_level_index", 0))):
+		game._show_message(game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(mode_id, config), 1.8)
+		return
+	# Build the virtual level first; only touch session state once it exists.
+	var level
+	if mode_id == "daily":
+		var today = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+		seed(game.SPECIAL_MODES_SCRIPT.seed_for_day(today))
+		level = game.SPECIAL_MODES_SCRIPT.build_daily_level(today)
+	elif mode_id == "time_attack":
+		level = game.SPECIAL_MODES_SCRIPT.build_time_attack_level(config)
+	elif mode_id == "memory":
+		var tier = game.SPECIAL_MODES_SCRIPT.memory_tier(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		level = game.SPECIAL_MODES_SCRIPT.build_memory_level(config, tier)
+	elif mode_id == "frost":
+		var tier = game.SPECIAL_MODES_SCRIPT.frost_tier(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		level = game.SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
+	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
+				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain":
+		level = game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
+	else:
+		level = game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
+	game.special_mode = mode_id
+	game.endless_round = 1
+	game.special_level = level
+	game._reset_level_session(level, true)
+	print("[Game] special mode started: " + mode_id)
+	if mode_id == "memory":
+		game._show_message("盲盒模式！记住 %d 秒预览，然后凭记忆配对" % int(ceil(float(level.get("memory_preview", 5.0)))), 2.0)
+	else:
+		game._show_message(game.SPECIAL_MODES_SCRIPT.intro_text(mode_id), 1.8)
+
+static func _exit_special_mode(game):
+	game._start_level(game.level_index, false)
+	game._show_message("已返回关卡模式", 1.0)
+
+static func _reset_level_session(game, level, reset_total = false):
+	game.board = game._create_playable_board(level)
+	game.board_armor = game._build_frost_armor(game.board, level)
+	game.board_lower = []
+	game.board_chain = []
+	game._fog_layers = 0
+	if game._is_stack_mode():
+		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
+	if game._is_chain_mode():
+		game._build_chain_locks(float(level.get("chain_ratio", 0.22)))
+	game.frost_pending = false
+	game.frost_uses = 0
+	game.bomb_pending = false
+	game.rainbow_pending = false
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+	game.path_overlay.clear_path()
+
+	for child in game.effect_layer.get_children():
+		child.queue_free()
+
+	game.moves = 0
+	game.level_score = 0
+	game.time_left = int(level.get("time_limit", 90))
+	game.moves_left = int(level.get("move_budget", 0))
+	game.race_ai_pairs = 0
+	game.race_elapsed = 0
+	game.race_total_pairs = int(game._remaining_tiles_count() / 2)
+	if game.race_timer:
+		if game.special_mode == "race":
+			game.race_timer.start()
+		else:
+			game.race_timer.stop()
+	game.stage_status = game.STATUS_PLAYING
+
+	# Reset achievement tracking
+	game.level_start_time = OS.get_ticks_msec()
+	game.level_hints_used = 0
+	game.level_auto_used = 0
+
+	# Initialize power-ups based on level
+	game._init_power_ups(level)
+	game.time_frozen = false
+
+	# Reset memory-mode state
+	game.memory_previewing = false
+	game.memory_lock = false
+	game.memory_revealed.clear()
+	game.memory_pending_hide.clear()
+	if game.memory_hide_timer:
+		game.memory_hide_timer.stop()
+	if game.memory_preview_timer:
+		game.memory_preview_timer.stop()
+
+	if reset_total:
+		game.total_score = 0
+
+	game._reset_combo()
+	game._hide_message()
+	game.pending_level_index = -1
+	game.stage_panel_label.visible = false
+
+	game._render_board()
+	game._sync_level_select_selection()
+	game._refresh_ui()
+	game._refresh_board_visuals()
+	if game._is_memory_mode():
+		game._play_level_intro_animation(level)
+		game._start_memory_preview()
+	else:
+		game._start_second_timer()
+		game._play_level_intro_animation(level)
+
+static func _fail_moves_exhausted(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+	game.stage_status = game.STATUS_FAILED
+	game.AudioManager.play_fail()
+	game._reset_combo()
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+	game.second_timer.stop()
+	game.stage_panel_label.text = "步数用完了！还剩 %d 对没消除\n点击「重开」再战，或「暂停」后返回玩法" % int(game._remaining_tiles_count() / 2)
+	game.stage_panel_label.visible = true
+	game._show_message("步数耗尽，挑战失败", 1.8)
+	game._refresh_ui()
+	game._refresh_board_visuals()
+
+static func _resolve_after_board_changed(game):
+	# 重力模式: compact columns before any win/lose evaluation.
+	if game._is_gravity_mode() and game._apply_gravity():
+		game._refresh_board_visuals()
+	# Special sessions resolve only when the board is actually cleared;
+	# partial eliminations still need the deadlock reshuffle check.
+	if game.special_mode != "":
+		if game._remaining_tiles_count() == 0:
+			game._resolve_special_clear()
+		elif game._find_any_hint(game.board).empty():
+			if game._is_fog_mode() and game._fog_layers > 0:
+				# Fog would trap the last tiles: recede a ring instead.
+				game._fog_layers -= 1
+				game._show_message("迷雾退散了一层！", 1.2)
+				game._refresh_board_visuals()
+				return
+			if game._is_chain_mode() and game._chains_remaining() > 0:
+				game._dissolve_all_chains()
+				return
+			game._reshuffle_board(game.board)
+			game._show_message("无解，已自动重排", 1.0)
+			game._refresh_board_visuals()
+		return
+	if game._remaining_tiles_count() == 0:
+		var time_bonus_multiplier = float(game._current_level().get("time_bonus_multiplier", 2.0))
+		var time_bonus = int(round(float(game.time_left) * time_bonus_multiplier))
+		game.total_score += time_bonus
+		game.level_score += time_bonus
+
+		var progress_patch := {
+			"score_candidate": game.total_score,
+			"combo_candidate": game.combo
+		}
+		if game.level_index >= game.campaign_levels.size() - 1:
+			progress_patch["current_level_index"] = 0
+			progress_patch["highest_unlocked_level_index"] = max(0, game.campaign_levels.size() - 1)
+		else:
+			progress_patch["current_level_index"] = game.level_index + 1
+			progress_patch["highest_unlocked_level_index"] = game.level_index + 1
+		game._patch_progress_state(progress_patch)
+
+		game._reset_combo()
+		game.second_timer.stop()
+		game.stage_panel_label.visible = false
+
+		if game.level_index >= game.campaign_levels.size() - 1:
+			game.stage_status = game.STATUS_COMPLETED
+			game.stage_panel_label.text = "全部关卡已完成，点击'再来一轮'"
+			game.stage_panel_label.visible = true
+			game.AudioManager.play_win()
+			game._show_message("全部通关！时间奖励 +" + str(time_bonus), 2.5)
+			game._play_stage_clear_celebration(true)
+		else:
+			game.stage_status = game.STATUS_CLEARED
+			game.pending_level_index = game.level_index + 1
+			game.stage_panel_label.text = "过关结算中，准备进入下一关"
+			game.stage_panel_label.visible = true
+			game.AudioManager.play_win()
+			game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus), 1.2)
+			game._play_stage_clear_celebration(false)
+			game.level_advance_timer.stop()
+			game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
+			game.level_advance_timer.start()
+
+		game._refresh_ui()
+		game._refresh_board_visuals()
+		game._check_achievements_on_clear()
+		return
+
+	if game._find_any_hint(game.board).empty():
+		game._reshuffle_board(game.board)
+		game._show_message("无解，已自动重排", 1.0)
+		game._refresh_board_visuals()
+
+static func _resolve_special_clear(game):
+	# 步数挑战: unused moves convert into bonus score.
+	if game.special_mode == "moves":
+		var move_bonus = game.moves_left * 20
+		game.total_score += move_bonus
+		game.level_score += move_bonus
+	var time_bonus_multiplier = float(game._current_level().get("time_bonus_multiplier", 2.0))
+	var time_bonus = int(round(float(game.time_left) * time_bonus_multiplier))
+	game.total_score += time_bonus
+	game.level_score += time_bonus
+
+	game._reset_combo()
+	game.second_timer.stop()
+	if game.race_timer:
+		game.race_timer.stop()
+	game.stage_panel_label.visible = false
+	game.AudioManager.play_win()
+
+	if game.special_mode == "endless":
+		game._patch_progress_state({"endless_result": {"round": game.endless_round, "score": game.total_score}})
+		if game.endless_round >= 5:
+			game._unlock_achievements(["endless_round_5"])
+		var finished_round = game.endless_round
+		game.endless_round += 1
+		game.special_level = game.SPECIAL_MODES_SCRIPT.build_endless_level(game.game_mode_configs.get("endless", {}), game.endless_round)
+		game.stage_status = game.STATUS_CLEARED
+		game._play_stage_clear_celebration(false)
+		game._show_message("第" + str(finished_round) + "轮完成！时间奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
+	else:
+		game._record_special_completion()
+		game.stage_status = game.STATUS_COMPLETED
+		game._play_stage_clear_celebration(true)
+
+	game._refresh_ui()
+	game._refresh_board_visuals()
+

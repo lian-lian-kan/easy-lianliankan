@@ -17,6 +17,7 @@ const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
 const UI_PANELS = preload("res://scripts/ui_panels.gd")
 
 const STATS_HUD = preload("res://scripts/stats_hud.gd")
+const SESSION = preload("res://scripts/session.gd")
 const GAME_INPUT = preload("res://scripts/game_input.gd")
 const BOARD_VIEW = preload("res://scripts/board_view.gd")
 const POWERUPS = preload("res://scripts/powerups.gd")
@@ -717,117 +718,8 @@ func _start_level(next_index, reset_total = false):
 	var mode = str(level.get("mode", "classic"))
 	_show_message("进入第" + str(level_id) + "关：" + level_name + "（" + _mode_label(mode) + "） · 快捷键 H/A/S/P/F/R/[ ]/Enter", 1.35)
 
-func _start_special_mode(mode_id):
-	var config = game_mode_configs.get(mode_id, {})
-	if not SPECIAL_MODES_SCRIPT.is_mode_unlocked(mode_id, config, int(progression_state.get("highest_unlocked_level_index", 0))):
-		_show_message(SPECIAL_MODES_SCRIPT.unlock_requirement_text(mode_id, config), 1.8)
-		return
-	# Build the virtual level first; only touch session state once it exists.
-	var level
-	if mode_id == "daily":
-		var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
-		seed(SPECIAL_MODES_SCRIPT.seed_for_day(today))
-		level = SPECIAL_MODES_SCRIPT.build_daily_level(today)
-	elif mode_id == "time_attack":
-		level = SPECIAL_MODES_SCRIPT.build_time_attack_level(config)
-	elif mode_id == "memory":
-		var tier = SPECIAL_MODES_SCRIPT.memory_tier(config, int(progression_state.get("highest_unlocked_level_index", 0)) + 1)
-		level = SPECIAL_MODES_SCRIPT.build_memory_level(config, tier)
-	elif mode_id == "frost":
-		var tier = SPECIAL_MODES_SCRIPT.frost_tier(config, int(progression_state.get("highest_unlocked_level_index", 0)) + 1)
-		level = SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
-	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
-				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain":
-		level = SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
-	else:
-		level = SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
-	special_mode = mode_id
-	endless_round = 1
-	special_level = level
-	_reset_level_session(level, true)
-	print("[Game] special mode started: " + mode_id)
-	if mode_id == "memory":
-		_show_message("盲盒模式！记住 %d 秒预览，然后凭记忆配对" % int(ceil(float(level.get("memory_preview", 5.0)))), 2.0)
-	else:
-		_show_message(SPECIAL_MODES_SCRIPT.intro_text(mode_id), 1.8)
 
-func _exit_special_mode():
-	_start_level(level_index, false)
-	_show_message("已返回关卡模式", 1.0)
 
-func _reset_level_session(level, reset_total = false):
-	board = _create_playable_board(level)
-	board_armor = _build_frost_armor(board, level)
-	board_lower = []
-	board_chain = []
-	_fog_layers = 0
-	if _is_stack_mode():
-		_build_stack_layers(float(level.get("stack_ratio", 0.25)))
-	if _is_chain_mode():
-		_build_chain_locks(float(level.get("chain_ratio", 0.22)))
-	frost_pending = false
-	frost_uses = 0
-	bomb_pending = false
-	rainbow_pending = false
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-	path_overlay.clear_path()
-
-	for child in effect_layer.get_children():
-		child.queue_free()
-
-	moves = 0
-	level_score = 0
-	time_left = int(level.get("time_limit", 90))
-	moves_left = int(level.get("move_budget", 0))
-	race_ai_pairs = 0
-	race_elapsed = 0
-	race_total_pairs = int(_remaining_tiles_count() / 2)
-	if race_timer:
-		if special_mode == "race":
-			race_timer.start()
-		else:
-			race_timer.stop()
-	stage_status = STATUS_PLAYING
-
-	# Reset achievement tracking
-	level_start_time = OS.get_ticks_msec()
-	level_hints_used = 0
-	level_auto_used = 0
-
-	# Initialize power-ups based on level
-	_init_power_ups(level)
-	time_frozen = false
-
-	# Reset memory-mode state
-	memory_previewing = false
-	memory_lock = false
-	memory_revealed.clear()
-	memory_pending_hide.clear()
-	if memory_hide_timer:
-		memory_hide_timer.stop()
-	if memory_preview_timer:
-		memory_preview_timer.stop()
-
-	if reset_total:
-		total_score = 0
-
-	_reset_combo()
-	_hide_message()
-	pending_level_index = -1
-	stage_panel_label.visible = false
-
-	_render_board()
-	_sync_level_select_selection()
-	_refresh_ui()
-	_refresh_board_visuals()
-	if _is_memory_mode():
-		_play_level_intro_animation(level)
-		_start_memory_preview()
-	else:
-		_start_second_timer()
-		_play_level_intro_animation(level)
 
 func _current_level():
 	if special_mode != "":
@@ -1520,21 +1412,6 @@ func _consume_move():
 	if moves_left <= 0 and _remaining_tiles_count() > 0:
 		_fail_moves_exhausted()
 
-func _fail_moves_exhausted():
-	if stage_status != STATUS_PLAYING:
-		return
-	stage_status = STATUS_FAILED
-	AudioManager.play_fail()
-	_reset_combo()
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-	second_timer.stop()
-	stage_panel_label.text = "步数用完了！还剩 %d 对没消除\n点击「重开」再战，或「暂停」后返回玩法" % int(_remaining_tiles_count() / 2)
-	stage_panel_label.visible = true
-	_show_message("步数耗尽，挑战失败", 1.8)
-	_refresh_ui()
-	_refresh_board_visuals()
 
 # 竞速对战: the AI clears one pair per ai_interval seconds.
 func _on_race_tick():
@@ -1822,115 +1699,7 @@ func _update_combo_progress():
 	combo_progress_bar.value = progress
 
 
-func _resolve_after_board_changed():
-	# 重力模式: compact columns before any win/lose evaluation.
-	if _is_gravity_mode() and _apply_gravity():
-		_refresh_board_visuals()
-	# Special sessions resolve only when the board is actually cleared;
-	# partial eliminations still need the deadlock reshuffle check.
-	if special_mode != "":
-		if _remaining_tiles_count() == 0:
-			_resolve_special_clear()
-		elif _find_any_hint(board).empty():
-			if _is_fog_mode() and _fog_layers > 0:
-				# Fog would trap the last tiles: recede a ring instead.
-				_fog_layers -= 1
-				_show_message("迷雾退散了一层！", 1.2)
-				_refresh_board_visuals()
-				return
-			if _is_chain_mode() and _chains_remaining() > 0:
-				_dissolve_all_chains()
-				return
-			_reshuffle_board(board)
-			_show_message("无解，已自动重排", 1.0)
-			_refresh_board_visuals()
-		return
-	if _remaining_tiles_count() == 0:
-		var time_bonus_multiplier = float(_current_level().get("time_bonus_multiplier", 2.0))
-		var time_bonus = int(round(float(time_left) * time_bonus_multiplier))
-		total_score += time_bonus
-		level_score += time_bonus
 
-		var progress_patch := {
-			"score_candidate": total_score,
-			"combo_candidate": combo
-		}
-		if level_index >= campaign_levels.size() - 1:
-			progress_patch["current_level_index"] = 0
-			progress_patch["highest_unlocked_level_index"] = max(0, campaign_levels.size() - 1)
-		else:
-			progress_patch["current_level_index"] = level_index + 1
-			progress_patch["highest_unlocked_level_index"] = level_index + 1
-		_patch_progress_state(progress_patch)
-
-		_reset_combo()
-		second_timer.stop()
-		stage_panel_label.visible = false
-
-		if level_index >= campaign_levels.size() - 1:
-			stage_status = STATUS_COMPLETED
-			stage_panel_label.text = "全部关卡已完成，点击'再来一轮'"
-			stage_panel_label.visible = true
-			AudioManager.play_win()
-			_show_message("全部通关！时间奖励 +" + str(time_bonus), 2.5)
-			_play_stage_clear_celebration(true)
-		else:
-			stage_status = STATUS_CLEARED
-			pending_level_index = level_index + 1
-			stage_panel_label.text = "过关结算中，准备进入下一关"
-			stage_panel_label.visible = true
-			AudioManager.play_win()
-			_show_message("第" + str(_current_level().get("id", level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus), 1.2)
-			_play_stage_clear_celebration(false)
-			level_advance_timer.stop()
-			level_advance_timer.wait_time = float(tuning.get("level_advance_ms", 1200)) / 1000.0
-			level_advance_timer.start()
-
-		_refresh_ui()
-		_refresh_board_visuals()
-		_check_achievements_on_clear()
-		return
-
-	if _find_any_hint(board).empty():
-		_reshuffle_board(board)
-		_show_message("无解，已自动重排", 1.0)
-		_refresh_board_visuals()
-
-func _resolve_special_clear():
-	# 步数挑战: unused moves convert into bonus score.
-	if special_mode == "moves":
-		var move_bonus = moves_left * 20
-		total_score += move_bonus
-		level_score += move_bonus
-	var time_bonus_multiplier = float(_current_level().get("time_bonus_multiplier", 2.0))
-	var time_bonus = int(round(float(time_left) * time_bonus_multiplier))
-	total_score += time_bonus
-	level_score += time_bonus
-
-	_reset_combo()
-	second_timer.stop()
-	if race_timer:
-		race_timer.stop()
-	stage_panel_label.visible = false
-	AudioManager.play_win()
-
-	if special_mode == "endless":
-		_patch_progress_state({"endless_result": {"round": endless_round, "score": total_score}})
-		if endless_round >= 5:
-			_unlock_achievements(["endless_round_5"])
-		var finished_round = endless_round
-		endless_round += 1
-		special_level = SPECIAL_MODES_SCRIPT.build_endless_level(game_mode_configs.get("endless", {}), endless_round)
-		stage_status = STATUS_CLEARED
-		_play_stage_clear_celebration(false)
-		_show_message("第" + str(finished_round) + "轮完成！时间奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
-	else:
-		_record_special_completion()
-		stage_status = STATUS_COMPLETED
-		_play_stage_clear_celebration(true)
-
-	_refresh_ui()
-	_refresh_board_visuals()
 
 func _unlock_achievements(ids):
 	var new_unlocks = []
@@ -1979,6 +1748,24 @@ func _record_special_completion():
 	else:
 		stage_panel_label.text = "挑战完成！得分 " + str(total_score)
 	stage_panel_label.visible = true
+
+func _start_special_mode(mode_id):
+	return SESSION._start_special_mode(self, mode_id)
+
+func _exit_special_mode():
+	return SESSION._exit_special_mode(self)
+
+func _reset_level_session(level, reset_total = false):
+	return SESSION._reset_level_session(self, level, reset_total)
+
+func _fail_moves_exhausted():
+	return SESSION._fail_moves_exhausted(self)
+
+func _resolve_after_board_changed():
+	return SESSION._resolve_after_board_changed(self)
+
+func _resolve_special_clear():
+	return SESSION._resolve_special_clear(self)
 
 func _on_level_advance_timeout():
 	if stage_status != STATUS_CLEARED:

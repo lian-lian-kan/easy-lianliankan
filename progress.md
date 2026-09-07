@@ -653,3 +653,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round T：消除/连击特效簇迁入 fx_layer.gd)
 - Context: 特效发射簇 8 函数（_play_eliminate_effects/_tile_center_in_effect_layer/_spawn_ring_effect/_spawn_particle_burst/_spawn_combo_particle_burst/_spawn_board_particles/_show_combo_burst + 尺寸中心换算）约 198 行迁入 fx_layer.gd（追加模式，不覆盖既有 statics），game.gd 留同名薄壳。_pulse_tile 因含 yield（协程）不能做静态函数，退回 game.gd 实例方法原样保留。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 29 断言：消除特效同步生成进特效层、连击爆字标签更新）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round U：会话生命周期编排迁入 session.gd)
+- Context: 会话编排簇 6 函数（_reset_level_session/_resolve_after_board_changed/_resolve_special_clear/_fail_moves_exhausted/_start_special_mode/_exit_special_mode）共 232 行迁入新模块 session.gd（game 参数静态工厂），game.gd 留同名薄壳。special session 架构落地：会话重置/胜负结算/模式进出集中在单一模块。panels_probe 补会话行为断言（重置清瞬态、锁定模式拒绝、zen 会话进出）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 32 断言）；迁移修复了带默认值参数被误传为命名实参的壳生成 bug（GDScript 不支持命名实参）；导出与 web_entry 通过。
