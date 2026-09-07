@@ -679,3 +679,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round Z：控制按钮/关卡下拉/成就通知迁入 ui_hud.gd)
 - Context: UI 构建散点 3 函数（_create_control_button 工厂/_populate_level_select_options 关卡下拉/_show_achievement_notification 成就通知浮层）共 88 行迁入 ui_hud.gd（追加模式），game.gd 留同名薄壳。panels_probe 补 3 项断言（工厂按钮带样式、关卡下拉逐关填充、成就通知面板创建）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 42 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AA：道具/角标标签工厂迁入 stats_hud + 架构文档重写)
+- Context: _create_power_up_label/_create_chip_label 迁入 stats_hud.gd（HUD 显示构建域），game.gd 留同名薄壳；docs/architecture.md 整体重写为当前 16 模块布局（含每模块测试映射）、提取手法补齐五条已踩实的坑、已知债务更新为编排层收尾状态。
+- Validation: 13 项 headless 测试全绿；导出与 web_entry 通过。

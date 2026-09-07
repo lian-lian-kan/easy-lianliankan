@@ -382,53 +382,11 @@ func _build_modes_panel():
 	UI_PANELS._modes_panel(self)
 
 
-func _create_chip_label():
-	var label = Label.new()
-	label.add_font_override("font", game_font)
-	label.align = Label.ALIGN_CENTER
-	label.valign = Label.VALIGN_CENTER
-	label.rect_min_size = Vector2(120, 28)
-	label.add_color_override("font_color", Color("e64980"))
-	# Add subtle background
-	var chip_style = StyleBoxFlat.new()
-	chip_style.bg_color = Color("ffe3ef")
-	chip_style.set_corner_radius_all(18)
-	label.add_stylebox_override("normal", chip_style)
-	return label
 
 
 func _add_stat_card(parent, title, key):
 	STATS_HUD.add_card(self, parent, title, key)
 
-func _create_power_up_label(power_up_id, icon, shortcut):
-	var hbox = HBoxContainer.new()
-	hbox.add_constant_override("separation", 2)
-	power_ups_container.add_child(hbox)
-
-	var icon_label = Label.new()
-	icon_label.text = icon
-	hbox.add_child(icon_label)
-
-	var count_label = Label.new()
-	count_label.text = "x0"
-	count_label.add_color_override("font_color", Color("8f6b80"))
-	# 12px keeps all 8 slots on one 390px row when frost mode adds the 🔥.
-	count_label.add_font_override("font", _font_at_size(12))
-	hbox.add_child(count_label)
-
-	var shortcut_label = Label.new()
-	shortcut_label.text = "[" + shortcut + "]"
-	shortcut_label.add_color_override("font_color", Color("c2a3b2"))
-	# Keyboard-only affordance: pointless on touch phones, wastes width.
-	shortcut_label.visible = not _viewport_flags(get_viewport_rect().size)["is_mobile"]
-	hbox.add_child(shortcut_label)
-
-	power_up_labels[power_up_id] = {
-		"icon": icon_label,
-		"count": count_label,
-		"shortcut": shortcut_label,
-		"box": hbox
-	}
 
 func _populate_icon_set_options():
 	icon_set_option.clear()
@@ -439,6 +397,12 @@ func _populate_icon_set_options():
 	if icon_sets.size() > 0:
 		icon_set_index = clamp(icon_set_index, 0, icon_sets.size() - 1)
 		icon_set_option.select(icon_set_index)
+
+func _create_power_up_label(power_up_id, icon, shortcut):
+	return STATS_HUD._create_power_up_label(self, power_up_id, icon, shortcut)
+
+func _create_chip_label():
+	return STATS_HUD._create_chip_label(self)
 
 func _on_icon_set_selected(index):
 	icon_set_index = clamp(index, 0, max(0, icon_sets.size() - 1))

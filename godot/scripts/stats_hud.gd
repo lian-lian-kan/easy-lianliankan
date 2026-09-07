@@ -126,3 +126,50 @@ static func pulse(game, is_danger, delta):
 	card_style.border_color = Color("ffc9c9")
 	card.add_stylebox_override("panel", card_style)
 	return true
+
+# --- HUD label factories (migrated from game.gd) ---
+
+static func _create_power_up_label(game, power_up_id, icon, shortcut):
+	var hbox = HBoxContainer.new()
+	hbox.add_constant_override("separation", 2)
+	game.power_ups_container.add_child(hbox)
+
+	var icon_label = Label.new()
+	icon_label.text = icon
+	hbox.add_child(icon_label)
+
+	var count_label = Label.new()
+	count_label.text = "x0"
+	count_label.add_color_override("font_color", Color("8f6b80"))
+	# 12px keeps all 8 slots on one 390px row when frost mode adds the 🔥.
+	count_label.add_font_override("font", game._font_at_size(12))
+	hbox.add_child(count_label)
+
+	var shortcut_label = Label.new()
+	shortcut_label.text = "[" + shortcut + "]"
+	shortcut_label.add_color_override("font_color", Color("c2a3b2"))
+	# Keyboard-only affordance: pointless on touch phones, wastes width.
+	shortcut_label.visible = not game._viewport_flags(game.get_viewport_rect().size)["is_mobile"]
+	hbox.add_child(shortcut_label)
+
+	game.power_up_labels[power_up_id] = {
+		"icon": icon_label,
+		"count": count_label,
+		"shortcut": shortcut_label,
+		"box": hbox
+	}
+
+static func _create_chip_label(game):
+	var label = Label.new()
+	label.add_font_override("font", game.game_font)
+	label.align = Label.ALIGN_CENTER
+	label.valign = Label.VALIGN_CENTER
+	label.rect_min_size = Vector2(120, 28)
+	label.add_color_override("font_color", Color("e64980"))
+	# Add subtle background
+	var chip_style = StyleBoxFlat.new()
+	chip_style.bg_color = Color("ffe3ef")
+	chip_style.set_corner_radius_all(18)
+	label.add_stylebox_override("normal", chip_style)
+	return label
+
