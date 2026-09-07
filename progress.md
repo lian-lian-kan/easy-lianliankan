@@ -645,3 +645,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round R：屏幕布局适配迁入 ui_hud.update_layout)
 - Context: _update_layout_for_screen_size 的 115 行响应式布局适配（断点旗标/棋盘高度/边距/统计卡与按钮尺寸/竖屏头部压缩）迁入 ui_hud.gd 的 update_layout(game) 静态（主屏模块职责闭环：构建+状态刷新+布局），game.gd 留 3 行壳；panels_probe 补布局行为断言（竖屏紧凑边距/移动端按钮尺寸/非核心统计卡隐藏）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 21 断言）；迁移器 span 终止条件扩展到全部顶层声明（func/const/var），避免吞掉函数后的字体常量声明；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round S：输入处理簇迁入 game_input.gd)
+- Context: _on_tile_pressed（选中/配对/待管道具路由）、_on_memory_tile_pressed（盲盒翻牌）、_unhandled_input（键盘快捷键路由 P/H/A/S/R/[/]/Enter/F/1-8/Esc）共约 236 行迁入新模块 game_input.gd（game 参数静态工厂），game.gd 留同名薄壳；panels_probe 补输入行为断言（首按选中/再按取消且不耗步数、键盘 P 暂停/恢复路由）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 27 断言）；game.X 全量审计通过（accept_event 为 Control 方法良性）；导出与 web_entry 通过。

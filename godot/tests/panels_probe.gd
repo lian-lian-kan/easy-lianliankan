@@ -53,6 +53,36 @@ func _init() -> void:
 	check(game.hint_button != null && float(game.hint_button.rect_min_size.y) <= 40.0, "control buttons sized for mobile")
 	check(game.stat_values.has("level_score") && !game.stat_values["level_score"]["card"].visible, "portrait hides non-essential stat cards")
 
+	# game_input: tile press selects, second press deselects
+	var press_cell = null
+	for r in range(game.board.size()):
+		for c in range(game.board[r].size()):
+			if int(game.board[r][c]) > 0:
+				press_cell = Vector2(r, c)
+				break
+		if press_cell != null:
+			break
+	check(press_cell != null, "found a filled tile to press")
+	game.stage_status = game.STATUS_PLAYING
+	game.selected = Vector2(-1, -1)
+	game._on_tile_pressed(game.cell_buttons[press_cell.x][press_cell.y])
+	check(game.selected == press_cell, "first press selects the tile")
+	game._on_tile_pressed(game.cell_buttons[press_cell.x][press_cell.y])
+	check(game.selected == Vector2(-1, -1), "second press on the same tile deselects")
+	check(int(game.moves) == 0, "select/deselect round trip does not consume a move")
+
+	# game_input: keyboard P toggles pause through the input router
+	var ev = InputEventKey.new()
+	ev.scancode = KEY_P
+	ev.pressed = true
+	game._unhandled_input(ev)
+	check(game.stage_status == game.STATUS_PAUSED, "keyboard P pauses the stage")
+	var ev2 = InputEventKey.new()
+	ev2.scancode = KEY_P
+	ev2.pressed = true
+	game._unhandled_input(ev2)
+	check(game.stage_status == game.STATUS_PLAYING, "keyboard P again resumes the stage")
+
 	# refresh_ui reflects stage status on the pause button
 	game.stage_status = game.STATUS_PAUSED
 	game._refresh_ui()

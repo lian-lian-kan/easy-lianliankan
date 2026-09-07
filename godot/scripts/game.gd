@@ -17,6 +17,7 @@ const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
 const UI_PANELS = preload("res://scripts/ui_panels.gd")
 
 const STATS_HUD = preload("res://scripts/stats_hud.gd")
+const GAME_INPUT = preload("res://scripts/game_input.gd")
 const BOARD_VIEW = preload("res://scripts/board_view.gd")
 const POWERUPS = preload("res://scripts/powerups.gd")
 const UI_HUD = preload("res://scripts/ui_hud.gd")
@@ -209,69 +210,6 @@ func _process(delta):
 	_update_combo_progress()
 	_update_time_warning_pulse(delta)
 
-func _unhandled_input(event):
-	if event is InputEventKey and event.pressed and not event.echo:
-		var key_event := event as InputEventKey
-		match key_event.scancode:
-			KEY_P:
-				_on_pause_pressed()
-				accept_event()
-			KEY_H:
-				if stage_status == STATUS_PLAYING:
-					_on_hint_pressed()
-					accept_event()
-			KEY_A:
-				if stage_status == STATUS_PLAYING:
-					_on_auto_pressed()
-					accept_event()
-			KEY_S:
-				if stage_status == STATUS_PLAYING:
-					_on_shuffle_pressed()
-					accept_event()
-			KEY_R:
-				_on_reset_pressed()
-				accept_event()
-			KEY_BRACKETLEFT:
-				_cycle_level_selection(-1)
-				accept_event()
-			KEY_BRACKETRIGHT:
-				_cycle_level_selection(1)
-				accept_event()
-			KEY_ENTER, KEY_KP_ENTER:
-				_on_jump_level_pressed()
-				accept_event()
-			KEY_F:
-				_toggle_fullscreen_mode()
-				accept_event()
-			KEY_1:
-				_use_power_up("time_freeze")
-				accept_event()
-			KEY_2:
-				_use_power_up("auto_match")
-				accept_event()
-			KEY_3:
-				_use_power_up("reshuffle")
-				accept_event()
-			KEY_4:
-				_use_power_up("magnifier")
-				accept_event()
-			KEY_5:
-				_use_power_up("time_sand")
-				accept_event()
-			KEY_6:
-				_use_power_up("bomb")
-				accept_event()
-			KEY_7:
-				_use_power_up("rainbow")
-				accept_event()
-			KEY_8:
-				_use_power_up("warm_patch")
-				accept_event()
-			KEY_ESCAPE:
-				if OS.window_fullscreen:
-					OS.window_fullscreen = false
-					_show_message("已退出全屏", 0.8)
-					accept_event()
 
 func _notification(what):
 	if what == NOTIFICATION_RESIZED:
@@ -344,6 +282,15 @@ func _font_at_size(px):
 		font.add_fallback(EMOJI_FONT)
 	_font_cache[px] = font
 	return font
+
+func _on_tile_pressed(button):
+	return GAME_INPUT._on_tile_pressed(self, button)
+
+func _on_memory_tile_pressed(point, r, c):
+	return GAME_INPUT._on_memory_tile_pressed(self, point, r, c)
+
+func _unhandled_input(event):
+	return GAME_INPUT._unhandled_input(self, event)
 
 func _init_font():
 	# Web export: bundled CJK font with color-emoji fallback so tiles render everywhere.
@@ -1086,176 +1033,7 @@ func _on_memory_hide_timeout():
 	memory_lock = false
 	_refresh_board_visuals()
 
-func _on_memory_tile_pressed(point, r, c):
-	if memory_previewing or memory_lock:
-		return
-	if selected.x < 0:
-		selected = point
-		memory_revealed[_memory_key(point)] = true
-		hint_tiles.clear()
-		error_tiles.clear()
-		AudioManager.play_select()
-		_animate_select(point)
-		_refresh_board_visuals()
-		return
-	if selected == point:
-		selected = Vector2(-1, -1)
-		_refresh_board_visuals()
-		return
 
-	moves += 1
-	var previous = selected
-	var selected_value = int(board[previous.x][previous.y])
-	var target_value = int(board[r][c])
-
-	if selected_value != target_value:
-		# Reveal both briefly so the player learns the positions, then hide.
-		selected = Vector2(-1, -1)
-		memory_revealed[_memory_key(previous)] = true
-		memory_revealed[_memory_key(point)] = true
-		hint_tiles.clear()
-		AudioManager.play_error()
-		_flash_error_tiles([previous, point])
-		_show_message("不一样，记住位置", 0.8)
-		_memory_schedule_hide([previous, point], float(special_level.get("memory_face_up", 1.0)))
-		_refresh_ui()
-		_refresh_board_visuals()
-		return
-
-	var path = _find_path(board, previous, point)
-	if path.empty():
-		selected = point
-		memory_revealed[_memory_key(point)] = true
-		hint_tiles.clear()
-		AudioManager.play_error()
-		_flash_error_tiles([previous, point])
-		_show_message("路径不通：最多只能拐2次弯", 0.9)
-		_refresh_board_visuals()
-		return
-
-	var a = previous
-	var b = point
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-	memory_revealed.erase(_memory_key(a))
-	memory_revealed.erase(_memory_key(b))
-
-	AudioManager.play_eliminate_combo(combo)
-	var score_result = _apply_combo_gain(int(tuning.get("base_score", 10)))
-	if score_result["combo"] > 1:
-		_show_message("连击 x" + str(score_result["combo"]) + " +" + str(score_result["gain"]), 0.88)
-		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
-	_show_path(path, "eliminate", int(tuning.get("path_preview_ms", 420)))
-	_play_eliminate_effects([a, b])
-
-	_apply_match_damage(a, b)
-	_consume_move()
-
-	_refresh_ui()
-	_refresh_board_visuals()
-	_resolve_after_board_changed()
-
-func _on_tile_pressed(button):
-	if stage_status != STATUS_PLAYING:
-		return
-	if button == null:
-		return
-	var r = int(button.get_meta("row"))
-	var c = int(button.get_meta("col"))
-	if board[r][c] == 0:
-		return
-
-	var point = Vector2(r, c)
-
-	if not _is_coord_playable(point):
-		if _is_fogged(point):
-			_show_message("迷雾遮住了这块，先消除里面的方块", 1.0)
-		else:
-			_show_message("⛓️ 先消除它旁边的方块来解锁", 1.0)
-		return
-
-	# Armed click-targeted power-ups take over the next board click.
-	if frost_pending:
-		_execute_warm_patch(point)
-		return
-	if bomb_pending:
-		_execute_bomb(point)
-		return
-	if rainbow_pending:
-		_execute_rainbow_click(point)
-		return
-
-	if _is_memory_mode():
-		_on_memory_tile_pressed(point, r, c)
-		return
-
-	if selected.x < 0:
-		selected = point
-		hint_tiles.clear()
-		error_tiles.clear()
-		AudioManager.play_select()
-		_animate_select(point)
-		_refresh_board_visuals()
-		return
-
-	if selected == point:
-		selected = Vector2(-1, -1)
-		_refresh_board_visuals()
-		return
-
-	moves += 1
-	var previous = selected
-
-	var selected_value = int(board[previous.x][previous.y])
-	var target_value = int(board[point.x][point.y])
-
-	if selected_value != target_value:
-		selected = point
-		hint_tiles.clear()
-		AudioManager.play_error()
-		_flash_error_tiles([previous, point])
-		_animate_select(point)
-		_show_message("请先选择相同图案", 0.7)
-		_refresh_ui()
-		_refresh_board_visuals()
-		return
-
-	var path = _find_path(board, previous, point)
-	if path.empty():
-		selected = point
-		hint_tiles.clear()
-		AudioManager.play_error()
-		_flash_error_tiles([previous, point])
-		_animate_select(point)
-		_show_message("路径不通：最多只能拐2次弯", 0.9)
-		_refresh_ui()
-		_refresh_board_visuals()
-		return
-
-	var a = previous
-	var b = point
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-
-	AudioManager.play_eliminate_combo(combo)
-
-	var score_result = _apply_combo_gain(int(tuning.get("base_score", 10)))
-	if score_result["combo"] > 1:
-		_show_message("连击 x" + str(score_result["combo"]) + " +" + str(score_result["gain"]), 0.88)
-		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
-	_show_path(path, "eliminate", int(tuning.get("path_preview_ms", 420)))
-	_play_eliminate_effects([a, b])
-
-	_apply_match_damage(a, b)
-	_consume_move()
-
-	_refresh_ui()
-	_refresh_board_visuals()
-	_resolve_after_board_changed()
 
 
 func _on_hint_pressed():
