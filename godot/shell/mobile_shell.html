@@ -238,7 +238,11 @@ const engine = new Engine(GODOT_CONFIG);
 	function applyDprCapForMobile() {
 		const params = new URLSearchParams(window.location.search);
 		const requestedCap = parseFloat(params.get('dpr') || '');
-		const defaultCap = 2.0;
+		// 3x screens (iPhone Pro / most Androids) must render at their native
+		// device pixels: capping below the panel ratio makes the browser
+		// upscale the canvas and blur every glyph. ?dpr= stays as a rescue
+		// hatch for low-end devices that trade sharpness for framerate.
+		const defaultCap = 3.0;
 		const shouldAutoCap = /Android|iPhone|iPad|iPod|HarmonyOS/i.test(navigator.userAgent);
 		const cap = Number.isFinite(requestedCap) && requestedCap > 0
 			? requestedCap

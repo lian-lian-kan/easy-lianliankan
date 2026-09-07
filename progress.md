@@ -622,3 +622,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: 道具簇 13 个函数（loadout 规则 _init_power_ups、取用流程 _use_power_up、7 个 _activate_*、3 个 _execute_*）约 290 行迁入新模块 powerups.gd（game 参数静态工厂），game.gd 留同名薄壳。power_ups_probe 新增 9 项断言：level-10 载荷表、rush/地狱/冰雪三种特殊载荷、无尽禁沙漏、非冰雪禁暖宝宝、暂停不可消耗。
 - 额外修复：ui_panels.gd 设置面板音量行用 game.AudioManager（autoload 不是节点属性）静默中止，音量/音效/音乐/静音四行自 Round D 起从未渲染——改为裸全局 AudioManager。纠正 architecture.md 提取口诀（autoload 裸用 + Dictionary ==/hash 引用与顺序语义）。
 - Validation: 13 项 headless 测试全绿（power_ups_probe 现 34 断言、零脚本错误）；导出与 web_entry 通过。
+
+## 2026-09-08 (修复：3× 屏字体发糊——移动端 DPR cap 2.0 提到 3.0)
+- 根因：加载壳 applyDprCapForMobile 把移动端 devicePixelRatio 压到 2.0（7d40326 引入的省电/性能策略），而 Godot 3.6 导出模板按 canvas = innerWidth × devicePixelRatio 生成背衬。3× 屏（iPhone Pro/多数安卓旗舰）被压到 2× 再由浏览器放大 1.5 倍，所有字形都糊。2× 屏不受影响。
+- 修复：defaultCap 2.0 → 3.0，3× 屏原生 1:1 渲染；?dpr= 参数保留作低端机救援口。字体链路本身（DynamicFont 1:1 栅格化 + use_filter）无需改动。
+- Validation: 13 项 headless 测试全绿；导出物 index.html 含 defaultCap = 3.0；web_entry 通过；CI 绿后线上复验。
