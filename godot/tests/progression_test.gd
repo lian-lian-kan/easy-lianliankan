@@ -73,4 +73,20 @@ func _init() -> void:
 	if not _assert_equal(progression.find_next_unlocked(no_regress, 0, -1, 10), 3, "next unlocked wraps backward"):
 		return
 
+	# --- clear_unlocked_ids: campaign-clear achievement rules (pure)
+	var fresh = progression.normalize_progress({}, 10)
+	if not _assert_equal(progression.clear_unlocked_ids(fresh, {"level_index": 0, "combo": 0, "clear_time": 999.0, "hints_used": 3, "auto_used": 2, "level_count": 10}), ["first_clear"], "level 1 clear unlocks first_clear"):
+		return
+	if not _assert_equal(progression.clear_unlocked_ids(fresh, {"level_index": 1, "combo": 3, "clear_time": 60.0, "hints_used": 1, "auto_used": 1, "level_count": 10}), ["combo_novice"], "combo 3 unlocks novice only"):
+		return
+	if not _assert_equal(progression.clear_unlocked_ids(fresh, {"level_index": 2, "combo": 10, "clear_time": 12.0, "hints_used": 0, "auto_used": 0, "level_count": 10}), ["combo_novice", "combo_master", "speed_star", "perfect_clear"], "strong clear unlocks combo/speed/perfect"):
+		return
+	if not _assert_equal(progression.clear_unlocked_ids(fresh, {"level_index": 9, "combo": 0, "clear_time": 999.0, "hints_used": 1, "auto_used": 1, "level_count": 10}), ["completionist"], "last level clear unlocks completionist"):
+		return
+	if not _assert_equal(progression.clear_unlocked_ids(fresh, {"level_index": 5, "combo": 2, "clear_time": 30.0, "hints_used": 1, "auto_used": 1, "level_count": 10}), ["speed_star"], "exactly 30s counts as speed_star"):
+		return
+	var with_all = progression.unlock_achievement(progression.unlock_achievement(fresh, "first_clear"), "combo_novice")
+	if not _assert_equal(progression.clear_unlocked_ids(with_all, {"level_index": 0, "combo": 4, "clear_time": 999.0, "hints_used": 1, "auto_used": 1, "level_count": 10}), [], "already unlocked ids are not returned twice"):
+		return
+
 	quit(0)

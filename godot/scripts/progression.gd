@@ -292,3 +292,21 @@ static func best_score(state) -> int:
 
 static func best_combo(state) -> int:
 	return int(state.get("best_combo", 0))
+
+static func clear_unlocked_ids(state, context) -> Array:
+	# Campaign-clear achievement rules (pure): which ids would this clear unlock.
+	var ids := []
+	if int(context.get("level_index", 0)) == 0 and not has_achievement(state, "first_clear"):
+		ids.append("first_clear")
+	var combo := int(context.get("combo", 0))
+	if combo >= 3 and not has_achievement(state, "combo_novice"):
+		ids.append("combo_novice")
+	if combo >= 10 and not has_achievement(state, "combo_master"):
+		ids.append("combo_master")
+	if float(context.get("clear_time", 999999.0)) <= 30.0 and not has_achievement(state, "speed_star"):
+		ids.append("speed_star")
+	if int(context.get("hints_used", 0)) == 0 and int(context.get("auto_used", 0)) == 0 and not has_achievement(state, "perfect_clear"):
+		ids.append("perfect_clear")
+	if int(context.get("level_index", 0)) >= int(context.get("level_count", 1)) - 1 and not has_achievement(state, "completionist"):
+		ids.append("completionist")
+	return ids

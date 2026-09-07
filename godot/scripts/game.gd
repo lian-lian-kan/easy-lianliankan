@@ -30,6 +30,7 @@ const PATH_COLOR_ELIMINATE = Color("ff6f9c")
 const PATH_OVERLAY_SCRIPT = preload("res://scripts/path_overlay.gd")
 const PROGRESSION_SCRIPT = preload("res://scripts/progression.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
+const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/campaign_levels.gd")
 const MOBILE_SHORT_SIDE_MAX = 768.0
 const MOBILE_COMPACT_HEIGHT_MAX = 460.0
 const BOARD_RATIO_MOBILE_PORTRAIT = 0.60
@@ -589,138 +590,7 @@ func _default_tuning():
 
 
 func _default_campaign_levels():
-	return [
-		{
-			"id": 1,
-			"name": "热身",
-			"mode": "classic",
-			"description": "熟悉手感，建立节奏",
-			"rows": 8,
-			"cols": 6,
-			"kinds": 6,
-			"time_limit": 90,
-			"time_bonus_multiplier": 2.0,
-			"score_multiplier": 1.0,
-			"effect_intensity": 1.0
-		},
-		{
-			"id": 2,
-			"name": "提速",
-			"mode": "rush",
-			"description": "速度优先，倒计时更紧",
-			"rows": 10,
-			"cols": 6,
-			"kinds": 7,
-			"time_limit": 100,
-			"time_bonus_multiplier": 2.2,
-			"score_multiplier": 1.05,
-			"effect_intensity": 1.05
-		},
-		{
-			"id": 3,
-			"name": "连击",
-			"mode": "combo",
-			"description": "鼓励连续消除，吃连击收益",
-			"rows": 10,
-			"cols": 7,
-			"kinds": 8,
-			"time_limit": 110,
-			"time_bonus_multiplier": 2.4,
-			"score_multiplier": 1.15,
-			"effect_intensity": 1.1
-		},
-		{
-			"id": 4,
-			"name": "压迫",
-			"mode": "rush",
-			"description": "更大棋盘 + 更快决策",
-			"rows": 12,
-			"cols": 7,
-			"kinds": 8,
-			"time_limit": 120,
-			"time_bonus_multiplier": 2.5,
-			"score_multiplier": 1.2,
-			"effect_intensity": 1.15
-		},
-		{
-			"id": 5,
-			"name": "终局",
-			"mode": "endurance",
-			"description": "终章挑战，稳定输出",
-			"rows": 12,
-			"cols": 8,
-			"kinds": 9,
-			"time_limit": 130,
-			"time_bonus_multiplier": 2.8,
-			"score_multiplier": 1.25,
-			"effect_intensity": 1.2
-		},
-		{
-			"id": 6,
-			"name": "破阵",
-			"mode": "combo",
-			"description": "方阵压缩，考验连续判断",
-			"rows": 10,
-			"cols": 10,
-			"kinds": 10,
-			"time_limit": 136,
-			"time_bonus_multiplier": 3.0,
-			"score_multiplier": 1.32,
-			"effect_intensity": 1.28
-		},
-		{
-			"id": 7,
-			"name": "双线冲刺",
-			"mode": "rush",
-			"description": "更密集棋盘，速度与准确并重",
-			"rows": 12,
-			"cols": 9,
-			"kinds": 10,
-			"time_limit": 144,
-			"time_bonus_multiplier": 3.2,
-			"score_multiplier": 1.38,
-			"effect_intensity": 1.32
-		},
-		{
-			"id": 8,
-			"name": "迷城",
-			"mode": "endurance",
-			"description": "长局耐力战，持续稳定清场",
-			"rows": 14,
-			"cols": 8,
-			"kinds": 11,
-			"time_limit": 152,
-			"time_bonus_multiplier": 3.4,
-			"score_multiplier": 1.45,
-			"effect_intensity": 1.36
-		},
-		{
-			"id": 9,
-			"name": "高压连段",
-			"mode": "combo",
-			"description": "大棋盘高连击，节奏不能断",
-			"rows": 12,
-			"cols": 10,
-			"kinds": 11,
-			"time_limit": 160,
-			"time_bonus_multiplier": 3.7,
-			"score_multiplier": 1.52,
-			"effect_intensity": 1.4
-		},
-		{
-			"id": 10,
-			"name": "王座",
-			"mode": "endurance",
-			"description": "最终试炼：复杂版图与高倍率收益",
-			"rows": 13,
-			"cols": 10,
-			"kinds": 12,
-			"time_limit": 168,
-			"time_bonus_multiplier": 4.0,
-			"score_multiplier": 1.6,
-			"effect_intensity": 1.46
-		}
-	]
+	return CAMPAIGN_LEVELS_SCRIPT.default_campaign_levels()
 
 func _default_icon_sets():
 	return [
@@ -3587,46 +3457,20 @@ func _format_time_seconds(time_seconds):
 
 func _check_achievements_on_clear():
 	var level_clear_time = (OS.get_ticks_msec() - level_start_time) / 1000.0
-	var new_unlocks = []
-
-	# Check and update level best time
 	var current_best = float(progression_state.get("level_best_times", {}).get(str(level_index), 999999.0))
-	var is_new_record = level_clear_time < current_best
-	if is_new_record:
+	if level_clear_time < current_best:
 		_patch_progress_state({"level_best_time": {"level_index": level_index, "time": level_clear_time}})
 		_show_message("🎉 新纪录！用时 " + _format_time_seconds(level_clear_time), 2.0)
-
-	# first_clear: Complete level 1 (index 0)
-	if level_index == 0 and not PROGRESSION_SCRIPT.has_achievement(progression_state, "first_clear"):
-		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, "first_clear")
-		new_unlocks.append("first_clear")
-
-	# combo_novice: Reach 3+ combo
-	if combo >= 3 and not PROGRESSION_SCRIPT.has_achievement(progression_state, "combo_novice"):
-		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, "combo_novice")
-		new_unlocks.append("combo_novice")
-
-	# combo_master: Reach 10+ combo
-	if combo >= 10 and not PROGRESSION_SCRIPT.has_achievement(progression_state, "combo_master"):
-		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, "combo_master")
-		new_unlocks.append("combo_master")
-
-	# speed_star: Clear level in 30 seconds
-	if level_clear_time <= 30.0 and not PROGRESSION_SCRIPT.has_achievement(progression_state, "speed_star"):
-		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, "speed_star")
-		new_unlocks.append("speed_star")
-
-	# perfect_clear: No hints and no auto used
-	if level_hints_used == 0 and level_auto_used == 0 and not PROGRESSION_SCRIPT.has_achievement(progression_state, "perfect_clear"):
-		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, "perfect_clear")
-		new_unlocks.append("perfect_clear")
-
-	# completionist: All levels cleared (handled in _on_last_level_completed)
-	if level_index >= campaign_levels.size() - 1 and not PROGRESSION_SCRIPT.has_achievement(progression_state, "completionist"):
-		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, "completionist")
-		new_unlocks.append("completionist")
-
-	# Save progress and show notifications
+	var new_unlocks = PROGRESSION_SCRIPT.clear_unlocked_ids(progression_state, {
+		"level_index": level_index,
+		"combo": combo,
+		"clear_time": level_clear_time,
+		"hints_used": level_hints_used,
+		"auto_used": level_auto_used,
+		"level_count": campaign_levels.size(),
+	})
+	for achievement_id in new_unlocks:
+		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, achievement_id)
 	if new_unlocks.size() > 0:
 		_save_progress_state()
 		for achievement_id in new_unlocks:

@@ -601,3 +601,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round K：玩法面板行数据下沉 special_modes.gd)
 - Context: _refresh_modes_panel 内联的 13 行展示数据（id/title/detail，含各模式最佳分与解锁状态文案）抽为 special_modes.modes_panel_rows(progression_state) 纯函数（OS.get_date 驱动"今日已完成"判断），game.gd 只剩一行委托。展示数据可在无场景环境直测。
 - Validation: 12 项 headless 测试全绿（mode_meta_test 新增 modes_panel_rows 覆盖：13 行顺序/最佳分文案/今日完成分支）；web_entry 与导出成功。
+
+## 2026-09-07 (代码质量 Round L：战役关卡表成模块 + 通关成就规则纯函数化)
+- Context: ①_default_campaign_levels 的 134 行关卡数据抽为新模块 campaign_levels.gd（LEVELS 常量 + default_campaign_levels() 深拷贝返回，game.gd 留同名薄封装）；②_check_achievements_on_clear 的 6 条通关成就规则抽为 progression.clear_unlocked_ids(state, context) 纯函数（输入 level_index/combo/clear_time/hints_used/auto_used/level_count，返回待解锁 id 列表），game.gd 只留破纪录结算与通知壳。
+- Validation: 13 项 headless 测试全绿——新增 campaign_levels_test（10 关序号/棋盘偶数格/kinds≤12 且格数足够/时限为正/模式白名单/文案非空/倍率单调不减/深拷贝防共享变异）+ progression_test 补 clear_unlocked_ids 全分支与边界（combo=3、30s 整、末关、已解锁不重复）；CI 测试清单同步加 campaign_levels_test；导出与 web_entry 通过。
