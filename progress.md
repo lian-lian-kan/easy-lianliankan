@@ -613,3 +613,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round N：主界面构建迁入 ui_hud.gd 模块)
 - Context: _build_ui 的 330 行主界面构建（渐变背景/樱花层/头部面板/道具行/连击条/关卡下拉/棋盘区/特效层）整体迁入新模块 ui_hud.gd 的 build_main_ui(game) 静态工厂（ui_panels.gd 同款 game 参数模式），game.gd 留 3 行壳；panels_probe 新增主界面结构断言（棋盘格/特效层/标签组/HFlowContainer 行/道具注册共 7 项）。
 - Validation: 13 项 headless 测试全绿；game.X 全量引用审计（55 个引用逐一核对 game.gd 声明集，拦下 HFlowContainer 类名误前缀）；导出与 web_entry 通过。
+
+## 2026-09-07 (代码质量 Round O：HUD 状态刷新迁入 ui_hud.gd)
+- Context: _refresh_ui 的 116 行模式横幅/统计卡/按钮态刷新迁入 ui_hud.gd 的 refresh_ui(game) 静态（与 build_main_ui 同模块：主屏构建+状态同步），game.gd 留 3 行壳；panels_probe 新增行为断言（stage_status 切换 → 暂停按钮文本 继续/暂停 联动）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 15 断言）；game.X 引用审计通过（上下文无关前缀修复运算符场景漏前缀）；导出与 web_entry 通过。修复过程发现并纠正 migrate 脚本 w 模式覆盖 build_main_ui 的事故（git checkout 恢复+重追加）。

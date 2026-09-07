@@ -335,3 +335,121 @@ static func build_main_ui(game):
 	game._build_pause_panel()
 	game._build_modes_panel()
 	game.call_deferred("_update_layout_for_screen_size")
+
+static func refresh_ui(game):
+	var level = game._current_level()
+	var level_id = int(level.get("id", game.level_index + 1))
+	var level_name = str(level.get("name", "关卡"))
+	var mode = str(level.get("mode", "classic"))
+	var description = str(level.get("description", ""))
+	var unlocked_level_count = int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1
+
+	game.title_label.text = "连连看 🎀"
+	if game.special_mode == "daily":
+		var daily = game.progression_state.get("daily_challenge", {})
+		var now_date = OS.get_date()
+		var done_today = str(daily.get("last_date", "")) == game.SPECIAL_MODES_SCRIPT.date_string(now_date)
+		game.subtitle_label.text = "每日挑战 · %d月%d日 · 连胜%d · 最佳%d · %s" % [
+			int(now_date.month), int(now_date.day),
+			int(daily.get("streak", 0)), int(daily.get("best_score", 0)),
+			"今日已完成" if done_today else "今日未完成"
+		]
+	elif game.special_mode == "endless":
+		var endless_best = game.progression_state.get("endless_best", {})
+		game.subtitle_label.text = "无尽模式 · 第%d轮 · 最佳第%d轮 · 最高%d分" % [
+			game.endless_round, int(endless_best.get("round", 0)), int(endless_best.get("score", 0))
+		]
+	elif game.special_mode == "time_attack":
+		game.subtitle_label.text = "限时挑战 · 最佳%d分" % int(game.progression_state.get("time_attack_best_score", 0))
+	elif game.special_mode == "memory":
+		game.subtitle_label.text = "盲盒模式 · 最佳%d分" % int(game.progression_state.get("memory_best_score", 0))
+	elif game.special_mode == "frost":
+		game.subtitle_label.text = "冰雪挑战 · 最佳%d分" % int(game.progression_state.get("frost_best_score", 0))
+	elif game.special_mode == "zen":
+		game.subtitle_label.text = "休闲模式 · 最佳%d分" % int(game.progression_state.get("zen_best_score", 0))
+	elif game.special_mode == "hell":
+		game.subtitle_label.text = "地狱模式 · 最佳%d分" % int(game.progression_state.get("hell_best_score", 0))
+	elif game.special_mode == "moves":
+		game.subtitle_label.text = "步数挑战 · 最佳%d分 · 剩余%d步" % [int(game.progression_state.get("moves_best_score", 0)), game.moves_left]
+	elif game.special_mode == "race":
+		game.subtitle_label.text = "竞速对战 · 最佳%d分" % int(game.progression_state.get("race_best_score", 0))
+	elif game.special_mode == "stack":
+		game.subtitle_label.text = "叠层模式 · 最佳%d分" % int(game.progression_state.get("stack_best_score", 0))
+	elif game.special_mode == "gravity":
+		game.subtitle_label.text = "重力模式 · 最佳%d分" % int(game.progression_state.get("gravity_best_score", 0))
+	elif game.special_mode == "fog":
+		game.subtitle_label.text = "迷雾模式 · 最佳%d分" % int(game.progression_state.get("fog_best_score", 0))
+	elif game.special_mode == "chain":
+		game.subtitle_label.text = "锁链模式 · 最佳%d分" % int(game.progression_state.get("chain_best_score", 0))
+	else:
+		game.subtitle_label.text = "第" + str(level_id) + "/" + str(game.campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(game.campaign_levels.size())
+	game.desc_label.text = description
+
+	game.status_chip_label.text = game._status_label(game.stage_status)
+	# Update status chip style based on status
+	var status_style = StyleBoxFlat.new()
+	status_style.set_corner_radius_all(16)
+	if game.stage_status == game.STATUS_PLAYING:
+		game.status_chip_label.add_color_override("font_color", Color("0ca678"))
+		status_style.bg_color = Color("e6fcf5")
+	elif game.stage_status == game.STATUS_PAUSED:
+		game.status_chip_label.add_color_override("font_color", Color("e67700"))
+		status_style.bg_color = Color("fff3bf")
+	elif game.stage_status == game.STATUS_CLEARED:
+		game.status_chip_label.add_color_override("font_color", Color("e64980"))
+		status_style.bg_color = Color("ffe3ef")
+	elif game.stage_status == game.STATUS_FAILED:
+		game.status_chip_label.add_color_override("font_color", Color("f06565"))
+		status_style.bg_color = Color("ffe3e3")
+	else:
+		game.status_chip_label.add_color_override("font_color", Color("0ca678"))
+		status_style.bg_color = Color("e6fcf5")
+	game.status_chip_label.add_stylebox_override("normal", status_style)
+
+	game.mode_chip_label.text = "模式：" + game._mode_label(mode)
+	game.kinds_chip_label.text = "图案种类：" + str(level.get("kinds", 0))
+
+	game.level_progress_bar.value = (float(game.level_index + 1) / float(max(1, game.campaign_levels.size()))) * 100.0
+	if game.special_mode != "":
+		game.level_progress_bar.value = 100.0
+
+	game._set_stat_text("total_score", str(game.total_score))
+	game._set_stat_text("level_score", str(game.level_score))
+	game._set_stat_text("moves", str(game.moves))
+	game._set_stat_text("remaining", str(game._remaining_tiles_count() / 2))
+	game._set_stat_text("time_left", "∞" if int(game._current_level().get("time_limit", 90)) <= 0 else game._format_time(game.time_left))
+	game._set_stat_text("combo", "x" + str(max(game.combo, 1)))
+	game._set_stat_text("best_total_score", str(game._progress_best_score()))
+	game._set_stat_text("best_combo", "x" + str(game._progress_best_combo()))
+
+	# 对手 card only shows during the AI race.
+	if game.stat_values.has("race"):
+		game.stat_values["race"]["card"].visible = game.special_mode == "race"
+		game._set_stat_text("race", "%d/%d" % [game.race_ai_pairs, game.race_total_pairs])
+
+	game._update_fog()
+	game._set_time_card_state(game._is_time_danger())
+
+	var input_enabled = game.stage_status == game.STATUS_PLAYING
+	game.hint_button.disabled = not input_enabled
+	game.auto_button.disabled = not input_enabled
+	game.shuffle_button.disabled = not input_enabled
+	if game.level_select_option:
+		game.level_select_option.disabled = game.campaign_levels.size() <= 1
+	var selected_level_index = game._selected_level_option_index()
+	var can_jump = selected_level_index != game.level_index and game._is_level_unlocked(selected_level_index)
+	if game.jump_level_button:
+		game.jump_level_button.disabled = not can_jump
+	if game.clear_progress_button:
+		game.clear_progress_button.disabled = false
+	var pause_enabled = game.stage_status == game.STATUS_PLAYING or game.stage_status == game.STATUS_PAUSED
+	game.pause_button.disabled = not pause_enabled
+	game.pause_button.text = "继续" if game.stage_status == game.STATUS_PAUSED else "暂停"
+
+	if game.stage_status == game.STATUS_COMPLETED:
+		game.reset_button.text = "再来一轮"
+	else:
+		game.reset_button.text = "重开"
+
+	# Update power-ups display
+	game._update_power_ups_display()

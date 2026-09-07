@@ -30,6 +30,15 @@ func _init() -> void:
 	check(game.controls_flow_container != null and game.progression_flow_container != null, "controls and progression rows built")
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
+	# refresh_ui reflects stage status on the pause button
+	game.stage_status = game.STATUS_PAUSED
+	game._refresh_ui()
+	check(game.pause_button.text == "继续", "refresh_ui shows resume while paused (got %s)" % game.pause_button.text)
+	game.stage_status = game.STATUS_PLAYING
+	game._refresh_ui()
+	check(game.pause_button.text == "暂停", "refresh_ui shows pause while playing (got %s)" % game.pause_button.text)
+
+
 
 	# onboarding
 	game._build_onboarding_panel()
