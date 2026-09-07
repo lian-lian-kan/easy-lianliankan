@@ -177,3 +177,56 @@ static func _icon_for(game, value):
 		return str(icons[index])
 	return str(value)
 
+
+static func _animate_board_spawn(game):
+	if game.board.empty():
+		return
+
+	var rows = game.board.size()
+	var cols = game.board[0].size()
+	var center_r = float(rows - 1) * 0.5
+	var center_c = float(cols - 1) * 0.5
+
+	for r in range(rows):
+		for c in range(cols):
+			if int(game.board[r][c]) == 0:
+				continue
+			var button = game._try_get_tile_button(Vector2(r, c))
+			if button == null:
+				continue
+
+			button.rect_pivot_offset = button.rect_size * 0.5
+			button.rect_scale = Vector2(0.72, 0.72)
+			button.modulate.a = 0.0
+
+			var dist = abs(float(r) - center_r) + abs(float(c) - center_c)
+			var delay = dist * 0.025
+			var tween = game._make_fx_tween()
+			tween.interpolate_property(button, "modulate:a", 0.0, 1.0, 0.09, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
+			tween.interpolate_property(button, "rect_scale", Vector2(0.72, 0.72), Vector2.ONE, 0.09, Tween.TRANS_BACK, Tween.EASE_OUT, delay)
+			tween.start()
+
+
+static func _animate_shuffle_wave(game):
+	if game.board.empty():
+		return
+
+	var rows = game.board.size()
+	var cols = game.board[0].size()
+	for r in range(rows):
+		for c in range(cols):
+			if int(game.board[r][c]) == 0:
+				continue
+			var button = game._try_get_tile_button(Vector2(r, c))
+			if button == null:
+				continue
+
+			button.rect_pivot_offset = button.rect_size * 0.5
+			var delay = float(r + c) * 0.012 + rand_range(0.0, 0.03)
+
+			var tween = game._make_fx_tween()
+			tween.interpolate_property(button, "rect_scale", Vector2.ONE, Vector2(0.82, 0.82), 0.07, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
+			tween.interpolate_property(button, "rect_scale", Vector2(0.82, 0.82), Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay + 0.07)
+			tween.interpolate_property(button, "rect_scale", Vector2(1.08, 1.08), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay + 0.15)
+			tween.start()
+

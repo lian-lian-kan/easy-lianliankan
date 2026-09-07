@@ -21,6 +21,7 @@ const PROGRESS_STORE = preload("res://scripts/progress_store.gd")
 const GAME_CONFIG = preload("res://scripts/game_config.gd")
 const SESSION = preload("res://scripts/session.gd")
 const GAME_INPUT = preload("res://scripts/game_input.gd")
+const FX = preload("res://scripts/fx_layer.gd")
 const BOARD_VIEW = preload("res://scripts/board_view.gd")
 const POWERUPS = preload("res://scripts/powerups.gd")
 const UI_HUD = preload("res://scripts/ui_hud.gd")
@@ -756,87 +757,7 @@ func _on_memory_hide_timeout():
 
 
 
-func _on_hint_pressed():
-	if stage_status != STATUS_PLAYING:
-		return
 
-	level_hints_used += 1
-	AudioManager.play_hint()
-
-	var hint = _find_any_hint(board)
-	if hint.empty():
-		_on_shuffle_pressed()
-		return
-
-	if _is_memory_mode():
-		memory_revealed[_memory_key(hint["a"])] = true
-		memory_revealed[_memory_key(hint["b"])] = true
-		hint_tiles = [hint["a"], hint["b"]]
-		error_tiles.clear()
-		var mem_path: Array = hint["path"]
-		_show_path(mem_path, "hint", int(tuning.get("hint_preview_ms", 1400)))
-		_animate_hint_tiles(hint_tiles)
-		_show_message("已翻开一组可消除方块", 1.1)
-		_memory_schedule_hide([hint["a"], hint["b"]], float(special_level.get("memory_face_up", 1.0)) * 1.5)
-		_refresh_ui()
-		_refresh_board_visuals()
-		return
-
-	selected = hint["a"]
-	hint_tiles = [hint["a"], hint["b"]]
-	error_tiles.clear()
-
-	var hint_path: Array = hint["path"]
-	_show_path(hint_path, "hint", int(tuning.get("hint_preview_ms", 1400)))
-	_animate_hint_tiles(hint_tiles)
-	_show_message("已高亮一组可消除方块", 1.1)
-	_consume_time_cost(int(tuning.get("hint_time_cost_seconds", 1)))
-	_refresh_ui()
-	_refresh_board_visuals()
-
-func _on_auto_pressed():
-	if stage_status != STATUS_PLAYING:
-		return
-
-	level_auto_used += 1
-
-	var hint = _find_any_hint(board)
-	if hint.empty():
-		_on_shuffle_pressed()
-		return
-
-	var a = hint["a"]
-	var b = hint["b"]
-	var hint_path: Array = hint["path"]
-
-	var cracked = []
-	var removed = []
-	_damage_tile(a, cracked, removed)
-	_damage_tile(b, cracked, removed)
-	_break_chains_around(removed)
-	# Frozen tiles survive as blockers, so judge the clear AFTER the damage.
-	var will_clear = _remaining_tiles_count() == 0
-	_consume_move()
-
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-	moves += 1
-
-	_show_path(hint_path, "eliminate", int(tuning.get("hint_preview_ms", 1400)))
-	_play_eliminate_effects([a, b])
-
-	var score_result = _apply_combo_gain(int(tuning.get("base_score", 10)))
-	_show_message("自动消除 +" + str(score_result["gain"]), 0.9)
-	if score_result["combo"] > 1:
-		_show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
-	if not will_clear:
-		_consume_time_cost(int(tuning.get("auto_eliminate_time_cost_seconds", 2)))
-
-	_refresh_ui()
-	_refresh_board_visuals()
-	_resolve_after_board_changed()
 
 
 func _on_shuffle_pressed():
@@ -889,6 +810,12 @@ func _resume_stage():
 	_show_message("继续游戏", 0.65)
 	_refresh_ui()
 	_refresh_board_visuals()
+
+func _on_hint_pressed():
+	return GAME_INPUT._on_hint_pressed(self)
+
+func _on_auto_pressed():
+	return GAME_INPUT._on_auto_pressed(self)
 
 func _toggle_fullscreen_mode():
 	if OS.window_fullscreen:
@@ -969,28 +896,6 @@ func _animate_hint_tiles(coords):
 		var center = _tile_center_in_effect_layer(coord)
 		_spawn_ring_effect(center, Color("74c0fc"), 0.26, 12.0)
 
-func _animate_shuffle_wave():
-	if board.empty():
-		return
-
-	var rows = board.size()
-	var cols = board[0].size()
-	for r in range(rows):
-		for c in range(cols):
-			if int(board[r][c]) == 0:
-				continue
-			var button = _try_get_tile_button(Vector2(r, c))
-			if button == null:
-				continue
-
-			button.rect_pivot_offset = button.rect_size * 0.5
-			var delay = float(r + c) * 0.012 + rand_range(0.0, 0.03)
-
-			var tween = _make_fx_tween()
-			tween.interpolate_property(button, "rect_scale", Vector2.ONE, Vector2(0.82, 0.82), 0.07, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
-			tween.interpolate_property(button, "rect_scale", Vector2(0.82, 0.82), Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay + 0.07)
-			tween.interpolate_property(button, "rect_scale", Vector2(1.08, 1.08), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay + 0.15)
-			tween.start()
 
 
 
@@ -1015,35 +920,12 @@ func _play_level_intro_animation(level):
 		_show_stage_callout("第" + str(level_id) + "关 · " + level_name, Color("e64980"), 19)
 	_animate_board_spawn()
 
+
 func _animate_board_spawn():
-	if board.empty():
-		return
+	return BOARD_VIEW._animate_board_spawn(self)
 
-	var rows = board.size()
-	var cols = board[0].size()
-	var center_r = float(rows - 1) * 0.5
-	var center_c = float(cols - 1) * 0.5
-
-	for r in range(rows):
-		for c in range(cols):
-			if int(board[r][c]) == 0:
-				continue
-			var button = _try_get_tile_button(Vector2(r, c))
-			if button == null:
-				continue
-
-			button.rect_pivot_offset = button.rect_size * 0.5
-			button.rect_scale = Vector2(0.72, 0.72)
-			button.modulate.a = 0.0
-
-			var dist = abs(float(r) - center_r) + abs(float(c) - center_c)
-			var delay = dist * 0.025
-			var tween = _make_fx_tween()
-			tween.interpolate_property(button, "modulate:a", 0.0, 1.0, 0.09, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
-			tween.interpolate_property(button, "rect_scale", Vector2(0.72, 0.72), Vector2.ONE, 0.09, Tween.TRANS_BACK, Tween.EASE_OUT, delay)
-			tween.start()
-
-const FX = preload("res://scripts/fx_layer.gd")
+func _animate_shuffle_wave():
+	return BOARD_VIEW._animate_shuffle_wave(self)
 
 func _build_timers():
 	return UI_HUD._build_timers(self)

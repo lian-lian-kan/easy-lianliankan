@@ -142,6 +142,29 @@ func _init() -> void:
 	check(dialog_button != null && dialog_button.get_color("font_color") == Color("ffffff"), "dialog buttons get the rose white font")
 	plain_button.queue_free()
 
+	# board_view: spawn/shuffle animations emit tweens
+	var tweens_before = 0
+	for child in game.get_children():
+		if child is Tween:
+			tweens_before += 1
+	game._animate_board_spawn()
+	var tweens_after = 0
+	for child in game.get_children():
+		if child is Tween:
+			tweens_after += 1
+	check(tweens_after > tweens_before, "board spawn animation emits tweens")
+	game._animate_shuffle_wave()
+
+	# game_input: hint highlights a pair; auto eliminates it
+	var hints_before = int(game.level_hints_used)
+	game._on_hint_pressed()
+	check(int(game.level_hints_used) == hints_before + 1 && game.hint_tiles.size() == 2, "hint highlights a pair")
+	var tiles_before = int(game._remaining_tiles_count())
+	var autos_before = int(game.level_auto_used)
+	game._on_auto_pressed()
+	check(int(game.level_auto_used) == autos_before + 1, "auto press registers usage")
+	check(int(game._remaining_tiles_count()) == tiles_before - 2, "auto press eliminates the hinted pair")
+
 	# ui_hud: session timers built and the second timer ticks during play
 	check(game.second_timer != null && game.race_timer != null && game.memory_hide_timer != null && game.time_freeze_timer != null, "all session timers built")
 	check(!game.second_timer.is_stopped(), "second timer ticks during play")

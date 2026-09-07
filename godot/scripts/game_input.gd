@@ -238,3 +238,86 @@ static func _unhandled_input(game, event):
 					game._show_message("已退出全屏", 0.8)
 					game.accept_event()
 
+
+static func _on_hint_pressed(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+
+	game.level_hints_used += 1
+	AudioManager.play_hint()
+
+	var hint = game._find_any_hint(game.board)
+	if hint.empty():
+		game._on_shuffle_pressed()
+		return
+
+	if game._is_memory_mode():
+		game.memory_revealed[game._memory_key(hint["a"])] = true
+		game.memory_revealed[game._memory_key(hint["b"])] = true
+		game.hint_tiles = [hint["a"], hint["b"]]
+		game.error_tiles.clear()
+		var mem_path: Array = hint["path"]
+		game._show_path(mem_path, "hint", int(game.tuning.get("hint_preview_ms", 1400)))
+		game._animate_hint_tiles(game.hint_tiles)
+		game._show_message("已翻开一组可消除方块", 1.1)
+		game._memory_schedule_hide([hint["a"], hint["b"]], float(game.special_level.get("memory_face_up", 1.0)) * 1.5)
+		game._refresh_ui()
+		game._refresh_board_visuals()
+		return
+
+	game.selected = hint["a"]
+	game.hint_tiles = [hint["a"], hint["b"]]
+	game.error_tiles.clear()
+
+	var hint_path: Array = hint["path"]
+	game._show_path(hint_path, "hint", int(game.tuning.get("hint_preview_ms", 1400)))
+	game._animate_hint_tiles(game.hint_tiles)
+	game._show_message("已高亮一组可消除方块", 1.1)
+	game._consume_time_cost(int(game.tuning.get("hint_time_cost_seconds", 1)))
+	game._refresh_ui()
+	game._refresh_board_visuals()
+
+static func _on_auto_pressed(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+
+	game.level_auto_used += 1
+
+	var hint = game._find_any_hint(game.board)
+	if hint.empty():
+		game._on_shuffle_pressed()
+		return
+
+	var a = hint["a"]
+	var b = hint["b"]
+	var hint_path: Array = hint["path"]
+
+	var cracked = []
+	var removed = []
+	game._damage_tile(a, cracked, removed)
+	game._damage_tile(b, cracked, removed)
+	game._break_chains_around(removed)
+	# Frozen tiles survive as blockers, so judge the clear AFTER the damage.
+	var will_clear = game._remaining_tiles_count() == 0
+	game._consume_move()
+
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+	game.moves += 1
+
+	game._show_path(hint_path, "eliminate", int(game.tuning.get("hint_preview_ms", 1400)))
+	game._play_eliminate_effects([a, b])
+
+	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
+	game._show_message("自动消除 +" + str(score_result["gain"]), 0.9)
+	if score_result["combo"] > 1:
+		game._show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
+
+	if not will_clear:
+		game._consume_time_cost(int(game.tuning.get("auto_eliminate_time_cost_seconds", 2)))
+
+	game._refresh_ui()
+	game._refresh_board_visuals()
+	game._resolve_after_board_changed()
+

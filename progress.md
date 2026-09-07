@@ -670,3 +670,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round X：计时器构建与消息/横幅辅助迁入 ui_hud.gd)
 - Context: _build_timers（10 个会话计时器构建）、_show_message/_hide_message（消息横幅）、_show_stage_callout（关卡横幅浮字）共 82 行迁入 ui_hud.gd（主屏基础设施：构建+刷新+布局+计时器+消息），game.gd 留同名薄壳。panels_probe 补 6 项断言（计时器簇构建齐全、秒表运行中、消息横幅显隐、关卡横幅浮字创建）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 45 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round Y：棋盘动画与提示/自动消辅助拆分)
+- Context: 棋盘出生/洗牌动画 2 函数（_animate_board_spawn/_animate_shuffle_wave）迁入 board_view.gd；提示/自动消辅助 2 函数（_on_hint_pressed/_on_auto_pressed）迁入 game_input.gd，game.gd 留同名薄壳。panels_probe 补 5 项行为断言（出生动画发射 tween、提示高亮一对、自动消登记并消除被提示的一对）。
+- 修复：迁移器把夹在动画函数之间的文件级 const FX 卷入模块并误前缀（const game.FX 非法）——已还原 game.gd；game_input 残留 game.AudioManager 误前缀 8 处一并修正（autoload 恒为裸全局名）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 49 断言）；导出与 web_entry 通过。
