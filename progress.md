@@ -597,3 +597,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round J：结算分支收敛为 RECORD_MODES 数据表)
 - Context: _record_special_completion 里 10 个特殊模式各写一遍 patch/unlock/文案（约 90 行重复 match 分支），收敛为 special_modes.gd 的 RECORD_MODES 数据表（patch_key/best_key/achievements/label）+ bonus_achievements 条件成就纯函数（frost 免暖宝宝、moves 达标节步大师）。game.gd 结算函数缩为 ~35 行通用路径 + daily/time_attack 专属分支。
 - Validation: 13 项 headless 测试全绿（mode_meta_test 扩展：结算表 10 模式 patch/best 键名规范、成就均已在 progression 定义、bonus_achievements 四分支）。导出成功。
+
+## 2026-09-07 (代码质量 Round K：玩法面板行数据下沉 special_modes.gd)
+- Context: _refresh_modes_panel 内联的 13 行展示数据（id/title/detail，含各模式最佳分与解锁状态文案）抽为 special_modes.modes_panel_rows(progression_state) 纯函数（OS.get_date 驱动"今日已完成"判断），game.gd 只剩一行委托。展示数据可在无场景环境直测。
+- Validation: 12 项 headless 测试全绿（mode_meta_test 新增 modes_panel_rows 覆盖：13 行顺序/最佳分文案/今日完成分支）；web_entry 与导出成功。

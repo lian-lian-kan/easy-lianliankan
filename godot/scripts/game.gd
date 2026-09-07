@@ -3782,83 +3782,8 @@ func _refresh_modes_panel():
 		rows_box.remove_child(child)
 		child.queue_free()
 
-	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
-	var daily = progression_state.get("daily_challenge", {})
-	var endless_best = progression_state.get("endless_best", {})
+	var rows = SPECIAL_MODES_SCRIPT.modes_panel_rows(progression_state)
 	var unlocked_index = int(progression_state.get("highest_unlocked_level_index", 0))
-	var done_today = str(daily.get("last_date", "")) == today
-	var rows = [
-		{
-			"id": "daily",
-			"title": "📅 每日挑战",
-			"detail": "全网同一棋盘 · 连胜%d · 最佳%d分 · %s" % [
-				int(daily.get("streak", 0)), int(daily.get("best_score", 0)),
-				"今日已完成" if done_today else "今日未完成"
-			]
-		},
-		{
-			"id": "time_attack",
-			"title": "⏱️ 限时挑战",
-			"detail": "60秒起，消除得时间 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))
-		},
-		{
-			"id": "memory",
-			"title": "🎁 盲盒模式",
-			"detail": "记忆翻牌配对 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))
-		},
-		{
-			"id": "frost",
-			"title": "❄️ 冰雪挑战",
-			"detail": "冰冻方块要消除两次 · 最佳%d分" % int(progression_state.get("frost_best_score", 0))
-		},
-		{
-			"id": "zen",
-			"title": "🍵 休闲模式",
-			"detail": "没有时限，纯享受 · 最佳%d分" % int(progression_state.get("zen_best_score", 0))
-		},
-		{
-			"id": "hell",
-			"title": "🔥 地狱模式",
-			"detail": "大盘少图案超紧时间 · 最佳%d分" % int(progression_state.get("hell_best_score", 0))
-		},
-		{
-			"id": "moves",
-			"title": "🧮 步数挑战",
-			"detail": "步数有限精打细算 · 最佳%d分" % int(progression_state.get("moves_best_score", 0))
-		},
-		{
-			"id": "race",
-			"title": "🤖 竞速对战",
-			"detail": "和机器人抢消·先完成者胜 · 最佳%d分" % int(progression_state.get("race_best_score", 0))
-		},
-		{
-			"id": "stack",
-			"title": "🥞 叠层模式",
-			"detail": "上层压下层先消上层 · 最佳%d分" % int(progression_state.get("stack_best_score", 0))
-		},
-		{
-			"id": "gravity",
-			"title": "🍎 重力模式",
-			"detail": "消除后方块掉落补位 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))
-		},
-		{
-			"id": "fog",
-			"title": "🌫️ 迷雾模式",
-			"detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))
-		},
-		{
-			"id": "chain",
-			"title": "⛓️ 锁链模式",
-			"detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))
-		},
-		{
-			"id": "endless",
-			"title": "∞ 无尽模式",
-			"detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [
-				int(endless_best.get("round", 0)), int(endless_best.get("score", 0))
-			]
-		}
-	]
 	for row in rows:
 		var config = game_mode_configs.get(row["id"], {})
 		var unlocked = SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)

@@ -66,6 +66,41 @@ func _init() -> void:
 	check(SM.bonus_achievements("moves", {"moves_left": 5, "move_budget": 56}) == [], "moves below threshold earns none")
 	check(SM.bonus_achievements("race", {}) == [], "race has no conditional bonus")
 
+	# --- modes_panel_rows: 13 ordered rows, best-score formatting, daily done branch.
+	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "endless"]
+	var state := {
+		"daily_challenge": {"streak": 2, "best_score": 88},
+		"time_attack_best_score": 120, "memory_best_score": 34, "frost_best_score": 56,
+		"zen_best_score": 7, "hell_best_score": 90, "moves_best_score": 11, "race_best_score": 22,
+		"stack_best_score": 33, "gravity_best_score": 44, "fog_best_score": 55, "chain_best_score": 66,
+		"endless_best": {"round": 3, "score": 456},
+	}
+	var rows = SM.modes_panel_rows(state)
+	var got_ids := []
+	for r in rows:
+		got_ids.append(r["id"])
+	check(got_ids == want_ids, "modes_panel_rows returns 13 rows in panel order")
+	var titles_ok := true
+	for r in rows:
+		if r["title"] == "" or r["detail"] == "":
+			titles_ok = false
+	check(titles_ok, "every row has title and detail")
+	var details_ok := true
+	for r in rows:
+		if r["id"] == "daily" or r["id"] == "endless":
+			continue
+		var want := "最佳%d分" % int(state[r["id"] + "_best_score"])
+		if not r["detail"].ends_with(want):
+			details_ok = false
+			push_error("detail mismatch for %s: %s" % [r["id"], r["detail"]])
+	check(details_ok, "special-mode details end with their best score")
+	var endless_row = rows[12]
+	check(endless_row["detail"].find("最佳第3轮") != -1 and endless_row["detail"].find("最高456分") != -1, "endless detail shows round and score")
+	var daily_row = rows[0]
+	check(daily_row["detail"].find("今日已完成") == -1, "daily shows not-done without today's date")
+	var done_state = {"daily_challenge": {"last_date": SM.date_string(OS.get_date())}}
+	check(SM.modes_panel_rows(done_state)[0]["detail"].find("今日已完成") != -1, "daily shows done when last_date is today")
+
 	if failures == 0:
 		print("mode_meta_test: ALL PASSED")
 		quit(0)
