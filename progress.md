@@ -632,3 +632,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 用户复测仍糊，复查发现昨日 DPR cap 修复无效：根因是项目设置 display/window/dpi/allow_hidpi 缺省 false，引擎调 godot_js_display_setup_canvas(…, is_hidpi_allowed()?1:0) 把 JS 侧 GodotDisplayScreen.hidpi 恒置 false，getPixelRatio() 恒返 1，canvas 永远按 CSS 1× 渲染，所有高分屏（含 2× 屏）都被合成器放大发糊。昨日改 cap 无效是因为链路源头根本没开。
 - 修复：①project.godot 加 window/dpi/allow_hidpi=true（注意：导出流程的 --editor --quit 会重写 project.godot，Godot 3.6 ConfigFile 的注释保留实现会把注释压扁并与下一行粘连——带注释的设置行会被吞进注释失效，必须写无注释的裸行）；②shell DPR 逻辑改为"全端下限 2×、移动端钳制 2~3×、?dpr=N 强制任意倍率"（覆盖谎报 dpr=1 的 webview，如 ZCode IAB）。
 - 验收：IAB 实测 canvas 背衬 390×844 → 780×1688（ratio 2.0），游戏正常启动布局正常；13 项测试全绿；web_entry 通过。pck 内确认烘焙 allow_hidpi key。截图工具按 CSS 1× 采样无法体现背衬增益，清晰度以几何映射（2× 背衬 ↔ 2× 物理像素 1:1）+ 真机观感为准。
+
+## 2026-09-08 (高清化第二轮：stretch mode 2d 让布局回归逻辑像素)
+- 问题：开启 allow_hidpi 后 canvas 像素宽度翻倍，_viewport_flags 的短边≤768 判定把手机误判成桌面布局（快捷键角标出现、统计卡变小），文字相对尺寸也随之变小。
+- 修复：①project.godot 启用 window/stretch/mode="2d" + 基准 390×844（竖屏手机设计基准）——布局坐标回到逻辑像素，任何密度的手机都稳定命中移动布局；文字由字体过采样按设备密度栅格化，高分屏依然锐利；②MOBILE_SHORT_SIDE_MAX 768→860（横屏手机逻辑短边 844 保持移动布局）；③新增 tests/offscreen_font_probe.gd：离屏窗口按手机 canvas 密度启动真实游戏并导出视口纹理，原生分辨率核对字体锐度。
+- 验证：离屏探针实测 logical_viewport=(390,844)@window 780×1688，2× 密度下字形锐利、移动布局保持；13 项测试全绿；导出与 web_entry 通过。
