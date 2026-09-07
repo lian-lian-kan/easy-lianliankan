@@ -687,3 +687,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AB：计时器回调与按钮/键盘动作归并)
 - Context: 计时器回调 10 函数（second/race tick、message/error/combo/level highlight/advance/freeze/memory timeout）迁入 ui_hud.gd；按钮/键盘动作 6 函数（shuffle/reset/jump/pause 按钮与 cycle_level_selection/toggle_fullscreen）迁入 game_input.gd，game.gd 留同名薄壳（信号 connect 目标仍是 game 实例壳）。panels_probe 补 5 项回调行为断言（消息超时隐藏、冻结超时解冻、秒表扣时、洗牌耗时且保持对局）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 47 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AC：特殊模式结算迁入 session.gd + 启动日志收敛)
+- Context: _record_special_completion（RECORD_MODES 表结算 + daily/time_attack 分支）迁入 session.gd（与 _resolve_special_clear 同域），game.gd 留同名薄壳；_ready 的 9 条启动 print 收敛为 3 条阶段日志。panels_probe 补 4 项结算断言（zen 纪录与结算面板、daily 落今日戳）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 50 断言）；导出与 web_entry 通过。

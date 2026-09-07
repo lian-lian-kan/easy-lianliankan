@@ -184,6 +184,18 @@ func _init() -> void:
 	check(int(game.time_left) == 28, "shuffle costs one second")
 	check(game.stage_status == game.STATUS_PLAYING, "shuffle keeps the stage playing")
 
+	# session: special completion records results (zen + daily branches)
+	game.special_mode = "zen"
+	game.total_score = 7777
+	game._record_special_completion()
+	check(int(game.progression_state.get("zen_best_score", 0)) >= 7777, "zen completion records its result")
+	check(game.stage_panel_label.visible && game.stage_panel_label.text.find("完成") != -1, "zen completion shows the settle panel")
+	game.special_mode = "daily"
+	game.total_score = 321
+	game._record_special_completion()
+	check(game.progression_state.get("daily_challenge", {}).get("last_date", "") == game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date()), "daily completion stamps today")
+	game.special_mode = ""
+
 	# ui_hud: control button factory, level select population, achievement notification
 	var ctrl_button = game._create_control_button("提示")
 	check(ctrl_button != null && ctrl_button.text == "提示" && ctrl_button.has_stylebox_override("normal"), "control button factory styles its button")

@@ -188,27 +188,20 @@ var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法模式入口按钮
 
 func _ready():
-	print("[Game] _ready() started")
+	print("[Game] boot: ready")
 	randomize()
-	print("[Game] randomize() done")
 	_init_font()
-	print("[Game] _init_font() done")
 	_load_config()
-	print("[Game] _load_config() done, levels: ", campaign_levels.size())
+	print("[Game] boot: config loaded, levels=", campaign_levels.size())
 	_load_progress_state()
-	print("[Game] _load_progress_state() done")
 	_build_ui()
-	print("[Game] _build_ui() done")
 	_build_timers()
-	print("[Game] _build_timers() done")
 	var start_level_index = int(progression_state.get("current_level_index", 0))
-	print("[Game] Starting level: ", start_level_index)
+	print("[Game] boot: starting level ", start_level_index)
 	_start_level(start_level_index, true)
-	print("[Game] _start_level() done")
 	set_process(true)
 	call_deferred("_show_onboarding_if_needed")
 	call_deferred("_start_bgm")
-	print("[Game] _ready() completed")
 
 func _process(delta):
 	_update_combo_progress()
@@ -1253,40 +1246,8 @@ func _unlock_achievements(ids):
 			_show_achievement_notification(info["name"])
 
 func _record_special_completion():
-	var today = SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
-	var record = SPECIAL_MODES_SCRIPT.RECORD_MODES.get(special_mode, {})
-	if not record.empty():
-		_patch_progress_state({record["patch_key"]: total_score})
-		var achievements = record["achievements"].duplicate()
-		achievements.append_array(SPECIAL_MODES_SCRIPT.bonus_achievements(special_mode, {
-			"frost_uses": frost_uses,
-			"moves_left": moves_left,
-			"move_budget": int(_current_level().get("move_budget", 0)),
-		}))
-		_unlock_achievements(achievements)
-		stage_panel_label.text = record["label"] + "完成！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get(record["best_key"], 0)))
-		stage_panel_label.visible = true
-		return
-	if special_mode == "daily":
-		_patch_progress_state({
-			"daily_result": {
-				"date": today,
-				"yesterday": SPECIAL_MODES_SCRIPT.yesterday_string(OS.get_date()),
-				"score": total_score
-			}
-		})
-		var daily = progression_state.get("daily_challenge", {})
-		stage_panel_label.text = "今日挑战完成！得分 " + str(total_score) + " · 连胜 " + str(int(daily.get("streak", 0))) + " 天\n明天还有新的棋盘，点击「重开」可再玩今日棋盘"
-		if int(daily.get("streak", 0)) >= 7:
-			_unlock_achievements(["daily_streak_7"])
-	elif special_mode == "time_attack":
-		_patch_progress_state({"time_attack_result": total_score})
-		stage_panel_label.text = "限时挑战结束！得分 " + str(total_score) + " · 最佳 " + str(int(progression_state.get("time_attack_best_score", 0)))
-		if total_score >= 1000:
-			_unlock_achievements(["time_attack_1000"])
-	else:
-		stage_panel_label.text = "挑战完成！得分 " + str(total_score)
-	stage_panel_label.visible = true
+	return SESSION._record_special_completion(self)
+
 
 func _start_special_mode(mode_id):
 	return SESSION._start_special_mode(self, mode_id)

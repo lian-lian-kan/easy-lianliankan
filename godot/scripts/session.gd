@@ -242,3 +242,39 @@ static func _resolve_special_clear(game):
 	game._refresh_ui()
 	game._refresh_board_visuals()
 
+
+static func _record_special_completion(game):
+	var today = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	var record = game.SPECIAL_MODES_SCRIPT.RECORD_MODES.get(game.special_mode, {})
+	if not record.empty():
+		game._patch_progress_state({record["patch_key"]: game.total_score})
+		var achievements = record["achievements"].duplicate()
+		achievements.append_array(game.SPECIAL_MODES_SCRIPT.bonus_achievements(game.special_mode, {
+			"frost_uses": game.frost_uses,
+			"moves_left": game.moves_left,
+			"move_budget": int(game._current_level().get("move_budget", 0)),
+		}))
+		game._unlock_achievements(achievements)
+		game.stage_panel_label.text = record["label"] + "完成！得分 " + str(game.total_score) + " · 最佳 " + str(int(game.progression_state.get(record["best_key"], 0)))
+		game.stage_panel_label.visible = true
+		return
+	if game.special_mode == "daily":
+		game._patch_progress_state({
+			"daily_result": {
+				"date": today,
+				"yesterday": game.SPECIAL_MODES_SCRIPT.yesterday_string(OS.get_date()),
+				"score": game.total_score
+			}
+		})
+		var daily = game.progression_state.get("daily_challenge", {})
+		game.stage_panel_label.text = "今日挑战完成！得分 " + str(game.total_score) + " · 连胜 " + str(int(daily.get("streak", 0))) + " 天\n明天还有新的棋盘，点击「重开」可再玩今日棋盘"
+		if int(daily.get("streak", 0)) >= 7:
+			game._unlock_achievements(["daily_streak_7"])
+	elif game.special_mode == "time_attack":
+		game._patch_progress_state({"time_attack_result": game.total_score})
+		game.stage_panel_label.text = "限时挑战结束！得分 " + str(game.total_score) + " · 最佳 " + str(int(game.progression_state.get("time_attack_best_score", 0)))
+		if game.total_score >= 1000:
+			game._unlock_achievements(["time_attack_1000"])
+	else:
+		game.stage_panel_label.text = "挑战完成！得分 " + str(game.total_score)
+	game.stage_panel_label.visible = true
