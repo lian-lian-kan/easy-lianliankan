@@ -17,6 +17,7 @@ const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
 const UI_PANELS = preload("res://scripts/ui_panels.gd")
 
 const STATS_HUD = preload("res://scripts/stats_hud.gd")
+const BOARD_VIEW = preload("res://scripts/board_view.gd")
 const POWERUPS = preload("res://scripts/powerups.gd")
 const UI_HUD = preload("res://scripts/ui_hud.gd")
 
@@ -1038,168 +1039,8 @@ func _render_board():
 	_update_tile_sizes()
 	_refresh_board_visuals()
 
-func _update_tile_sizes():
-	if board.empty() or cell_buttons.empty():
-		return
 
-	var rows = board.size()
-	var cols = board[0].size()
-	var h_sep = board_grid.get_constant("h_separation")
-	var v_sep = board_grid.get_constant("v_separation")
 
-	# Get available board area and keep a minimum usable size.
-	var viewport_size = get_viewport_rect().size
-	var flags = _viewport_flags(viewport_size)
-	var is_mobile = flags["is_mobile"]
-	var is_portrait = flags["is_portrait"]
-	var is_compact_height = flags["is_compact_height"]
-	var padding = 4 if is_mobile and is_compact_height else (6 if is_mobile and is_portrait else (10 if is_mobile else 24))
-	var board_area = board_wrapper.rect_size
-	if board_area.x <= 1 or board_area.y <= 1:
-		board_area = board_wrapper.rect_min_size
-	var available = board_area - Vector2(padding * 2, padding * 2)
-	available.x = max(available.x, 120.0)
-	available.y = max(available.y, 120.0)
-
-	# Calculate tile size to fit all tiles.
-	var by_width = int(floor((available.x - float(cols - 1) * h_sep) / max(1, cols)))
-	var by_height = int(floor((available.y - float(rows - 1) * v_sep) / max(1, rows)))
-
-	# Clamp tile size: portrait mobile gets larger minimum tiles for readability.
-	var min_tile = 34 if is_mobile and is_portrait else (30 if is_mobile else 34)
-	var max_tile = 90 if is_mobile and is_portrait else (76 if is_mobile else 110)
-	var tile = clamp(min(by_width, by_height), min_tile, max_tile)
-
-	var tile_font = _font_at_size(int(clamp(float(tile) * 0.52, 14.0, 44.0)))
-	for r in range(rows):
-		for c in range(cols):
-			var button = cell_buttons[r][c]
-			button.rect_min_size = Vector2(tile, tile)
-			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			button.add_font_override("font", tile_font)
-
-func _refresh_board_visuals():
-	if board.empty() or cell_buttons.empty():
-		return
-
-	var rows = board.size()
-	var cols = board[0].size()
-	var playing = stage_status == STATUS_PLAYING
-
-	for r in range(rows):
-		for c in range(cols):
-			var value = int(board[r][c])
-			var button = cell_buttons[r][c]
-
-			if value == 0:
-				button.text = ""
-				button.disabled = true
-				_apply_tile_style(button, Color("fff5f8"), Color("ffc2d4"), false)
-				continue
-
-			var face_down = _is_memory_mode() and not memory_previewing 				and not memory_revealed.has(_memory_key(Vector2(r, c))) 				and not (selected.x == r and selected.y == c)
-			var bg = _color_for(value)
-			var border = Color("ffffff")
-			if face_down:
-				button.text = "❓"
-				bg = Color("ffc2d4")
-				border = Color("f09ebb")
-			else:
-				button.text = _icon_for(value)
-			button.disabled = not playing
-
-			var is_selected = (selected.x == r and selected.y == c)
-			var frozen = _is_frost_mode() and r < board_armor.size() \
-					and c < board_armor[r].size() and int(board_armor[r][c]) > 0
-			var fogged = _is_fogged(Vector2(r, c))
-			var chained = _is_chain_mode() and r < board_chain.size() \
-					and c < board_chain[r].size() and int(board_chain[r][c]) > 0
-			var stacked = _is_stack_mode() and r < board_lower.size() \
-					and c < board_lower[r].size() and int(board_lower[r][c]) > 0
-			if frozen:
-				# Ice sheet: cool white-blue face with a frost border.
-				bg = bg.linear_interpolate(Color("e7f5ff"), 0.72)
-				border = Color("a5d8ff")
-			var has_effect = false
-
-			if _contains_coord(error_tiles, Vector2(r, c)):
-				bg = Color("ffe3e3")
-				border = Color("ff8787")
-				has_effect = true
-			elif _contains_coord(hint_tiles, Vector2(r, c)):
-				bg = Color("d0ebff")
-				border = Color("3b82f6")
-				has_effect = true
-			elif frozen:
-				has_effect = true
-			elif fogged:
-				# Fog hides the icon entirely until the rings recede.
-				button.text = "❓"
-				bg = Color("e9ecef")
-				border = Color("adb5bd")
-			elif chained:
-				border = Color("868e96")
-				bg = bg.linear_interpolate(Color("e9ecef"), 0.35)
-				has_effect = true
-			elif stacked:
-				border = Color("9775fa")
-				has_effect = true
-			elif bomb_pending:
-				# Armed bomb: warm glow on every tile invites the pick.
-				bg = bg.linear_interpolate(Color("fff3bf"), 0.45)
-				border = Color("ffd43b")
-				has_effect = true
-			elif rainbow_pending:
-				# Armed rainbow: violet shimmer while choosing two tiles.
-				bg = bg.linear_interpolate(Color("f3d9fa"), 0.4)
-				border = Color("da77f2")
-				has_effect = true
-
-			if is_selected:
-				border = Color("ff8fab")
-				has_effect = true
-
-			_apply_tile_style(button, bg, border, has_effect or is_selected)
-			# Cool tint sells the frost at a glance, even on tiny tiles.
-			button.modulate = Color(0.86, 0.95, 1.1) if frozen else Color(1, 1, 1)
-
-func _apply_tile_style(button, bg_color, border_color, highlight):
-	var normal = StyleBoxFlat.new()
-	normal.bg_color = bg_color
-	normal.border_color = border_color
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(14)
-
-	if highlight:
-		normal.shadow_color = border_color
-		normal.shadow_size = 6
-		normal.shadow_offset = Vector2(0, 2)
-	else:
-		normal.shadow_color = Color("00000010")
-		normal.shadow_size = 3
-		normal.shadow_offset = Vector2(0, 2)
-
-	var hover = StyleBoxFlat.new()
-	hover.bg_color = bg_color.lightened(0.06)
-	hover.border_color = border_color.lightened(0.05)
-	hover.set_border_width_all(2)
-	hover.set_corner_radius_all(10)
-	hover.shadow_color = Color("00000020")
-	hover.shadow_size = 5
-	hover.shadow_offset = Vector2(0, 3)
-
-	var pressed = StyleBoxFlat.new()
-	pressed.bg_color = bg_color.darkened(0.08)
-	pressed.border_color = border_color.darkened(0.05)
-	pressed.set_border_width_all(2)
-	pressed.set_corner_radius_all(10)
-
-	button.add_stylebox_override("normal", normal)
-	button.add_stylebox_override("pressed", pressed)
-	button.add_stylebox_override("focus", normal)
-	button.add_stylebox_override("hover", hover)
-	button.add_stylebox_override("disabled", normal)
 
 func _apply_glass_style(panel, bg_color, alpha):
 	var style = StyleBoxFlat.new()
@@ -1254,16 +1095,6 @@ func _style_dialog_buttons(node):
 	for child in node.get_children():
 		_style_dialog_buttons(child)
 
-func _icon_for(value):
-	if icon_sets.empty():
-		return str(value)
-
-	var icon_set: Dictionary = icon_sets[icon_set_index]
-	var icons: Array = icon_set.get("icons", [])
-	var index = value - 1
-	if index >= 0 and index < icons.size():
-		return str(icons[index])
-	return str(value)
 
 func _color_for(value):
 	if icon_sets.empty():
@@ -1275,6 +1106,18 @@ func _color_for(value):
 	if index >= 0 and index < colors.size():
 		return Color(str(colors[index]))
 	return Color("ffffff")
+
+func _refresh_board_visuals():
+	return BOARD_VIEW._refresh_board_visuals(self)
+
+func _update_tile_sizes():
+	return BOARD_VIEW._update_tile_sizes(self)
+
+func _apply_tile_style(button, bg_color, border_color, highlight):
+	return BOARD_VIEW._apply_tile_style(self, button, bg_color, border_color, highlight)
+
+func _icon_for(value):
+	return BOARD_VIEW._icon_for(self, value)
 
 func _contains_coord(list, coord):
 	return BOARD_ENGINE.contains_coord(list, coord)

@@ -30,6 +30,23 @@ func _init() -> void:
 	check(game.controls_flow_container != null and game.progression_flow_container != null, "controls and progression rows built")
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
+	# board_view: board built and the refresh pipeline is idempotent
+	check(game.board.size() > 0 && game.cell_buttons.size() == game.board.size(), "board and cell buttons built")
+	var found_value = 0
+	var face_text = ""
+	for r in range(game.board.size()):
+		for c in range(game.board[r].size()):
+			if int(game.board[r][c]) > 0:
+				found_value = int(game.board[r][c])
+				face_text = game.cell_buttons[r][c].text
+				break
+		if found_value > 0:
+			break
+	game._refresh_board_visuals()
+	check(found_value > 0 && face_text != "", "tile face renders its icon after refresh")
+	game._update_tile_sizes()
+	check(float(game.cell_buttons[0][0].rect_min_size.x) >= 30.0, "tile size clamped to readable minimum")
+
 	# refresh_ui reflects stage status on the pause button
 	game.stage_status = game.STATUS_PAUSED
 	game._refresh_ui()

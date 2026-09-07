@@ -637,3 +637,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 问题：开启 allow_hidpi 后 canvas 像素宽度翻倍，_viewport_flags 的短边≤768 判定把手机误判成桌面布局（快捷键角标出现、统计卡变小），文字相对尺寸也随之变小。
 - 修复：①project.godot 启用 window/stretch/mode="2d" + 基准 390×844（竖屏手机设计基准）——布局坐标回到逻辑像素，任何密度的手机都稳定命中移动布局；文字由字体过采样按设备密度栅格化，高分屏依然锐利；②MOBILE_SHORT_SIDE_MAX 768→860（横屏手机逻辑短边 844 保持移动布局）；③新增 tests/offscreen_font_probe.gd：离屏窗口按手机 canvas 密度启动真实游戏并导出视口纹理，原生分辨率核对字体锐度。
 - 验证：离屏探针实测 logical_viewport=(390,844)@window 780×1688，2× 密度下字形锐利、移动布局保持；13 项测试全绿；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round Q：棋盘视觉簇迁入 board_view.gd)
+- Context: _refresh_board_visuals/_update_tile_sizes/_apply_tile_style/_icon_for 共约 170 行迁入新模块 board_view.gd（game 参数静态工厂），game.gd 留同名薄壳；panels_probe 补棋盘视觉断言（格子/按钮成对构建、刷新后台面图标非空、tile 尺寸钳制下限）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 18 断言）；迁移复用多函数迁移器（上下文无关前缀 + game.X 全量审计 + get_viewport_rect 类 Node 方法补前缀）；导出与 web_entry 通过。
