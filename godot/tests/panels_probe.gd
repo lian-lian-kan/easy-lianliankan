@@ -120,6 +120,27 @@ func _init() -> void:
 	check(int(game.progression_state.get("current_level_index", 0)) != 3, "special session never touches campaign progress")
 	game._patch_progress_state({"zen_result": 99})
 	check(int(game.progression_state.get("zen_best_score", 0)) >= 99, "special session persists its own record")
+
+	# style helpers: glass panels, full-state button styles, recursive dialog styling
+	game.special_mode = ""
+	game._apply_glass_style(game.pause_panel, Color("fff0f6"), 0.9)
+	check(game.pause_panel.has_stylebox_override("panel"), "glass style overrides the panel stylebox")
+	var plain_button = Button.new()
+	game.add_child(plain_button)
+	game._apply_button_style(plain_button, Color("f06ba8"), Color("d6336c"))
+	check(plain_button.has_stylebox_override("normal") && plain_button.has_stylebox_override("hover") && plain_button.has_stylebox_override("pressed") && plain_button.has_stylebox_override("disabled"), "button style overrides all states")
+	game._style_dialog_buttons(game.pause_panel)
+	var dialog_button = null
+	var stack = [game.pause_panel]
+	while stack.size() > 0:
+		var node = stack.pop_back()
+		if node is Button:
+			dialog_button = node
+			break
+		for child in node.get_children():
+			stack.append(child)
+	check(dialog_button != null && dialog_button.get_color("font_color") == Color("ffffff"), "dialog buttons get the rose white font")
+	plain_button.queue_free()
 	game.special_mode = ""
 	# fx_layer: eliminate effects emit into the effect layer
 	var fx_before = game.effect_layer.get_child_count()

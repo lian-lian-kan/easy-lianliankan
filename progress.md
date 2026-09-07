@@ -662,3 +662,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: 配置装载 8 函数（_load_config/_load_json_file/_load_campaign_levels/_load_tuning/_load_icon_sets/_load_game_mode_configs/_default_tuning/_default_icon_sets）迁入 game_config.gd；进度存取 3 函数（_load/_save/_patch_progress_state）迁入 progress_store.gd，game.gd 留同名薄壳。panels_probe 补 7 项持久化语义断言（配置重载保持关卡表、combo_candidate 提升最佳、落盘文件存在、special 会话过滤 campaign 字段但保留自身纪录）。
 - 附带修复：game_input.gd 与 session.gd 残留的 game.AudioManager 误前缀（12 处，Round S/U 迁移引入、此前断言不敏感未暴露）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 36 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round W：样式辅助簇迁入 ui_panels.gd)
+- Context: _apply_glass_style/_apply_button_style/_style_dialog_buttons 迁入 ui_panels.gd（追加模式，样式即 UI 构建域），game.gd 留同名薄壳。panels_probe 补 3 项样式行为断言（玻璃面板 stylebox 覆盖、按钮五态覆盖、递归对话框按钮玫瑰白字）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 39 断言）；导出与 web_entry 通过。

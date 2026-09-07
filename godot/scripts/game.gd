@@ -689,58 +689,8 @@ func _render_board():
 
 
 
-func _apply_glass_style(panel, bg_color, alpha):
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(bg_color.r, bg_color.g, bg_color.b, alpha)
-	style.set_corner_radius_all(16)
-	style.set_border_width_all(1)
-	style.border_color = Color("ffd9e8")
-	style.shadow_color = Color("00000020")
-	style.shadow_size = 8
-	style.shadow_offset = Vector2(0, 4)
-	panel.add_stylebox_override("panel", style)
 
-func _apply_button_style(button, bg_color, border_color):
-	var normal = StyleBoxFlat.new()
-	normal.bg_color = bg_color
-	normal.border_color = border_color
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(12)
-	normal.shadow_color = Color("00000015")
-	normal.shadow_size = 4
-	normal.shadow_offset = Vector2(0, 2)
 
-	var hover = StyleBoxFlat.new()
-	hover.bg_color = bg_color.lightened(0.08)
-	hover.border_color = border_color.lightened(0.1)
-	hover.set_border_width_all(2)
-	hover.set_corner_radius_all(12)
-	hover.shadow_color = Color("00000020")
-	hover.shadow_size = 6
-	hover.shadow_offset = Vector2(0, 3)
-
-	var pressed = StyleBoxFlat.new()
-	pressed.bg_color = bg_color.darkened(0.05)
-	pressed.border_color = border_color.darkened(0.05)
-	pressed.set_border_width_all(2)
-	pressed.set_corner_radius_all(16)
-
-	button.add_stylebox_override("normal", normal)
-	button.add_stylebox_override("pressed", pressed)
-	button.add_stylebox_override("focus", normal)
-	button.add_stylebox_override("hover", hover)
-	button.add_stylebox_override("disabled", normal)
-
-func _style_dialog_buttons(node):
-	# Dialog buttons join the rose palette instead of the default gray.
-	if node is Button:
-		_apply_button_style(node, Color("f06ba8"), Color("d6336c"))
-		node.add_color_override("font_color", Color("ffffff"))
-		node.add_color_override("font_hover_color", Color("ffffff"))
-		node.add_color_override("font_pressed_color", Color("ffffff"))
-		node.add_color_override("font_focus_color", Color("ffffff"))
-	for child in node.get_children():
-		_style_dialog_buttons(child)
 
 
 func _color_for(value):
@@ -753,6 +703,15 @@ func _color_for(value):
 	if index >= 0 and index < colors.size():
 		return Color(str(colors[index]))
 	return Color("ffffff")
+
+func _apply_glass_style(panel, bg_color, alpha):
+	return UI_PANELS._apply_glass_style(self, panel, bg_color, alpha)
+
+func _apply_button_style(button, bg_color, border_color):
+	return UI_PANELS._apply_button_style(self, button, bg_color, border_color)
+
+func _style_dialog_buttons(node):
+	return UI_PANELS._style_dialog_buttons(self, node)
 
 func _refresh_board_visuals():
 	return BOARD_VIEW._refresh_board_visuals(self)
