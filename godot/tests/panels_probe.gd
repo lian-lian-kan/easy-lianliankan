@@ -47,6 +47,12 @@ func _init() -> void:
 	game._update_tile_sizes()
 	check(float(game.cell_buttons[0][0].rect_min_size.x) >= 30.0, "tile size clamped to readable minimum")
 
+	# ui_hud layout: mobile-portrait compaction applied at logical 390x844
+	game._update_layout_for_screen_size()
+	check(float(game.margin_container.get_constant("margin_left")) <= 8.0, "compact margins applied on mobile portrait")
+	check(game.hint_button != null && float(game.hint_button.rect_min_size.y) <= 40.0, "control buttons sized for mobile")
+	check(game.stat_values.has("level_score") && !game.stat_values["level_score"]["card"].visible, "portrait hides non-essential stat cards")
+
 	# refresh_ui reflects stage status on the pause button
 	game.stage_status = game.STATUS_PAUSED
 	game._refresh_ui()

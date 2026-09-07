@@ -641,3 +641,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round Q：棋盘视觉簇迁入 board_view.gd)
 - Context: _refresh_board_visuals/_update_tile_sizes/_apply_tile_style/_icon_for 共约 170 行迁入新模块 board_view.gd（game 参数静态工厂），game.gd 留同名薄壳；panels_probe 补棋盘视觉断言（格子/按钮成对构建、刷新后台面图标非空、tile 尺寸钳制下限）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 18 断言）；迁移复用多函数迁移器（上下文无关前缀 + game.X 全量审计 + get_viewport_rect 类 Node 方法补前缀）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round R：屏幕布局适配迁入 ui_hud.update_layout)
+- Context: _update_layout_for_screen_size 的 115 行响应式布局适配（断点旗标/棋盘高度/边距/统计卡与按钮尺寸/竖屏头部压缩）迁入 ui_hud.gd 的 update_layout(game) 静态（主屏模块职责闭环：构建+状态刷新+布局），game.gd 留 3 行壳；panels_probe 补布局行为断言（竖屏紧凑边距/移动端按钮尺寸/非核心统计卡隐藏）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 21 断言）；迁移器 span 终止条件扩展到全部顶层声明（func/const/var），避免吞掉函数后的字体常量声明；导出与 web_entry 通过。
