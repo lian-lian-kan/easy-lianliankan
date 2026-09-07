@@ -237,31 +237,33 @@ const engine = new Engine(GODOT_CONFIG);
 
 	function applyDprCapForMobile() {
 		const params = new URLSearchParams(window.location.search);
-		const requestedCap = parseFloat(params.get('dpr') || '');
-		// 3x screens (iPhone Pro / most Androids) must render at their native
-		// device pixels: capping below the panel ratio makes the browser
-		// upscale the canvas and blur every glyph. ?dpr= stays as a rescue
-		// hatch for low-end devices that trade sharpness for framerate.
-		const defaultCap = 3.0;
-		const shouldAutoCap = /Android|iPhone|iPad|iPod|HarmonyOS/i.test(navigator.userAgent);
-		const cap = Number.isFinite(requestedCap) && requestedCap > 0
-			? requestedCap
-			: (shouldAutoCap ? defaultCap : NaN);
-		if (!Number.isFinite(cap)) {
-			return;
+		const requested = parseFloat(params.get('dpr') || '');
+		const realDpr = window.devicePixelRatio || 1;
+		const isMobileUa = /Android|iPhone|iPad|iPod|HarmonyOS/i.test(navigator.userAgent);
+		// Some webviews (in-app browsers, home-screen webviews) report dpr=1 on
+		// high-density panels, so the canvas renders at CSS resolution and the
+		// compositor upscale blurs every glyph. Floor the effective ratio at 2x
+		// everywhere, allow native ratios up to 3x on phones, and let ?dpr=N
+		// force an exact ratio (e.g. ?dpr=1 for weak low-end devices).
+		let ratio;
+		if (Number.isFinite(requested) && requested > 0) {
+			ratio = requested;
+		} else if (isMobileUa) {
+			ratio = Math.min(Math.max(realDpr, 2.0), 3.0);
+		} else {
+			ratio = Math.max(realDpr, 2.0);
 		}
-		const originalDpr = window.devicePixelRatio || 1;
-		if (originalDpr <= cap) {
+		if (Math.abs(ratio - realDpr) < 0.01) {
 			return;
 		}
 		try {
 			Object.defineProperty(window, 'devicePixelRatio', {
 				configurable: true,
-				get: () => cap,
+				get: () => ratio,
 			});
-			console.info(`[H5] devicePixelRatio capped from ${originalDpr} to ${cap}`);
+			console.info(`[H5] effective devicePixelRatio ${realDpr} -> ${ratio}`);
 		} catch (err) {
-			console.warn('[H5] unable to cap devicePixelRatio', err);
+			console.warn('[H5] unable to override devicePixelRatio', err);
 		}
 	}
 

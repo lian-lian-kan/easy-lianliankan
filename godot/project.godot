@@ -32,4 +32,5 @@ AudioManager="*res://scripts/audio_manager.gd"
 
 window/size/width=1280
 window/size/height=720
+window/dpi/allow_hidpi=true
 window/stretch/aspect="expand"

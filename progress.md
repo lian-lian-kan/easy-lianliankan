@@ -627,3 +627,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 根因：加载壳 applyDprCapForMobile 把移动端 devicePixelRatio 压到 2.0（7d40326 引入的省电/性能策略），而 Godot 3.6 导出模板按 canvas = innerWidth × devicePixelRatio 生成背衬。3× 屏（iPhone Pro/多数安卓旗舰）被压到 2× 再由浏览器放大 1.5 倍，所有字形都糊。2× 屏不受影响。
 - 修复：defaultCap 2.0 → 3.0，3× 屏原生 1:1 渲染；?dpr= 参数保留作低端机救援口。字体链路本身（DynamicFont 1:1 栅格化 + use_filter）无需改动。
 - Validation: 13 项 headless 测试全绿；导出物 index.html 含 defaultCap = 3.0；web_entry 通过；CI 绿后线上复验。
+
+## 2026-09-08 (真修复：高分屏全面发糊的根因——allow_hidpi 未开启)
+- 用户复测仍糊，复查发现昨日 DPR cap 修复无效：根因是项目设置 display/window/dpi/allow_hidpi 缺省 false，引擎调 godot_js_display_setup_canvas(…, is_hidpi_allowed()?1:0) 把 JS 侧 GodotDisplayScreen.hidpi 恒置 false，getPixelRatio() 恒返 1，canvas 永远按 CSS 1× 渲染，所有高分屏（含 2× 屏）都被合成器放大发糊。昨日改 cap 无效是因为链路源头根本没开。
+- 修复：①project.godot 加 window/dpi/allow_hidpi=true（注意：导出流程的 --editor --quit 会重写 project.godot，Godot 3.6 ConfigFile 的注释保留实现会把注释压扁并与下一行粘连——带注释的设置行会被吞进注释失效，必须写无注释的裸行）；②shell DPR 逻辑改为"全端下限 2×、移动端钳制 2~3×、?dpr=N 强制任意倍率"（覆盖谎报 dpr=1 的 webview，如 ZCode IAB）。
+- 验收：IAB 实测 canvas 背衬 390×844 → 780×1688（ratio 2.0），游戏正常启动布局正常；13 项测试全绿；web_entry 通过。pck 内确认烘焙 allow_hidpi key。截图工具按 CSS 1× 采样无法体现背衬增益，清晰度以几何映射（2× 背衬 ↔ 2× 物理像素 1:1）+ 真机观感为准。
