@@ -703,3 +703,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AE：棋盘重建/连击得分/超时判负归并)
 - Context: _render_board 迁入 board_view.gd；_apply_combo_gain（连击窗口/倍率公式/time_attack fever/进度候选补丁）与 _on_time_up（战役与 special 双分支判负）迁入 session.gd，game.gd 留同名薄壳。panels_probe 补 3 项断言（网格重建一致性、连击公式按当前关卡乘数计算、超时判负+重开恢复）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 55 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AF：棋盘动画去协程化迁入 board_view.gd)
+- Context: 三个含 yield 的棋盘动画协程（_pulse_tile 双 tween 链/_animate_select 选中方块脉冲+环延迟生成/_shake_tile 抖动）重构为**单 tween 顺序多步序列**（G3 Tween 顺序执行 + 延迟参数，tween_all_completed 回调环生成），彻底去 yield 后迁入 board_view.gd，game.gd 留同名薄壳。panels_probe 补动画行为断言（静止回归/新环面板身份计数）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 55+ 断言）；导出与 web_entry 通过。

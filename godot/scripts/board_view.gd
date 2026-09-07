@@ -261,3 +261,51 @@ static func _render_board(game):
 	game._update_tile_sizes()
 	game._refresh_board_visuals()
 
+
+# --- Tile animations (de-coroutined: single tweens, no yield) ---
+
+static func _shake_tile(game, coord):
+	var button = game._try_get_tile_button(coord)
+	if button == null:
+		return
+	button.rect_pivot_offset = button.rect_size * 0.5
+	button.rect_scale = Vector2(1.04, 1.04)
+	var tween = game._make_fx_tween()
+	tween.interpolate_property(button, "rect_rotation", 0.0, -6.0, 0.04, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.0)
+	tween.interpolate_property(button, "rect_rotation", -6.0, 6.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.04)
+	tween.interpolate_property(button, "rect_rotation", 6.0, -4.0, 0.05, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.10)
+	tween.interpolate_property(button, "rect_rotation", -4.0, 0.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.15)
+	tween.interpolate_property(button, "rect_scale", Vector2(1.04, 1.04), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.15)
+	tween.start()
+
+
+static func _pulse_tile(game, coord, peak_scale, half_duration, loops = 1):
+	var button = game._try_get_tile_button(coord)
+	if button == null:
+		return
+	button.rect_pivot_offset = button.rect_size * 0.5
+	# One tween chains every up/down pulse step, so no coroutine is needed.
+	var tween = Tween.new()
+	game.add_child(tween)
+	var delay = 0.0
+	for _i in range(max(1, loops)):
+		tween.interpolate_property(button, "rect_scale", button.rect_scale, Vector2.ONE * peak_scale, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
+		delay += half_duration
+		tween.interpolate_property(button, "rect_scale", Vector2.ONE * peak_scale, Vector2.ONE, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay)
+		delay += half_duration
+	tween.start()
+
+
+static func _animate_select(game, coord):
+	var button = game._try_get_tile_button(coord)
+	if button == null:
+		return
+	button.rect_pivot_offset = button.rect_size * 0.5
+	var tween = Tween.new()
+	game.add_child(tween)
+	tween.interpolate_property(button, "rect_scale", button.rect_scale, Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	tween.interpolate_property(button, "rect_scale", Vector2(1.08, 1.08), Vector2.ONE, 0.12, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.08)
+	var center = game._tile_center_in_effect_layer(coord)
+	tween.connect("tween_all_completed", game, "_spawn_ring_effect", [center, Color("ff6f9c"), 0.18, 12.0])
+	tween.start()
+

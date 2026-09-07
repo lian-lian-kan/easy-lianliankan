@@ -165,6 +165,35 @@ func _init() -> void:
 	check(int(game.level_auto_used) == autos_before + 1, "auto press registers usage")
 	check(int(game._remaining_tiles_count()) == tiles_before - 2, "auto press eliminates the hinted pair")
 
+	# board_view: de-coroutined tile animations return the tile to rest
+	var anim_cell = null
+	for r in range(game.board.size()):
+		for c in range(game.board[r].size()):
+			if int(game.board[r][c]) > 0:
+				anim_cell = Vector2(r, c)
+				break
+		if anim_cell != null:
+			break
+	var rest_button = game.cell_buttons[anim_cell.x][anim_cell.y]
+	var before_panels = []
+	for child in game.effect_layer.get_children():
+		if child is Panel:
+			before_panels.append(child)
+	game._animate_select(anim_cell)
+	yield(self.create_timer(0.25), "timeout")
+	var new_panels = 0
+	for child in game.effect_layer.get_children():
+		if child is Panel and before_panels.find(child) == -1:
+			new_panels += 1
+	check(new_panels == 1, "select spawns exactly one new ring panel")
+	yield(self.create_timer(0.35), "timeout")
+	check(rest_button.rect_scale.distance_to(Vector2.ONE) < 0.01, "select animation returns the tile to rest scale")
+	game._pulse_tile(anim_cell, 1.14, 0.08)
+	yield(self.create_timer(0.6), "timeout")
+	check(rest_button.rect_scale.distance_to(Vector2.ONE) < 0.01, "pulse animation returns the tile to rest scale")
+	game._shake_tile(anim_cell)
+	check(rest_button.rect_scale != Vector2.ZERO, "shake keeps the tile alive")
+
 	# ui_hud callbacks: message timeout hides the banner; freeze timeout unfreezes
 	game._show_message("超时测试", 5.0)
 	game._on_message_timeout()

@@ -187,6 +187,15 @@ var modes_content  # 玩法模式面板行容器
 var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法模式入口按钮
 
+func _animate_select(coord):
+	return BOARD_VIEW._animate_select(self, coord)
+
+func _pulse_tile(coord, peak_scale, half_duration, loops = 1):
+	return BOARD_VIEW._pulse_tile(self, coord, peak_scale, half_duration, loops)
+
+func _shake_tile(coord):
+	return BOARD_VIEW._shake_tile(self, coord)
+
 func _ready():
 	print("[Game] boot: ready")
 	randomize()
@@ -673,25 +682,6 @@ func _on_auto_pressed():
 
 
 
-func _animate_select(coord):
-	var button = _try_get_tile_button(coord)
-	if button == null:
-		return
-
-	button.rect_pivot_offset = button.rect_size * 0.5
-	# Tween animation for select effect
-	var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(button, "rect_scale", button.rect_scale, Vector2(1.08, 1.08), 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_completed")
-	tween.interpolate_property(button, "rect_scale", button.rect_scale, Vector2.ONE, 0.12, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_completed")
-	tween.queue_free()
-
-	var center = _tile_center_in_effect_layer(coord)
-	_spawn_ring_effect(center, Color("ff6f9c"), 0.18, 12.0)
 
 func _on_shuffle_pressed():
 	return GAME_INPUT._on_shuffle_pressed(self)
@@ -729,20 +719,6 @@ func _make_fx_tween(node_to_free = null):
 	tween.connect("tween_all_completed", tween, "queue_free")
 	return tween
 
-func _shake_tile(coord):
-	var button = _try_get_tile_button(coord)
-	if button == null:
-		return
-	button.rect_pivot_offset = button.rect_size * 0.5
-	button.rect_scale = Vector2(1.04, 1.04)
-
-	var tween = _make_fx_tween()
-	tween.interpolate_property(button, "rect_rotation", 0.0, -6.0, 0.04, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.0)
-	tween.interpolate_property(button, "rect_rotation", -6.0, 6.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.04)
-	tween.interpolate_property(button, "rect_rotation", 6.0, -4.0, 0.05, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.10)
-	tween.interpolate_property(button, "rect_rotation", -4.0, 0.0, 0.06, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.15)
-	tween.interpolate_property(button, "rect_scale", Vector2(1.04, 1.04), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, 0.15)
-	tween.start()
 
 func _animate_hint_tiles(coords):
 	for coord in coords:
@@ -856,47 +832,6 @@ func _play_eliminate_effects(coords):
 func _tile_center_in_effect_layer(coord):
 	return FX._tile_center_in_effect_layer(self, coord)
 
-func _pulse_tile(coord, peak_scale, half_duration, loops = 1):
-
-	var button = _try_get_tile_button(coord)
-
-	if button == null:
-
-		return
-
-	button.rect_pivot_offset = button.rect_size * 0.5
-
-
-
-	# Tween animation for pulse effect
-
-	for _i in range(max(1, loops)):
-
-		var tween1 = Tween.new()
-
-		add_child(tween1)
-
-		tween1.interpolate_property(button, "rect_scale", button.rect_scale, Vector2.ONE * peak_scale, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-
-		tween1.start()
-
-		yield(tween1, "tween_completed")
-
-		tween1.queue_free()
-
-		
-
-		var tween2 = Tween.new()
-
-		add_child(tween2)
-
-		tween2.interpolate_property(button, "rect_scale", button.rect_scale, Vector2.ONE, half_duration, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-
-		tween2.start()
-
-		yield(tween2, "tween_completed")
-
-		tween2.queue_free()
 
 func _spawn_ring_effect(center, color, duration, base_size):
 	return FX._spawn_ring_effect(self, center, color, duration, base_size)
