@@ -699,3 +699,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 
 ## 2026-09-08 (Round AD 修补：冒烟步骤观察模式生效 + 可执行位)
 - 首跑失败原因：①新写文件丢失可执行位（git 记录 100644，CI 直接执行报 126）；②continue-on-error 在一次编辑竞态中丢失。修复：git update-index --chmod=+x + 步骤改为 bash 调用 + 补 continue-on-error: true（观察模式，不阻塞部署）。
+
+## 2026-09-08 (代码质量 Round AE：棋盘重建/连击得分/超时判负归并)
+- Context: _render_board 迁入 board_view.gd；_apply_combo_gain（连击窗口/倍率公式/time_attack fever/进度候选补丁）与 _on_time_up（战役与 special 双分支判负）迁入 session.gd，game.gd 留同名薄壳。panels_probe 补 3 项断言（网格重建一致性、连击公式按当前关卡乘数计算、超时判负+重开恢复）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 55 断言）；导出与 web_entry 通过。

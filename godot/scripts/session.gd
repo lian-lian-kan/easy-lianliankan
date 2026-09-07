@@ -278,3 +278,86 @@ static func _record_special_completion(game):
 	else:
 		game.stage_panel_label.text = "挑战完成！得分 " + str(game.total_score)
 	game.stage_panel_label.visible = true
+
+static func _apply_combo_gain(game, base_score):
+	var now_ms = OS.get_ticks_msec()
+	var combo_window = int(game.tuning.get("combo_window_ms", 2600))
+	var max_combo = int(game.tuning.get("max_combo", 8))
+	var score_multiplier = float(game._current_level().get("score_multiplier", 1.0))
+
+	if now_ms <= game.combo_expires_ms:
+		game.combo = min(game.combo + 1, max_combo)
+	else:
+		game.combo = 1
+
+	game.combo_expires_ms = now_ms + combo_window
+	game.combo_reset_timer.stop()
+	game.combo_reset_timer.wait_time = float(combo_window) / 1000.0
+	game.combo_reset_timer.start()
+
+	var scaled_base = max(1, int(round(base_score * score_multiplier)))
+	# New combo formula: base 1.5x, +0.5x per combo level
+	var combo_multiplier = 1.5 + (game.combo - 1) * 0.5
+	var gain = int(scaled_base * combo_multiplier)
+
+	# Time attack: matches refund time and a hot streak ignites fever mode.
+	if game.special_mode == "time_attack":
+		var attack_cfg = game.game_mode_configs.get("time_attack", {})
+		if game.combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
+			gain = int(round(gain * float(attack_cfg.get("fever_multiplier", 1.5))))
+			game._show_message("🔥 Fever x" + str(game.combo), 0.8)
+		var refund = int(attack_cfg.get("time_bonus_per_match", 3))
+		if game.combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
+			refund += int(attack_cfg.get("combo_time_bonus", 1))
+		game.time_left = min(999, game.time_left + refund)
+
+	game.total_score += gain
+	game.level_score += gain
+	game._patch_progress_state({
+		"score_candidate": game.total_score,
+		"combo_candidate": game.combo
+	})
+
+	return {
+		"combo": game.combo,
+		"gain": gain
+	}
+
+
+static func _on_time_up(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+	if game.special_mode != "":
+		game.stage_status = game.STATUS_FAILED
+		AudioManager.play_fail()
+		game._reset_combo()
+		game.selected = Vector2(-1, -1)
+		game.hint_tiles.clear()
+		game.error_tiles.clear()
+		game.second_timer.stop()
+		game.stage_panel_label.text = "挑战失败！得分 " + str(game.total_score) + "\n点击「重开」再战，或「暂停」后返回关卡"
+		game.stage_panel_label.visible = true
+		game._refresh_ui()
+		game._refresh_board_visuals()
+		return
+	game._patch_progress_state({
+		"current_level_index": game.level_index,
+		"score_candidate": game.total_score,
+		"combo_candidate": game.combo
+	})
+
+	game.stage_status = game.STATUS_FAILED
+	AudioManager.play_fail()
+	game._reset_combo()
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+
+	game.second_timer.stop()
+	game.stage_panel_label.text = "本关失败，点击\"重开\"重试"
+	game.stage_panel_label.visible = true
+	game._show_message("时间到！第" + str(game._current_level().get("id", game.level_index + 1)) + "关失败", 1.8)
+
+	game._refresh_ui()
+	game._refresh_board_visuals()
+

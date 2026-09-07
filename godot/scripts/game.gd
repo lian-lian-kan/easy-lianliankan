@@ -487,35 +487,6 @@ func _create_board(rows, cols, kinds):
 func _shuffle_array(arr):
 	BOARD_ENGINE.shuffle_array(arr)
 
-func _render_board():
-	for child in board_grid.get_children():
-		child.queue_free()
-	cell_buttons.clear()
-
-	if board.empty():
-		return
-
-	var rows = board.size()
-	var cols = board[0].size()
-	board_grid.columns = cols
-
-	for r in range(rows):
-		var row_buttons = []
-		for c in range(cols):
-			var button = Button.new()
-			button.text = ""
-			button.rect_min_size = Vector2(52, 52)
-			button.add_font_override("font", game_font)
-			button.focus_mode = Control.FOCUS_NONE
-			button.set_meta("row", r)
-			button.set_meta("col", c)
-			button.connect("pressed", self, "_on_tile_pressed", [button])
-			board_grid.add_child(button)
-			row_buttons.append(button)
-		cell_buttons.append(row_buttons)
-
-	_update_tile_sizes()
-	_refresh_board_visuals()
 
 
 
@@ -546,6 +517,9 @@ func _style_dialog_buttons(node):
 
 func _refresh_board_visuals():
 	return BOARD_VIEW._refresh_board_visuals(self)
+
+func _render_board():
+	return BOARD_VIEW._render_board(self)
 
 func _update_tile_sizes():
 	return BOARD_VIEW._update_tile_sizes(self)
@@ -1120,42 +1094,6 @@ func _start_second_timer():
 	second_timer.start()
 
 
-func _on_time_up():
-	if stage_status != STATUS_PLAYING:
-		return
-	if special_mode != "":
-		stage_status = STATUS_FAILED
-		AudioManager.play_fail()
-		_reset_combo()
-		selected = Vector2(-1, -1)
-		hint_tiles.clear()
-		error_tiles.clear()
-		second_timer.stop()
-		stage_panel_label.text = "挑战失败！得分 " + str(total_score) + "\n点击「重开」再战，或「暂停」后返回关卡"
-		stage_panel_label.visible = true
-		_refresh_ui()
-		_refresh_board_visuals()
-		return
-	_patch_progress_state({
-		"current_level_index": level_index,
-		"score_candidate": total_score,
-		"combo_candidate": combo
-	})
-
-	stage_status = STATUS_FAILED
-	AudioManager.play_fail()
-	_reset_combo()
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-
-	second_timer.stop()
-	stage_panel_label.text = "本关失败，点击\"重开\"重试"
-	stage_panel_label.visible = true
-	_show_message("时间到！第" + str(_current_level().get("id", level_index + 1)) + "关失败", 1.8)
-
-	_refresh_ui()
-	_refresh_board_visuals()
 
 func _consume_time_cost(seconds):
 	# Clockless modes (endless/zen/moves/race) have no time to drain.
@@ -1169,49 +1107,6 @@ func _consume_time_cost(seconds):
 	if time_left == 0:
 		_on_time_up()
 
-func _apply_combo_gain(base_score):
-	var now_ms = OS.get_ticks_msec()
-	var combo_window = int(tuning.get("combo_window_ms", 2600))
-	var max_combo = int(tuning.get("max_combo", 8))
-	var score_multiplier = float(_current_level().get("score_multiplier", 1.0))
-
-	if now_ms <= combo_expires_ms:
-		combo = min(combo + 1, max_combo)
-	else:
-		combo = 1
-
-	combo_expires_ms = now_ms + combo_window
-	combo_reset_timer.stop()
-	combo_reset_timer.wait_time = float(combo_window) / 1000.0
-	combo_reset_timer.start()
-
-	var scaled_base = max(1, int(round(base_score * score_multiplier)))
-	# New combo formula: base 1.5x, +0.5x per combo level
-	var combo_multiplier = 1.5 + (combo - 1) * 0.5
-	var gain = int(scaled_base * combo_multiplier)
-
-	# Time attack: matches refund time and a hot streak ignites fever mode.
-	if special_mode == "time_attack":
-		var attack_cfg = game_mode_configs.get("time_attack", {})
-		if combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
-			gain = int(round(gain * float(attack_cfg.get("fever_multiplier", 1.5))))
-			_show_message("🔥 Fever x" + str(combo), 0.8)
-		var refund = int(attack_cfg.get("time_bonus_per_match", 3))
-		if combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
-			refund += int(attack_cfg.get("combo_time_bonus", 1))
-		time_left = min(999, time_left + refund)
-
-	total_score += gain
-	level_score += gain
-	_patch_progress_state({
-		"score_candidate": total_score,
-		"combo_candidate": combo
-	})
-
-	return {
-		"combo": combo,
-		"gain": gain
-	}
 
 
 func _reset_combo():
@@ -1245,6 +1140,9 @@ func _unlock_achievements(ids):
 			var info = PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
 			_show_achievement_notification(info["name"])
 
+func _on_time_up():
+	return SESSION._on_time_up(self)
+
 func _record_special_completion():
 	return SESSION._record_special_completion(self)
 
@@ -1254,6 +1152,9 @@ func _start_special_mode(mode_id):
 
 func _exit_special_mode():
 	return SESSION._exit_special_mode(self)
+
+func _apply_combo_gain(base_score):
+	return SESSION._apply_combo_gain(self, base_score)
 
 func _reset_level_session(level, reset_total = false):
 	return SESSION._reset_level_session(self, level, reset_total)

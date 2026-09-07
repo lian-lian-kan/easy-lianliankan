@@ -184,6 +184,30 @@ func _init() -> void:
 	check(int(game.time_left) == 28, "shuffle costs one second")
 	check(game.stage_status == game.STATUS_PLAYING, "shuffle keeps the stage playing")
 
+	# board_view: render_board rebuilds the grid consistently
+	var grid_children = game.board_grid.get_child_count()
+	game._render_board()
+	check(game.board_grid.columns == int(game.board[0].size()) && game.cell_buttons.size() == game.board.size(), "render_board rebuilds the grid consistently")
+
+	# session: combo gain formula and score/progress patch
+	game.stage_status = game.STATUS_PLAYING
+	game.special_mode = ""
+	game.combo = 1
+	game.combo_expires_ms = OS.get_ticks_msec() + 99999
+	var score_before = int(game.total_score)
+	var gain_res = game._apply_combo_gain(10)
+	var exp_gain = int(max(1, int(round(10 * float(game._current_level().get("score_multiplier", 1.0))))) * 2.0)
+	check(int(gain_res.combo) == 2 && int(gain_res.gain) == exp_gain, "combo gain applies the combo formula (got %d want %d)" % [int(gain_res.gain), exp_gain])
+	check(int(game.total_score) == score_before + exp_gain, "combo gain adds the gain to total score")
+
+	# session: time up fails the stage, restart restores play
+	game.stage_status = game.STATUS_PLAYING
+	game.time_left = 0
+	game._on_time_up()
+	check(game.stage_status == game.STATUS_FAILED, "time up fails the stage")
+	game._start_level(game.level_index, false)
+	check(game.stage_status == game.STATUS_PLAYING, "restart returns to playing")
+
 	# session: special completion records results (zen + daily branches)
 	game.special_mode = "zen"
 	game.total_score = 7777

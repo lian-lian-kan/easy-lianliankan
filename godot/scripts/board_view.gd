@@ -230,3 +230,34 @@ static func _animate_shuffle_wave(game):
 			tween.interpolate_property(button, "rect_scale", Vector2(1.08, 1.08), Vector2.ONE, 0.08, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT, delay + 0.15)
 			tween.start()
 
+
+static func _render_board(game):
+	for child in game.board_grid.get_children():
+		child.queue_free()
+	game.cell_buttons.clear()
+
+	if game.board.empty():
+		return
+
+	var rows = game.board.size()
+	var cols = game.board[0].size()
+	game.board_grid.columns = cols
+
+	for r in range(rows):
+		var row_buttons = []
+		for c in range(cols):
+			var button = Button.new()
+			button.text = ""
+			button.rect_min_size = Vector2(52, 52)
+			button.add_font_override("font", game.game_font)
+			button.focus_mode = Control.FOCUS_NONE
+			button.set_meta("row", r)
+			button.set_meta("col", c)
+			button.connect("pressed", game, "_on_tile_pressed", [button])
+			game.board_grid.add_child(button)
+			row_buttons.append(button)
+		game.cell_buttons.append(row_buttons)
+
+	game._update_tile_sizes()
+	game._refresh_board_visuals()
+
