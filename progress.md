@@ -609,3 +609,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round M：机制网格助手下沉 board_engine.gd)
 - Context: 冰甲/锁链/叠层/迷雾的网格构建与查询从 game.gd 下沉为 board_engine 纯静态（build_frost_armor_grid/build_chain_grid/bury_stack_layer/count_chains/break_chains_around/zero_grid/pop_stack/fog_layers 共 8 个），game.gd 留模式守卫+提示文案薄壳（净减约 125 行逻辑）。shuffle 统一走 board_engine.shuffle_array。
 - Validation: 13 项 headless 测试全绿；board_engine_test 新增机制网格全分支覆盖（ratio 0/1/超1、空盘、 burying 跨层守恒、四邻破链不含自身、越界守卫、pop 语义、fog 层数边界）；导出与 web_entry 通过。
+
+## 2026-09-07 (代码质量 Round N：主界面构建迁入 ui_hud.gd 模块)
+- Context: _build_ui 的 330 行主界面构建（渐变背景/樱花层/头部面板/道具行/连击条/关卡下拉/棋盘区/特效层）整体迁入新模块 ui_hud.gd 的 build_main_ui(game) 静态工厂（ui_panels.gd 同款 game 参数模式），game.gd 留 3 行壳；panels_probe 新增主界面结构断言（棋盘格/特效层/标签组/HFlowContainer 行/道具注册共 7 项）。
+- Validation: 13 项 headless 测试全绿；game.X 全量引用审计（55 个引用逐一核对 game.gd 声明集，拦下 HFlowContainer 类名误前缀）；导出与 web_entry 通过。

@@ -21,6 +21,16 @@ func _init() -> void:
 		yield(self, "idle_frame")
 	game.progression_state["highest_unlocked_level_index"] = 14
 
+	# main UI built by _ready through UI_HUD.build_main_ui
+	check(game.board_grid != null and game.board_grid is GridContainer, "board grid built")
+	check(game.board_center != null and game.effect_layer != null, "board center and effect layer built")
+	check(game.message_label != null and game.title_label != null, "message and title labels built")
+	check(game.status_chip_label != null and game.combo_burst_label != null and game.stage_panel_label != null, "status/combo/stage labels built")
+	check(game.stats_flow_container is HFlowContainer, "stats row is an HFlowContainer")
+	check(game.controls_flow_container != null and game.progression_flow_container != null, "controls and progression rows built")
+	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
+
+
 	# onboarding
 	game._build_onboarding_panel()
 	check(game.onboarding_panel != null and game.onboarding_panel.get_child_count() > 0, "onboarding panel built")
