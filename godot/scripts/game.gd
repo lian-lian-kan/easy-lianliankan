@@ -380,58 +380,6 @@ func _build_pause_panel():
 func _build_modes_panel():
 	UI_PANELS._modes_panel(self)
 
-func _build_timers():
-	second_timer = Timer.new()
-	second_timer.wait_time = 1.0
-	second_timer.one_shot = false
-	second_timer.connect("timeout", self, "_on_second_tick")
-	add_child(second_timer)
-
-	message_timer = Timer.new()
-	message_timer.one_shot = true
-	message_timer.connect("timeout", self, "_on_message_timeout")
-	add_child(message_timer)
-
-	error_timer = Timer.new()
-	error_timer.one_shot = true
-	error_timer.connect("timeout", self, "_on_error_timeout")
-	add_child(error_timer)
-
-	combo_reset_timer = Timer.new()
-	combo_reset_timer.one_shot = true
-	combo_reset_timer.connect("timeout", self, "_on_combo_reset_timeout")
-	add_child(combo_reset_timer)
-
-	level_highlight_timer = Timer.new()
-	level_highlight_timer.one_shot = true
-	level_highlight_timer.connect("timeout", self, "_on_level_highlight_timeout")
-	add_child(level_highlight_timer)
-
-	level_advance_timer = Timer.new()
-	level_advance_timer.one_shot = true
-	level_advance_timer.connect("timeout", self, "_on_level_advance_timeout")
-	add_child(level_advance_timer)
-
-	time_freeze_timer = Timer.new()
-	time_freeze_timer.one_shot = true
-	time_freeze_timer.connect("timeout", self, "_on_time_freeze_timeout")
-	add_child(time_freeze_timer)
-
-	memory_preview_timer = Timer.new()
-	memory_preview_timer.one_shot = true
-	memory_preview_timer.connect("timeout", self, "_on_memory_preview_timeout")
-	add_child(memory_preview_timer)
-
-	memory_hide_timer = Timer.new()
-	memory_hide_timer.one_shot = true
-	memory_hide_timer.connect("timeout", self, "_on_memory_hide_timeout")
-	add_child(memory_hide_timer)
-
-	race_timer = Timer.new()
-	race_timer.wait_time = 1.0
-	race_timer.one_shot = false
-	race_timer.connect("timeout", self, "_on_race_tick")
-	add_child(race_timer)
 
 func _create_chip_label():
 	var label = Label.new()
@@ -1048,27 +996,6 @@ func _animate_shuffle_wave():
 
 
 
-func _show_stage_callout(text, color, font_size):
-	var label = Label.new()
-	label.text = text
-	label.add_font_override("font", _font_at_size(font_size))
-	label.align = Label.ALIGN_CENTER
-	label.valign = Label.VALIGN_CENTER
-	label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
-	label.margin_top = 150
-	label.margin_left = 0
-	label.margin_right = 0
-	label.margin_bottom = 190
-	label.modulate = Color(1, 1, 1, 0.0)
-	label.add_color_override("font_color", color)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(label)
-
-	var tween = _make_fx_tween(label)
-	tween.interpolate_property(label, "margin_top", 150.0, 116.0, 0.35, Tween.TRANS_QUAD, Tween.EASE_OUT)
-	tween.interpolate_property(label, "modulate:a", 0.0, 0.95, 0.2, Tween.TRANS_LINEAR, Tween.EASE_OUT)
-	tween.interpolate_property(label, "modulate:a", 0.95, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN, 1.1)
-	tween.start()
 
 func _play_level_intro_animation(level):
 	if special_mode == "daily":
@@ -1117,6 +1044,18 @@ func _animate_board_spawn():
 			tween.start()
 
 const FX = preload("res://scripts/fx_layer.gd")
+
+func _build_timers():
+	return UI_HUD._build_timers(self)
+
+func _show_message(text, duration_sec = 1.0):
+	return UI_HUD._show_message(self, text, duration_sec)
+
+func _hide_message():
+	return UI_HUD._hide_message(self)
+
+func _show_stage_callout(text, color, font_size):
+	return UI_HUD._show_stage_callout(self, text, color, font_size)
 
 func _build_petals():
 	FX.build_petals(self)
@@ -1256,16 +1195,7 @@ func _on_error_timeout():
 	error_tiles.clear()
 	_refresh_board_visuals()
 
-func _show_message(text, duration_sec = 1.0):
-	message_label.text = text
-	message_label.visible = true
-	message_timer.stop()
-	message_timer.wait_time = max(0.1, duration_sec)
-	message_timer.start()
 
-func _hide_message():
-	message_label.visible = false
-	message_timer.stop()
 
 func _on_message_timeout():
 	message_label.visible = false

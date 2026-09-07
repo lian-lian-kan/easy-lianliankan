@@ -666,3 +666,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round W：样式辅助簇迁入 ui_panels.gd)
 - Context: _apply_glass_style/_apply_button_style/_style_dialog_buttons 迁入 ui_panels.gd（追加模式，样式即 UI 构建域），game.gd 留同名薄壳。panels_probe 补 3 项样式行为断言（玻璃面板 stylebox 覆盖、按钮五态覆盖、递归对话框按钮玫瑰白字）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 39 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round X：计时器构建与消息/横幅辅助迁入 ui_hud.gd)
+- Context: _build_timers（10 个会话计时器构建）、_show_message/_hide_message（消息横幅）、_show_stage_callout（关卡横幅浮字）共 82 行迁入 ui_hud.gd（主屏基础设施：构建+刷新+布局+计时器+消息），game.gd 留同名薄壳。panels_probe 补 6 项断言（计时器簇构建齐全、秒表运行中、消息横幅显隐、关卡横幅浮字创建）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 45 断言）；导出与 web_entry 通过。

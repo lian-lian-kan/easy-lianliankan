@@ -141,6 +141,24 @@ func _init() -> void:
 			stack.append(child)
 	check(dialog_button != null && dialog_button.get_color("font_color") == Color("ffffff"), "dialog buttons get the rose white font")
 	plain_button.queue_free()
+
+	# ui_hud: session timers built and the second timer ticks during play
+	check(game.second_timer != null && game.race_timer != null && game.memory_hide_timer != null && game.time_freeze_timer != null, "all session timers built")
+	check(!game.second_timer.is_stopped(), "second timer ticks during play")
+
+	# ui_hud: message banner show/hide
+	game._show_message("测试消息", 0.5)
+	check(game.message_label.visible && game.message_label.text == "测试消息", "message banner shows text")
+	game._hide_message()
+	check(!game.message_label.visible, "message banner hides")
+
+	# ui_hud: stage callout creates a floating label
+	game._show_stage_callout("横幅测试", Color("ffffff"), 20)
+	var callout_found = false
+	for child in game.get_children():
+		if child is Label && child.text == "横幅测试":
+			callout_found = true
+	check(callout_found, "stage callout label created")
 	game.special_mode = ""
 	# fx_layer: eliminate effects emit into the effect layer
 	var fx_before = game.effect_layer.get_child_count()

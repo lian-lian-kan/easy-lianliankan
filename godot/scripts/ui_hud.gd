@@ -570,3 +570,92 @@ static func update_layout(game):
 			game.clear_progress_button.visible = true
 
 	game._update_modal_panel_sizes(viewport_size, is_portrait)
+
+# --- Timers and message/banner helpers (migrated from game.gd) ---
+
+static func _build_timers(game):
+	game.second_timer = Timer.new()
+	game.second_timer.wait_time = 1.0
+	game.second_timer.one_shot = false
+	game.second_timer.connect("timeout", game, "_on_second_tick")
+	game.add_child(game.second_timer)
+
+	game.message_timer = Timer.new()
+	game.message_timer.one_shot = true
+	game.message_timer.connect("timeout", game, "_on_message_timeout")
+	game.add_child(game.message_timer)
+
+	game.error_timer = Timer.new()
+	game.error_timer.one_shot = true
+	game.error_timer.connect("timeout", game, "_on_error_timeout")
+	game.add_child(game.error_timer)
+
+	game.combo_reset_timer = Timer.new()
+	game.combo_reset_timer.one_shot = true
+	game.combo_reset_timer.connect("timeout", game, "_on_combo_reset_timeout")
+	game.add_child(game.combo_reset_timer)
+
+	game.level_highlight_timer = Timer.new()
+	game.level_highlight_timer.one_shot = true
+	game.level_highlight_timer.connect("timeout", game, "_on_level_highlight_timeout")
+	game.add_child(game.level_highlight_timer)
+
+	game.level_advance_timer = Timer.new()
+	game.level_advance_timer.one_shot = true
+	game.level_advance_timer.connect("timeout", game, "_on_level_advance_timeout")
+	game.add_child(game.level_advance_timer)
+
+	game.time_freeze_timer = Timer.new()
+	game.time_freeze_timer.one_shot = true
+	game.time_freeze_timer.connect("timeout", game, "_on_time_freeze_timeout")
+	game.add_child(game.time_freeze_timer)
+
+	game.memory_preview_timer = Timer.new()
+	game.memory_preview_timer.one_shot = true
+	game.memory_preview_timer.connect("timeout", game, "_on_memory_preview_timeout")
+	game.add_child(game.memory_preview_timer)
+
+	game.memory_hide_timer = Timer.new()
+	game.memory_hide_timer.one_shot = true
+	game.memory_hide_timer.connect("timeout", game, "_on_memory_hide_timeout")
+	game.add_child(game.memory_hide_timer)
+
+	game.race_timer = Timer.new()
+	game.race_timer.wait_time = 1.0
+	game.race_timer.one_shot = false
+	game.race_timer.connect("timeout", game, "_on_race_tick")
+	game.add_child(game.race_timer)
+
+static func _show_message(game, text, duration_sec = 1.0):
+	game.message_label.text = text
+	game.message_label.visible = true
+	game.message_timer.stop()
+	game.message_timer.wait_time = max(0.1, duration_sec)
+	game.message_timer.start()
+
+static func _hide_message(game):
+	game.message_label.visible = false
+	game.message_timer.stop()
+
+static func _show_stage_callout(game, text, color, font_size):
+	var label = Label.new()
+	label.text = text
+	label.add_font_override("font", game._font_at_size(font_size))
+	label.align = Label.ALIGN_CENTER
+	label.valign = Label.VALIGN_CENTER
+	label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
+	label.margin_top = 150
+	label.margin_left = 0
+	label.margin_right = 0
+	label.margin_bottom = 190
+	label.modulate = Color(1, 1, 1, 0.0)
+	label.add_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	game.add_child(label)
+
+	var tween = game._make_fx_tween(label)
+	tween.interpolate_property(label, "margin_top", 150.0, 116.0, 0.35, Tween.TRANS_QUAD, Tween.EASE_OUT)
+	tween.interpolate_property(label, "modulate:a", 0.0, 0.95, 0.2, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	tween.interpolate_property(label, "modulate:a", 0.95, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN, 1.1)
+	tween.start()
+
