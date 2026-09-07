@@ -657,3 +657,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round U：会话生命周期编排迁入 session.gd)
 - Context: 会话编排簇 6 函数（_reset_level_session/_resolve_after_board_changed/_resolve_special_clear/_fail_moves_exhausted/_start_special_mode/_exit_special_mode）共 232 行迁入新模块 session.gd（game 参数静态工厂），game.gd 留同名薄壳。special session 架构落地：会话重置/胜负结算/模式进出集中在单一模块。panels_probe 补会话行为断言（重置清瞬态、锁定模式拒绝、zen 会话进出）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 32 断言）；迁移修复了带默认值参数被误传为命名实参的壳生成 bug（GDScript 不支持命名实参）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round V：配置装载与进度存取拆分为独立模块)
+- Context: 配置装载 8 函数（_load_config/_load_json_file/_load_campaign_levels/_load_tuning/_load_icon_sets/_load_game_mode_configs/_default_tuning/_default_icon_sets）迁入 game_config.gd；进度存取 3 函数（_load/_save/_patch_progress_state）迁入 progress_store.gd，game.gd 留同名薄壳。panels_probe 补 7 项持久化语义断言（配置重载保持关卡表、combo_candidate 提升最佳、落盘文件存在、special 会话过滤 campaign 字段但保留自身纪录）。
+- 附带修复：game_input.gd 与 session.gd 残留的 game.AudioManager 误前缀（12 处，Round S/U 迁移引入、此前断言不敏感未暴露）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 36 断言）；导出与 web_entry 通过。

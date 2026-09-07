@@ -17,6 +17,8 @@ const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
 const UI_PANELS = preload("res://scripts/ui_panels.gd")
 
 const STATS_HUD = preload("res://scripts/stats_hud.gd")
+const PROGRESS_STORE = preload("res://scripts/progress_store.gd")
+const GAME_CONFIG = preload("res://scripts/game_config.gd")
 const SESSION = preload("res://scripts/session.gd")
 const GAME_INPUT = preload("res://scripts/game_input.gd")
 const BOARD_VIEW = preload("res://scripts/board_view.gd")
@@ -305,103 +307,14 @@ func _init_font():
 	theme.set_font("font", "CheckBox", game_font)
 	self.theme = theme
 
-func _load_config():
-	campaign_levels = _load_campaign_levels()
-	tuning = _load_tuning()
-	icon_sets = _load_icon_sets()
-	game_mode_configs = _load_game_mode_configs()
 
-	if campaign_levels.empty():
-		campaign_levels = _default_campaign_levels()
-	if icon_sets.empty():
-		icon_sets = _default_icon_sets()
 
-func _load_game_mode_configs():
-	return SPECIAL_MODES_SCRIPT.normalize_configs(_load_json_file(GAME_MODES_PATH))
 
-func _load_json_file(path: String):
-	var file = File.new()
-	if not file.file_exists(path):
-		return null
-	var err = file.open(path, File.READ)
-	if err != OK:
-		return null
-	var content = file.get_as_text()
-	file.close()
-	if content.strip_edges() == "":
-		return null
-	var parsed = parse_json(content)
-	return parsed
 
-func _load_campaign_levels():
-	var root = _load_json_file(CAMPAIGN_PATH)
-	if typeof(root) != TYPE_DICTIONARY:
-		return []
-	var levels: Array = root.get("levels", [])
-	return levels
 
-func _load_tuning():
-	var root = _load_json_file(TUNING_PATH)
-	if typeof(root) != TYPE_DICTIONARY:
-		return _default_tuning()
-	var defaults = _default_tuning()
-	for key in defaults.keys():
-		if not root.has(key):
-			root[key] = defaults[key]
-	return root
 
-func _load_icon_sets():
-	var root = _load_json_file(ICON_SETS_PATH)
-	if typeof(root) != TYPE_DICTIONARY:
-		return []
-	return root.get("sets", [])
 
-func _load_progress_state():
-	var raw = null
-	var file = File.new()
-	if file.file_exists(PROGRESS_SAVE_PATH):
-		var err = file.open(PROGRESS_SAVE_PATH, File.READ)
-		if err == OK:
-			var content = file.get_as_text()
-			if content.strip_edges() != "":
-				raw = parse_json(content)
-			file.close()
-	progression_state = PROGRESSION_SCRIPT.normalize_progress(raw, campaign_levels.size())
 
-func _save_progress_state():
-	var normalized = PROGRESSION_SCRIPT.normalize_progress(progression_state, campaign_levels.size())
-	var file = File.new()
-	var err = file.open(PROGRESS_SAVE_PATH, File.WRITE)
-	if err != OK:
-		return
-	file.store_string(to_json(normalized))
-	file.close()
-	progression_state = normalized
-
-func _patch_progress_state(patch):
-	# Special sessions only persist their own records, never campaign progress
-	# or the campaign best-score/combo candidates.
-	if special_mode != "":
-		var filtered = patch.duplicate()
-		filtered.erase("score_candidate")
-		filtered.erase("combo_candidate")
-		filtered.erase("current_level_index")
-		filtered.erase("highest_unlocked_level_index")
-		if filtered.empty():
-			return
-		patch = filtered
-	var prev_current = int(progression_state.get("current_level_index", 0))
-	var prev_unlocked = int(progression_state.get("highest_unlocked_level_index", 0))
-	var next_state = PROGRESSION_SCRIPT.apply_update(progression_state, campaign_levels.size(), patch)
-	if PROGRESSION_SCRIPT.same_progress(next_state, progression_state, campaign_levels.size()):
-		progression_state = next_state
-		return
-	var next_current = int(next_state.get("current_level_index", prev_current))
-	var next_unlocked = int(next_state.get("highest_unlocked_level_index", prev_unlocked))
-	progression_state = next_state
-	_save_progress_state()
-	if (next_current != prev_current or next_unlocked != prev_unlocked) and level_select_option != null:
-		_populate_level_select_options()
 
 func _progress_best_score():
 	return PROGRESSION_SCRIPT.best_score(progression_state)
@@ -409,36 +322,11 @@ func _progress_best_score():
 func _progress_best_combo():
 	return PROGRESSION_SCRIPT.best_combo(progression_state)
 
-func _default_tuning():
-	return {
-		"base_score": 10,
-		"message_timeout_ms": 1000,
-		"path_preview_ms": 420,
-		"hint_preview_ms": 1400,
-		"error_flash_ms": 420,
-		"combo_window_ms": 2600,
-		"max_combo": 8,
-		"combo_burst_ms": 820,
-		"level_advance_ms": 1200,
-		"time_danger_seconds": 10,
-		"hint_time_cost_seconds": 1,
-		"auto_eliminate_time_cost_seconds": 2,
-		"shuffle_time_cost_seconds": 1
-	}
 
 
 func _default_campaign_levels():
 	return CAMPAIGN_LEVELS_SCRIPT.default_campaign_levels()
 
-func _default_icon_sets():
-	return [
-		{
-			"id": "fruit",
-			"name": "水果",
-			"icons": ["🍎", "🍊", "🍌", "🍇", "🍓", "🥝", "🍑", "🍒", "🥭", "🍍", "🥥", "🍉"],
-			"colors": ["#fef2f2", "#fff7ed", "#fefce8", "#eff6ff", "#fdf2f8", "#f0fdf4", "#fff1f2", "#fef2f2", "#fffbeb", "#ecfdf5", "#f8fafc", "#f0f9ff"]
-		}
-	]
 
 func _build_ui():
 	UI_HUD.build_main_ui(self)
@@ -449,6 +337,39 @@ func _build_onboarding_panel():
 
 func _build_settings_panel():
 	UI_PANELS._settings_panel(self)
+
+func _load_config():
+	return GAME_CONFIG._load_config(self)
+
+func _load_progress_state():
+	return PROGRESS_STORE._load_progress_state(self)
+
+func _save_progress_state():
+	return PROGRESS_STORE._save_progress_state(self)
+
+func _patch_progress_state(patch):
+	return PROGRESS_STORE._patch_progress_state(self, patch)
+
+func _load_json_file(path: String):
+	return GAME_CONFIG._load_json_file(self, path)
+
+func _load_campaign_levels():
+	return GAME_CONFIG._load_campaign_levels(self)
+
+func _load_tuning():
+	return GAME_CONFIG._load_tuning(self)
+
+func _load_icon_sets():
+	return GAME_CONFIG._load_icon_sets(self)
+
+func _load_game_mode_configs():
+	return GAME_CONFIG._load_game_mode_configs(self)
+
+func _default_tuning():
+	return GAME_CONFIG._default_tuning(self)
+
+func _default_icon_sets():
+	return GAME_CONFIG._default_icon_sets(self)
 
 func _build_achievements_panel():
 	UI_PANELS._achievements_panel(self)

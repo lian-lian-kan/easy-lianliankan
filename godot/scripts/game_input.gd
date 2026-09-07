@@ -41,7 +41,7 @@ static func _on_tile_pressed(game, button):
 		game.selected = point
 		game.hint_tiles.clear()
 		game.error_tiles.clear()
-		game.AudioManager.play_select()
+		AudioManager.play_select()
 		game._animate_select(point)
 		game._refresh_board_visuals()
 		return
@@ -60,7 +60,7 @@ static func _on_tile_pressed(game, button):
 	if selected_value != target_value:
 		game.selected = point
 		game.hint_tiles.clear()
-		game.AudioManager.play_error()
+		AudioManager.play_error()
 		game._flash_error_tiles([previous, point])
 		game._animate_select(point)
 		game._show_message("请先选择相同图案", 0.7)
@@ -72,7 +72,7 @@ static func _on_tile_pressed(game, button):
 	if path.empty():
 		game.selected = point
 		game.hint_tiles.clear()
-		game.AudioManager.play_error()
+		AudioManager.play_error()
 		game._flash_error_tiles([previous, point])
 		game._animate_select(point)
 		game._show_message("路径不通：最多只能拐2次弯", 0.9)
@@ -86,7 +86,7 @@ static func _on_tile_pressed(game, button):
 	game.hint_tiles.clear()
 	game.error_tiles.clear()
 
-	game.AudioManager.play_eliminate_combo(game.combo)
+	AudioManager.play_eliminate_combo(game.combo)
 
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
 	if score_result["combo"] > 1:
@@ -111,7 +111,7 @@ static func _on_memory_tile_pressed(game, point, r, c):
 		game.memory_revealed[game._memory_key(point)] = true
 		game.hint_tiles.clear()
 		game.error_tiles.clear()
-		game.AudioManager.play_select()
+		AudioManager.play_select()
 		game._animate_select(point)
 		game._refresh_board_visuals()
 		return
@@ -131,7 +131,7 @@ static func _on_memory_tile_pressed(game, point, r, c):
 		game.memory_revealed[game._memory_key(previous)] = true
 		game.memory_revealed[game._memory_key(point)] = true
 		game.hint_tiles.clear()
-		game.AudioManager.play_error()
+		AudioManager.play_error()
 		game._flash_error_tiles([previous, point])
 		game._show_message("不一样，记住位置", 0.8)
 		game._memory_schedule_hide([previous, point], float(game.special_level.get("memory_face_up", 1.0)))
@@ -144,7 +144,7 @@ static func _on_memory_tile_pressed(game, point, r, c):
 		game.selected = point
 		game.memory_revealed[game._memory_key(point)] = true
 		game.hint_tiles.clear()
-		game.AudioManager.play_error()
+		AudioManager.play_error()
 		game._flash_error_tiles([previous, point])
 		game._show_message("路径不通：最多只能拐2次弯", 0.9)
 		game._refresh_board_visuals()
@@ -158,7 +158,7 @@ static func _on_memory_tile_pressed(game, point, r, c):
 	game.memory_revealed.erase(game._memory_key(a))
 	game.memory_revealed.erase(game._memory_key(b))
 
-	game.AudioManager.play_eliminate_combo(game.combo)
+	AudioManager.play_eliminate_combo(game.combo)
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
 	if score_result["combo"] > 1:
 		game._show_message("连击 x" + str(score_result["combo"]) + " +" + str(score_result["gain"]), 0.88)

@@ -102,6 +102,25 @@ func _init() -> void:
 	game._exit_special_mode()
 	check(game.special_mode == "", "exit returns to campaign mode")
 
+	# game_config: reload pipeline keeps the campaign table intact
+	var level_count_before = int(game.campaign_levels.size())
+	game._load_config()
+	check(int(game.campaign_levels.size()) == level_count_before && level_count_before > 0, "config reload keeps the campaign table")
+	check(game.tuning != null && game.tuning.size() > 0, "tuning loaded with defaults")
+
+	# progress_store: campaign patch persists bests and writes the save file
+	game._patch_progress_state({"combo_candidate": 41})
+	check(int(game.progression_state.get("best_combo", 0)) >= 41, "campaign combo candidate raises best combo")
+	check(File.new().file_exists(game.PROGRESS_SAVE_PATH), "progress persisted to disk")
+
+	# progress_store: special sessions persist their own records only
+	game.special_mode = "zen"
+	game._patch_progress_state({"combo_candidate": 12, "current_level_index": 3})
+	check(int(game.progression_state.get("best_combo", 0)) >= 41, "special session combo candidate never lowers campaign best")
+	check(int(game.progression_state.get("current_level_index", 0)) != 3, "special session never touches campaign progress")
+	game._patch_progress_state({"zen_result": 99})
+	check(int(game.progression_state.get("zen_best_score", 0)) >= 99, "special session persists its own record")
+	game.special_mode = ""
 	# fx_layer: eliminate effects emit into the effect layer
 	var fx_before = game.effect_layer.get_child_count()
 	game.combo = 5

@@ -120,7 +120,7 @@ static func _fail_moves_exhausted(game):
 	if game.stage_status != game.STATUS_PLAYING:
 		return
 	game.stage_status = game.STATUS_FAILED
-	game.AudioManager.play_fail()
+	AudioManager.play_fail()
 	game._reset_combo()
 	game.selected = Vector2(-1, -1)
 	game.hint_tiles.clear()
@@ -181,7 +181,7 @@ static func _resolve_after_board_changed(game):
 			game.stage_status = game.STATUS_COMPLETED
 			game.stage_panel_label.text = "全部关卡已完成，点击'再来一轮'"
 			game.stage_panel_label.visible = true
-			game.AudioManager.play_win()
+			AudioManager.play_win()
 			game._show_message("全部通关！时间奖励 +" + str(time_bonus), 2.5)
 			game._play_stage_clear_celebration(true)
 		else:
@@ -189,7 +189,7 @@ static func _resolve_after_board_changed(game):
 			game.pending_level_index = game.level_index + 1
 			game.stage_panel_label.text = "过关结算中，准备进入下一关"
 			game.stage_panel_label.visible = true
-			game.AudioManager.play_win()
+			AudioManager.play_win()
 			game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus), 1.2)
 			game._play_stage_clear_celebration(false)
 			game.level_advance_timer.stop()
@@ -222,7 +222,7 @@ static func _resolve_special_clear(game):
 	if game.race_timer:
 		game.race_timer.stop()
 	game.stage_panel_label.visible = false
-	game.AudioManager.play_win()
+	AudioManager.play_win()
 
 	if game.special_mode == "endless":
 		game._patch_progress_state({"endless_result": {"round": game.endless_round, "score": game.total_score}})
