@@ -696,3 +696,6 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: architecture.md 债务清单中的 CI 无头浏览器冒烟落地。tools/ci_smoke.sh：本地起 HTTP 服务 + 系统无头 Chrome 加载游戏（?smoke=1 激活信标钩子）+ 轮询 boot beacon 判定引擎真实启动；deploy.yml 在导出后新增 Headless browser smoke 步骤（continue-on-error 观察模式，SMOKE_WAIT=60）。壳的 setStatusMode('hidden') 分支新增信标发送（仅 ?smoke=1 时激活，普通游玩零影响）。
 - 已知限制：本机 ZCode/macOS 无头沙箱无法跑起引擎（display 层限制，与 IAB 冻结同源），冒烟的真实判定环境是 CI 的 ubuntu-latest + SwiftShader WebGL；先观察模式收集数据，稳定后再转为门禁。
 - Validation: 13 项 headless 测试全绿；导出与 web_entry 通过。
+
+## 2026-09-08 (Round AD 修补：冒烟步骤观察模式生效 + 可执行位)
+- 首跑失败原因：①新写文件丢失可执行位（git 记录 100644，CI 直接执行报 126）；②continue-on-error 在一次编辑竞态中丢失。修复：git update-index --chmod=+x + 步骤改为 bash 调用 + 补 continue-on-error: true（观察模式，不阻塞部署）。

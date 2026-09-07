@@ -77,7 +77,8 @@ jobs:
       - name: Verify web entry
         run: timeout 120 ~/godot-bin/godot --no-window --path godot -s res://tests/web_entry_status_mode_test.gd
 
-      - name: Headless browser smoke
+      - name: Headless browser smoke (report-only)
+        continue-on-error: true
         run: |
           set -euo pipefail
           timeout 300 tools/ci_smoke.sh "$(pwd)/public/godot"
