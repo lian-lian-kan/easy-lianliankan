@@ -300,3 +300,127 @@ static func contains_coord(list, coord):
 		if item == coord:
 			return true
 	return false
+
+# --- Mechanic grids: frost armor / chains / stack burying / fog layers ---
+
+static func zero_grid(grid):
+	for r in range(grid.size()):
+		for c in range(grid[r].size()):
+			grid[r][c] = 0
+	return grid
+
+static func build_frost_armor_grid(board_state, ratio):
+	# Frozen cells bind to positions, so the ice sheet is a plain parallel
+	# grid stamped over a share of the occupied cells.
+	var armor = []
+	for r in range(board_state.size()):
+		var row = []
+		for c in range(board_state[r].size()):
+			row.append(0)
+		armor.append(row)
+	ratio = float(ratio)
+	if ratio <= 0.0:
+		return armor
+	var cells = []
+	for r in range(board_state.size()):
+		for c in range(board_state[r].size()):
+			if int(board_state[r][c]) != 0:
+				cells.append(Vector2(r, c))
+	shuffle_array(cells)
+	var target = clamp(int(round(cells.size() * ratio)), 0, cells.size())
+	for i in range(target):
+		var cell = cells[i]
+		armor[cell.x][cell.y] = 1
+	return armor
+
+static func build_chain_grid(board_state, ratio):
+	var grid = []
+	for r in range(board_state.size()):
+		var row = []
+		for c in range(board_state[r].size()):
+			row.append(0)
+		grid.append(row)
+	var filled = []
+	for r in range(board_state.size()):
+		for c in range(board_state[r].size()):
+			if int(board_state[r][c]) != 0:
+				filled.append(Vector2(r, c))
+	shuffle_array(filled)
+	var target = clamp(int(round(filled.size() * ratio)), 0, filled.size())
+	for i in range(target):
+		var cell = filled[i]
+		grid[cell.x][cell.y] = 1
+	return grid
+
+static func bury_stack_layer(board_state, ratio):
+	# Buries a share of visible tiles into a lower layer: swaps each covered
+	# cell with a donor tile, clears the donor, returns the lower grid.
+	var lower = []
+	for r in range(board_state.size()):
+		var row = []
+		for c in range(board_state[r].size()):
+			row.append(0)
+		lower.append(row)
+	var filled = []
+	for r in range(board_state.size()):
+		for c in range(board_state[r].size()):
+			if int(board_state[r][c]) != 0:
+				filled.append(Vector2(r, c))
+	shuffle_array(filled)
+	var target = clamp(int(round(filled.size() * ratio)), 0, int(filled.size() / 2))
+	var used = {}
+	var i = 0
+	var covered = 0
+	while covered < target and i < filled.size():
+		var cover_cell = filled[i]
+		i += 1
+		if used.has(cover_cell):
+			continue
+		var donor = Vector2(-1, -1)
+		for j in range(i, filled.size()):
+			var cand = filled[j]
+			if cand != cover_cell and not used.has(cand):
+				donor = cand
+				break
+		if donor.x < 0:
+			break
+		lower[cover_cell.x][cover_cell.y] = int(board_state[cover_cell.x][cover_cell.y])
+		board_state[cover_cell.x][cover_cell.y] = int(board_state[donor.x][donor.y])
+		board_state[donor.x][donor.y] = 0
+		used[cover_cell] = true
+		used[donor] = true
+		covered += 1
+	return lower
+
+static func count_chains(chain_grid):
+	var count = 0
+	for row in chain_grid:
+		for value in row:
+			count += int(value != 0)
+	return count
+
+static func break_chains_around(chain_grid, coords):
+	# One successful match loosens the chains orthogonally adjacent to it.
+	var broke = 0
+	for coord in coords:
+		for dir in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]:
+			var n = coord + dir
+			if n.x < 0 or n.y < 0 or n.x >= chain_grid.size() or n.y >= chain_grid[0].size():
+				continue
+			if int(chain_grid[n.x][n.y]) > 0:
+				chain_grid[n.x][n.y] = int(chain_grid[n.x][n.y]) - 1
+				broke += 1
+	return broke
+
+static func pop_stack(board_state, lower, coord):
+	if coord.x < 0 or coord.y < 0 or coord.x >= lower.size() or coord.y >= lower[coord.x].size():
+		return false
+	if int(lower[coord.x][coord.y]) == 0:
+		return false
+	board_state[coord.x][coord.y] = int(lower[coord.x][coord.y])
+	lower[coord.x][coord.y] = 0
+	return true
+
+static func fog_layers(remaining_tiles, max_layers):
+	# Fog recedes as pairs are cleared: one layer per 12 remaining pairs.
+	return clamp(int(int(remaining_tiles) / 2 / 12), 0, int(max_layers))

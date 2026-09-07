@@ -126,6 +126,67 @@ func _init() -> void:
 	var g2 = [[1, 0], [2, 3]]
 	check(ENGINE.compact_columns(g2) == false, "full board reports no movement")
 
+	# --- mechanic grids: frost armor / chains / stack burying / fog layers
+	var small_board = [
+		[1, 2, 0],
+		[3, 0, 4],
+	]
+	var armor = ENGINE.build_frost_armor_grid(small_board, 0.0)
+	check(armor.size() == 2 and armor[0].size() == 3 and armor[0][0] == 0 and armor[1][2] == 0, "frost ratio 0 yields an all-zero parallel grid")
+	armor = ENGINE.build_frost_armor_grid(small_board, 1.0)
+	check(armor[0][0] == 1 and armor[0][1] == 1 and armor[0][2] == 0 and armor[1][0] == 1 and armor[1][1] == 0 and armor[1][2] == 1, "frost ratio 1 freezes exactly the filled cells")
+	check(small_board[0][0] == 1 and small_board[1][2] == 4, "frost grid build leaves the board untouched")
+	armor = ENGINE.build_frost_armor_grid(small_board, 0.34)
+	var frozen = 0
+	for row in armor:
+		for v in row:
+			frozen += int(v != 0)
+	check(frozen == 1, "frost ratio 0.34 freezes round(4*0.34) cells")
+	check(ENGINE.build_frost_armor_grid([], 1.0).size() == 0, "empty board yields empty armor")
+	var chains = ENGINE.build_chain_grid(small_board, 0.0)
+	check(ENGINE.count_chains(chains) == 0, "chain ratio 0 chains nothing")
+	chains = ENGINE.build_chain_grid(small_board, 1.0)
+	check(ENGINE.count_chains(chains) == 4 and chains[0][2] == 0 and chains[1][1] == 0, "chain ratio 1 chains exactly the filled cells")
+	chains = ENGINE.build_chain_grid(small_board, 2.0)
+	check(ENGINE.count_chains(chains) == 4, "chain ratio above 1 clamps to filled count")
+	check(ENGINE.count_chains([[0, 1], [1, 1]]) == 3, "count_chains counts non-zero cells")
+	var stack_board = [
+		[1, 2],
+		[3, 4],
+	]
+	var lower = ENGINE.bury_stack_layer(stack_board, 0.0)
+	var lower_count = 0
+	for row in lower:
+		for v in row:
+			lower_count += int(v != 0)
+	check(lower_count == 0 and stack_board[0][0] == 1 and stack_board[1][1] == 4, "stack ratio 0 leaves board unchanged")
+	lower = ENGINE.bury_stack_layer(stack_board, 1.0)
+	lower_count = 0
+	for row in lower:
+		for v in row:
+			lower_count += int(v != 0)
+	check(lower_count == 2, "stack ratio 1 buries at most half the tiles")
+	var both = 0
+	for r in range(stack_board.size()):
+		for c in range(stack_board[r].size()):
+			both += int(stack_board[r][c] != 0) + int(lower[r][c] != 0)
+	check(both == 4, "burying preserves the tile count across both layers")
+	check(ENGINE.bury_stack_layer([], 1.0).size() == 0, "empty board yields empty lower layer")
+	var chain_grid = [
+		[1, 0, 2],
+		[0, 3, 0],
+	]
+	check(ENGINE.break_chains_around(chain_grid, [Vector2(0, 1)]) == 3, "breaking decrements the three orthogonally adjacent chains")
+	check(chain_grid[0][0] == 0 and chain_grid[0][2] == 1 and chain_grid[1][1] == 2 and chain_grid[0][1] == 0, "only 4-neighbours are decremented, never the coord itself")
+	check(ENGINE.break_chains_around(chain_grid, [Vector2(-1, -1), Vector2(0, 0)]) == 0, "out-of-bounds neighbours are skipped and zero cells never break")
+	var pb = [[0]]
+	var pl = [[7]]
+	check(ENGINE.pop_stack(pb, pl, Vector2(0, 0)) == true and pb[0][0] == 7 and pl[0][0] == 0, "pop_stack lifts the buried tile to the visible board")
+	check(ENGINE.pop_stack(pb, pl, Vector2(0, 0)) == false, "pop_stack on an emptied lower cell is a no-op")
+	check(ENGINE.pop_stack(pb, pl, Vector2(3, 0)) == false and ENGINE.pop_stack(pb, pl, Vector2(-1, 0)) == false, "pop_stack guards out-of-bounds coords")
+	check(ENGINE.fog_layers(24, 2) == 1 and ENGINE.fog_layers(12, 2) == 0 and ENGINE.fog_layers(240, 2) == 2 and ENGINE.fog_layers(100, 5) == 4, "fog layers follow remaining/24 clamped to max")
+	check(ENGINE.zero_grid([[1, 2], [3, 4]])[1][0] == 0, "zero_grid clears every cell")
+
 	if failures == 0:
 		print("board_engine_test: ALL PASSED")
 		quit(0)

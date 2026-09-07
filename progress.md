@@ -605,3 +605,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round L：战役关卡表成模块 + 通关成就规则纯函数化)
 - Context: ①_default_campaign_levels 的 134 行关卡数据抽为新模块 campaign_levels.gd（LEVELS 常量 + default_campaign_levels() 深拷贝返回，game.gd 留同名薄封装）；②_check_achievements_on_clear 的 6 条通关成就规则抽为 progression.clear_unlocked_ids(state, context) 纯函数（输入 level_index/combo/clear_time/hints_used/auto_used/level_count，返回待解锁 id 列表），game.gd 只留破纪录结算与通知壳。
 - Validation: 13 项 headless 测试全绿——新增 campaign_levels_test（10 关序号/棋盘偶数格/kinds≤12 且格数足够/时限为正/模式白名单/文案非空/倍率单调不减/深拷贝防共享变异）+ progression_test 补 clear_unlocked_ids 全分支与边界（combo=3、30s 整、末关、已解锁不重复）；CI 测试清单同步加 campaign_levels_test；导出与 web_entry 通过。
+
+## 2026-09-07 (代码质量 Round M：机制网格助手下沉 board_engine.gd)
+- Context: 冰甲/锁链/叠层/迷雾的网格构建与查询从 game.gd 下沉为 board_engine 纯静态（build_frost_armor_grid/build_chain_grid/bury_stack_layer/count_chains/break_chains_around/zero_grid/pop_stack/fog_layers 共 8 个），game.gd 留模式守卫+提示文案薄壳（净减约 125 行逻辑）。shuffle 统一走 board_engine.shuffle_array。
+- Validation: 13 项 headless 测试全绿；board_engine_test 新增机制网格全分支覆盖（ratio 0/1/超1、空盘、 burying 跨层守恒、四邻破链不含自身、越界守卫、pop 语义、fog 层数边界）；导出与 web_entry 通过。

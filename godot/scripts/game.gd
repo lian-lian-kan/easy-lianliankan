@@ -1644,29 +1644,7 @@ func _is_coord_playable(coord):
 	return true
 
 func _build_frost_armor(new_board, level):
-	# Frost levels stamp a ratio of occupied cells as frozen. Ice binds to
-	# the position (tiles reshuffle beneath the ice sheet), so it is a plain
-	# parallel grid; other modes get all-zero armor.
-	var armor = []
-	for r in range(new_board.size()):
-		var row = []
-		for c in range(new_board[r].size()):
-			row.append(0)
-		armor.append(row)
-	var ratio = float(level.get("frost_ratio", 0.0))
-	if ratio <= 0.0:
-		return armor
-	var cells = []
-	for r in range(new_board.size()):
-		for c in range(new_board[r].size()):
-			if int(new_board[r][c]) != 0:
-				cells.append(Vector2(r, c))
-	cells.shuffle()
-	var target = clamp(int(round(cells.size() * ratio)), 0, cells.size())
-	for i in range(target):
-		var cell = cells[i]
-		armor[cell.x][cell.y] = 1
-	return armor
+	return BOARD_ENGINE.build_frost_armor_grid(new_board, float(level.get("frost_ratio", 0.0)))
 
 func _memory_key(coord):
 	return str(int(coord.x)) + "," + str(int(coord.y))
@@ -2745,88 +2723,24 @@ func _fail_race_lost():
 
 # 叠层: lift a share of tiles onto a visible cover with a buried twin.
 func _build_stack_layers(ratio):
-	board_lower = []
-	for r in range(board.size()):
-		var row = []
-		for c in range(board[r].size()):
-			row.append(0)
-		board_lower.append(row)
-	var filled = []
-	for r in range(board.size()):
-		for c in range(board[r].size()):
-			if int(board[r][c]) != 0:
-				filled.append(Vector2(r, c))
-	filled.shuffle()
-	var target = clamp(int(round(filled.size() * ratio)), 0, int(filled.size() / 2))
-	var used = {}
-	var i = 0
-	var covered = 0
-	while covered < target and i < filled.size():
-		var cover_cell = filled[i]
-		i += 1
-		if used.has(cover_cell):
-			continue
-		var donor = Vector2(-1, -1)
-		for j in range(i, filled.size()):
-			var cand = filled[j]
-			if cand != cover_cell and not used.has(cand):
-				donor = cand
-				break
-		if donor.x < 0:
-			break
-		board_lower[cover_cell.x][cover_cell.y] = int(board[cover_cell.x][cover_cell.y])
-		board[cover_cell.x][cover_cell.y] = int(board[donor.x][donor.y])
-		board[donor.x][donor.y] = 0
-		used[cover_cell] = true
-		used[donor] = true
-		covered += 1
+	board_lower = BOARD_ENGINE.bury_stack_layer(board, ratio)
 
 # 锁链: chain a share of tiles; adjacent clears break the chains.
 func _build_chain_locks(ratio):
-	board_chain = []
-	for r in range(board.size()):
-		var row = []
-		for c in range(board[r].size()):
-			row.append(0)
-		board_chain.append(row)
-	var filled = []
-	for r in range(board.size()):
-		for c in range(board[r].size()):
-			if int(board[r][c]) != 0:
-				filled.append(Vector2(r, c))
-	filled.shuffle()
-	var target = clamp(int(round(filled.size() * ratio)), 0, filled.size())
-	for i in range(target):
-		var cell = filled[i]
-		board_chain[cell.x][cell.y] = 1
+	board_chain = BOARD_ENGINE.build_chain_grid(board, ratio)
 
 func _chains_remaining():
-	var count = 0
-	for row in board_chain:
-		for value in row:
-			count += int(value != 0)
-	return count
+	return BOARD_ENGINE.count_chains(board_chain)
 
 func _dissolve_all_chains():
-	for r in range(board_chain.size()):
-		for c in range(board_chain[r].size()):
-			board_chain[r][c] = 0
+	BOARD_ENGINE.zero_grid(board_chain)
 	_show_message("⛓️ 死局解除，锁链全部崩解！", 1.4)
 	_refresh_board_visuals()
 
 func _break_chains_around(coords):
 	if not _is_chain_mode() or coords == null:
 		return
-	var broke = false
-	for coord in coords:
-		for dir in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]:
-			var n = coord + dir
-			if n.x < 0 or n.y < 0 or n.x >= board.size() or n.y >= board[0].size():
-				continue
-			if int(board_chain[n.x][n.y]) > 0:
-				board_chain[n.x][n.y] = int(board_chain[n.x][n.y]) - 1
-				broke = true
-	if broke:
+	if BOARD_ENGINE.break_chains_around(board_chain, coords) > 0:
 		_show_message("⛓️ 邻近的锁链松开了", 0.9)
 
 # 重力: columns compact downward after clears.
@@ -2843,14 +2757,12 @@ func _update_fog():
 		_fog_layers = 0
 		return
 	var max_layers = int(_current_level().get("fog_layers", 2))
-	_fog_layers = clamp(int(_remaining_tiles_count() / 2 / 12), 0, max_layers)
+	_fog_layers = BOARD_ENGINE.fog_layers(_remaining_tiles_count(), max_layers)
 
 func _pop_stack_at(coord):
-	if not _is_stack_mode() or coord.x >= board_lower.size() or coord.y >= board_lower[coord.x].size():
+	if not _is_stack_mode():
 		return
-	if int(board_lower[coord.x][coord.y]) != 0:
-		board[coord.x][coord.y] = int(board_lower[coord.x][coord.y])
-		board_lower[coord.x][coord.y] = 0
+	BOARD_ENGINE.pop_stack(board, board_lower, coord)
 
 # One successful match hits both tiles. Frozen cells (armor 1) crack instead
 # of clearing and need a second match; cracked tiles keep blocking paths.
