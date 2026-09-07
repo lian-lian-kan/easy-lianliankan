@@ -83,6 +83,14 @@ func _init() -> void:
 	game._unhandled_input(ev2)
 	check(game.stage_status == game.STATUS_PLAYING, "keyboard P again resumes the stage")
 
+	# fx_layer: eliminate effects emit into the effect layer
+	var fx_before = game.effect_layer.get_child_count()
+	game.combo = 5
+	game._play_eliminate_effects([press_cell])
+	check(game.effect_layer.get_child_count() > fx_before, "eliminate effects spawn into the effect layer")
+	game._show_combo_burst("连击 x5 +50")
+	check(game.combo_burst_label != null && game.combo_burst_label.text != "", "combo burst label shows the burst text")
+
 	# refresh_ui reflects stage status on the pause button
 	game.stage_status = game.STATUS_PAUSED
 	game._refresh_ui()

@@ -649,3 +649,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round S：输入处理簇迁入 game_input.gd)
 - Context: _on_tile_pressed（选中/配对/待管道具路由）、_on_memory_tile_pressed（盲盒翻牌）、_unhandled_input（键盘快捷键路由 P/H/A/S/R/[/]/Enter/F/1-8/Esc）共约 236 行迁入新模块 game_input.gd（game 参数静态工厂），game.gd 留同名薄壳；panels_probe 补输入行为断言（首按选中/再按取消且不耗步数、键盘 P 暂停/恢复路由）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 27 断言）；game.X 全量审计通过（accept_event 为 Control 方法良性）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round T：消除/连击特效簇迁入 fx_layer.gd)
+- Context: 特效发射簇 8 函数（_play_eliminate_effects/_tile_center_in_effect_layer/_spawn_ring_effect/_spawn_particle_burst/_spawn_combo_particle_burst/_spawn_board_particles/_show_combo_burst + 尺寸中心换算）约 198 行迁入 fx_layer.gd（追加模式，不覆盖既有 statics），game.gd 留同名薄壳。_pulse_tile 因含 yield（协程）不能做静态函数，退回 game.gd 实例方法原样保留。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 29 断言：消除特效同步生成进特效层、连击爆字标签更新）；导出与 web_entry 通过。
