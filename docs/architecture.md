@@ -21,7 +21,7 @@
 1. 在 game.gd 中定位目标函数的**语义相邻**下一函数签名作为结束锚（先 grep 确认，禁止凭记忆）。
 2. 剪块搬入新模块；无场景依赖的做成 `extends Reference` 静态函数；需要游戏成员的以 `game` 参数显式传入（标识符加 `game.` 前缀）。
 3. game.gd 原地留**同名薄封装**，外部调用方零改动。
-4. 用 `--check-only -s` 解析循环发现缺失的游戏成员并补白名单；注意静态函数中 autoload（如 AudioManager）也必须 `game.AudioManager`。
+4. 用解析循环发现缺失的游戏成员并补白名单；autoload（如 AudioManager）是**全局单例名**，静态函数里直接裸用——`game.AudioManager` 是运行时错误（autoload 不是节点属性，Round P 在 ui_panels 设置面板音量行踩实并修复）。另注意 Godot 3 的 Dictionary `==`/`hash()` 是引用/顺序敏感比较，断言内容相等要逐键比。
 5. 每轮：worktree → 全量测试绿 → 导出 → 合并 main → CI 绿 → 线上 pck 验证。
 
 ## 已知债务

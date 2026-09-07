@@ -44,6 +44,14 @@ func _find_different_kind_pair(game) -> Array:
 				return [first_coord, Vector2(r, c)]
 	return []
 
+func _dicts_equal(a, b) -> bool:
+	if a.size() != b.size():
+		return false
+	for k in a:
+		if not b.has(k) or a[k] != b[k]:
+			return false
+	return true
+
 func _init() -> void:
 	print("== power_ups_probe")
 	var scene = load("res://scenes/Main.tscn")
@@ -64,6 +72,8 @@ func _init() -> void:
 
 	check(game.stage_status == game.STATUS_PLAYING, "level 10 starts in playing state")
 	check(int(game.power_ups.get("bomb", 0)) >= 1, "level 10 grants a bomb")
+	var want_loadout = {"time_freeze": 2, "reshuffle": 2, "auto_match": 1, "magnifier": 1, "time_sand": 1, "bomb": 1, "rainbow": 0, "warm_patch": 0}
+	check(_dicts_equal(game.power_ups, want_loadout), "level 10 loadout follows difficulty rules (got %s)" % str(game.power_ups))
 	check(game.power_up_labels.has("bomb"), "bomb label registered")
 	check(game.power_up_labels.has("rainbow"), "rainbow label registered")
 	check(game._petal_layer != null, "petal layer built")
@@ -124,6 +134,36 @@ func _init() -> void:
 	yield(self, "idle_frame")
 	check(int(game.power_ups.get("rainbow", 0)) >= 1, "level 12 grants a rainbow")
 	check(not game.bomb_pending and not game.rainbow_pending, "starting a level clears armed states")
+
+
+	# --- Loadout rules: campaign difficulty, special sessions, hell strip-back.
+	game._init_power_ups({"id": 2, "mode": "rush"})
+	check(int(game.power_ups.get("time_freeze", 0)) == 2 and int(game.power_ups.get("reshuffle", 0)) == 1 and int(game.power_ups.get("auto_match", 0)) == 0, "rush level 2 grants double freeze and base reshuffle")
+
+	game.special_mode = "hell"
+	game._init_power_ups({"id": 15, "mode": "classic"})
+	check(_dicts_equal(game.power_ups, {"time_freeze": 1, "auto_match": 0, "reshuffle": 1, "magnifier": 0, "time_sand": 0, "bomb": 0, "rainbow": 0, "warm_patch": 0}), "hell strips back to freeze and reshuffle")
+
+	game.special_mode = "frost"
+	game._init_power_ups({"id": 13, "mode": "classic"})
+	check(int(game.power_ups.get("warm_patch", 0)) == 3, "frost grants three warm patches")
+
+	# --- Use/spend guards: mode restrictions and game state.
+	game.special_mode = "endless"
+	game.power_ups["time_sand"] = 2
+	game._use_power_up("time_sand")
+	check(int(game.power_ups.get("time_sand", 0)) == 2, "time_sand is rejected in endless mode")
+
+	game.special_mode = ""
+	game.power_ups["warm_patch"] = 2
+	game._use_power_up("warm_patch")
+	check(int(game.power_ups.get("warm_patch", 0)) == 2, "warm_patch is rejected outside frost")
+
+	game.stage_status = game.STATUS_PAUSED
+	game.power_ups["reshuffle"] = 2
+	game._use_power_up("reshuffle")
+	check(int(game.power_ups.get("reshuffle", 0)) == 2, "power-ups cannot be spent while paused")
+	game.stage_status = game.STATUS_PLAYING
 
 	# --- Confetti spawns on demand and cleans itself up.
 	var before = game._petal_layer.get_child_count()

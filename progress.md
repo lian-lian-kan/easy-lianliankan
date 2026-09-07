@@ -617,3 +617,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-07 (代码质量 Round O：HUD 状态刷新迁入 ui_hud.gd)
 - Context: _refresh_ui 的 116 行模式横幅/统计卡/按钮态刷新迁入 ui_hud.gd 的 refresh_ui(game) 静态（与 build_main_ui 同模块：主屏构建+状态同步），game.gd 留 3 行壳；panels_probe 新增行为断言（stage_status 切换 → 暂停按钮文本 继续/暂停 联动）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 15 断言）；game.X 引用审计通过（上下文无关前缀修复运算符场景漏前缀）；导出与 web_entry 通过。修复过程发现并纠正 migrate 脚本 w 模式覆盖 build_main_ui 的事故（git checkout 恢复+重追加）。
+
+## 2026-09-07 (代码质量 Round P：道具域迁入 powerups.gd + 修复 Round D 隐性音量行 bug)
+- Context: 道具簇 13 个函数（loadout 规则 _init_power_ups、取用流程 _use_power_up、7 个 _activate_*、3 个 _execute_*）约 290 行迁入新模块 powerups.gd（game 参数静态工厂），game.gd 留同名薄壳。power_ups_probe 新增 9 项断言：level-10 载荷表、rush/地狱/冰雪三种特殊载荷、无尽禁沙漏、非冰雪禁暖宝宝、暂停不可消耗。
+- 额外修复：ui_panels.gd 设置面板音量行用 game.AudioManager（autoload 不是节点属性）静默中止，音量/音效/音乐/静音四行自 Round D 起从未渲染——改为裸全局 AudioManager。纠正 architecture.md 提取口诀（autoload 裸用 + Dictionary ==/hash 引用与顺序语义）。
+- Validation: 13 项 headless 测试全绿（power_ups_probe 现 34 断言、零脚本错误）；导出与 web_entry 通过。
