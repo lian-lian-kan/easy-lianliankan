@@ -712,3 +712,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 发现：a95a17d 提交的冒烟步骤 YAML 残缺（run: 块内直接调用无可执行位的脚本，缺 bash 前缀），CI 三连 126 从未真正执行冒烟逻辑。
 - 修复：步骤改为 `bash tools/ci_smoke.sh`（免疫可执行位问题，另补 +x），保留 continue-on-error 观察模式——冒烟逻辑首次在 linux 真实执行，待数据稳定后再转硬门禁。
 - Validation: 推送后 CI 全绿；冒烟步骤输出留档（SMOKE OK / SMOKE FAILED + beacon 诊断）。
+
+## 2026-09-08 (Round AG：冒烟转硬门禁)
+- 依据：linux CI 首跑 SMOKE OK（引擎 4 秒启动、beacon 到达），机制已被目标环境验证；ci_smoke.sh 加装第二次 Chrome 重试进一步降低偶发抖动。
+- 变更：deploy.yml 移除 continue-on-error，冒烟失败将阻塞部署（坏启动不该上线）；信标等待升级为两次 Chrome 尝试。

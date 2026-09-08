@@ -71,15 +71,22 @@ START=$(date +%s)
 CHROME_PID=$!
 
 BOOTED=0
-while [ $(( $(date +%s) - START )) -lt "$WAIT" ]; do
-    if grep -q "BEACON /smoke-boot-ok" "$LOG" 2>/dev/null; then
-        BOOTED=1
-        break
-    fi
-    if ! kill -0 "$CHROME_PID" 2>/dev/null; then
-        break
-    fi
-    sleep 2
+for attempt in 1 2; do
+    while [ $(( $(date +%s) - START )) -lt "$WAIT" ]; do
+        if grep -q "BEACON /smoke-boot-ok" "$LOG" 2>/dev/null; then
+            BOOTED=1
+            break
+        fi
+        if ! kill -0 "$CHROME_PID" 2>/dev/null; then
+            break
+        fi
+        sleep 2
+    done
+    [ "$BOOTED" = "1" ] && break
+    kill "$CHROME_PID" 2>/dev/null || true
+    "$CHROME" --headless --no-sandbox --disable-dev-shm-usage --disable-gpu \
+        "http://127.0.0.1:$PORT/index.html?smoke=1" >/dev/null 2>&1 &
+    CHROME_PID=$!
 done
 kill "$CHROME_PID" 2>/dev/null || true
 ELAPSED=$(( $(date +%s) - START ))
