@@ -122,6 +122,7 @@ func _init() -> void:
 	var vflags = game._viewport_flags(Vector2(390, 844))
 	check(bool(vflags.is_mobile) && bool(vflags.is_portrait), "viewport flags classify phone portrait")
 	check(!bool(game._viewport_flags(Vector2(1280, 720)).is_portrait), "viewport flags classify desktop landscape")
+	check(bool(game._viewport_flags(Vector2(390, 430)).is_compact_height), "viewport flags flag compact heights")
 
 	# game_config: reload pipeline keeps the campaign table intact
 	var level_count_before = int(game.campaign_levels.size())

@@ -746,3 +746,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: ui_hud.gd 924 行拆分第一步——计时器工厂（10 个 Timer 构建）与其驱动的 8 个通用心跳回调（second/race tick、message/error/combo/highlight/advance/freeze timeout）迁入新模块 hud_timers.gd（127 行），ui_hud 回归「主屏结构：构建/刷新/布局/控件」职责（790 行）。
 - 顺手消除 Round AJ 遗留的绕圈调用链：game._on_memory_*_timeout → session 转发壳 → game.UI_HUD 实现——盲盒 preview/hide timeout 实现搬进 session.gd（盲盒会话域归属），转发壳删除。
 - Validation: 13 项 headless 测试全绿（panels_probe 129→138 断言：冻结时钟豁免/解冻恢复扣时/错误闪红超时清理/连击超时重置/过关推进跳关/竞速 AI 按间隔步进/盲盒翻面与收牌超时）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AO：屏幕适配拆出 hud_layout.gd)
+- Context: ui_hud 拆分第二步——_viewport_flags（手机/竖屏/紧凑分类）与 update_layout（棋盘高度比例/边距/网格间距/统计卡与控件尺寸/竖屏头部压缩，116 行）迁入新模块 hud_layout.gd，ui_hud 回归「构建/刷新/浮层/控件」职责（790→662 行）。game.gd 两个薄壳改向 HUD_LAYOUT，调用方零改动。
+- Validation: 13 项 headless 测试全绿（panels_probe 138→139 断言：补 is_compact_height 分支）；导出与 web_entry 通过。

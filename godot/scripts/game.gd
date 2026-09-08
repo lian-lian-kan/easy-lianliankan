@@ -26,6 +26,7 @@ const BOARD_VIEW = preload("res://scripts/board_view.gd")
 const POWERUPS = preload("res://scripts/powerups.gd")
 const UI_HUD = preload("res://scripts/ui_hud.gd")
 const HUD_TIMERS = preload("res://scripts/hud_timers.gd")
+const HUD_LAYOUT = preload("res://scripts/hud_layout.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -237,10 +238,10 @@ func _update_modal_panel_sizes(viewport_size, is_portrait):
 	return UI_PANELS._update_modal_panel_sizes(self, viewport_size, is_portrait)
 
 func _viewport_flags(viewport_size):
-	return UI_HUD._viewport_flags(self, viewport_size)
+	return HUD_LAYOUT._viewport_flags(self, viewport_size)
 
 func _update_layout_for_screen_size():
-	UI_HUD.update_layout(self)
+	HUD_LAYOUT.update_layout(self)
 
 
 func _mount_modal_panel(panel):
