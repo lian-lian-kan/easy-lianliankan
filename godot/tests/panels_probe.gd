@@ -102,6 +102,16 @@ func _init() -> void:
 	game._exit_special_mode()
 	check(game.special_mode == "", "exit returns to campaign mode")
 
+	# ui_panels/ui_hud: settings glue + modal sizing + status label
+	game._populate_icon_set_options()
+	check(game.icon_set_option.get_item_count() == int(game.icon_sets.size()), "icon set options populated for every set")
+	game._on_icon_set_selected(0)
+	check(int(game.icon_set_index) == 0, "icon set selection clamps and applies")
+	game._update_modal_panel_sizes(game.get_viewport_rect().size, true)
+	check(game.pause_panel.rect_min_size.x > 0, "modal sizes applied")
+	check(game._status_label(game.STATUS_PLAYING) == "进行中", "status label maps playing")
+	check(game._status_label(-999) == "未知", "status label unknown fallback")
+
 	# game_config: reload pipeline keeps the campaign table intact
 	var level_count_before = int(game.campaign_levels.size())
 	game._load_config()

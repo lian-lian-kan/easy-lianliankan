@@ -234,20 +234,6 @@ func _viewport_flags(viewport_size):
 		"is_compact_height": is_compact_height
 	}
 
-func _update_modal_panel_sizes(viewport_size, is_portrait):
-	var max_width = viewport_size.x * 0.92
-	var max_height = viewport_size.y * (0.90 if is_portrait else 0.82)
-
-	if onboarding_panel:
-		onboarding_panel.rect_min_size = Vector2(min(320.0, max_width), min(400.0, max_height))
-	if settings_panel:
-		settings_panel.rect_min_size = Vector2(min(360.0, max_width), min(320.0, max_height))
-	if achievements_panel:
-		achievements_panel.rect_min_size = Vector2(min(400.0, max_width), min(480.0, max_height))
-	if pause_panel:
-		pause_panel.rect_min_size = Vector2(min(320.0, max_width), min(280.0, max_height))
-	if modes_panel:
-		modes_panel.rect_min_size = Vector2(min(360.0, max_width), min(700.0, max_height))
 
 	# Panels are mounted inside full-rect CenterContainer holders (see
 	# _mount_modal_panel), so dynamic content never knocks them off-center.
@@ -255,17 +241,16 @@ func _update_modal_panel_sizes(viewport_size, is_portrait):
 # A CenterContainer holder keeps dialogs centered whatever their content
 # size does; mouse_filter IGNORE lets board clicks pass through when the
 # dialog is hidden.
-func _mount_modal_panel(panel):
-	var holder = CenterContainer.new()
-	holder.set_anchors_and_margins_preset(Control.PRESET_WIDE)
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(holder)
-	holder.add_child(panel)
-	return holder
+
+func _update_modal_panel_sizes(viewport_size, is_portrait):
+	return UI_PANELS._update_modal_panel_sizes(self, viewport_size, is_portrait)
 
 func _update_layout_for_screen_size():
 	UI_HUD.update_layout(self)
 
+
+func _mount_modal_panel(panel):
+	return UI_PANELS._mount_modal_panel(self, panel)
 
 const DISPLAY_FONT = preload("res://fonts/ZCOOLKuaiLe-Regular.ttf")
 const EMBEDDED_FONT = preload("res://fonts/NotoSansSC-Regular.ttf")
@@ -390,15 +375,6 @@ func _add_stat_card(parent, title, key):
 	STATS_HUD.add_card(self, parent, title, key)
 
 
-func _populate_icon_set_options():
-	icon_set_option.clear()
-	for i in range(icon_sets.size()):
-		var icon_set: Dictionary = icon_sets[i]
-		icon_set_option.add_item(icon_set.get("name", "主题" + str(i + 1)))
-
-	if icon_sets.size() > 0:
-		icon_set_index = clamp(icon_set_index, 0, icon_sets.size() - 1)
-		icon_set_option.select(icon_set_index)
 
 func _create_power_up_label(power_up_id, icon, shortcut):
 	return STATS_HUD._create_power_up_label(self, power_up_id, icon, shortcut)
@@ -406,9 +382,12 @@ func _create_power_up_label(power_up_id, icon, shortcut):
 func _create_chip_label():
 	return STATS_HUD._create_chip_label(self)
 
+
+func _populate_icon_set_options():
+	return UI_PANELS._populate_icon_set_options(self)
+
 func _on_icon_set_selected(index):
-	icon_set_index = clamp(index, 0, max(0, icon_sets.size() - 1))
-	_refresh_board_visuals()
+	return UI_PANELS._on_icon_set_selected(self, index)
 
 func _is_level_unlocked(level_idx):
 	return PROGRESSION_SCRIPT.is_level_unlocked(progression_state, level_idx, campaign_levels.size())
@@ -1095,20 +1074,6 @@ func _set_time_card_state(is_danger):
 func _mode_label(mode):
 	return SPECIAL_MODES_SCRIPT.mode_label(mode)
 
-func _status_label(status):
-	match status:
-		STATUS_PLAYING:
-			return "进行中"
-		STATUS_PAUSED:
-			return "已暂停"
-		STATUS_CLEARED:
-			return "过关中"
-		STATUS_FAILED:
-			return "失败"
-		STATUS_COMPLETED:
-			return "全通关"
-		_:
-			return "未知"
 
 func _format_time(seconds):
 	return BOARD_ENGINE.format_time(seconds)
@@ -1140,6 +1105,9 @@ func _check_achievements_on_clear():
 			var info = PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
 			_show_achievement_notification(info["name"])
 
+
+func _status_label(status):
+	return UI_HUD._status_label(self, status)
 
 func _on_achievement_dismiss(notification):
 	var tween = Tween.new()
@@ -1224,11 +1192,12 @@ func _on_settings_close():
 func _on_master_volume_changed(value):
 	AudioManager.set_master_volume(value)
 
-func _on_effects_toggled(enabled):
-	AudioManager.set_effects_enabled(enabled)
 
 func _on_music_toggled(enabled):
 	AudioManager.set_music_enabled(enabled)
+
+func _on_effects_toggled(enabled):
+	return UI_PANELS._on_effects_toggled(self, enabled)
 
 func _on_mute_toggled(muted):
 	AudioManager.set_muted(muted)

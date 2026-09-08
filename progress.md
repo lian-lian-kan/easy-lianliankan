@@ -720,3 +720,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AH：棋盘反馈特效迁入 fx_layer.gd)
 - Context: 反馈特效簇 4 函数（_flash_error_tiles 错误闪红/_animate_hint_tiles 提示脉冲/_show_path 路径预览/_path_to_overlay_points 坐标映射）迁入 fx_layer.gd，game.gd 留同名薄壳。panels_probe 补 2 项断言（错误闪红登记方块、路径预览显示 overlay）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 50 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AI：设置胶水/模态尺寸/状态标签归并)
+- Context: 设置面板胶水 3 函数（_populate_icon_set_options/_on_icon_set_selected/_on_effects_toggled）与模态面板尺寸 2 函数（_update_modal_panel_sizes/_mount_modal_panel）迁入 ui_panels.gd；_status_label 状态文案映射迁入 ui_hud.gd，game.gd 留同名薄壳。panels_probe 补 5 项断言（图标集下拉填充/选择钳制/模态尺寸/状态文案映射与未知回退）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 37 断言）；导出与 web_entry 通过。

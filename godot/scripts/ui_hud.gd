@@ -834,3 +834,19 @@ static func _on_memory_hide_timeout(game):
 	game.memory_lock = false
 	game._refresh_board_visuals()
 
+
+static func _status_label(game, status):
+	match status:
+		game.STATUS_PLAYING:
+			return "进行中"
+		game.STATUS_PAUSED:
+			return "已暂停"
+		game.STATUS_CLEARED:
+			return "过关中"
+		game.STATUS_FAILED:
+			return "失败"
+		game.STATUS_COMPLETED:
+			return "全通关"
+		_:
+			return "未知"
+

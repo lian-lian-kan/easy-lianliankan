@@ -439,3 +439,48 @@ static func _style_dialog_buttons(game, node):
 	for child in node.get_children():
 		game._style_dialog_buttons(child)
 
+
+static func _populate_icon_set_options(game):
+	game.icon_set_option.clear()
+	for i in range(game.icon_sets.size()):
+		var icon_set: Dictionary = game.icon_sets[i]
+		game.icon_set_option.add_item(icon_set.get("name", "主题" + str(i + 1)))
+
+	if game.icon_sets.size() > 0:
+		game.icon_set_index = clamp(game.icon_set_index, 0, game.icon_sets.size() - 1)
+		game.icon_set_option.select(game.icon_set_index)
+
+
+static func _on_icon_set_selected(game, index):
+	game.icon_set_index = clamp(index, 0, max(0, game.icon_sets.size() - 1))
+	game._refresh_board_visuals()
+
+
+static func _on_effects_toggled(game, enabled):
+	AudioManager.set_effects_enabled(enabled)
+
+
+static func _update_modal_panel_sizes(game, viewport_size, is_portrait):
+	var max_width = viewport_size.x * 0.92
+	var max_height = viewport_size.y * (0.90 if is_portrait else 0.82)
+
+	if game.onboarding_panel:
+		game.onboarding_panel.rect_min_size = Vector2(min(320.0, max_width), min(400.0, max_height))
+	if game.settings_panel:
+		game.settings_panel.rect_min_size = Vector2(min(360.0, max_width), min(320.0, max_height))
+	if game.achievements_panel:
+		game.achievements_panel.rect_min_size = Vector2(min(400.0, max_width), min(480.0, max_height))
+	if game.pause_panel:
+		game.pause_panel.rect_min_size = Vector2(min(320.0, max_width), min(280.0, max_height))
+	if game.modes_panel:
+		game.modes_panel.rect_min_size = Vector2(min(360.0, max_width), min(700.0, max_height))
+
+
+static func _mount_modal_panel(game, panel):
+	var holder = CenterContainer.new()
+	holder.set_anchors_and_margins_preset(Control.PRESET_WIDE)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	game.add_child(holder)
+	holder.add_child(panel)
+	return holder
+
