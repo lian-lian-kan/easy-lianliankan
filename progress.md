@@ -728,3 +728,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AJ：盲盒会话辅助与视口旗标归并)
 - Context: 盲盒模式会话辅助 5 函数（_memory_key 纯映射/_start_memory_preview/_on_memory_preview_timeout/_memory_schedule_hide/_on_memory_hide_timeout）迁入 session.gd；_viewport_flags（手机/横竖屏/紧凑高度分类）迁入 ui_hud.gd，game.gd 留同名薄壳。panels_probe 补 4 项断言（memory key 纯映射/schedule 记录并加锁/手机竖屏与桌面横屏分类）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 41 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AK：资源消耗与阶段生命周期迁入 session.gd)
+- Context: 8 函数迁入 session.gd——资源消耗（_consume_time_cost/_consume_move）、阶段暂停恢复（_pause_stage/_resume_stage）、战役开局（_start_level）、竞速判负（_fail_race_lost）、成就（_unlock_achievements/_check_achievements_on_clear），game.gd 留同名薄壳。panels_probe 补 7 项生命周期断言（时钟消耗/无时钟豁免/moves 外无操作/暂停恢复/开局/成就解锁持久化）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 54 断言）；导出与 web_entry 通过。

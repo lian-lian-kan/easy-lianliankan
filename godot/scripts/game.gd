@@ -436,20 +436,6 @@ func _on_clear_progress_pressed():
 	_show_message("本地进度已清除，已回到第1关", 1.3)
 
 
-func _start_level(next_index, reset_total = false):
-	# Entering a campaign level always leaves any special session.
-	special_mode = ""
-	special_level = {}
-	endless_round = 1
-	level_index = clamp(next_index, 0, campaign_levels.size() - 1)
-	var level = _current_level()
-	_reset_level_session(level, reset_total)
-	_patch_progress_state({"current_level_index": level_index})
-
-	var level_id = int(level.get("id", level_index + 1))
-	var level_name = str(level.get("name", "关卡"))
-	var mode = str(level.get("mode", "classic"))
-	_show_message("进入第" + str(level_id) + "关：" + level_name + "（" + _mode_label(mode) + "） · 快捷键 H/A/S/P/F/R/[ ]/Enter", 1.35)
 
 
 
@@ -464,6 +450,9 @@ func _create_playable_board(level):
 
 func _create_board(rows, cols, kinds):
 	return BOARD_ENGINE.create_board(rows, cols, kinds)
+
+func _start_level(next_index, reset_total = false):
+	return SESSION._start_level(self, next_index, reset_total)
 
 func _shuffle_array(arr):
 	BOARD_ENGINE.shuffle_array(arr)
@@ -609,32 +598,10 @@ func _on_memory_hide_timeout():
 func _on_memory_preview_timeout():
 	return SESSION._on_memory_preview_timeout(self)
 
+
+
 func _pause_stage():
-	if stage_status != STATUS_PLAYING:
-		return
-
-	stage_status = STATUS_PAUSED
-	second_timer.stop()
-	combo_reset_timer.stop()
-	_show_pause_panel()
-	_refresh_ui()
-	_refresh_board_visuals()
-
-func _resume_stage():
-	if stage_status != STATUS_PAUSED:
-		return
-
-	stage_status = STATUS_PLAYING
-	_hide_pause_panel()
-	_start_second_timer()
-	if combo > 0:
-		combo_expires_ms = OS.get_ticks_msec() + int(tuning.get("combo_window_ms", 2600))
-		combo_reset_timer.stop()
-		combo_reset_timer.wait_time = float(tuning.get("combo_window_ms", 2600)) / 1000.0
-		combo_reset_timer.start()
-	_show_message("继续游戏", 0.65)
-	_refresh_ui()
-	_refresh_board_visuals()
+	return SESSION._pause_stage(self)
 
 func _on_hint_pressed():
 	return GAME_INPUT._on_hint_pressed(self)
@@ -647,6 +614,9 @@ func _on_auto_pressed():
 
 
 
+
+func _resume_stage():
+	return SESSION._resume_stage(self)
 
 func _on_shuffle_pressed():
 	return GAME_INPUT._on_shuffle_pressed(self)
@@ -808,36 +778,15 @@ func _show_path(path, preview_type, duration_ms):
 func _path_to_overlay_points(path):
 	return FX._path_to_overlay_points(self, path)
 
-func _consume_move():
-	if special_mode != "moves" or stage_status != STATUS_PLAYING:
-		return
-	moves_left = max(0, moves_left - 1)
-	_refresh_ui()
-	if moves_left <= 0 and _remaining_tiles_count() > 0:
-		_fail_moves_exhausted()
 
 
 # 竞速对战: the AI clears one pair per ai_interval seconds.
 
-func _fail_race_lost():
-	if stage_status != STATUS_PLAYING:
-		return
-	stage_status = STATUS_FAILED
-	AudioManager.play_fail()
-	_reset_combo()
-	selected = Vector2(-1, -1)
-	hint_tiles.clear()
-	error_tiles.clear()
-	second_timer.stop()
-	if race_timer:
-		race_timer.stop()
-	stage_panel_label.text = "对手先完成了！你消除了 %d/%d 对\n点击「重开」再战" % [race_total_pairs - int(_remaining_tiles_count() / 2), race_total_pairs]
-	stage_panel_label.visible = true
-	_show_message("惜败！再快一点点", 1.8)
-	_refresh_ui()
-	_refresh_board_visuals()
 
 # 叠层: lift a share of tiles onto a visible cover with a buried twin.
+func _consume_move():
+	return SESSION._consume_move(self)
+
 func _build_stack_layers(ratio):
 	board_lower = BOARD_ENGINE.bury_stack_layer(board, ratio)
 
@@ -852,6 +801,9 @@ func _dissolve_all_chains():
 	BOARD_ENGINE.zero_grid(board_chain)
 	_show_message("⛓️ 死局解除，锁链全部崩解！", 1.4)
 	_refresh_board_visuals()
+
+func _fail_race_lost():
+	return SESSION._fail_race_lost(self)
 
 func _break_chains_around(coords):
 	if not _is_chain_mode() or coords == null:
@@ -958,17 +910,6 @@ func _start_second_timer():
 
 
 
-func _consume_time_cost(seconds):
-	# Clockless modes (endless/zen/moves/race) have no time to drain.
-	if special_mode == "endless" or int(_current_level().get("time_limit", 90)) <= 0:
-		return
-	if seconds <= 0 or stage_status != STATUS_PLAYING:
-		return
-
-	time_left = max(0, time_left - seconds)
-	_refresh_ui()
-	if time_left == 0:
-		_on_time_up()
 
 
 
@@ -991,17 +932,9 @@ func _update_combo_progress():
 
 
 
-func _unlock_achievements(ids):
-	var new_unlocks = []
-	for achievement_id in ids:
-		if not PROGRESSION_SCRIPT.has_achievement(progression_state, achievement_id):
-			progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, achievement_id)
-			new_unlocks.append(achievement_id)
-	if new_unlocks.size() > 0:
-		_save_progress_state()
-		for achievement_id in new_unlocks:
-			var info = PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
-			_show_achievement_notification(info["name"])
+func _consume_time_cost(seconds):
+	return SESSION._consume_time_cost(self, seconds)
+
 
 func _on_time_up():
 	return SESSION._on_time_up(self)
@@ -1012,6 +945,9 @@ func _record_special_completion():
 
 func _start_special_mode(mode_id):
 	return SESSION._start_special_mode(self, mode_id)
+
+func _unlock_achievements(ids):
+	return SESSION._unlock_achievements(self, ids)
 
 func _exit_special_mode():
 	return SESSION._exit_special_mode(self)
@@ -1069,27 +1005,6 @@ func _format_time_seconds(time_seconds):
 
 # Achievement system
 
-func _check_achievements_on_clear():
-	var level_clear_time = (OS.get_ticks_msec() - level_start_time) / 1000.0
-	var current_best = float(progression_state.get("level_best_times", {}).get(str(level_index), 999999.0))
-	if level_clear_time < current_best:
-		_patch_progress_state({"level_best_time": {"level_index": level_index, "time": level_clear_time}})
-		_show_message("🎉 新纪录！用时 " + _format_time_seconds(level_clear_time), 2.0)
-	var new_unlocks = PROGRESSION_SCRIPT.clear_unlocked_ids(progression_state, {
-		"level_index": level_index,
-		"combo": combo,
-		"clear_time": level_clear_time,
-		"hints_used": level_hints_used,
-		"auto_used": level_auto_used,
-		"level_count": campaign_levels.size(),
-	})
-	for achievement_id in new_unlocks:
-		progression_state = PROGRESSION_SCRIPT.unlock_achievement(progression_state, achievement_id)
-	if new_unlocks.size() > 0:
-		_save_progress_state()
-		for achievement_id in new_unlocks:
-			var info = PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
-			_show_achievement_notification(info["name"])
 
 
 func _status_label(status):
@@ -1112,6 +1027,9 @@ func _pad_board(board_state):
 
 func _find_path(board_state, a, b):
 	return BOARD_ENGINE.find_path(board_state, a, b)
+
+func _check_achievements_on_clear():
+	return SESSION._check_achievements_on_clear(self)
 
 func _node_key(r, c, d, t):
 	return BOARD_ENGINE.node_key(r, c, d, t)

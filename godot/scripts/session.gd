@@ -393,3 +393,125 @@ static func _memory_schedule_hide(game, coords, delay):
 static func _on_memory_hide_timeout(game):
 	return game.UI_HUD._on_memory_hide_timeout(game)
 
+
+static func _consume_time_cost(game, seconds):
+	# Clockless modes (endless/zen/moves/race) have no time to drain.
+	if game.special_mode == "endless" or int(game._current_level().get("time_limit", 90)) <= 0:
+		return
+	if seconds <= 0 or game.stage_status != game.STATUS_PLAYING:
+		return
+
+	game.time_left = max(0, game.time_left - seconds)
+	game._refresh_ui()
+	if game.time_left == 0:
+		game._on_time_up()
+
+
+static func _consume_move(game):
+	if game.special_mode != "moves" or game.stage_status != game.STATUS_PLAYING:
+		return
+	game.moves_left = max(0, game.moves_left - 1)
+	game._refresh_ui()
+	if game.moves_left <= 0 and game._remaining_tiles_count() > 0:
+		game._fail_moves_exhausted()
+
+
+static func _pause_stage(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+
+	game.stage_status = game.STATUS_PAUSED
+	game.second_timer.stop()
+	game.combo_reset_timer.stop()
+	game._show_pause_panel()
+	game._refresh_ui()
+	game._refresh_board_visuals()
+
+
+static func _resume_stage(game):
+	if game.stage_status != game.STATUS_PAUSED:
+		return
+
+	game.stage_status = game.STATUS_PLAYING
+	game._hide_pause_panel()
+	game._start_second_timer()
+	if game.combo > 0:
+		game.combo_expires_ms = OS.get_ticks_msec() + int(game.tuning.get("combo_window_ms", 2600))
+		game.combo_reset_timer.stop()
+		game.combo_reset_timer.wait_time = float(game.tuning.get("combo_window_ms", 2600)) / 1000.0
+		game.combo_reset_timer.start()
+	game._show_message("继续游戏", 0.65)
+	game._refresh_ui()
+	game._refresh_board_visuals()
+
+
+static func _start_level(game, next_index, reset_total = false):
+	# Entering a campaign level always leaves any special session.
+	game.special_mode = ""
+	game.special_level = {}
+	game.endless_round = 1
+	game.level_index = clamp(next_index, 0, game.campaign_levels.size() - 1)
+	var level = game._current_level()
+	game._reset_level_session(level, reset_total)
+	game._patch_progress_state({"current_level_index": game.level_index})
+
+	var level_id = int(level.get("id", game.level_index + 1))
+	var level_name = str(level.get("name", "关卡"))
+	var mode = str(level.get("mode", "classic"))
+	game._show_message("进入第" + str(level_id) + "关：" + level_name + "（" + game._mode_label(mode) + "） · 快捷键 H/A/S/P/F/R/[ ]/Enter", 1.35)
+
+
+static func _fail_race_lost(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+	game.stage_status = game.STATUS_FAILED
+	AudioManager.play_fail()
+	game._reset_combo()
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+	game.second_timer.stop()
+	if game.race_timer:
+		game.race_timer.stop()
+	game.stage_panel_label.text = "对手先完成了！你消除了 %d/%d 对\n点击「重开」再战" % [game.race_total_pairs - int(game._remaining_tiles_count() / 2), game.race_total_pairs]
+	game.stage_panel_label.visible = true
+	game._show_message("惜败！再快一点点", 1.8)
+	game._refresh_ui()
+	game._refresh_board_visuals()
+
+
+static func _unlock_achievements(game, ids):
+	var new_unlocks = []
+	for achievement_id in ids:
+		if not game.PROGRESSION_SCRIPT.has_achievement(game.progression_state, achievement_id):
+			game.progression_state = game.PROGRESSION_SCRIPT.unlock_achievement(game.progression_state, achievement_id)
+			new_unlocks.append(achievement_id)
+	if new_unlocks.size() > 0:
+		game._save_progress_state()
+		for achievement_id in new_unlocks:
+			var info = game.PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
+			game._show_achievement_notification(info["name"])
+
+
+static func _check_achievements_on_clear(game):
+	var level_clear_time = (OS.get_ticks_msec() - game.level_start_time) / 1000.0
+	var current_best = float(game.progression_state.get("level_best_times", {}).get(str(game.level_index), 999999.0))
+	if level_clear_time < current_best:
+		game._patch_progress_state({"level_best_time": {"level_index": game.level_index, "time": level_clear_time}})
+		game._show_message("🎉 新纪录！用时 " + game._format_time_seconds(level_clear_time), 2.0)
+	var new_unlocks = game.PROGRESSION_SCRIPT.clear_unlocked_ids(game.progression_state, {
+		"level_index": game.level_index,
+		"combo": game.combo,
+		"clear_time": level_clear_time,
+		"hints_used": game.level_hints_used,
+		"auto_used": game.level_auto_used,
+		"level_count": game.campaign_levels.size(),
+	})
+	for achievement_id in new_unlocks:
+		game.progression_state = game.PROGRESSION_SCRIPT.unlock_achievement(game.progression_state, achievement_id)
+	if new_unlocks.size() > 0:
+		game._save_progress_state()
+		for achievement_id in new_unlocks:
+			var info = game.PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
+			game._show_achievement_notification(info["name"])
+

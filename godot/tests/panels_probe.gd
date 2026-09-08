@@ -186,6 +186,27 @@ func _init() -> void:
 	check(int(game.level_auto_used) == autos_before + 1, "auto press registers usage")
 	check(int(game._remaining_tiles_count()) == tiles_before - 2, "auto press eliminates the hinted pair")
 
+	# session: resource drain, stage pause/resume, level start
+	game.time_left = 50
+	game._consume_time_cost(1)
+	check(int(game.time_left) == 49, "time cost drains one second in campaign")
+	game.special_mode = "zen"
+	game.special_level = {"time_limit": 0}
+	game._consume_time_cost(1)
+	check(int(game.time_left) == 49, "clockless zen ignores time cost")
+	game.special_mode = ""
+	var moves_left_before = int(game.moves_left)
+	game._consume_move()
+	check(int(game.moves_left) == moves_left_before, "consume move is a no-op outside moves mode")
+	game._pause_stage()
+	check(game.stage_status == game.STATUS_PAUSED, "pause stage enters paused")
+	game._resume_stage()
+	check(game.stage_status == game.STATUS_PLAYING, "resume stage returns to playing")
+	game._start_level(2, true)
+	check(int(game.level_index) == 2 && game.stage_status == game.STATUS_PLAYING, "start level opens campaign level 3")
+	game._unlock_achievements(["first_clear"])
+	check(game.PROGRESSION_SCRIPT.has_achievement(game.progression_state, "first_clear"), "unlock achievements persists to progression")
+
 	# board_view: de-coroutined tile animations return the tile to rest
 	var anim_cell = null
 	for r in range(game.board.size()):
