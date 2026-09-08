@@ -707,3 +707,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AF：棋盘动画去协程化迁入 board_view.gd)
 - Context: 三个含 yield 的棋盘动画协程（_pulse_tile 双 tween 链/_animate_select 选中方块脉冲+环延迟生成/_shake_tile 抖动）重构为**单 tween 顺序多步序列**（G3 Tween 顺序执行 + 延迟参数，tween_all_completed 回调环生成），彻底去 yield 后迁入 board_view.gd，game.gd 留同名薄壳。panels_probe 补动画行为断言（静止回归/新环面板身份计数）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 55+ 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (Round AG：修复冒烟步骤的残缺 YAML 并保留观察模式)
+- 发现：a95a17d 提交的冒烟步骤 YAML 残缺（run: 块内直接调用无可执行位的脚本，缺 bash 前缀），CI 三连 126 从未真正执行冒烟逻辑。
+- 修复：步骤改为 `bash tools/ci_smoke.sh`（免疫可执行位问题，另补 +x），保留 continue-on-error 观察模式——冒烟逻辑首次在 linux 真实执行，待数据稳定后再转硬门禁。
+- Validation: 推送后 CI 全绿；冒烟步骤输出留档（SMOKE OK / SMOKE FAILED + beacon 诊断）。
