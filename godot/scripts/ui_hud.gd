@@ -850,3 +850,15 @@ static func _status_label(game, status):
 		_:
 			return "未知"
 
+
+static func _viewport_flags(game, viewport_size):
+	var short_side = min(viewport_size.x, viewport_size.y)
+	var is_mobile = short_side <= game.MOBILE_SHORT_SIDE_MAX
+	var is_portrait = viewport_size.y >= viewport_size.x
+	var is_compact_height = viewport_size.y <= game.MOBILE_COMPACT_HEIGHT_MAX
+	return {
+		"is_mobile": is_mobile,
+		"is_portrait": is_portrait,
+		"is_compact_height": is_compact_height
+	}
+

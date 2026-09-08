@@ -361,3 +361,35 @@ static func _on_time_up(game):
 	game._refresh_ui()
 	game._refresh_board_visuals()
 
+
+static func _memory_key(game, coord):
+	return str(int(coord.x)) + "," + str(int(coord.y))
+
+
+static func _start_memory_preview(game):
+	game.memory_previewing = true
+	game.memory_lock = true
+	game.memory_revealed.clear()
+	game.second_timer.stop()
+	game._refresh_board_visuals()
+	var preview = float(game.special_level.get("memory_preview", 5.0))
+	game._show_message("记住所有图案！%d 秒后翻面" % int(ceil(preview)), 2.0)
+	game.memory_preview_timer.wait_time = max(1.0, preview)
+	game.memory_preview_timer.start()
+
+
+static func _on_memory_preview_timeout(game):
+	return game.UI_HUD._on_memory_preview_timeout(game)
+
+
+static func _memory_schedule_hide(game, coords, delay):
+	game.memory_pending_hide = coords.duplicate()
+	game.memory_lock = true
+	game.memory_hide_timer.stop()
+	game.memory_hide_timer.wait_time = max(0.2, delay)
+	game.memory_hide_timer.start()
+
+
+static func _on_memory_hide_timeout(game):
+	return game.UI_HUD._on_memory_hide_timeout(game)
+

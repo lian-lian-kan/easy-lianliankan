@@ -223,16 +223,6 @@ func _notification(what):
 		_update_tile_sizes()
 		_refresh_board_visuals()
 
-func _viewport_flags(viewport_size):
-	var short_side = min(viewport_size.x, viewport_size.y)
-	var is_mobile = short_side <= MOBILE_SHORT_SIDE_MAX
-	var is_portrait = viewport_size.y >= viewport_size.x
-	var is_compact_height = viewport_size.y <= MOBILE_COMPACT_HEIGHT_MAX
-	return {
-		"is_mobile": is_mobile,
-		"is_portrait": is_portrait,
-		"is_compact_height": is_compact_height
-	}
 
 
 	# Panels are mounted inside full-rect CenterContainer holders (see
@@ -244,6 +234,9 @@ func _viewport_flags(viewport_size):
 
 func _update_modal_panel_sizes(viewport_size, is_portrait):
 	return UI_PANELS._update_modal_panel_sizes(self, viewport_size, is_portrait)
+
+func _viewport_flags(viewport_size):
+	return UI_HUD._viewport_flags(self, viewport_size)
 
 func _update_layout_for_screen_size():
 	UI_HUD.update_layout(self)
@@ -562,34 +555,25 @@ func _is_coord_playable(coord):
 func _build_frost_armor(new_board, level):
 	return BOARD_ENGINE.build_frost_armor_grid(new_board, float(level.get("frost_ratio", 0.0)))
 
-func _memory_key(coord):
-	return str(int(coord.x)) + "," + str(int(coord.y))
 
-func _start_memory_preview():
-	memory_previewing = true
-	memory_lock = true
-	memory_revealed.clear()
-	second_timer.stop()
-	_refresh_board_visuals()
-	var preview = float(special_level.get("memory_preview", 5.0))
-	_show_message("记住所有图案！%d 秒后翻面" % int(ceil(preview)), 2.0)
-	memory_preview_timer.wait_time = max(1.0, preview)
-	memory_preview_timer.start()
+
+
+func _memory_key(coord):
+	return SESSION._memory_key(self, coord)
+
+
+
+
+
+
+
 
 
 func _memory_schedule_hide(coords, delay):
-	memory_pending_hide = coords.duplicate()
-	memory_lock = true
-	memory_hide_timer.stop()
-	memory_hide_timer.wait_time = max(0.2, delay)
-	memory_hide_timer.start()
+	return SESSION._memory_schedule_hide(self, coords, delay)
 
-
-
-
-
-
-
+func _start_memory_preview():
+	return SESSION._start_memory_preview(self)
 
 func _on_second_tick():
 	return UI_HUD._on_second_tick(self)
@@ -615,13 +599,15 @@ func _on_level_advance_timeout():
 func _on_time_freeze_timeout():
 	return UI_HUD._on_time_freeze_timeout(self)
 
-func _on_memory_preview_timeout():
-	return UI_HUD._on_memory_preview_timeout(self)
+
+
+
 
 func _on_memory_hide_timeout():
-	return UI_HUD._on_memory_hide_timeout(self)
+	return SESSION._on_memory_hide_timeout(self)
 
-
+func _on_memory_preview_timeout():
+	return SESSION._on_memory_preview_timeout(self)
 
 func _pause_stage():
 	if stage_status != STATUS_PLAYING:

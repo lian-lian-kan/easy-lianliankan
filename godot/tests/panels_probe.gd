@@ -112,6 +112,17 @@ func _init() -> void:
 	check(game._status_label(game.STATUS_PLAYING) == "进行中", "status label maps playing")
 	check(game._status_label(-999) == "未知", "status label unknown fallback")
 
+	# session: memory helpers (pure key + schedule)
+	check(game._memory_key(Vector2(3, 4)) == "3,4", "memory key maps coord to string")
+	game.memory_lock = false
+	game._memory_schedule_hide([Vector2(0, 0)], 30.0)
+	check(game.memory_pending_hide.size() == 1 && bool(game.memory_lock), "memory schedule records pending coords and locks")
+
+	# ui_hud: viewport flags classify phone portrait vs desktop landscape
+	var vflags = game._viewport_flags(Vector2(390, 844))
+	check(bool(vflags.is_mobile) && bool(vflags.is_portrait), "viewport flags classify phone portrait")
+	check(!bool(game._viewport_flags(Vector2(1280, 720)).is_portrait), "viewport flags classify desktop landscape")
+
 	# game_config: reload pipeline keeps the campaign table intact
 	var level_count_before = int(game.campaign_levels.size())
 	game._load_config()

@@ -724,3 +724,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AI：设置胶水/模态尺寸/状态标签归并)
 - Context: 设置面板胶水 3 函数（_populate_icon_set_options/_on_icon_set_selected/_on_effects_toggled）与模态面板尺寸 2 函数（_update_modal_panel_sizes/_mount_modal_panel）迁入 ui_panels.gd；_status_label 状态文案映射迁入 ui_hud.gd，game.gd 留同名薄壳。panels_probe 补 5 项断言（图标集下拉填充/选择钳制/模态尺寸/状态文案映射与未知回退）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 37 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AJ：盲盒会话辅助与视口旗标归并)
+- Context: 盲盒模式会话辅助 5 函数（_memory_key 纯映射/_start_memory_preview/_on_memory_preview_timeout/_memory_schedule_hide/_on_memory_hide_timeout）迁入 session.gd；_viewport_flags（手机/横竖屏/紧凑高度分类）迁入 ui_hud.gd，game.gd 留同名薄壳。panels_probe 补 4 项断言（memory key 纯映射/schedule 记录并加锁/手机竖屏与桌面横屏分类）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 41 断言）；导出与 web_entry 通过。
