@@ -458,6 +458,51 @@ func _init() -> void:
 	check(!game.pause_panel.visible, "hide pause panel hides it")
 	game.special_mode = ""
 
+	# ui_hud level-select glue: locked picks bounce back with a message
+	game.stage_status = game.STATUS_PLAYING
+	var synced_before = game._selected_level_option_index()
+	game._on_level_select_changed(99 if game.campaign_levels.size() > 99 else 0)
+	check(game._selected_level_option_index() == synced_before, "level select index survives a change event")
+	var unlocked_pick = -1
+	for i in range(game.campaign_levels.size()):
+		if game._is_level_unlocked(i) && i != int(game.level_index):
+			unlocked_pick = i
+			break
+	check(unlocked_pick != -1, "found another unlocked level to pick")
+	var index_before_pick = int(game.level_index)
+	game._on_level_select_changed(unlocked_pick)
+	check(int(game.level_index) == index_before_pick, "picking another unlocked level only refreshes UI, the advance flow owns the jump")
+	game._sync_level_select_selection()
+	check(int(game.level_select_option.selected) == int(game.level_index), "sync aligns the dropdown with the level index")
+	check(game._level_label_by_index(2) == "第3关 · 连击", "level label maps index to 第N关 · name")
+	game._trigger_level_highlight()
+	check(game.level_select_option.modulate == game.LEVEL_HIGHLIGHT_COLOR, "level highlight tints the dropdown amber")
+	game._on_level_highlight_timeout()
+	check(game.level_select_option.modulate == game.LEVEL_NORMAL_COLOR, "highlight timeout restores the dropdown color")
+
+	# ui_hud combo bar: reset clears, progress reflects the remaining window
+	game.stage_status = game.STATUS_PLAYING
+	game.combo = 3
+	game.combo_expires_ms = OS.get_ticks_msec() + 99999
+	game._update_combo_progress()
+	check(float(game.combo_progress_bar.value) > 0.0, "combo bar fills while the combo window runs")
+	game.stage_status = game.STATUS_PAUSED
+	game._update_combo_progress()
+	check(float(game.combo_progress_bar.value) == 0.0, "combo bar empties when the stage is not playing")
+	game.stage_status = game.STATUS_PLAYING
+	game._reset_combo()
+	check(int(game.combo) == 0 && int(game.combo_expires_ms) == 0 && float(game.combo_progress_bar.value) == 0.0, "combo reset clears streak, window and bar")
+	check(game.combo_reset_timer.is_stopped(), "combo reset stops the reset timer")
+
+	# stage callout: campaign intro renders through the data-driven callout
+	game.special_mode = ""
+	game._play_level_intro_animation(game._current_level())
+	var intro_found = false
+	for child in game.get_children():
+		if child is Label && child.text == "第3关 · 连击":
+			intro_found = true
+	check(intro_found, "campaign intro callout shows 第3关 · 连击")
+
 	if failures == 0:
 		print("panels_probe: ALL PASSED")
 		quit(0)

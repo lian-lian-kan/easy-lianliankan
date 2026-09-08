@@ -737,3 +737,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - Context: 五组「打开=暂停+停表、关闭=恢复+启表」重复模式（onboarding/settings/achievements 各自内联 6 行）收敛为 ui_panels.open_modal/close_modal；_refresh_modes_panel 的 30 行模式卡渲染迁入 ui_panels.refresh_modes_rows 并改用构建时注册的 game.modes_content（消除 get_child 链遍历——旧链式断言实际拿到的是 ScrollContainer 内建 HScrollBar，时序脆弱）；_show/_hide_pause_panel 信息刷新迁入 ui_panels（pause/resume 语义仍归 session）。
 - 顺手修复三个既有 bug：①progression.apply_update 白名单合并静默丢弃 onboarding_seen 补丁 + same_progress 不比较该字段 → 引导面板从未持久化、每次启动重弹；②_on_achievements_pressed 每次打开只 queue_free 旧面板 children，泄漏整个旧 holder+panel 树 → reopen_achievements 改为释放旧 holder 再重建；③panels_probe 的 modes 链式断言依赖内建滚动条尚未加入的偶然时序 → 改断言注册的 modes_content。
 - Validation: 13 项 headless 测试全绿（panels_probe 91→117 断言；progression_test 补 onboarding_seen patch/持久化判定/双向清位 6 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AM：关卡选择簇/连击条迁 ui_hud，开场 callout 数据驱动)
+- Context: 关卡选择状态胶水 5 函数（_selected_level_option_index/_sync_level_select_selection/_level_label_by_index/_on_level_select_changed/_trigger_level_highlight）与连击条状态 2 函数（_reset_combo/_update_combo_progress）迁入 ui_hud.gd——主屏控件的交互与状态归并主屏模块；_play_level_intro_animation 的 6 分支 if/else 开场横幅链收敛为 special_modes.stage_callout 纯函数（返回 [text, color]，战役关卡统一格式、daily/endless/frost 内嵌动态上下文），game.gd 全部留同名薄壳。
+- Validation: 13 项 headless 测试全绿（panels_probe 117→129 断言：未解锁回弹+消息/已解锁仅刷新不跳关/下拉同步/标签映射/琥珀高亮往返/连击条满格-暂停清零-重置停表/战役 callout 渲染；mode_meta_test 补 stage_callout 8 断言：战役格式与 id 回退/每日日期/无尽轮次/限时静态/盲盒颜色/冰雪百分比）；导出与 web_entry 通过。

@@ -101,6 +101,21 @@ func _init() -> void:
 	var done_state = {"daily_challenge": {"last_date": SM.date_string(OS.get_date())}}
 	check(SM.modes_panel_rows(done_state)[0]["detail"].find("今日已完成") != -1, "daily shows done when last_date is today")
 
+	# --- stage_callout: banner title/color per mode, campaign fallback format
+	var campaign_level = {"id": 3, "name": "连击"}
+	var campaign_callout = SM.stage_callout("", campaign_level, 2, 1)
+	check(campaign_callout[0] == "第3关 · 连击" && campaign_callout[1] == Color("e64980"), "campaign callout uses 第N关 · name with rose color")
+	var fallback_level = {"name": "无名"}
+	check(SM.stage_callout("", fallback_level, 4, 1)[0] == "第5关 · 无名", "campaign callout falls back to level_index+1 for the id")
+	var daily_callout = SM.stage_callout("daily", campaign_level, 2, 1)
+	var today = OS.get_date()
+	check(daily_callout[0] == "每日挑战 · %d月%d日" % [int(today.month), int(today.day)], "daily callout embeds today's date")
+	check(SM.stage_callout("endless", campaign_level, 2, 7)[0] == "无尽模式 · 第7轮", "endless callout embeds the round")
+	check(SM.stage_callout("time_attack", campaign_level, 2, 1)[0] == "限时挑战", "time_attack callout is static text")
+	check(SM.stage_callout("memory", campaign_level, 2, 1)[1] == Color("3bc9db"), "memory callout carries its color")
+	var frost_callout = SM.stage_callout("frost", {"frost_ratio": 0.38}, 2, 1)
+	check(frost_callout[0].find("38%") != -1, "frost callout embeds the frozen percentage")
+
 	if failures == 0:
 		print("mode_meta_test: ALL PASSED")
 		quit(0)

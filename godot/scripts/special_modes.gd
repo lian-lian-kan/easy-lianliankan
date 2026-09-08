@@ -411,6 +411,22 @@ static func mode_label(mode: String) -> String:
 static func intro_text(mode_id: String) -> String:
 	return str(INTRO_TEXTS.get(mode_id, "特殊模式开始"))
 
+# Stage-opening callout (title banner): mode -> [text, color]. Campaign
+# levels share one format; daily/endless/frost embed their dynamic context.
+static func stage_callout(mode: String, level, level_index: int, endless_round: int):
+	if mode == "daily":
+		var d = OS.get_date()
+		return ["每日挑战 · %d月%d日" % [int(d.month), int(d.day)], Color("9775fa")]
+	if mode == "endless":
+		return ["无尽模式 · 第%d轮" % endless_round, Color("0ca678")]
+	if mode == "time_attack":
+		return ["限时挑战", Color("f06565")]
+	if mode == "memory":
+		return ["盲盒模式", Color("3bc9db")]
+	if mode == "frost":
+		return ["冰雪挑战 · %d%% 方块结了冰" % int(round(float(level.get("frost_ratio", 0.3)) * 100)), Color("4dabf7")]
+	return ["第" + str(int(level.get("id", level_index + 1))) + "关 · " + str(level.get("name", "关卡")), Color("e64980")]
+
 # ---- 特殊模式结算表：纪录补丁键 / 首通成就 / 面板标题 ----
 
 const RECORD_MODES = {

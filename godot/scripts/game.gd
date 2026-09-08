@@ -386,39 +386,21 @@ func _is_level_unlocked(level_idx):
 	return PROGRESSION_SCRIPT.is_level_unlocked(progression_state, level_idx, campaign_levels.size())
 
 func _selected_level_option_index():
-	if level_select_option == null or level_select_option.get_item_count() == 0:
-		return level_index
-	var selected_idx = int(level_select_option.get_selected_id())
-	if selected_idx < 0:
-		selected_idx = level_index
-	return clamp(selected_idx, 0, campaign_levels.size() - 1)
+	return UI_HUD._selected_level_option_index(self)
 
 func _sync_level_select_selection():
-	if level_select_option == null or level_select_option.get_item_count() == 0:
-		return
-	level_select_option.select(level_index)
+	return UI_HUD._sync_level_select_selection(self)
 
 func _level_label_by_index(level_idx):
-	var clamped = clamp(level_idx, 0, campaign_levels.size() - 1)
-	var level: Dictionary = campaign_levels[clamped]
-	return "第" + str(int(level.get("id", clamped + 1))) + "关 · " + str(level.get("name", "关卡"))
+	return UI_HUD._level_label_by_index(self, level_idx)
 
 
 func _on_level_select_changed(index):
-	if not _is_level_unlocked(index):
-		_sync_level_select_selection()
-		_show_message("该关卡尚未解锁", 0.9)
-		return
-	_refresh_ui()
+	return UI_HUD._on_level_select_changed(self, index)
 
 
 func _trigger_level_highlight():
-	if level_select_option == null:
-		return
-	level_select_option.modulate = LEVEL_HIGHLIGHT_COLOR
-	level_highlight_timer.stop()
-	level_highlight_timer.wait_time = 0.4
-	level_highlight_timer.start()
+	return UI_HUD._trigger_level_highlight(self)
 
 
 func _start_bgm():
@@ -663,21 +645,8 @@ func _make_fx_tween(node_to_free = null):
 
 
 func _play_level_intro_animation(level):
-	if special_mode == "daily":
-		var d = OS.get_date()
-		_show_stage_callout("每日挑战 · %d月%d日" % [int(d.month), int(d.day)], Color("9775fa"), 19)
-	elif special_mode == "endless":
-		_show_stage_callout("无尽模式 · 第%d轮" % endless_round, Color("0ca678"), 19)
-	elif special_mode == "time_attack":
-		_show_stage_callout("限时挑战", Color("f06565"), 19)
-	elif special_mode == "memory":
-		_show_stage_callout("盲盒模式", Color("3bc9db"), 19)
-	elif special_mode == "frost":
-		_show_stage_callout("冰雪挑战 · %d%% 方块结了冰" % int(round(float(level.get("frost_ratio", 0.3)) * 100)), Color("4dabf7"), 19)
-	else:
-		var level_id = int(level.get("id", level_index + 1))
-		var level_name = str(level.get("name", "关卡"))
-		_show_stage_callout("第" + str(level_id) + "关 · " + level_name, Color("e64980"), 19)
+	var callout = SPECIAL_MODES_SCRIPT.stage_callout(special_mode, level, level_index, endless_round)
+	_show_stage_callout(callout[0], callout[1], 19)
 	_animate_board_spawn()
 
 
@@ -914,20 +883,10 @@ func _start_second_timer():
 
 
 func _reset_combo():
-	combo = 0
-	combo_expires_ms = 0
-	combo_progress_bar.value = 0
-	combo_reset_timer.stop()
+	return UI_HUD._reset_combo(self)
 
 func _update_combo_progress():
-	if stage_status != STATUS_PLAYING or combo <= 0:
-		combo_progress_bar.value = 0
-		return
-
-	var remain = max(0, combo_expires_ms - OS.get_ticks_msec())
-	var window_ms = max(1, int(tuning.get("combo_window_ms", 2600)))
-	var progress = (float(remain) / float(window_ms)) * 100.0
-	combo_progress_bar.value = progress
+	return UI_HUD._update_combo_progress(self)
 
 
 

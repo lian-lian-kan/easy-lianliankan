@@ -862,3 +862,63 @@ static func _viewport_flags(game, viewport_size):
 		"is_compact_height": is_compact_height
 	}
 
+
+# --- Level select state glue (migrated from game.gd) ---
+
+static func _selected_level_option_index(game):
+	if game.level_select_option == null or game.level_select_option.get_item_count() == 0:
+		return game.level_index
+	var selected_idx = int(game.level_select_option.get_selected_id())
+	if selected_idx < 0:
+		selected_idx = game.level_index
+	return clamp(selected_idx, 0, game.campaign_levels.size() - 1)
+
+
+static func _sync_level_select_selection(game):
+	if game.level_select_option == null or game.level_select_option.get_item_count() == 0:
+		return
+	game.level_select_option.select(game.level_index)
+
+
+static func _level_label_by_index(game, level_idx):
+	var clamped = clamp(level_idx, 0, game.campaign_levels.size() - 1)
+	var level: Dictionary = game.campaign_levels[clamped]
+	return "第" + str(int(level.get("id", clamped + 1))) + "关 · " + str(level.get("name", "关卡"))
+
+
+static func _on_level_select_changed(game, index):
+	if not game._is_level_unlocked(index):
+		game._sync_level_select_selection()
+		game._show_message("该关卡尚未解锁", 0.9)
+		return
+	game._refresh_ui()
+
+
+static func _trigger_level_highlight(game):
+	if game.level_select_option == null:
+		return
+	game.level_select_option.modulate = game.LEVEL_HIGHLIGHT_COLOR
+	game.level_highlight_timer.stop()
+	game.level_highlight_timer.wait_time = 0.4
+	game.level_highlight_timer.start()
+
+
+# --- Combo progress bar state (migrated from game.gd) ---
+
+static func _reset_combo(game):
+	game.combo = 0
+	game.combo_expires_ms = 0
+	game.combo_progress_bar.value = 0
+	game.combo_reset_timer.stop()
+
+
+static func _update_combo_progress(game):
+	if game.stage_status != game.STATUS_PLAYING or game.combo <= 0:
+		game.combo_progress_bar.value = 0
+		return
+
+	var remain = max(0, game.combo_expires_ms - OS.get_ticks_msec())
+	var window_ms = max(1, int(game.tuning.get("combo_window_ms", 2600)))
+	var progress = (float(remain) / float(window_ms)) * 100.0
+	game.combo_progress_bar.value = progress
+
