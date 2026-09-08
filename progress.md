@@ -750,3 +750,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AO：屏幕适配拆出 hud_layout.gd)
 - Context: ui_hud 拆分第二步——_viewport_flags（手机/竖屏/紧凑分类）与 update_layout（棋盘高度比例/边距/网格间距/统计卡与控件尺寸/竖屏头部压缩，116 行）迁入新模块 hud_layout.gd，ui_hud 回归「构建/刷新/浮层/控件」职责（790→662 行）。game.gd 两个薄壳改向 HUD_LAYOUT，调用方零改动。
 - Validation: 13 项 headless 测试全绿（panels_probe 138→139 断言：补 is_compact_height 分支）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AP：棋盘机制状态域收敛为 board_mechanics.gd)
+- Context: 五机制（冰甲/叠层/重力/迷雾/锁链）的棋盘状态操作从 game.gd 收敛为新模块 board_mechanics.gd——可选性判定（is_coord_playable/is_fogged/cell_ring）、机制网格构建与解除（build_stack_layers/build_chain_locks/dissolve_all_chains/break_chains_around）、消除伤害（apply_match_damage/damage_tile 两段式冰甲+叠层顶出）、重力压实触发（apply_gravity）、迷雾层数推导（update_fog），game.gd 12 函数薄壳化（1097→1058 行）。炸弹/彩虹边路构造 edge_path 迁 board_engine 纯函数。
+- Validation: 13 项 headless 测试全绿（panels_probe 139→149 断言：冰甲首消裂而不清+次消清除/锁链锁定不可选+崩解恢复/重力列压实+选中提示重置/迷雾层数随模式推导与复位/边路经顶行构造）；导出与 web_entry 通过。

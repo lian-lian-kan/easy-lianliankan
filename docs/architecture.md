@@ -6,6 +6,7 @@
 |---|---|---|
 | `scripts/game.gd` | 场景编排层：`_ready` 启动、状态常量与成员、薄壳委托（约 1650 行） | 13 个无头测试覆盖玩法行为 |
 | `scripts/board_engine.gd` | 纯棋盘算法：路径 BFS、生成、重排、重力压实、迷雾环、计数与时间格式化 | `board_engine_test.gd` 全分支（含机制网格） |
+| `scripts/board_mechanics.gd` | 机制状态域：五机制的消除伤害（冰甲两段/锁链解锁/叠层顶出）、重力压实触发、迷雾层数、可选性判定 | `panels_probe.gd`（机制行为断言）+ `frost/variants/mechanics_probe.gd` |
 | `scripts/board_view.gd` | 棋盘视觉：全量刷新、格子样式/尺寸、图标映射、出生/洗牌动画 | `panels_probe.gd`（视觉断言） |
 | `scripts/game_input.gd` | 输入：棋盘点击（选中/配对/待发道具路由）、盲盒翻牌、键盘路由、提示/自动消 | `panels_probe.gd`（输入行为断言） |
 | `scripts/session.gd` | 会话生命周期：关卡会话重置、走子后裁决（胜负/重排/重力）、特殊模式进出、结算与判负 | `panels_probe.gd`（会话行为断言） |
@@ -36,7 +37,7 @@
 
 ## 已知债务
 
-- game.gd 约 1090 行编排层：`_ready` 启动胶水、成员声明与委托薄壳；ui_hud 662 行（构建/刷新/浮层/控件）。进一步归并收益边际递减，按需处理。
+- game.gd 约 1060 行编排层：`_ready` 启动胶水、成员声明与委托薄壳；ui_hud 662 行（构建/刷新/浮层/控件）。进一步归并收益边际递减，按需处理。
 - 未接线 manager（签到/商店等）已删除；如需启用从 git 历史恢复（b72e1c3 之前）。
 - 双人联机与关卡编辑器需对战/编辑基建，另立项。
 - `docs/code_review.md` 为审查主报告，P 项随整改滚动更新。

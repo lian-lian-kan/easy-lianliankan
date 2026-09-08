@@ -119,6 +119,12 @@ static func reconstruct_path(cur, parent, start):
 		path.append(item)
 	return path
 
+# Bomb/rainbow pairs have no connectable path; draw a playful via-top route
+# instead. (-1, col) is the row just above the board, the same edge
+# convention find_path uses for routes that leave the grid.
+static func edge_path(a: Vector2, b: Vector2) -> Array:
+	return [a, Vector2(-1, min(a.y, b.y)), b]
+
 static func compress_path(points):
 	if points.size() <= 2:
 		return points.duplicate()

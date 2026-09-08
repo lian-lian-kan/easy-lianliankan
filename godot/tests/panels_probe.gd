@@ -553,6 +553,63 @@ func _init() -> void:
 	check(!game.memory_previewing && !game.memory_lock, "memory preview timeout unlocks the board")
 	game.special_mode = ""
 
+	# board_mechanics: frost armor cracks first, clears on the second match
+	game.special_mode = "frost"
+	game.board_armor = []
+	for r in range(game.board.size()):
+		var armor_row := []
+		for c in range(game.board[0].size()):
+			armor_row.append(0)
+		game.board_armor.append(armor_row)
+	game.board_armor[0][0] = 1
+	game.board_armor[1][0] = 1
+	var tile_value = int(game.board[0][0])
+	var cracked1 = game._apply_match_damage(Vector2(0, 0), Vector2(1, 0))
+	check(cracked1.size() == 2 && int(game.board[0][0]) == tile_value && int(game.board_armor[0][0]) == 0, "first match cracks both armored tiles without clearing")
+	var cracked2 = game._apply_match_damage(Vector2(0, 0), Vector2(1, 0))
+	check(cracked2.size() == 0 && int(game.board[0][0]) == 0, "second match clears the cracked tiles")
+	game.board_armor = []
+	game.special_mode = ""
+
+	# board_mechanics: chain locks block playability, dissolve restores it
+	game.special_mode = "chain"
+	game.board_chain = []
+	for r in range(game.board.size()):
+		var chain_row := []
+		for c in range(game.board[0].size()):
+			chain_row.append(0)
+		game.board_chain.append(chain_row)
+	game.board_chain[2][2] = 1
+	check(!game._is_coord_playable(Vector2(2, 2)), "chained cell is not playable")
+	check(game._is_coord_playable(Vector2(0, 0)), "unchained cell stays playable")
+	game._dissolve_all_chains()
+	check(int(game._chains_remaining()) == 0 && game._is_coord_playable(Vector2(2, 2)), "dissolve clears the chains and restores playability")
+	game.board_chain = []
+	game.special_mode = ""
+
+	# board_mechanics: gravity compacts the column and resets the selection
+	game.selected = Vector2(0, 0)
+	var rows_n = int(game.board.size())
+	for r in range(rows_n):
+		game.board[r][0] = 0
+	game.board[0][0] = 5
+	var moved = game._apply_gravity()
+	check(bool(moved) && int(game.board[rows_n - 1][0]) == 5 && int(game.board[0][0]) == 0, "gravity compacts the column downward")
+	check(game.selected == Vector2(-1, -1) && game.hint_tiles.empty(), "gravity resets selection and hints")
+
+	# board_mechanics: fog layers follow the mode and reset outside it
+	game.special_mode = "fog"
+	game.special_level = {"name": "迷雾模式", "fog_layers": 2}
+	game._update_fog()
+	check(int(game._fog_layers) >= 1, "fog mode derives its outer ring layers")
+	game.special_mode = ""
+	game._update_fog()
+	check(int(game._fog_layers) == 0, "fog layers reset outside fog mode")
+
+	# board_engine: bomb/rainbow edge path leaves through the top row
+	var edge = game._board_edge_path(Vector2(2, 5), Vector2(3, 8))
+	check(edge.size() == 3 && edge[1] == Vector2(-1, 5), "edge path routes over the top edge")
+
 	if failures == 0:
 		print("panels_probe: ALL PASSED")
 		quit(0)

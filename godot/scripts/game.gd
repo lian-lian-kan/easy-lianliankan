@@ -13,6 +13,7 @@ const STATUS_FAILED = "failed"
 const STATUS_COMPLETED = "completed"
 
 const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
+const BOARD_MECHANICS = preload("res://scripts/board_mechanics.gd")
 
 const UI_PANELS = preload("res://scripts/ui_panels.gd")
 
@@ -507,23 +508,14 @@ func _is_chain_mode():
 	return special_mode == "chain"
 
 func _cell_ring(r, c):
-	var rows = board.size()
-	var cols = board[0].size()
-	return BOARD_ENGINE.ring_of(rows, cols, r, c)
+	return BOARD_MECHANICS.cell_ring(self, r, c)
 
 func _is_fogged(coord):
-	if not _is_fog_mode():
-		return false
-	return _cell_ring(coord.x, coord.y) < _fog_layers
+	return BOARD_MECHANICS.is_fogged(self, coord)
 
 # 迷雾/锁链 make a tile unselectable; clicks, hints and auto tools skip it.
 func _is_coord_playable(coord):
-	if _is_fogged(coord):
-		return false
-	if _is_chain_mode() and coord.x < board_chain.size() and coord.y < board_chain[coord.x].size() \
-				and int(board_chain[coord.x][coord.y]) > 0:
-		return false
-	return true
+	return BOARD_MECHANICS.is_coord_playable(self, coord)
 
 func _build_frost_armor(new_board, level):
 	return BOARD_ENGINE.build_frost_armor_grid(new_board, float(level.get("frost_ratio", 0.0)))
@@ -759,81 +751,46 @@ func _consume_move():
 	return SESSION._consume_move(self)
 
 func _build_stack_layers(ratio):
-	board_lower = BOARD_ENGINE.bury_stack_layer(board, ratio)
+	return BOARD_MECHANICS.build_stack_layers(self, ratio)
 
 # 锁链: chain a share of tiles; adjacent clears break the chains.
 func _build_chain_locks(ratio):
-	board_chain = BOARD_ENGINE.build_chain_grid(board, ratio)
+	return BOARD_MECHANICS.build_chain_locks(self, ratio)
 
 func _chains_remaining():
 	return BOARD_ENGINE.count_chains(board_chain)
 
 func _dissolve_all_chains():
-	BOARD_ENGINE.zero_grid(board_chain)
-	_show_message("⛓️ 死局解除，锁链全部崩解！", 1.4)
-	_refresh_board_visuals()
+	return BOARD_MECHANICS.dissolve_all_chains(self)
 
 func _fail_race_lost():
 	return SESSION._fail_race_lost(self)
 
 func _break_chains_around(coords):
-	if not _is_chain_mode() or coords == null:
-		return
-	if BOARD_ENGINE.break_chains_around(board_chain, coords) > 0:
-		_show_message("⛓️ 邻近的锁链松开了", 0.9)
+	return BOARD_MECHANICS.break_chains_around(self, coords)
 
 # 重力: columns compact downward after clears.
 func _apply_gravity():
-	var moved = BOARD_ENGINE.compact_columns(board)
-	if moved:
-		selected = Vector2(-1, -1)
-		hint_tiles.clear()
-		error_tiles.clear()
-	return moved
+	return BOARD_MECHANICS.apply_gravity(self)
 
 func _update_fog():
-	if not _is_fog_mode():
-		_fog_layers = 0
-		return
-	var max_layers = int(_current_level().get("fog_layers", 2))
-	_fog_layers = BOARD_ENGINE.fog_layers(_remaining_tiles_count(), max_layers)
+	return BOARD_MECHANICS.update_fog(self)
 
 func _pop_stack_at(coord):
-	if not _is_stack_mode():
-		return
-	BOARD_ENGINE.pop_stack(board, board_lower, coord)
+	return BOARD_MECHANICS.pop_stack_at(self, coord)
 
 # One successful match hits both tiles. Frozen cells (armor 1) crack instead
 # of clearing and need a second match; cracked tiles keep blocking paths.
 func _apply_match_damage(a, b):
-	var cracked = []
-	var removed = []
-	_damage_tile(a, cracked, removed)
-	_damage_tile(b, cracked, removed)
-	_break_chains_around(removed)
-	if cracked.size() > 0:
-		AudioManager.play_shuffle()
-		_show_message("❄️ 冰层碎裂！再消一次", 1.0)
-	return cracked
+	return BOARD_MECHANICS.apply_match_damage(self, a, b)
 
 func _damage_tile(coord, cracked, removed = null):
-	if _is_frost_mode() and coord.x < board_armor.size() and coord.y < board_armor[coord.x].size() \
-			and int(board_armor[coord.x][coord.y]) > 0:
-		board_armor[coord.x][coord.y] = int(board_armor[coord.x][coord.y]) - 1
-		cracked.append(coord)
-		return
-	board[coord.x][coord.y] = 0
-	if removed != null:
-		removed.append(coord)
-	_pop_stack_at(coord)
+	return BOARD_MECHANICS.damage_tile(self, coord, cracked, removed)
 
 
 
 func _board_edge_path(a, b):
-	# Bomb/rainbow pairs have no connectable path; draw a playful via-top
-	# route instead. (-1, col) is the row just above the board, the same
-	# edge convention _find_path uses for routes that leave the grid.
-	return [a, Vector2(-1, min(a.y, b.y)), b]
+	return BOARD_ENGINE.edge_path(a, b)
 
 func _init_power_ups(level):
 	return POWERUPS._init_power_ups(self, level)
