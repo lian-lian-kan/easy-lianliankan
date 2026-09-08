@@ -313,3 +313,23 @@ static func _path_to_overlay_points(game, path):
 		result.append(mapped)
 	return result
 
+
+
+static func make_tween(game, node_to_free = null):
+	var tween = Tween.new()
+	game.add_child(tween)
+	if node_to_free != null:
+		tween.connect("tween_all_completed", node_to_free, "queue_free")
+	tween.connect("tween_all_completed", tween, "queue_free")
+	return tween
+
+
+static func stage_clear_celebration(game, is_final_clear):
+	var burst_color = Color("ff8fab") if is_final_clear else Color("22c55e")
+	var text = "全部通关!" if is_final_clear else "过关!"
+	var particle_count = 28 if is_final_clear else 16
+	var intensity = 1.2 if is_final_clear else 1.0
+
+	game._show_stage_callout(text, burst_color, 24 if is_final_clear else 21)
+	game._spawn_board_particles(particle_count, burst_color, intensity)
+	game._spawn_confetti(36 if is_final_clear else 22)

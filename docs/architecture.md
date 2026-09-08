@@ -21,7 +21,8 @@
 | `scripts/hud_layout.gd` | 屏幕适配：视口分类（手机/竖屏/紧凑）与响应式布局（棋盘高度/边距/网格间距/统计卡与控件尺寸/竖屏头部压缩） | `panels_probe.gd`（布局断言） |
 | `scripts/hud_timers.gd` | 会话心跳：计时器工厂与时钟/消息/错误/连击/高亮/推进/解冻/竞速回调 | `panels_probe.gd`（心跳行为断言） |
 | `scripts/ui_panels.gd` | 五个弹窗面板静态工厂 + 共享样式（玻璃/按钮/对话框递归）+ 模态生命周期（open/close_modal 暂停语义、modes 行渲染、pause 信息刷新） | `panels_probe.gd`（生命周期断言） |
-| `scripts/fx_layer.gd` | 特效发射：樱花飘落/撒花/消除粒子/连击爆字 | `power_ups_probe.gd`（层与撒花断言） |
+| `scripts/ui_fonts.gd` | 字体工厂与全局主题（快乐体→Noto→Emoji 兜底链，按字号缓存） | `panels_probe.gd`（缓存与挂载断言） |
+| `scripts/fx_layer.gd` | 特效发射：樱花飘落/撒花/消除粒子/连击爆字/过关庆典/补间工厂 | `power_ups_probe.gd`（层与撒花断言） |
 | `scripts/audio_manager.gd` | 程序化音效与 BGM（autoload，裸全局名访问） | 手动验收 |
 | `scripts/path_overlay.gd` | 连线绘制（Control） | `path_overlay_input_passthrough_test.gd` |
 | `shell/mobile_shell.html` | H5 加载壳（粉色 + CSS 樱花 + DPR 钳制 2~3×） | `web_entry_status_mode_test.gd` |
@@ -37,7 +38,7 @@
 
 ## 已知债务
 
-- game.gd 约 1060 行编排层：`_ready` 启动胶水、成员声明与委托薄壳；ui_hud 662 行（构建/刷新/浮层/控件）。进一步归并收益边际递减，按需处理。
+- game.gd 约 990 行编排层：`_ready` 启动胶水、成员声明与委托薄壳；ui_hud 662 行（构建/刷新/浮层/控件）。进一步归并收益边际递减，按需处理。
 - 未接线 manager（签到/商店等）已删除；如需启用从 git 历史恢复（b72e1c3 之前）。
 - 双人联机与关卡编辑器需对战/编辑基建，另立项。
 - `docs/code_review.md` 为审查主报告，P 项随整改滚动更新。

@@ -309,3 +309,24 @@ static func _animate_select(game, coord):
 	tween.connect("tween_all_completed", game, "_spawn_ring_effect", [center, Color("ff6f9c"), 0.18, 12.0])
 	tween.start()
 
+
+
+static func color_for(game, value):
+	if game.icon_sets.empty():
+		return Color("ffffff")
+
+	var icon_set: Dictionary = game.icon_sets[game.icon_set_index]
+	var colors: Array = icon_set.get("colors", [])
+	var index = value - 1
+	if index >= 0 and index < colors.size():
+		return Color(str(colors[index]))
+	return Color("ffffff")
+
+
+static func tile_button_at(game, coord):
+	if coord.x < 0 or coord.x >= game.cell_buttons.size():
+		return null
+	var row_buttons: Array = game.cell_buttons[coord.x]
+	if coord.y < 0 or coord.y >= row_buttons.size():
+		return null
+	return row_buttons[coord.y]

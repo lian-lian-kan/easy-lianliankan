@@ -26,6 +26,7 @@ const FX = preload("res://scripts/fx_layer.gd")
 const BOARD_VIEW = preload("res://scripts/board_view.gd")
 const POWERUPS = preload("res://scripts/powerups.gd")
 const UI_HUD = preload("res://scripts/ui_hud.gd")
+const UI_FONTS = preload("res://scripts/ui_fonts.gd")
 const HUD_TIMERS = preload("res://scripts/hud_timers.gd")
 const HUD_LAYOUT = preload("res://scripts/hud_layout.gd")
 
@@ -248,27 +249,10 @@ func _update_layout_for_screen_size():
 func _mount_modal_panel(panel):
 	return UI_PANELS._mount_modal_panel(self, panel)
 
-const DISPLAY_FONT = preload("res://fonts/ZCOOLKuaiLe-Regular.ttf")
-const EMBEDDED_FONT = preload("res://fonts/NotoSansSC-Regular.ttf")
-const EMOJI_FONT = preload("res://fonts/NotoColorEmoji.ttf")
-
 var _font_cache = {}
 
 func _font_at_size(px):
-	px = int(max(8, px))
-	if _font_cache.has(px):
-		return _font_cache[px]
-	var font = DynamicFont.new()
-	# Cute rounded face first; Noto covers glyphs KuaiLe lacks, emoji last.
-	font.font_data = DISPLAY_FONT if DISPLAY_FONT else EMBEDDED_FONT
-	font.size = px
-	font.use_filter = true
-	if EMBEDDED_FONT:
-		font.add_fallback(EMBEDDED_FONT)
-	if EMOJI_FONT:
-		font.add_fallback(EMOJI_FONT)
-	_font_cache[px] = font
-	return font
+	return UI_FONTS.font_at_size(self, px)
 
 func _on_tile_pressed(button):
 	return GAME_INPUT._on_tile_pressed(self, button)
@@ -280,16 +264,7 @@ func _unhandled_input(event):
 	return GAME_INPUT._unhandled_input(self, event)
 
 func _init_font():
-	# Web export: bundled CJK font with color-emoji fallback so tiles render everywhere.
-	game_font = _font_at_size(16)
-
-	var theme = Theme.new()
-	theme.set_font("font", "Label", game_font)
-	theme.set_font("font", "Button", game_font)
-	theme.set_font("font", "OptionButton", game_font)
-	theme.set_font("font", "PopupMenu", game_font)
-	theme.set_font("font", "CheckBox", game_font)
-	self.theme = theme
+	UI_FONTS.init_theme(self)
 
 
 
@@ -451,15 +426,7 @@ func _shuffle_array(arr):
 
 
 func _color_for(value):
-	if icon_sets.empty():
-		return Color("ffffff")
-
-	var icon_set: Dictionary = icon_sets[icon_set_index]
-	var colors: Array = icon_set.get("colors", [])
-	var index = value - 1
-	if index >= 0 and index < colors.size():
-		return Color(str(colors[index]))
-	return Color("ffffff")
+	return BOARD_VIEW.color_for(self, value)
 
 func _apply_glass_style(panel, bg_color, alpha):
 	return UI_PANELS._apply_glass_style(self, panel, bg_color, alpha)
@@ -613,22 +580,12 @@ func _toggle_fullscreen_mode():
 	return GAME_INPUT._toggle_fullscreen_mode(self)
 
 func _try_get_tile_button(coord):
-	if coord.x < 0 or coord.x >= cell_buttons.size():
-		return null
-	var row_buttons: Array = cell_buttons[coord.x]
-	if coord.y < 0 or coord.y >= row_buttons.size():
-		return null
-	return row_buttons[coord.y]
+	return BOARD_VIEW.tile_button_at(self, coord)
 
 
 
 func _make_fx_tween(node_to_free = null):
-	var tween = Tween.new()
-	add_child(tween)
-	if node_to_free != null:
-		tween.connect("tween_all_completed", node_to_free, "queue_free")
-	tween.connect("tween_all_completed", tween, "queue_free")
-	return tween
+	return FX.make_tween(self, node_to_free)
 
 
 
@@ -675,14 +632,7 @@ func _spawn_confetti(count):
 	FX.spawn_confetti(self, count)
 
 func _play_stage_clear_celebration(is_final_clear):
-	var burst_color = Color("ff8fab") if is_final_clear else Color("22c55e")
-	var text = "全部通关!" if is_final_clear else "过关!"
-	var particle_count = 28 if is_final_clear else 16
-	var intensity = 1.2 if is_final_clear else 1.0
-
-	_show_stage_callout(text, burst_color, 24 if is_final_clear else 21)
-	_spawn_board_particles(particle_count, burst_color, intensity)
-	_spawn_confetti(36 if is_final_clear else 22)
+	return FX.stage_clear_celebration(self, is_final_clear)
 
 
 
@@ -833,8 +783,7 @@ func _execute_rainbow_click(point):
 
 
 func _start_second_timer():
-	second_timer.stop()
-	second_timer.start()
+	return UI_HUD.start_second_timer(self)
 
 
 
@@ -894,16 +843,13 @@ func _refresh_ui():
 
 
 func _update_power_ups_display():
-	for power_up_id in power_up_labels.keys():
-		STATS_HUD.update_power_up(self, power_up_id, power_ups.get(power_up_id, 0))
+	return STATS_HUD.refresh_power_ups(self)
 
 func _set_stat_text(key, value):
 	STATS_HUD.set_text(self, key, value)
 
 func _is_time_danger():
-	if special_mode == "endless" or int(_current_level().get("time_limit", 90)) <= 0:
-		return false
-	return stage_status == STATUS_PLAYING and time_left <= int(tuning.get("time_danger_seconds", 10))
+	return STATS_HUD.is_time_danger(self)
 
 func _update_time_warning_pulse(_delta):
 	STATS_HUD.pulse(self, _is_time_danger(), _delta)
@@ -1040,15 +986,7 @@ func _hide_pause_panel():
 	UI_PANELS.hide_pause_panel(self)
 
 func _on_restart_current_level():
-	_hide_pause_panel()
-	if special_mode != "":
-		_start_special_mode(special_mode)
-		_show_message("重新开始挑战", 1.0)
-		return
-	_start_level(level_index, false)
-	_show_message("重新开始当前关卡", 1.0)
+	return UI_PANELS.restart_current_level(self)
 
 func _on_back_to_first_level():
-	_hide_pause_panel()
-	_start_level(0, true)
-	_show_message("返回第1关", 1.0)
+	return UI_PANELS.back_to_first_level(self)

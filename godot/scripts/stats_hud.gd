@@ -173,3 +173,14 @@ static func _create_chip_label(game):
 	label.add_stylebox_override("normal", chip_style)
 	return label
 
+
+
+static func is_time_danger(game):
+	if game.special_mode == "endless" or int(game._current_level().get("time_limit", 90)) <= 0:
+		return false
+	return game.stage_status == game.STATUS_PLAYING and game.time_left <= int(game.tuning.get("time_danger_seconds", 10))
+
+
+static func refresh_power_ups(game):
+	for power_up_id in game.power_up_labels.keys():
+		update_power_up(game, power_up_id, game.power_ups.get(power_up_id, 0))

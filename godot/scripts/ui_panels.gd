@@ -576,3 +576,19 @@ static func hide_pause_panel(game):
 	if game.pause_panel:
 		game.pause_panel.visible = false
 
+
+
+static func restart_current_level(game):
+	hide_pause_panel(game)
+	if game.special_mode != "":
+		game._start_special_mode(game.special_mode)
+		game._show_message("重新开始挑战", 1.0)
+		return
+	game._start_level(game.level_index, false)
+	game._show_message("重新开始当前关卡", 1.0)
+
+
+static func back_to_first_level(game):
+	hide_pause_panel(game)
+	game._start_level(0, true)
+	game._show_message("返回第1关", 1.0)

@@ -610,6 +610,49 @@ func _init() -> void:
 	var edge = game._board_edge_path(Vector2(2, 5), Vector2(3, 8))
 	check(edge.size() == 3 && edge[1] == Vector2(-1, 5), "edge path routes over the top edge")
 
+	# ui_fonts: per-size cache returns the same font; theme stays mounted
+	var font_a = game._font_at_size(24)
+	check(font_a != null && font_a == game._font_at_size(24), "font cache returns the same DynamicFont per size")
+	check(game.theme != null && game.game_font != null, "global theme and game_font stay mounted")
+
+	# board_view glue: tile lookup bounds and icon color fallback
+	check(game._try_get_tile_button(Vector2(-1, 0)) == null && game._try_get_tile_button(Vector2(9999, 0)) == null, "tile lookup rejects out-of-bounds coords")
+	check(game._try_get_tile_button(Vector2(0, 0)) != null, "tile lookup returns the board button")
+	var saved_icon_sets = game.icon_sets
+	var saved_icon_set_index = int(game.icon_set_index)
+	game.icon_sets = []
+	check(game._color_for(3) == Color("ffffff"), "icon color falls back to white without icon sets")
+	game.icon_sets = saved_icon_sets
+	game.icon_set_index = saved_icon_set_index
+
+	# fx_layer glue: tween factory parents to the game; celebration spawns fx
+	var tween = game._make_fx_tween()
+	check(tween != null && tween.get_parent() == game, "fx tween factory parents the tween to the game")
+	var children_before_celebration = game.get_child_count()
+	game._play_stage_clear_celebration(false)
+	check(game.get_child_count() > children_before_celebration, "stage clear celebration spawns fx nodes")
+
+	# stats_hud: time danger honors clockless modes and the danger threshold
+	game.stage_status = game.STATUS_PLAYING
+	game.special_mode = "endless"
+	check(!game._is_time_danger(), "clockless endless never hits time danger")
+	game.special_mode = ""
+	game.time_left = 3
+	check(game._is_time_danger(), "low time in a playing stage flags danger")
+	game.time_left = 999
+	check(!game._is_time_danger(), "healthy time clears danger")
+	game.stage_status = game.STATUS_PAUSED
+	check(!game._is_time_danger(), "paused stage never flags danger")
+	game.stage_status = game.STATUS_PLAYING
+
+	# ui_panels actions: session-aware restart and the campaign reset path
+	game.special_mode = "zen"
+	game._on_restart_current_level()
+	check(game.special_mode == "zen", "restart inside a special session reruns the session")
+	game.special_mode = ""
+	game._on_back_to_first_level()
+	check(int(game.level_index) == 0 && game.stage_status == game.STATUS_PLAYING, "back to first level starts level 1")
+
 	if failures == 0:
 		print("panels_probe: ALL PASSED")
 		quit(0)

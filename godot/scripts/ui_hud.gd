@@ -659,3 +659,8 @@ static func _update_combo_progress(game):
 	var progress = (float(remain) / float(window_ms)) * 100.0
 	game.combo_progress_bar.value = progress
 
+
+
+static func start_second_timer(game):
+	game.second_timer.stop()
+	game.second_timer.start()

@@ -754,3 +754,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AP：棋盘机制状态域收敛为 board_mechanics.gd)
 - Context: 五机制（冰甲/叠层/重力/迷雾/锁链）的棋盘状态操作从 game.gd 收敛为新模块 board_mechanics.gd——可选性判定（is_coord_playable/is_fogged/cell_ring）、机制网格构建与解除（build_stack_layers/build_chain_locks/dissolve_all_chains/break_chains_around）、消除伤害（apply_match_damage/damage_tile 两段式冰甲+叠层顶出）、重力压实触发（apply_gravity）、迷雾层数推导（update_fog），game.gd 12 函数薄壳化（1097→1058 行）。炸弹/彩虹边路构造 edge_path 迁 board_engine 纯函数。
 - Validation: 13 项 headless 测试全绿（panels_probe 139→149 断言：冰甲首消裂而不清+次消清除/锁链锁定不可选+崩解恢复/重力列压实+选中提示重置/迷雾层数随模式推导与复位/边路经顶行构造）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AQ：game.gd 最后一批散点清扫)
+- Context: 字体管理独立为新模块 ui_fonts.gd（3 字体常量 + font_at_size 按字号缓存 + init_theme 全局主题挂载）；特效胶水 2 函数（_make_fx_tween 补间工厂/_play_stage_clear_celebration 过关庆典）迁 fx_layer；棋盘视觉胶水 2 函数（_color_for 图标配色/_try_get_tile_button 格子查找）迁 board_view；时间告警判定（_is_time_danger）与道具显示循环（_update_power_ups_display）迁 stats_hud；暂停面板动作 2 函数（_on_restart_current_level 会话感知重开/_on_back_to_first_level）迁 ui_panels；_start_second_timer 迁 ui_hud。game.gd 1058→993 行，跌破千行。
+- Validation: 13 项 headless 测试全绿（panels_probe 149→162 断言：字体缓存同对象/主题挂载/格子越界拒绝/无图标集白色回退/补间挂载/庆典产物/时钟豁免-低时告警-暂停不告警/特殊会话重开与返回第1关）；导出与 web_entry 通过。
