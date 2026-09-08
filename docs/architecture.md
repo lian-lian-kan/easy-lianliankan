@@ -17,7 +17,7 @@
 | `scripts/powerups.gd` | 道具域：载荷规则、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
 | `scripts/stats_hud.gd` | 统计 HUD：卡片构建/文本/道具槽显示/告警脉冲 + 标签工厂 | `stat_probe.gd` + `panels_probe.gd` |
 | `scripts/ui_hud.gd` | 主屏基础设施：构建/状态刷新/布局适配/计时器簇/消息横幅/控制按钮/成就通知 | `panels_probe.gd`（结构+行为断言） |
-| `scripts/ui_panels.gd` | 五个弹窗面板静态工厂 + 共享样式（玻璃/按钮/对话框递归） | `panels_probe.gd` |
+| `scripts/ui_panels.gd` | 五个弹窗面板静态工厂 + 共享样式（玻璃/按钮/对话框递归）+ 模态生命周期（open/close_modal 暂停语义、modes 行渲染、pause 信息刷新） | `panels_probe.gd`（生命周期断言） |
 | `scripts/fx_layer.gd` | 特效发射：樱花飘落/撒花/消除粒子/连击爆字 | `power_ups_probe.gd`（层与撒花断言） |
 | `scripts/audio_manager.gd` | 程序化音效与 BGM（autoload，裸全局名访问） | 手动验收 |
 | `scripts/path_overlay.gd` | 连线绘制（Control） | `path_overlay_input_passthrough_test.gd` |
@@ -29,12 +29,12 @@
 1. 在 game.gd 中定位目标函数的**语义相邻**下一函数签名作为结束锚（先 grep 确认，禁止凭记忆）；span 终止必须认**全部顶层声明**（func/const/var），只认 func 会把函数之间夹着的文件级声明卷进迁移体。
 2. 剪块搬入新模块；无场景依赖的做成 `extends Reference` 静态函数；需要游戏成员的以 `game` 参数显式传入（标识符加 `game.` 前缀，**上下文无关全量前缀**并对 game.gd 声明集做差集审计）。
 3. game.gd 原地留**同名薄封装**，外部调用方零改动；向已有模块追加时用追加模式，禁止整文件重写。
-4. 已踩实的坑：autoload（如 AudioManager）是**全局单例名**，静态函数里直接裸用，`game.AudioManager` 是运行时错误；**含 yield 的协程不能迁成静态函数**；GDScript 无命名实参，壳调用须位置传参；Dictionary `==`/`hash()` 是引用/顺序敏感比较，断言内容相等要逐键比；SceneTree 测试的 SCRIPT ERROR 不改退出码，必须配行为断言。
+4. 已踩实的坑：autoload（如 AudioManager）是**全局单例名**，静态函数里直接裸用，`game.AudioManager` 是运行时错误；**含 yield 的协程不能迁成静态函数**；GDScript 无命名实参，壳调用须位置传参；Dictionary `==`/`hash()` 是引用/顺序敏感比较，断言内容相等要逐键比；SceneTree 测试的 SCRIPT ERROR 不改退出码，必须配行为断言；**GDScript 3 的 bool==int 抛错且中断 quit 导致测试挂死**，断言助手按值类型取值；**ScrollContainer 的内建 HScrollBar/VScrollBar 是延迟加入的子节点**，`get_child(0)` 拿到的可能是滚动条而非内容盒——内容盒应在构建时注册到成员（如 game.modes_content），禁止 child-index 链遍历。
 5. 每轮：worktree → 全量测试绿 → 导出 → 合并 main → CI 绿 → 线上 pck 验证（与干净检出导出比对 sha256，worktree 内未提交文件会污染本地导出）。
 
 ## 已知债务
 
-- game.gd 约 1650 行编排层：`_ready` 启动流程、棋盘点击回调胶水、计时器回调与散点小函数；进一步归并收益边际递减，按需处理。
+- game.gd 约 1140 行编排层：`_ready` 启动胶水、成员声明、委托薄壳与关卡选择簇（_selected_level_option_index 等 5 函数，可迁 ui_hud）；进一步归并收益边际递减，按需处理。
 - 未接线 manager（签到/商店等）已删除；如需启用从 git 历史恢复（b72e1c3 之前）。
 - 双人联机与关卡编辑器需对战/编辑基建，另立项。
 - `docs/code_review.md` 为审查主报告，P 项随整改滚动更新。

@@ -370,6 +370,7 @@ static func _modes_panel(game):
 	rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rows_box.add_constant_override("separation", 7)
 	rows_scroll.add_child(rows_box)
+	game.modes_content = rows_box
 
 	var spacer = Control.new()
 	spacer.rect_min_size = Vector2(0, 6)
@@ -483,4 +484,95 @@ static func _mount_modal_panel(game, panel):
 	game.add_child(holder)
 	holder.add_child(panel)
 	return holder
+
+
+# --- Modal lifecycle (migrated from game.gd) ---
+# Opening a modal pauses the stage clock; closing it resumes — but only from
+# the pause this modal caused (a failed/finished stage is never force-resumed).
+# The modes browser is browse-only and uses the game's plain show/hide pair.
+
+static func open_modal(game, panel):
+	if panel == null:
+		return
+	panel.visible = true
+	if game.stage_status == game.STATUS_PLAYING:
+		game.stage_status = game.STATUS_PAUSED
+		if game.second_timer:
+			game.second_timer.stop()
+
+
+static func close_modal(game, panel):
+	if panel == null:
+		return
+	panel.visible = false
+	if game.stage_status == game.STATUS_PAUSED:
+		game.stage_status = game.STATUS_PLAYING
+		if game.second_timer:
+			game.second_timer.start()
+
+
+static func reopen_achievements(game):
+	# Rebuild the list so unlock states reflect the current progression.
+	# Free the whole old holder: the factory mounts a fresh holder+panel, and
+	# freeing only the old panel children leaked the holder on every reopen.
+	if game.achievements_panel == null:
+		return
+	var old_holder = game.achievements_panel.get_parent()
+	if old_holder != null:
+		old_holder.queue_free()
+	game._build_achievements_panel()
+
+
+static func refresh_modes_rows(game):
+	# Mode cards are rebuilt from the data table on every open: unlocked
+	# rows start their session, locked rows show the unlock requirement.
+	if game.modes_content == null:
+		return
+	for child in game.modes_content.get_children():
+		game.modes_content.remove_child(child)
+		child.queue_free()
+
+	var rows = game.SPECIAL_MODES_SCRIPT.modes_panel_rows(game.progression_state)
+	var unlocked_index = int(game.progression_state.get("highest_unlocked_level_index", 0))
+	for row in rows:
+		var config = game.game_mode_configs.get(row["id"], {})
+		var unlocked = game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
+		var button = Button.new()
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.rect_min_size = Vector2(0, 52)
+		button.add_font_override("font", game.game_font)
+		if unlocked:
+			button.text = row["title"] + "\n" + row["detail"]
+			button.connect("pressed", game, "_on_special_mode_pressed", [row["id"]])
+		else:
+			button.text = row["title"] + "\n" + game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
+		game._style_dialog_buttons(button)
+		game.modes_content.add_child(button)
+
+
+static func refresh_pause_panel(game):
+	# The pause panel shows the current level (or special session) and the
+	# exit button only during special sessions; pause/resume semantics stay
+	# with session._pause_stage/_resume_stage.
+	if game.pause_panel == null:
+		return
+	var vbox = game.pause_panel.get_child(0)
+	var margin = vbox.get_child(0)
+	var content = margin.get_child(0)
+	var level_info = content.get_child(1) as Label
+	var level = game._current_level()
+	if game.special_mode != "":
+		level_info.text = str(level.get("name", "特殊模式")) + " · " + game._mode_label(game.special_mode)
+	else:
+		var level_id = int(level.get("id", game.level_index + 1))
+		var level_name = str(level.get("name", "关卡"))
+		level_info.text = "第" + str(level_id) + "关 - " + level_name
+	if game.pause_exit_button:
+		game.pause_exit_button.visible = game.special_mode != ""
+	game.pause_panel.visible = true
+
+
+static func hide_pause_panel(game):
+	if game.pause_panel:
+		game.pause_panel.visible = false
 

@@ -732,3 +732,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AK：资源消耗与阶段生命周期迁入 session.gd)
 - Context: 8 函数迁入 session.gd——资源消耗（_consume_time_cost/_consume_move）、阶段暂停恢复（_pause_stage/_resume_stage）、战役开局（_start_level）、竞速判负（_fail_race_lost）、成就（_unlock_achievements/_check_achievements_on_clear），game.gd 留同名薄壳。panels_probe 补 7 项生命周期断言（时钟消耗/无时钟豁免/moves 外无操作/暂停恢复/开局/成就解锁持久化）。
 - Validation: 13 项 headless 测试全绿（panels_probe 现 54 断言）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AL：模态面板生命周期收敛到 ui_panels.gd)
+- Context: 五组「打开=暂停+停表、关闭=恢复+启表」重复模式（onboarding/settings/achievements 各自内联 6 行）收敛为 ui_panels.open_modal/close_modal；_refresh_modes_panel 的 30 行模式卡渲染迁入 ui_panels.refresh_modes_rows 并改用构建时注册的 game.modes_content（消除 get_child 链遍历——旧链式断言实际拿到的是 ScrollContainer 内建 HScrollBar，时序脆弱）；_show/_hide_pause_panel 信息刷新迁入 ui_panels（pause/resume 语义仍归 session）。
+- 顺手修复三个既有 bug：①progression.apply_update 白名单合并静默丢弃 onboarding_seen 补丁 + same_progress 不比较该字段 → 引导面板从未持久化、每次启动重弹；②_on_achievements_pressed 每次打开只 queue_free 旧面板 children，泄漏整个旧 holder+panel 树 → reopen_achievements 改为释放旧 holder 再重建；③panels_probe 的 modes 链式断言依赖内建滚动条尚未加入的偶然时序 → 改断言注册的 modes_content。
+- Validation: 13 项 headless 测试全绿（panels_probe 91→117 断言；progression_test 补 onboarding_seen patch/持久化判定/双向清位 6 断言）；导出与 web_entry 通过。

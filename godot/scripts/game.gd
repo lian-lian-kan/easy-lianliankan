@@ -1058,40 +1058,22 @@ func _show_achievement_notification(achievement_name):
 func _reshuffle_board(board_state):
 	BOARD_ENGINE.reshuffle_board(board_state, self, "_is_coord_playable")
 
-# --- UI 面板回调与状态方法（Round D 从 ui_panels.gd 迁回）---
+# --- UI 面板回调与状态方法（Round D 从 ui_panels.gd 迁回；Round AL 生命周期收敛到 ui_panels）---
 func _show_onboarding_if_needed():
-	var has_seen_onboarding = progression_state.get(ONBOARDING_SEEN_KEY, false)
-	if not has_seen_onboarding and onboarding_panel != null:
-		onboarding_panel.visible = true
-		stage_status = STATUS_PAUSED
-		if second_timer:
-			second_timer.stop()
+	if progression_state.get(ONBOARDING_SEEN_KEY, false):
+		return
+	UI_PANELS.open_modal(self, onboarding_panel)
 
 func _on_onboarding_dismissed():
 	print("[Game] onboarding dismissed")
-	if onboarding_panel != null:
-		onboarding_panel.visible = false
+	UI_PANELS.close_modal(self, onboarding_panel)
 	_patch_progress_state({ONBOARDING_SEEN_KEY: true})
-	stage_status = STATUS_PLAYING
-	if second_timer:
-		second_timer.start()
 
 func _on_settings_pressed():
-	if settings_panel == null:
-		return
-	settings_panel.visible = true
-	if stage_status == STATUS_PLAYING:
-		stage_status = STATUS_PAUSED
-		if second_timer:
-			second_timer.stop()
+	UI_PANELS.open_modal(self, settings_panel)
 
 func _on_settings_close():
-	if settings_panel != null:
-		settings_panel.visible = false
-	if stage_status == STATUS_PAUSED:
-		stage_status = STATUS_PLAYING
-		if second_timer:
-			second_timer.start()
+	UI_PANELS.close_modal(self, settings_panel)
 
 func _on_master_volume_changed(value):
 	AudioManager.set_master_volume(value)
@@ -1107,54 +1089,14 @@ func _on_mute_toggled(muted):
 	AudioManager.set_muted(muted)
 
 func _on_achievements_pressed():
-	if achievements_panel == null:
-		return
-	# Rebuild to update unlock status
-	if achievements_panel.get_child_count() > 0:
-		for child in achievements_panel.get_children():
-			child.queue_free()
-	_build_achievements_panel()
-	achievements_panel.visible = true
-	if stage_status == STATUS_PLAYING:
-		stage_status = STATUS_PAUSED
-		if second_timer:
-			second_timer.stop()
+	UI_PANELS.reopen_achievements(self)
+	UI_PANELS.open_modal(self, achievements_panel)
 
 func _on_achievements_close():
-	if achievements_panel != null:
-		achievements_panel.visible = false
-	if stage_status == STATUS_PAUSED:
-		stage_status = STATUS_PLAYING
-		if second_timer:
-			second_timer.start()
+	UI_PANELS.close_modal(self, achievements_panel)
 
 func _refresh_modes_panel():
-	if modes_panel == null:
-		return
-	# modes_panel content chain: vbox -> margin -> content; content children:
-	# [title, rows_box, spacer, close_button]
-	var content = modes_panel.get_child(0).get_child(0).get_child(0)
-	var rows_box = content.get_child(1).get_child(0)
-	for child in rows_box.get_children():
-		rows_box.remove_child(child)
-		child.queue_free()
-
-	var rows = SPECIAL_MODES_SCRIPT.modes_panel_rows(progression_state)
-	var unlocked_index = int(progression_state.get("highest_unlocked_level_index", 0))
-	for row in rows:
-		var config = game_mode_configs.get(row["id"], {})
-		var unlocked = SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
-		var button = Button.new()
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.rect_min_size = Vector2(0, 52)
-		button.add_font_override("font", game_font)
-		if unlocked:
-			button.text = row["title"] + "\n" + row["detail"]
-			button.connect("pressed", self, "_on_special_mode_pressed", [row["id"]])
-		else:
-			button.text = row["title"] + "\n" + SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
-		_style_dialog_buttons(button)
-		rows_box.add_child(button)
+	UI_PANELS.refresh_modes_rows(self)
 
 func _on_modes_pressed():
 	_refresh_modes_panel()
@@ -1174,28 +1116,10 @@ func _on_exit_special_pressed():
 	_exit_special_mode()
 
 func _show_pause_panel():
-	if pause_panel == null:
-		return
-	# Update level info
-	var vbox = pause_panel.get_child(0)
-	var margin = vbox.get_child(0)
-	var content = margin.get_child(0)
-	var level_info = content.get_child(1) as Label
-	var level = _current_level()
-	if special_mode != "":
-		level_info.text = str(level.get("name", "特殊模式")) + " · " + _mode_label(special_mode)
-	else:
-		var level_id = int(level.get("id", level_index + 1))
-		var level_name = str(level.get("name", "关卡"))
-		level_info.text = "第" + str(level_id) + "关 - " + level_name
-	if pause_exit_button:
-		pause_exit_button.visible = special_mode != ""
-
-	pause_panel.visible = true
+	UI_PANELS.refresh_pause_panel(self)
 
 func _hide_pause_panel():
-	if pause_panel != null:
-		pause_panel.visible = false
+	UI_PANELS.hide_pause_panel(self)
 
 func _on_restart_current_level():
 	_hide_pause_panel()

@@ -89,4 +89,20 @@ func _init() -> void:
 	if not _assert_equal(progression.clear_unlocked_ids(with_all, {"level_index": 0, "combo": 4, "clear_time": 999.0, "hints_used": 1, "auto_used": 1, "level_count": 10}), [], "already unlocked ids are not returned twice"):
 		return
 
+	# --- onboarding_seen: patch is applied and detected as a change
+	if not _assert_equal(bool(normalized.get("onboarding_seen", true)), false, "fresh state has onboarding_seen=false"):
+		return
+	var seen = progression.apply_update(normalized, 10, {"onboarding_seen": true})
+	if not _assert_equal(bool(seen.get("onboarding_seen", false)), true, "onboarding_seen patch is applied"):
+		return
+	if not _assert_equal(int(seen.get("current_level_index", -1)), 0, "onboarding_seen patch leaves other fields alone"):
+		return
+	if not _assert_equal(progression.same_progress(seen, normalized, 10), false, "onboarding_seen flip counts as a change (must persist)"):
+		return
+	if not _assert_equal(progression.same_progress(seen, seen, 10), true, "same onboarding_seen states compare equal"):
+		return
+	var unseen_again = progression.apply_update(seen, 10, {"onboarding_seen": false})
+	if not _assert_equal(bool(unseen_again.get("onboarding_seen", true)), false, "onboarding_seen can be cleared"):
+		return
+
 	quit(0)

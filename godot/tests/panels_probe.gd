@@ -358,13 +358,105 @@ func _init() -> void:
 	game._build_pause_panel()
 	check(game.pause_panel != null and game.pause_panel.get_child_count() > 0, "pause panel built")
 
-	# modes: 13 mode cards inside the scroll box
+	# modes: 13 mode cards rebuilt through the registered rows box
 	game._build_modes_panel()
 	game._refresh_modes_panel()
 	check(game.modes_panel != null, "modes panel built")
-	var content = game.modes_panel.get_child(0).get_child(0).get_child(0)
-	var rows_box = content.get_child(1).get_child(0)
-	check(rows_box.get_child_count() == 13, "modes panel has 13 mode cards (got %d)" % rows_box.get_child_count())
+	check(game.modes_content != null && game.modes_content.get_child_count() == 13,
+		"modes panel has 13 mode cards (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
+
+	# modal lifecycle: open pauses the stage clock, close resumes it
+	game.stage_status = game.STATUS_PLAYING
+	game._on_settings_pressed()
+	check(game.settings_panel.visible && game.stage_status == game.STATUS_PAUSED, "opening settings pauses the stage")
+	check(game.second_timer.is_stopped(), "opening settings stops the second timer")
+	game._on_settings_close()
+	check(!game.settings_panel.visible && game.stage_status == game.STATUS_PLAYING, "closing settings resumes the stage")
+	check(!game.second_timer.is_stopped(), "closing settings restarts the second timer")
+
+	# closing must never resume a stage that paused for another reason
+	game.stage_status = game.STATUS_FAILED
+	game.settings_panel.visible = true
+	game._on_settings_close()
+	check(!game.settings_panel.visible && game.stage_status == game.STATUS_FAILED, "closing a modal never resumes a failed stage")
+	game.stage_status = game.STATUS_PLAYING
+
+	# opening while paused keeps the pause; the close owns the resume
+	game._pause_stage()
+	game._on_settings_pressed()
+	check(game.stage_status == game.STATUS_PAUSED, "opening a modal while paused stays paused")
+	game._on_settings_close()
+	check(game.stage_status == game.STATUS_PLAYING, "closing a pre-paused modal resumes the stage")
+
+	# onboarding: first run pauses until dismissed, dismissal persists
+	game.progression_state.erase(game.ONBOARDING_SEEN_KEY)
+	game._show_onboarding_if_needed()
+	check(game.onboarding_panel.visible && game.stage_status == game.STATUS_PAUSED, "onboarding shows for unseen progress and pauses")
+	game._on_onboarding_dismissed()
+	check(!game.onboarding_panel.visible && game.stage_status == game.STATUS_PLAYING, "dismissing onboarding resumes the stage")
+	check(bool(game.progression_state.get(game.ONBOARDING_SEEN_KEY, false)), "dismissing onboarding persists the seen flag")
+	game._show_onboarding_if_needed()
+	check(!game.onboarding_panel.visible, "seen progress keeps onboarding hidden")
+
+	# achievements: reopen frees the old holder, rebuilds the list, and joins
+	# the pause lifecycle
+	var old_ach_holder = game.achievements_panel.get_parent()
+	game._on_achievements_pressed()
+	check(game.achievements_panel.get_parent() != old_ach_holder && old_ach_holder.is_queued_for_deletion(), "achievements reopen frees the old holder and mounts a fresh panel")
+	check(game.achievements_panel.visible && game.stage_status == game.STATUS_PAUSED, "opening achievements pauses the stage")
+	check(game.achievements_panel.get_child_count() == 1, "fresh achievements panel carries exactly one content block")
+	game._on_achievements_close()
+	check(!game.achievements_panel.visible && game.stage_status == game.STATUS_PLAYING, "closing achievements resumes the stage")
+
+	# modes browser: plain show/hide that never pauses; rows rebuilt from data
+	game._on_modes_pressed()
+	check(game.modes_panel.visible && game.stage_status == game.STATUS_PLAYING, "opening modes never pauses the stage")
+	var saved_modes_unlock = int(game.progression_state["highest_unlocked_level_index"])
+	game.progression_state["highest_unlocked_level_index"] = 0
+	game._refresh_modes_panel()
+	var locked_count = 0
+	var unlocked_count = 0
+	var unlocked_wired = true
+	for mode_button in game.modes_content.get_children():
+		if mode_button is Button:
+			if mode_button.text.find("关解锁") != -1:
+				locked_count += 1
+			else:
+				unlocked_count += 1
+				unlocked_wired = unlocked_wired && mode_button.is_connected("pressed", game, "_on_special_mode_pressed")
+	check(locked_count == 11 && unlocked_count == 2, "fresh save unlocks only daily and zen (locked %d unlocked %d)" % [locked_count, unlocked_count])
+	check(unlocked_wired, "unlocked mode rows wire the session start")
+	var locked_sample = ""
+	for mode_button in game.modes_content.get_children():
+		if mode_button is Button && mode_button.text.find("关解锁") != -1:
+			locked_sample = mode_button.text
+			break
+	check(locked_sample.find("\n完成第") != -1, "locked mode rows show their unlock requirement")
+	game.progression_state["highest_unlocked_level_index"] = saved_modes_unlock
+	game._refresh_modes_panel()
+	var late_locked = 0
+	for mode_button in game.modes_content.get_children():
+		if mode_button is Button && mode_button.text.find("关解锁") != -1:
+			late_locked += 1
+	check(late_locked == 0 && game.modes_content.get_child_count() == 13, "rebuilt rows reflect the restored unlock index")
+	game._on_modes_close_pressed()
+	check(!game.modes_panel.visible, "closing modes hides the browser")
+
+	# pause panel refresh: campaign text vs special session text + exit button
+	game.special_mode = ""
+	game._show_pause_panel()
+	var pause_content = game.pause_panel.get_child(0).get_child(0).get_child(0)
+	var pause_level_info = pause_content.get_child(1) as Label
+	check(pause_level_info.text == "第3关 - 连击", "pause panel shows the campaign level (got %s)" % pause_level_info.text)
+	check(!game.pause_exit_button.visible, "campaign pause hides the special exit button")
+	game.special_mode = "zen"
+	game.special_level = {"name": "测试模式"}
+	game._show_pause_panel()
+	check(pause_level_info.text == "测试模式 · " + game._mode_label("zen"), "pause panel shows the special session (got %s)" % pause_level_info.text)
+	check(game.pause_exit_button.visible, "special pause shows the exit button")
+	game._hide_pause_panel()
+	check(!game.pause_panel.visible, "hide pause panel hides it")
+	game.special_mode = ""
 
 	if failures == 0:
 		print("panels_probe: ALL PASSED")

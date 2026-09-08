@@ -129,6 +129,8 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		next_state["best_total_score"] = max(int(next_state["best_total_score"]), max(0, int(patch["score_candidate"])))
 	if patch.has("combo_candidate"):
 		next_state["best_combo"] = max(int(next_state["best_combo"]), max(0, int(patch["combo_candidate"])))
+	if patch.has("onboarding_seen"):
+		next_state["onboarding_seen"] = bool(patch["onboarding_seen"])
 	# Update level best times if provided
 	if patch.has("level_best_time"):
 		var time_data = patch["level_best_time"]
@@ -205,7 +207,8 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("stack_best_score", 0)) == int(bb.get("stack_best_score", 0)) \
 		and int(aa.get("gravity_best_score", 0)) == int(bb.get("gravity_best_score", 0)) \
 		and int(aa.get("fog_best_score", 0)) == int(bb.get("fog_best_score", 0)) \
-		and int(aa.get("chain_best_score", 0)) == int(bb.get("chain_best_score", 0))
+		and int(aa.get("chain_best_score", 0)) == int(bb.get("chain_best_score", 0)) \
+		and bool(aa.get("onboarding_seen", false)) == bool(bb.get("onboarding_seen", false))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :
