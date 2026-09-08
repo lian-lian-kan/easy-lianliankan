@@ -194,6 +194,12 @@ func _init() -> void:
 	game._shake_tile(anim_cell)
 	check(rest_button.rect_scale != Vector2.ZERO, "shake keeps the tile alive")
 
+	# fx_layer: error flash registers tiles; path overlay shows hint paths
+	game._flash_error_tiles([press_cell])
+	check(game.error_tiles.size() == 1 && game.error_tiles[0] == press_cell, "error flash registers the tile")
+	game._show_path([Vector2(0, 0), Vector2(0, 1)], "hint", 500)
+	check(game.path_overlay.visible, "path overlay shows the hint path")
+
 	# ui_hud callbacks: message timeout hides the banner; freeze timeout unfreezes
 	game._show_message("超时测试", 5.0)
 	game._on_message_timeout()

@@ -257,3 +257,59 @@ static func _show_combo_burst(game, text):
 	tween.interpolate_property(game.combo_burst_label, "modulate:a", 1.0, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN, 0.6)
 	tween.start()
 
+
+# --- Board feedback fx (migrated from game.gd) ---
+
+static func _flash_error_tiles(game, coords):
+	game.error_tiles.clear()
+	for coord in coords:
+		var point = coord
+		if game._contains_coord(game.error_tiles, point):
+			continue
+		game.error_tiles.append(point)
+		game._shake_tile(point)
+		var center = game._tile_center_in_effect_layer(point)
+		game._spawn_ring_effect(center, Color("ff8787"), 0.22, 12.0)
+
+	game.error_timer.stop()
+	game.error_timer.start(float(game.tuning.get("error_flash_ms", 420)) / 1000.0)
+
+static func _animate_hint_tiles(game, coords):
+	for coord in coords:
+		game._pulse_tile(coord, 1.09, 0.08, 2)
+		var center = game._tile_center_in_effect_layer(coord)
+		game._spawn_ring_effect(center, Color("74c0fc"), 0.26, 12.0)
+
+static func _show_path(game, path, preview_type, duration_ms):
+	var points = game._path_to_overlay_points(path)
+	if points.size() < 2:
+		return
+	var color = game.PATH_COLOR_ELIMINATE
+	if preview_type == "hint":
+		color = game.PATH_COLOR_HINT
+	game.path_overlay.show_path(points, color, float(duration_ms) / 1000.0)
+
+static func _path_to_overlay_points(game, path):
+	var result = []
+	if game.cell_buttons.empty():
+		return result
+	if game.cell_buttons[0].empty():
+		return result
+
+	var first_button = game.cell_buttons[0][0]
+	# Control has no to_local(); map the global tile center through the
+	# overlay's inverse transform instead.
+	var overlay_inv = game.path_overlay.get_global_transform().affine_inverse()
+	var first_center = overlay_inv * (first_button.rect_global_position + first_button.rect_size * 0.5)
+	var step_x = first_button.rect_size.x + game.board_grid.get_constant("h_separation")
+	var step_y = first_button.rect_size.y + game.board_grid.get_constant("v_separation")
+
+	for item in path:
+		var point = item
+		var mapped = Vector2(
+			first_center.x + float(point.y) * step_x,
+			first_center.y + float(point.x) * step_y
+		)
+		result.append(mapped)
+	return result
+

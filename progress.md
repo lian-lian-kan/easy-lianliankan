@@ -716,3 +716,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (Round AG：冒烟转硬门禁)
 - 依据：linux CI 首跑 SMOKE OK（引擎 4 秒启动、beacon 到达），机制已被目标环境验证；ci_smoke.sh 加装第二次 Chrome 重试进一步降低偶发抖动。
 - 变更：deploy.yml 移除 continue-on-error，冒烟失败将阻塞部署（坏启动不该上线）；信标等待升级为两次 Chrome 尝试。
+
+## 2026-09-08 (代码质量 Round AH：棋盘反馈特效迁入 fx_layer.gd)
+- Context: 反馈特效簇 4 函数（_flash_error_tiles 错误闪红/_animate_hint_tiles 提示脉冲/_show_path 路径预览/_path_to_overlay_points 坐标映射）迁入 fx_layer.gd，game.gd 留同名薄壳。panels_probe 补 2 项断言（错误闪红登记方块、路径预览显示 overlay）。
+- Validation: 13 项 headless 测试全绿（panels_probe 现 50 断言）；导出与 web_entry 通过。

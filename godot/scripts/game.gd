@@ -720,11 +720,6 @@ func _make_fx_tween(node_to_free = null):
 	return tween
 
 
-func _animate_hint_tiles(coords):
-	for coord in coords:
-		_pulse_tile(coord, 1.09, 0.08, 2)
-		var center = _tile_center_in_effect_layer(coord)
-		_spawn_ring_effect(center, Color("74c0fc"), 0.26, 12.0)
 
 
 
@@ -792,38 +787,7 @@ func _play_stage_clear_celebration(is_final_clear):
 	_spawn_confetti(36 if is_final_clear else 22)
 
 
-func _show_path(path, preview_type, duration_ms):
-	var points = _path_to_overlay_points(path)
-	if points.size() < 2:
-		return
-	var color = PATH_COLOR_ELIMINATE
-	if preview_type == "hint":
-		color = PATH_COLOR_HINT
-	path_overlay.show_path(points, color, float(duration_ms) / 1000.0)
 
-func _path_to_overlay_points(path):
-	var result = []
-	if cell_buttons.empty():
-		return result
-	if cell_buttons[0].empty():
-		return result
-
-	var first_button = cell_buttons[0][0]
-	# Control has no to_local(); map the global tile center through the
-	# overlay's inverse transform instead.
-	var overlay_inv = path_overlay.get_global_transform().affine_inverse()
-	var first_center = overlay_inv * (first_button.rect_global_position + first_button.rect_size * 0.5)
-	var step_x = first_button.rect_size.x + board_grid.get_constant("h_separation")
-	var step_y = first_button.rect_size.y + board_grid.get_constant("v_separation")
-
-	for item in path:
-		var point = item
-		var mapped = Vector2(
-			first_center.x + float(point.y) * step_x,
-			first_center.y + float(point.x) * step_y
-		)
-		result.append(mapped)
-	return result
 
 
 func _play_eliminate_effects(coords):
@@ -848,19 +812,6 @@ func _spawn_board_particles(count, color, intensity):
 func _show_combo_burst(text):
 	return FX._show_combo_burst(self, text)
 
-func _flash_error_tiles(coords):
-	error_tiles.clear()
-	for coord in coords:
-		var point = coord
-		if _contains_coord(error_tiles, point):
-			continue
-		error_tiles.append(point)
-		_shake_tile(point)
-		var center = _tile_center_in_effect_layer(point)
-		_spawn_ring_effect(center, Color("ff8787"), 0.22, 12.0)
-
-	error_timer.stop()
-	error_timer.start(float(tuning.get("error_flash_ms", 420)) / 1000.0)
 
 
 
@@ -880,6 +831,18 @@ func _flash_error_tiles(coords):
 # One successful match hits both tiles. Frozen cells (armor 1) crack instead
 # of clearing and need a second match; cracked tiles keep blocking paths.
 # 步数挑战: every removed pair costs one move; running dry loses.
+func _flash_error_tiles(coords):
+	return FX._flash_error_tiles(self, coords)
+
+func _animate_hint_tiles(coords):
+	return FX._animate_hint_tiles(self, coords)
+
+func _show_path(path, preview_type, duration_ms):
+	return FX._show_path(self, path, preview_type, duration_ms)
+
+func _path_to_overlay_points(path):
+	return FX._path_to_overlay_points(self, path)
+
 func _consume_move():
 	if special_mode != "moves" or stage_status != STATUS_PLAYING:
 		return
