@@ -16,7 +16,8 @@
 | `scripts/campaign_levels.gd` | 战役关卡数据表（深拷贝访问器） | `campaign_levels_test.gd`（数据不变量） |
 | `scripts/powerups.gd` | 道具域：载荷规则、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
 | `scripts/stats_hud.gd` | 统计 HUD：卡片构建/文本/道具槽显示/告警脉冲 + 标签工厂 | `stat_probe.gd` + `panels_probe.gd` |
-| `scripts/ui_hud.gd` | 主屏基础设施：构建/状态刷新/布局适配/计时器簇/消息横幅/控制按钮/成就通知 | `panels_probe.gd`（结构+行为断言） |
+| `scripts/ui_hud.gd` | 主屏结构：构建/状态刷新/布局适配/消息横幅/控制按钮/关卡选择胶水/连击条/成就通知 | `panels_probe.gd`（结构+行为断言） |
+| `scripts/hud_timers.gd` | 会话心跳：计时器工厂与时钟/消息/错误/连击/高亮/推进/解冻/竞速回调 | `panels_probe.gd`（心跳行为断言） |
 | `scripts/ui_panels.gd` | 五个弹窗面板静态工厂 + 共享样式（玻璃/按钮/对话框递归）+ 模态生命周期（open/close_modal 暂停语义、modes 行渲染、pause 信息刷新） | `panels_probe.gd`（生命周期断言） |
 | `scripts/fx_layer.gd` | 特效发射：樱花飘落/撒花/消除粒子/连击爆字 | `power_ups_probe.gd`（层与撒花断言） |
 | `scripts/audio_manager.gd` | 程序化音效与 BGM（autoload，裸全局名访问） | 手动验收 |
@@ -34,7 +35,7 @@
 
 ## 已知债务
 
-- game.gd 约 1140 行编排层：`_ready` 启动胶水、成员声明、委托薄壳与关卡选择簇（_selected_level_option_index 等 5 函数，可迁 ui_hud）；进一步归并收益边际递减，按需处理。
+- game.gd 约 1090 行编排层：`_ready` 启动胶水、成员声明与委托薄壳；进一步归并收益边际递减，按需处理。
 - 未接线 manager（签到/商店等）已删除；如需启用从 git 历史恢复（b72e1c3 之前）。
 - 双人联机与关卡编辑器需对战/编辑基建，另立项。
 - `docs/code_review.md` 为审查主报告，P 项随整改滚动更新。

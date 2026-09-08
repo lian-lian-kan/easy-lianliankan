@@ -503,6 +503,55 @@ func _init() -> void:
 			intro_found = true
 	check(intro_found, "campaign intro callout shows 第3关 · 连击")
 
+	# hud_timers heartbeat callbacks: frozen clock exemption and error/combo resets
+	game.stage_status = game.STATUS_PLAYING
+	game.time_frozen = true
+	game.time_left = 40
+	game._on_second_tick()
+	check(int(game.time_left) == 40, "second tick is exempt while time is frozen")
+	game.time_frozen = false
+	game._on_second_tick()
+	check(int(game.time_left) == 39, "second tick resumes draining once unfrozen")
+	game.error_tiles = [Vector2(0, 0), Vector2(1, 1)]
+	game._on_error_timeout()
+	check(game.error_tiles.empty(), "error timeout clears the flash registration")
+	game.combo = 4
+	game.combo_expires_ms = OS.get_ticks_msec() + 99999
+	game._on_combo_reset_timeout()
+	check(int(game.combo) == 0 && float(game.combo_progress_bar.value) == 0.0, "combo timeout resets the streak and bar")
+
+	# hud_timers level advance: cleared campaign stage jumps to the pending level
+	game.special_mode = ""
+	game.stage_status = game.STATUS_CLEARED
+	game.pending_level_index = 5
+	game._on_level_advance_timeout()
+	check(int(game.level_index) == 5 && game.stage_status == game.STATUS_PLAYING, "advance timeout starts the pending level")
+
+	# hud_timers race tick: the AI steps on its interval and updates the pair count
+	game.special_mode = "race"
+	game.special_level = {"name": "竞速对战", "ai_interval": 2.0, "time_limit": 0}
+	game.race_total_pairs = 30
+	game.race_ai_pairs = 0
+	game.race_elapsed = 0
+	game.stage_status = game.STATUS_PLAYING
+	game._on_race_tick()
+	check(int(game.race_ai_pairs) == 0 && int(game.race_elapsed) == 1, "race tick below the interval is a no-op")
+	game._on_race_tick()
+	check(int(game.race_ai_pairs) == 1 && int(game.race_elapsed) == 0, "race tick at the interval adds an AI pair")
+	game.special_mode = ""
+
+	# session memory timeout: preview ends, tiles hide through the session domain
+	game.special_mode = "memory"
+	game.memory_previewing = true
+	game.memory_lock = true
+	game.memory_pending_hide = [Vector2(0, 0)]
+	game.memory_revealed["0,0"] = 3
+	game._on_memory_hide_timeout()
+	check(game.memory_pending_hide.empty() && !game.memory_lock && !game.memory_revealed.has("0,0"), "memory hide timeout clears pending reveals")
+	game._on_memory_preview_timeout()
+	check(!game.memory_previewing && !game.memory_lock, "memory preview timeout unlocks the board")
+	game.special_mode = ""
+
 	if failures == 0:
 		print("panels_probe: ALL PASSED")
 		quit(0)

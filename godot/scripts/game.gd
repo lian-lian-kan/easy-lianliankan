@@ -25,6 +25,7 @@ const FX = preload("res://scripts/fx_layer.gd")
 const BOARD_VIEW = preload("res://scripts/board_view.gd")
 const POWERUPS = preload("res://scripts/powerups.gd")
 const UI_HUD = preload("res://scripts/ui_hud.gd")
+const HUD_TIMERS = preload("res://scripts/hud_timers.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -547,28 +548,28 @@ func _start_memory_preview():
 	return SESSION._start_memory_preview(self)
 
 func _on_second_tick():
-	return UI_HUD._on_second_tick(self)
+	return HUD_TIMERS._on_second_tick(self)
 
 func _on_race_tick():
-	return UI_HUD._on_race_tick(self)
+	return HUD_TIMERS._on_race_tick(self)
 
 func _on_message_timeout():
-	return UI_HUD._on_message_timeout(self)
+	return HUD_TIMERS._on_message_timeout(self)
 
 func _on_error_timeout():
-	return UI_HUD._on_error_timeout(self)
+	return HUD_TIMERS._on_error_timeout(self)
 
 func _on_combo_reset_timeout():
-	return UI_HUD._on_combo_reset_timeout(self)
+	return HUD_TIMERS._on_combo_reset_timeout(self)
 
 func _on_level_highlight_timeout():
-	return UI_HUD._on_level_highlight_timeout(self)
+	return HUD_TIMERS._on_level_highlight_timeout(self)
 
 func _on_level_advance_timeout():
-	return UI_HUD._on_level_advance_timeout(self)
+	return HUD_TIMERS._on_level_advance_timeout(self)
 
 func _on_time_freeze_timeout():
-	return UI_HUD._on_time_freeze_timeout(self)
+	return HUD_TIMERS._on_time_freeze_timeout(self)
 
 
 
@@ -657,7 +658,7 @@ func _animate_shuffle_wave():
 	return BOARD_VIEW._animate_shuffle_wave(self)
 
 func _build_timers():
-	return UI_HUD._build_timers(self)
+	return HUD_TIMERS._build_timers(self)
 
 func _show_message(text, duration_sec = 1.0):
 	return UI_HUD._show_message(self, text, duration_sec)

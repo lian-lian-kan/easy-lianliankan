@@ -379,7 +379,12 @@ static func _start_memory_preview(game):
 
 
 static func _on_memory_preview_timeout(game):
-	return game.UI_HUD._on_memory_preview_timeout(game)
+	game.memory_previewing = false
+	game.memory_lock = false
+	game._refresh_board_visuals()
+	game._show_message("翻面！凭记忆消除吧", 1.2)
+	if game.stage_status == game.STATUS_PLAYING:
+		game.second_timer.start()
 
 
 static func _memory_schedule_hide(game, coords, delay):
@@ -391,7 +396,11 @@ static func _memory_schedule_hide(game, coords, delay):
 
 
 static func _on_memory_hide_timeout(game):
-	return game.UI_HUD._on_memory_hide_timeout(game)
+	for coord in game.memory_pending_hide:
+		game.memory_revealed.erase(game._memory_key(coord))
+	game.memory_pending_hide.clear()
+	game.memory_lock = false
+	game._refresh_board_visuals()
 
 
 static func _consume_time_cost(game, seconds):

@@ -741,3 +741,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AM：关卡选择簇/连击条迁 ui_hud，开场 callout 数据驱动)
 - Context: 关卡选择状态胶水 5 函数（_selected_level_option_index/_sync_level_select_selection/_level_label_by_index/_on_level_select_changed/_trigger_level_highlight）与连击条状态 2 函数（_reset_combo/_update_combo_progress）迁入 ui_hud.gd——主屏控件的交互与状态归并主屏模块；_play_level_intro_animation 的 6 分支 if/else 开场横幅链收敛为 special_modes.stage_callout 纯函数（返回 [text, color]，战役关卡统一格式、daily/endless/frost 内嵌动态上下文），game.gd 全部留同名薄壳。
 - Validation: 13 项 headless 测试全绿（panels_probe 117→129 断言：未解锁回弹+消息/已解锁仅刷新不跳关/下拉同步/标签映射/琥珀高亮往返/连击条满格-暂停清零-重置停表/战役 callout 渲染；mode_meta_test 补 stage_callout 8 断言：战役格式与 id 回退/每日日期/无尽轮次/限时静态/盲盒颜色/冰雪百分比）；导出与 web_entry 通过。
+
+## 2026-09-08 (代码质量 Round AN：会话心跳拆出 hud_timers.gd)
+- Context: ui_hud.gd 924 行拆分第一步——计时器工厂（10 个 Timer 构建）与其驱动的 8 个通用心跳回调（second/race tick、message/error/combo/highlight/advance/freeze timeout）迁入新模块 hud_timers.gd（127 行），ui_hud 回归「主屏结构：构建/刷新/布局/控件」职责（790 行）。
+- 顺手消除 Round AJ 遗留的绕圈调用链：game._on_memory_*_timeout → session 转发壳 → game.UI_HUD 实现——盲盒 preview/hide timeout 实现搬进 session.gd（盲盒会话域归属），转发壳删除。
+- Validation: 13 项 headless 测试全绿（panels_probe 129→138 断言：冻结时钟豁免/解冻恢复扣时/错误闪红超时清理/连击超时重置/过关推进跳关/竞速 AI 按间隔步进/盲盒翻面与收牌超时）；导出与 web_entry 通过。
