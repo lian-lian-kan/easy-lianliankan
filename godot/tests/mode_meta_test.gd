@@ -75,6 +75,7 @@ func _init() -> void:
 		"time_attack_best_score": 120, "memory_best_score": 34, "frost_best_score": 56,
 		"zen_best_score": 7, "hell_best_score": 90, "moves_best_score": 11, "race_best_score": 22,
 		"stack_best_score": 33, "gravity_best_score": 44, "fog_best_score": 55, "chain_best_score": 66,
+		"tray_best_score": 77,
 		"endless_best": {"round": 3, "score": 456},
 	}
 	var rows = SM.modes_panel_rows(state)
