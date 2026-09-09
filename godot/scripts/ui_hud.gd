@@ -296,6 +296,10 @@ static func build_main_ui(game):
 	game.board_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_inner.add_child(game.board_center)
 
+	game.tray_layer = Control.new()
+	game.tray_layer.visible = false
+	game.board_wrapper.add_child(game.tray_layer)
+
 	game.board_grid = GridContainer.new()
 	game.board_grid.columns = 6
 	game.board_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
