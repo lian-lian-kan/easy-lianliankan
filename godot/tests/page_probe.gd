@@ -200,10 +200,10 @@ func _init() -> void:
 	var coins_before_auto = int(game.progression_state.get("coins", 0))
 	for target_key in game.collect_targets.keys():
 		game.collect_progress[target_key] = int(game.collect_targets[target_key]) - 1
-	var last_target = int(game.collect_targets.keys()[0])
-	print("DBG collect targets=", game.collect_targets, " progress=", game.collect_progress, " special=", game.special_mode)
-	game._on_collect_pair_progress([last_target, last_target])
-	print("DBG after pair progress=", game.collect_progress, " stage=", game.stage_status)
+	var pending_pairs := []
+	for target_key in game.collect_targets.keys():
+		pending_pairs.append(int(target_key))
+	game._on_collect_pair_progress(pending_pairs)
 	check(game.stage_status == game.STATUS_CLEARED, "filling all targets auto-resolves the collect session")
 	check(int(game.progression_state.get("coins", 0)) == coins_before_auto + 20, "collect auto-resolve pays 20 blossoms")
 	game.SPECIAL_SESSION._exit_special_mode(game)
