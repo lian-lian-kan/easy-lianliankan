@@ -434,7 +434,7 @@ func _init() -> void:
 			locked_sample = mode_button.text
 			break
 	check(locked_sample.find("\n完成第") != -1, "locked mode rows show their unlock requirement")
-	game.progression_state["highest_unlocked_level_index"] = saved_modes_unlock
+	game.progression_state["highest_unlocked_level_index"] = 15
 	game._refresh_modes_panel()
 	var late_locked = 0
 	for mode_button in game.modes_content.get_children():
