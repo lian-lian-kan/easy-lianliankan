@@ -780,3 +780,10 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 调研：Tile Match（羊了个羊/3 Tiles/Triple Match）为当前最热配对品类，主流规则=7 格槽位+三张同面消除+多层堆叠遮挡（上层压下层）+槽满即败，常见道具为洗牌/撤销。
 - 变更：①新增 tile_match.gd——纯状态机（generate 每 pattern 3 的倍数+洗乱/is_covered 九宫格遮挡判定/pick 入槽+三消+胜负转换/undo 退牌/shuffle 重排剩余图案，各限一次）+ 全量重建视图（层叠偏移 Button 牌面、7 格槽位、道具行）；②special_modes 注册 tray（第 16 关解锁、240s、4 层×5×6、10 种图案）+ label/intro/callout/RECORD_MODES/panel rows（14 卡）；③session tray 分支：reset 替代棋盘生成（board 置空+牌堆渲染层）、_resolve_tray_clear（tray_result 纪录+🌸+20+结算面板）、_fail_tray_full；④progression 新增 tray_best_score 全 schema 与 tray_first 成就；⑤字体子集重切（897 字符）；⑥deploy.yml CI 测试清单补齐本地全量（mode_meta/stat/panels/page/tray_probe）——今后全部验证都在 CI 远端执行。
 - Validation: 本地仅做纯文本自查；全量测试/导出/冒烟由 CI 远端执行（本次为本地零测试提交的首次实践）。
+
+## 2026-09-10 (品牌定名 + 微信小程序能力借鉴：星级评价 / 樱花币复活)
+- 调研：微信小游戏典型能力=排行榜/看广告复活/分享得道具/体力墙/星级评价（官方文档+羊了个羊复盘+zrong 失败反馈分析）。纯 H5 无微信 SDK：排行榜与分享需平台能力（跳过），「看广告复活」本地化为「樱花币复活」，星级评价与失败反馈节奏离线可做。
+- 定名：游戏名「李米，索菲亚的连连看」——主页标题/欢迎面板/加载壳/落地页四处统一，字体子集重切（897→900 字符含名字）。
+- 星级评价：战役通关按剩余时间比评 1-3 星（≥50%/≥25%），progression 新增 level_stars 全 schema（patch key "stars" 取最优），旅程地图节点显示 ⭐，结算面板带星。
+- 樱花币复活：战役/特殊模式/步数模式失败后提供「🌸30 复活」（保留棋盘进度，+30 秒或 +5 步），余额不足自动隐藏；开局/结算自动复位按钮。
+- Validation: 本地零测试（用户要求），全部验证由 CI 远端执行。

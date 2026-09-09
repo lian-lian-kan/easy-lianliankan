@@ -56,7 +56,7 @@ static func build_main_ui(game):
 	title_row.add_child(title_col)
 
 	game.title_label = Label.new()
-	game.title_label.text = "连连看 🎀"
+	game.title_label.text = "李米，索菲亚的连连看"
 	game.title_label.add_font_override("font", game.game_font)
 	game.title_label.add_color_override("font_color", Color("e64980"))
 	title_col.add_child(game.title_label)
@@ -325,6 +325,21 @@ static func build_main_ui(game):
 	game.stage_panel_label.visible = false
 	root.add_child(game.stage_panel_label)
 
+	# Blossom revive offer, shown beside the failed-settle text.
+	game.revive_button = Button.new()
+	game.revive_button.text = "🌸30 复活（+30秒 / +5步）"
+	game.revive_button.rect_min_size = Vector2(220, 40)
+	game.revive_button.add_font_override("font", game._font_at_size(14))
+	game._apply_button_style(game.revive_button, Color("f06ba8"), Color("d6336c"))
+	game.revive_button.add_color_override("font_color", Color("ffffff"))
+	game.revive_button.visible = false
+	game.revive_button.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
+	game.revive_button.margin_top = 148
+	game.revive_button.margin_left = 85
+	game.revive_button.margin_right = 85
+	game.revive_button.connect("pressed", game, "_on_revive_pressed")
+	root.add_child(game.revive_button)
+
 	game.combo_burst_label = Label.new()
 	game.combo_burst_label.add_font_override("font", game.game_font)
 	game.combo_burst_label.align = Label.ALIGN_CENTER
@@ -355,7 +370,7 @@ static func refresh_ui(game):
 	var description = str(level.get("description", ""))
 	var unlocked_level_count = int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1
 
-	game.title_label.text = "连连看 🎀"
+	game.title_label.text = "李米，索菲亚的连连看"
 	if game.special_mode == "daily":
 		var daily = game.progression_state.get("daily_challenge", {})
 		var now_date = OS.get_date()

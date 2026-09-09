@@ -182,6 +182,9 @@ var level_highlight_timer
 const LEVEL_HIGHLIGHT_COLOR = Color("fbbf24")  # 琥珀色高亮
 const LEVEL_NORMAL_COLOR = Color("ffffff")  # 正常白色
 
+var revive_button  # 樱花币复活按钮（失败结算浮层）
+var revive_cost = 30
+
 var tray_state = {}  # 叠叠消：牌堆/槽位状态（tile_match.gd 管理）
 var tray_layer  # 叠叠消渲染层（挂在棋盘区内）
 
@@ -1052,3 +1055,6 @@ func _resolve_tray_clear():
 
 func _fail_tray_full():
 	return SESSION._fail_tray_full(self)
+
+func _on_revive_pressed():
+	return SESSION._revive(self)

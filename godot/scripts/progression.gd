@@ -41,6 +41,7 @@ static func default_progress(level_count: int) :
 		"achievements": [],
 		"onboarding_seen": false,
 		"level_best_times": {},  # Level index -> best time in seconds
+		"level_stars": {},  # Level index -> best star rating (1..3)
 		"daily_challenge": {"last_date": "", "streak": 0, "best_streak": 0, "best_score": 0},
 		"endless_best": {"round": 0, "score": 0},
 		"time_attack_best_score": 0,
@@ -91,6 +92,9 @@ static func normalize_progress(raw, level_count: int) :
 		var raw_best_times = raw.get("level_best_times", {})
 		if typeof(raw_best_times) == TYPE_DICTIONARY:
 			normalized["level_best_times"] = raw_best_times.duplicate()
+		var raw_level_stars = raw.get("level_stars", {})
+		if typeof(raw_level_stars) == TYPE_DICTIONARY:
+			normalized["level_stars"] = raw_level_stars.duplicate()
 		# Load special mode records
 		var raw_daily = raw.get("daily_challenge", {})
 		if typeof(raw_daily) == TYPE_DICTIONARY:
@@ -188,6 +192,14 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 			if new_time < current_best:
 				next_state["level_best_times"][level_idx] = new_time
 
+	# Star ratings: keep the best rating per level index.
+	if patch.has("stars"):
+		var star_data = patch["stars"]
+		if typeof(star_data) == TYPE_DICTIONARY and star_data.has("level_index") and star_data.has("stars"):
+			var star_key = str(star_data["level_index"])
+			var prev_stars = int(next_state["level_stars"].get(star_key, 0))
+			next_state["level_stars"][star_key] = max(prev_stars, max(1, min(3, int(star_data["stars"]))))
+
 	# Special mode records. A daily result carries the date context so the
 	# streak can bridge month/year boundaries correctly.
 	if patch.has("daily_result"):
@@ -263,7 +275,8 @@ static func same_progress(a, b, level_count: int) :
 		and _arrays_equal(aa.get("collected", []), bb.get("collected", [])) \
 		and _arrays_equal(aa.get("owned_sets", []), bb.get("owned_sets", [])) \
 		and int(aa.get("signin_streak", 0)) == int(bb.get("signin_streak", 0)) \
-		and str(aa.get("last_signin", "")) == str(bb.get("last_signin", ""))
+		and str(aa.get("last_signin", "")) == str(bb.get("last_signin", "")) \
+		and _dicts_equal(aa.get("level_stars", {}), bb.get("level_stars", {}))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :

@@ -206,15 +206,20 @@ static func _build_level_map(game):
 			var level: Dictionary = game.campaign_levels[level_index]
 			var unlocked = game._is_level_unlocked(level_index)
 			var is_current = level_index == int(game.level_index) and game.special_mode == ""
+			var star_map: Dictionary = game.progression_state.get("level_stars", {})
+			var stars = int(star_map.get(str(level_index), 0))
+			var star_mark = ""
+			for star_i in range(stars):
+				star_mark += "⭐"
 			var node = Button.new()
 			node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			node.rect_min_size = Vector2(0, 54)
 			node.add_font_override("font", game._font_at_size(14))
 			game._apply_button_style(node, Color("f06ba8"), Color("d6336c"))
 			if is_current:
-				node.text = "▶ 第%d关 · %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡"))]
+				node.text = "▶ 第%d关 · %s %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡")), star_mark]
 			elif unlocked:
-				node.text = "第%d关 · %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡"))]
+				node.text = "第%d关 · %s %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡")), star_mark]
 			else:
 				node.text = "🔒 第%d关 · %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡"))]
 			node.add_color_override("font_color", Color("ffffff") if unlocked else Color("e8b8cc"))

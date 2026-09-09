@@ -48,6 +48,8 @@ static func _exit_special_mode(game):
 	game._show_message("已返回关卡模式", 1.0)
 
 static func _reset_level_session(game, level, reset_total = false):
+	if game.revive_button:
+		game.revive_button.visible = false
 	PAGE_ROUTER.collect_level_icons(game)
 	if game.special_mode == "tray":
 		game.board = []
@@ -190,10 +192,16 @@ static func _resolve_after_board_changed(game):
 		game.level_score += time_bonus
 
 		var coin_reward = PAGE_ROUTER.award_level_clear(game, game._current_level())
+		var stars = 1
+		var level_time = int(game._current_level().get("time_limit", 0))
+		if level_time > 0:
+			var ratio = float(game.time_left) / float(level_time)
+			stars = 3 if ratio >= 0.5 else (2 if ratio >= 0.25 else 1)
 		var progress_patch := {
 			"score_candidate": game.total_score,
 			"combo_candidate": game.combo,
-			"coins_delta": coin_reward
+			"coins_delta": coin_reward,
+			"stars": {"level_index": game.level_index, "stars": stars}
 		}
 		if game.level_index >= game.campaign_levels.size() - 1:
 			progress_patch["current_level_index"] = 0
@@ -209,7 +217,7 @@ static func _resolve_after_board_changed(game):
 
 		if game.level_index >= game.campaign_levels.size() - 1:
 			game.stage_status = game.STATUS_COMPLETED
-			game.stage_panel_label.text = "全部关卡已完成，点击'再来一轮'"
+			game.stage_panel_label.text = "全部关卡已完成，点击'再来一轮'" + "  ⭐".repeat(stars)
 			game.stage_panel_label.visible = true
 			AudioManager.play_win()
 			game._show_message("全部通关！时间奖励 +" + str(time_bonus), 2.5)
@@ -217,7 +225,7 @@ static func _resolve_after_board_changed(game):
 		else:
 			game.stage_status = game.STATUS_CLEARED
 			game.pending_level_index = game.level_index + 1
-			game.stage_panel_label.text = "过关结算中，准备进入下一关"
+			game.stage_panel_label.text = "过关结算中，准备进入下一关  " + "⭐".repeat(stars)
 			game.stage_panel_label.visible = true
 			AudioManager.play_win()
 			game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus) + " · 🌸+" + str(coin_reward), 1.2)
@@ -370,6 +378,7 @@ static func _on_time_up(game):
 		game._refresh_ui()
 		game._refresh_board_visuals()
 		return
+		_offer_revive(game, 30)
 	game._patch_progress_state({
 		"current_level_index": game.level_index,
 		"score_candidate": game.total_score,
@@ -384,8 +393,9 @@ static func _on_time_up(game):
 	game.error_tiles.clear()
 
 	game.second_timer.stop()
-	game.stage_panel_label.text = "本关失败，点击\"重开\"重试"
+	game.stage_panel_label.text = "本关失败，点击\"重开\"重试，或复活续战"
 	game.stage_panel_label.visible = true
+	_offer_revive(game, 30)
 	game._show_message("时间到！第" + str(game._current_level().get("id", game.level_index + 1)) + "关失败", 1.8)
 
 	game._refresh_ui()
@@ -475,6 +485,35 @@ static func _fail_tray_full(game):
 	AudioManager.play_shuffle()
 	game._show_message("槽位满了！再试一次", 1.8)
 	game._refresh_ui()
+
+static func _offer_revive(game, cost):
+	# Blossom revival keeps the board as-is: only the resources return.
+	game.revive_cost = cost
+	if game.revive_button:
+		game.revive_button.visible = coins_can_afford(game, cost)
+
+static func coins_can_afford(game, cost):
+	return int(game.progression_state.get("coins", 0)) >= cost
+
+static func _revive(game):
+	var cost = int(game.revive_cost)
+	if game.stage_status != game.STATUS_FAILED or not coins_can_afford(game, cost):
+		if game.revive_button:
+			game.revive_button.visible = false
+		return
+	game._patch_progress_state({"coins_delta": -cost})
+	if game.time_left <= 0:
+		game.time_left = int(max(30.0, float(game._current_level().get("time_limit", 60)) * 0.25))
+	if game.moves_left > 0 or game._current_level().has("move_budget"):
+		game.moves_left = max(game.moves_left, 5)
+	game.stage_status = game.STATUS_PLAYING
+	if game.revive_button:
+		game.revive_button.visible = false
+	game.stage_panel_label.visible = false
+	game._start_second_timer()
+	game._show_message("复活成功！继续加油", 1.4)
+	game._refresh_ui()
+	game._refresh_board_visuals()
 
 static func _pause_stage(game):
 	if game.stage_status != game.STATUS_PLAYING:
