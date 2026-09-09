@@ -816,3 +816,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：special_modes.gd 582 行中约 250 行为纯数据表（17 个模式 DEFAULT_CONFIGS/MODE_LABELS/INTRO_TEXTS/EXTRA/RECORD_MODES）。
 - 变更：数据表整体外置 special_modes_data.gd（239 行，纯 const）；special_modes.gd 回归纯逻辑（359 行）并保留同名转发 const（DATA.X），外部调用与测试零改动。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (重构 Round BQ：全仓死代码清理 + 修复 collect/flip 启动分支丢失)
+- 审查：python 静态扫描全仓孤儿函数与重复定义。甄别后确认 10 个死薄壳（_cell_ring/_compress_path/_is_inside/_pad_board/_parse_node_key/_reconstruct_path/_create_board/_shuffle_array/_spawn_petal/_stop_bgm——均为模块化迁移后无人调用的遗留委托）予以删除；引擎回调与字符串信号连接（_spawn_petal 等误报源）逐一排除。
+- **严重发现并修复**：BN 轮拆分剪切时丢失了 _start_special_mode 中 collect/flip 的 level 构建分支——选这两个玩法会错误启动成无尽模式棋盘（CI 纯逻辑探针未覆盖启动路径故未拦截）。分支已恢复，并在 page_probe 加防回归守卫：tray/collect/flip 启动后必须构建出带各自 mode_id 的 level。
+- 保留：progression/audio_manager 的 5 个未接线 API（体量小且属公开接口，删除收益为零）。
+- Validation: 本地零测试，薄壳完整性扫描零缺失，全量验证由 CI 远端执行。

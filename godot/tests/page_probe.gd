@@ -123,6 +123,15 @@ func _init() -> void:
 	check(signed_note, "sign-in page reflects today's claim")
 	game._on_nav_home_pressed()
 
+	# --- regression guard: the three program-built modes must each build
+	# their own level (a lost elif here silently starts endless instead) ---
+	for mode_id in ["tray", "collect", "flip"]:
+		game.SPECIAL_SESSION._start_special_mode(game, mode_id)
+		var built_mode = str(game.special_level.get("mode_id", ""))
+		check(built_mode == mode_id, "special mode %s builds its own level" % mode_id)
+		check(int(game.time_left) > 0, "%s starts with its time limit" % mode_id)
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})

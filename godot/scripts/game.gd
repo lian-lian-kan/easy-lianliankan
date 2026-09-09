@@ -410,10 +410,6 @@ func _trigger_level_highlight():
 func _start_bgm():
 	AudioManager.start_bgm()
 
-func _stop_bgm():
-	AudioManager.stop_bgm()
-
-
 func _on_clear_progress_pressed():
 	progression_state = PROGRESSION_SCRIPT.default_progress(campaign_levels.size())
 	_save_progress_state()
@@ -434,22 +430,8 @@ func _current_level():
 func _create_playable_board(level):
 	return BOARD_ENGINE.create_playable_board(level, self, "_is_coord_playable")
 
-func _create_board(rows, cols, kinds):
-	return BOARD_ENGINE.create_board(rows, cols, kinds)
-
 func _start_level(next_index, reset_total = false):
 	return SESSION._start_level(self, next_index, reset_total)
-
-func _shuffle_array(arr):
-	BOARD_ENGINE.shuffle_array(arr)
-
-
-
-
-
-
-
-
 
 func _color_for(value):
 	return BOARD_VIEW.color_for(self, value)
@@ -499,9 +481,6 @@ func _is_fog_mode():
 
 func _is_chain_mode():
 	return special_mode == "chain"
-
-func _cell_ring(r, c):
-	return BOARD_MECHANICS.cell_ring(self, r, c)
 
 func _is_fogged(coord):
 	return BOARD_MECHANICS.is_fogged(self, coord)
@@ -650,9 +629,6 @@ func _build_petals():
 
 func _on_petal_tick():
 	FX.petal_tick(self)
-
-func _spawn_petal(start_mid_fall):
-	FX.spawn_petal(self, start_mid_fall)
 
 func _spawn_confetti(count):
 	FX.spawn_confetti(self, count)
@@ -909,12 +885,6 @@ func _on_achievement_dismiss(notification):
 	notification.queue_free()
 	tween.queue_free()
 
-func _is_inside(board_state, point):
-	return BOARD_ENGINE.is_inside(board_state, point)
-
-func _pad_board(board_state):
-	return BOARD_ENGINE.pad_board(board_state)
-
 func _find_path(board_state, a, b):
 	return BOARD_ENGINE.find_path(board_state, a, b)
 
@@ -923,15 +893,6 @@ func _check_achievements_on_clear():
 
 func _node_key(r, c, d, t):
 	return BOARD_ENGINE.node_key(r, c, d, t)
-
-func _parse_node_key(key):
-	return BOARD_ENGINE.parse_node_key(key)
-
-func _reconstruct_path(cur, parent, start):
-	return BOARD_ENGINE.reconstruct_path(cur, parent, start)
-
-func _compress_path(points):
-	return BOARD_ENGINE.compress_path(points)
 
 func _find_any_hint(board_state):
 	return BOARD_ENGINE.find_any_hint(board_state, self, "_is_coord_playable")
