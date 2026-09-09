@@ -811,3 +811,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：ui_hud.gd 698 行中 build_main_ui 单函数约 330 行（背景/页头/统计卡/道具行/控制区/棋盘区/结算浮层/页面挂载），是文件膨胀主因。
 - 变更：build_main_ui 原样迁入新模块 home_screen.gd（零逻辑改动，纯搬移——状态全在 game 节点上，refresh_ui 留守 ui_hud）。ui_hud 698→345 行，回归"主屏刷新+消息+控制+成就通知"职责；game.gd 的 _build_ui 薄壳改向 HOME_SCREEN。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (重构 Round BP：special_modes 数据表外置 special_modes_data.gd)
+- 审查：special_modes.gd 582 行中约 250 行为纯数据表（17 个模式 DEFAULT_CONFIGS/MODE_LABELS/INTRO_TEXTS/EXTRA/RECORD_MODES）。
+- 变更：数据表整体外置 special_modes_data.gd（239 行，纯 const）；special_modes.gd 回归纯逻辑（359 行）并保留同名转发 const（DATA.X），外部调用与测试零改动。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

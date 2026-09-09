@@ -14,6 +14,7 @@
 | `scripts/game_config.gd` | 配置装载：JSON 覆盖 + 代码内默认回退（关卡表/调参/图标集/模式配置） | `panels_probe.gd`（重载断言） |
 | `scripts/progress_store.gd` | 进度存取：加载/保存/补丁式更新（special 会话过滤战役字段） | `panels_probe.gd`（持久化断言） |
 | `scripts/progression.gd` | 进度/成就/纪录的纯存档模型（apply_update/normalize/比较） | `progression_test.gd` |
+| `scripts/special_modes_data.gd` | 玩法数据表：17 个模式默认配置/标签/开场文案/结算表（纯 const） | `special_modes_test.gd` + `mode_meta_test.gd` |
 | `scripts/special_modes.gd` | 特殊玩法配置/生成器/解锁/纪录键 + 模式标签/开场文案/面板行数据 | `special_modes_test.gd` + `mode_meta_test.gd` |
 | `scripts/campaign_levels.gd` | 战役关卡数据表（深拷贝访问器） | `campaign_levels_test.gd`（数据不变量） |
 | `scripts/powerups.gd` | 道具域：载荷规则、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
