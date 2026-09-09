@@ -159,7 +159,7 @@ static func build_view(game):
 		return
 
 	var pile = Control.new()
-	pile.position = Vector2(20, 10)
+	pile.rect_position = Vector2(20, 10)
 	game.tray_layer.add_child(pile)
 	for i in range(state["tiles"].size()):
 		var tile: Dictionary = state["tiles"][i]
@@ -167,7 +167,7 @@ static func build_view(game):
 			continue
 		var tile_button = Button.new()
 		tile_button.text = _pattern_glyph(game, int(tile["pattern"]))
-		tile_button.position = Vector2(
+		tile_button.rect_position = Vector2(
 			int(tile["col"]) * STEP.x + int(tile["layer"]) * LAYER_OFFSET.x,
 			int(tile["row"]) * STEP.y + int(tile["layer"]) * LAYER_OFFSET.y)
 		tile_button.rect_size = TILE_SIZE
@@ -178,7 +178,7 @@ static func build_view(game):
 		pile.add_child(tile_button)
 
 	var tray_row = HBoxContainer.new()
-	tray_row.position = Vector2(20, 250)
+	tray_row.rect_position = Vector2(20, 250)
 	tray_row.add_constant_override("separation", 6)
 	game.tray_layer.add_child(tray_row)
 	for slot in range(int(state["capacity"])):
@@ -200,7 +200,7 @@ static func build_view(game):
 		tray_row.add_child(slot_panel)
 
 	var tools = HBoxContainer.new()
-	tools.position = Vector2(20, 306)
+	tools.rect_position = Vector2(20, 306)
 	tools.add_constant_override("separation", 10)
 	game.tray_layer.add_child(tools)
 	var undo_button = Button.new()
