@@ -1090,7 +1090,7 @@ func _on_flip_back_timeout():
 	return MEMORY_FLIP.unflip_misses(self)
 
 func _resolve_flip_clear():
-	return SPECIAL_SPECIAL_SESSION._resolve_flip_clear(self)
+	return SPECIAL_SESSION._resolve_flip_clear(self)
 
 func _resolve_collect_clear():
 	return SPECIAL_SESSION._resolve_collect_clear(self)
