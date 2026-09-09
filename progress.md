@@ -832,3 +832,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：tray/collect/flip 的达标结算（纪录/花/结算面板）此前无直接断言，属测试盲区。
 - 变更：page_probe 补结算探针——tray 清堆后纪录 ≥1200 分且 +🌸20 并显示结算面板；collect 目标填满后纪录并 +🌸20；flip 全消后 bonus 200 纪录并 +🌸20。三个特殊会话结算函数（special_session._resolve_*）行为全覆盖。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round BT：全玩法启动冒烟探针 startup_probe.gd)
+- 动机：BQ 轮抓到的 collect/flip 启动分支丢失与 BS 轮的叠叠消 new_round 缺失，同源于"玩法启动路径无测试"。本探针把 16 种特殊模式逐个真实启动：会话进入/PLAYING/时钟/状态载体（tray 120 张牌、flip 24 卡、collect 3 目标、frost 护甲、stack 埋层、chain 锁、fog 迷雾环、race 对数、moves 预算…）+ 干净退出回战役。
+- Validation: 本地零测试，探针随 CI 远端执行。
