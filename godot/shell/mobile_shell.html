@@ -190,6 +190,20 @@ body {
 .status-action:hover {
 	background: #d6336c;
 }
+
+#diag-badge {
+	background: rgba(40, 20, 30, 0.82);
+	border-radius: 6px;
+	color: #ffffff;
+	font: 600 11px/1.5 'SFMono-Regular', Menlo, Consolas, monospace;
+	left: 4px;
+	padding: 4px 7px;
+	pointer-events: none;
+	position: fixed;
+	top: 4px;
+	white-space: pre;
+	z-index: 99;
+}
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
@@ -268,6 +282,36 @@ const engine = new Engine(GODOT_CONFIG);
 	}
 
 	applyDprCapForMobile();
+
+	// ?diag=1 renders a live sharpness badge: the ratio the shell forces, the
+	// canvas backing-store size, and the effective render ratio (backing /
+	// CSS pixels). effRatio staying at ~1 while dpr says 2+ is the smoking gun
+	// for a webview that ignores the devicePixelRatio override.
+	(function () {
+		if (!new URLSearchParams(window.location.search).has('diag')) {
+			return;
+		}
+		const badge = document.createElement('div');
+		badge.id = 'diag-badge';
+		document.body.appendChild(badge);
+		const canvas = document.getElementById('canvas');
+		function refresh() {
+			const cssW = canvas.clientWidth || 1;
+			const dprEff = canvas.width / cssW;
+			badge.textContent =
+				`dpr=${window.devicePixelRatio}\n` +
+				`canvas=${canvas.width}x${canvas.height}\n` +
+				`css=${cssW}x${canvas.clientHeight}\n` +
+				`effRatio=${dprEff.toFixed(2)}\n` +
+				(Number.isFinite(parseFloat(new URLSearchParams(window.location.search).get('dpr')))
+					? `forced dpr=${parseFloat(new URLSearchParams(window.location.search).get('dpr'))}\n` : '') +
+				`ua=${/Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop'}`;
+		}
+		refresh();
+		setInterval(refresh, 1000);
+		window.addEventListener('resize', refresh, { passive: true });
+	})();
+
 	syncViewportHeight();
 	window.addEventListener('resize', syncViewportHeight, { passive: true });
 	if (window.visualViewport) {

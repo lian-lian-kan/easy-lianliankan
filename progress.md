@@ -758,3 +758,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-08 (代码质量 Round AQ：game.gd 最后一批散点清扫)
 - Context: 字体管理独立为新模块 ui_fonts.gd（3 字体常量 + font_at_size 按字号缓存 + init_theme 全局主题挂载）；特效胶水 2 函数（_make_fx_tween 补间工厂/_play_stage_clear_celebration 过关庆典）迁 fx_layer；棋盘视觉胶水 2 函数（_color_for 图标配色/_try_get_tile_button 格子查找）迁 board_view；时间告警判定（_is_time_danger）与道具显示循环（_update_power_ups_display）迁 stats_hud；暂停面板动作 2 函数（_on_restart_current_level 会话感知重开/_on_back_to_first_level）迁 ui_panels；_start_second_timer 迁 ui_hud。game.gd 1058→993 行，跌破千行。
 - Validation: 13 项 headless 测试全绿（panels_probe 149→162 断言：字体缓存同对象/主题挂载/格子越界拒绝/无图标集白色回退/补间挂载/庆典产物/时钟豁免-低时告警-暂停不告警/特殊会话重开与返回第1关）；导出与 web_entry 通过。
+
+## 2026-09-08 (诊断：界面文字模糊——全链路取证 + ?diag=1 现场诊断徽标)
+- 取证：①Godot 3.6 源码确认 stretch 2d 自动字体过采样链（scene_tree STRETCH_MODE_2D 分支 _update_font_oversampling(screen/viewport×shrink)，use_oversampling 默认 true，缓存重建健全）；②桌面离屏实验：override_oversampling=2 与自动档输出逐像素一致（证明桌面过采样已生效），use_filter 开关在 1:1 纹素映射下零差异；③Playwright 模拟 iPhone（dsf=2/3）实测 Web：canvas 物理尺寸正确（780/1170），字体过采样随 DPR（3× 缩回逻辑尺寸细节能量 21.27 ≥ 2× 的 20.61）——模拟环境全链路健康，无法复现模糊。
+- 结论：模糊根因在用户实际设备环境而非代码——头号嫌疑 GitHub Pages CDN/浏览器缓存了 09-08 高清化修复（allow_hidpi）之前的旧构建；次嫌特定 webview 的 devicePixelRatio 覆盖失败。
+- 变更：shell 加 ?diag=1 实时诊断角标（dpr/canvas 物理尺寸/css 尺寸/effRatio=canvas.width÷clientWidth/UA 类别，1s 刷新）——真机打开读 effRatio：<2 即 canvas 未放大（DPR 链路问题）；≥2 说明渲染正常，模糊是字号/字重观感问题，转产品向优化。
+- Validation: 13 项 headless 测试全绿；Playwright 验证徽标读数（dpr=3, canvas=1170x2532, effRatio=3.00）；导出通过。
