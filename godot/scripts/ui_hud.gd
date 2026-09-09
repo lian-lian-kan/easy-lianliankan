@@ -56,7 +56,7 @@ static func build_main_ui(game):
 	title_row.add_child(title_col)
 
 	game.title_label = Label.new()
-	game.title_label.text = "李米，索菲亚的连连看"
+	game.title_label.text = "Sophia的连连看"
 	game.title_label.add_font_override("font", game.game_font)
 	game.title_label.add_color_override("font_color", Color("e64980"))
 	title_col.add_child(game.title_label)
@@ -370,7 +370,7 @@ static func refresh_ui(game):
 	var description = str(level.get("description", ""))
 	var unlocked_level_count = int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1
 
-	game.title_label.text = "李米，索菲亚的连连看"
+	game.title_label.text = "Sophia的连连看"
 	if game.special_mode == "daily":
 		var daily = game.progression_state.get("daily_challenge", {})
 		var now_date = OS.get_date()

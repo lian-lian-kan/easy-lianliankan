@@ -26,7 +26,7 @@ static func _onboarding_panel(game):
 	margin.add_child(content)
 
 	var title = Label.new()
-	title.text = "🎮 欢迎来到 李米，索菲亚的连连看"
+	title.text = "🎮 欢迎来到 Sophia的连连看"
 	title.align = Label.ALIGN_CENTER
 	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
