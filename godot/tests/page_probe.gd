@@ -126,6 +126,7 @@ func _init() -> void:
 	# --- regression guard: the three program-built modes must each build
 	# their own level (a lost elif here silently starts endless instead) ---
 	for mode_id in ["tray", "collect", "flip"]:
+		game.progression_state["highest_unlocked_level_index"] = 17
 		game.SPECIAL_SESSION._start_special_mode(game, mode_id)
 		var built_mode = str(game.special_level.get("mode_id", ""))
 		check(built_mode == mode_id, "special mode %s builds its own level" % mode_id)
