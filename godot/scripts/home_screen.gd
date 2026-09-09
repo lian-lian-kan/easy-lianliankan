@@ -7,6 +7,7 @@ extends Reference
 
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const ECONOMY = preload("res://scripts/economy.gd")
+const PATH_OVERLAY_SCRIPT = preload("res://scripts/path_overlay.gd")
 
 static func build_main_ui(game):
 	game.set_anchors_and_margins_preset(Control.PRESET_WIDE)
