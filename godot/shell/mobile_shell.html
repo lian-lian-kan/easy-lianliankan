@@ -283,6 +283,17 @@ const engine = new Engine(GODOT_CONFIG);
 
 	applyDprCapForMobile();
 
+	// Offline cache: payloads (wasm/pck/js/png) are cached permanently after
+	// the first download, so later visits load instantly. A new deploy swaps
+	// the cache in the background via the build hash baked into sw.js.
+	if ('serviceWorker' in navigator) {
+		window.addEventListener('load', () => {
+			navigator.serviceWorker.register('./sw.js').catch((err) => {
+				console.warn('[H5] service worker unavailable', err);
+			});
+		});
+	}
+
 	// ?diag=1 renders a live sharpness badge: the ratio the shell forces, the
 	// canvas backing-store size, and the effective render ratio (backing /
 	// CSS pixels). effRatio staying at ~1 while dpr says 2+ is the smoking gun
@@ -305,6 +316,8 @@ const engine = new Engine(GODOT_CONFIG);
 				`effRatio=${dprEff.toFixed(2)}\n` +
 				(Number.isFinite(parseFloat(new URLSearchParams(window.location.search).get('dpr')))
 					? `forced dpr=${parseFloat(new URLSearchParams(window.location.search).get('dpr'))}\n` : '') +
+				(navigator.serviceWorker.controller
+					? `sw=${navigator.serviceWorker.controller.scriptURL}\n` : '') +
 				`ua=${/Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop'}`;
 		}
 		refresh();

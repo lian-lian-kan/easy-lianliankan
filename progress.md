@@ -764,3 +764,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 结论：模糊根因在用户实际设备环境而非代码——头号嫌疑 GitHub Pages CDN/浏览器缓存了 09-08 高清化修复（allow_hidpi）之前的旧构建；次嫌特定 webview 的 devicePixelRatio 覆盖失败。
 - 变更：shell 加 ?diag=1 实时诊断角标（dpr/canvas 物理尺寸/css 尺寸/effRatio=canvas.width÷clientWidth/UA 类别，1s 刷新）——真机打开读 effRatio：<2 即 canvas 未放大（DPR 链路问题）；≥2 说明渲染正常，模糊是字号/字重观感问题，转产品向优化。
 - Validation: 13 项 headless 测试全绿；Playwright 验证徽标读数（dpr=3, canvas=1170x2532, effRatio=3.00）；导出通过。
+
+## 2026-09-10 (加载性能：Service Worker 预缓存 + pck 排除测试代码)
+- 背景：用户报"原来秒出现在很慢"。实测定位：本机到 github.io 仅 ~37KB/s，wasm(5.5MB gz)+pck(2.7MB gz) 并行下载需 150~230 秒；"原来秒出"是缓存命中，高频部署使缓存反复失效。体积侧取证：wasm 为官方模板恒定体积，pck 内 emoji 位图(796 张 128px 调色板 PNG, p50 2.6KB)已是 Google 发布态、重压缩无收益(102~107%)——打包体积接近内容下限，优化杠杆在缓存。
+- 变更：①新增 shell/sw.js 离线缓存——payload(wasm/pck/js/png) cache-first 永久缓存，二次访问零网络下载（Playwright 实测 transferSize 全 0）；index.html network-first 发现新部署，sw.js 顶部构建 hash（CI sed $GITHUB_SHA 前 7 位）变更触发整组缓存后台换新，当前局继续玩旧缓存、下次打开即新版；②deploy.yml 导出后注入 hash 并附带 sw.js；③export_presets exclude tests/*, tools/*（pck 62→60 文件，2.97→2.85MB）。
+- Validation: 13 项 headless 测试 + web_entry + offscreen_font 全绿；SW 二次加载缓存命中实测通过。

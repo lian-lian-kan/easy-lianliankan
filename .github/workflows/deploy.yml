@@ -73,6 +73,9 @@ jobs:
           ls -la public/godot
           test -f public/godot/index.wasm
           test -f public/godot/index.pck
+          # Bake the deploy hash into the offline-cache manifest and ship it
+          # next to the payloads it caches.
+          sed "s/__BUILD_HASH__/${GITHUB_SHA::7}/" godot/shell/sw.js > public/godot/sw.js
 
       - name: Verify web entry
         run: timeout 120 ~/godot-bin/godot --no-window --path godot -s res://tests/web_entry_status_mode_test.gd
