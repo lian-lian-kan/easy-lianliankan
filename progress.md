@@ -800,3 +800,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：page_router.gd 经多页面/经济/签到/商店多轮迭代膨胀到 562 行，导航壳、四页构建、经济逻辑三职责混装。
 - 变更：①新增 page_ui.gd（50 行）——公共页头与滚动内容区工具，依赖中立供两个页面模块共用（避免 preload 环）；②新增 economy.gd（311 行）——钱包 chip/每日签到页与领取/图集商店页与购买装备/收集进度统计与图鉴收集发放，全部经济域内聚；③page_router.gd 回归纯导航壳（215 行）：容器/nav/show/close/旅程/图鉴。game/session/ui_hud 的经济调用薄壳全部改向 ECONOMY，page_router 仅保留导航调用。
 - Validation: 本地零测试（既定约束），静态自查已知 GDScript 3 陷阱（ALIGNMENT/offset/数组字面量索引）均无命中；全量验证由 CI 远端执行。
+
+## 2026-09-10 (重构 Round BN：特殊模式会话拆出 special_session.gd)
+- 审查：session.gd 690 行混装战役会话与 17 种特殊模式的进出/结算/判负。
+- 变更：拆出 special_session.gd（227 行）——_start/_exit_special_mode、_resolve_special_clear、_record_special_completion、竞速判负、盲盒记忆五函数；session.gd 回归战役会话（467 行）：reset/裁决/时钟/暂停/复活/成就/翻翻乐与叠叠消的棋盘分支。依赖方向收敛为 session→special_session 单向（经 game 薄壳回调成就，无 preload 环）。
+- 顺手修复潜伏崩溃：economy.collect_pair 达标时调用的 game._resolve_collect_clear 薄壳从未定义（collect 玩法达标即 crash，CI 未覆盖此路径）——全仓 game._* 薄壳完整性扫描工具化（python 静态对照），确认零缺失。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

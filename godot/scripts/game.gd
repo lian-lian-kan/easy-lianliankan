@@ -33,6 +33,7 @@ const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const TILE_MATCH = preload("res://scripts/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 const ECONOMY = preload("res://scripts/economy.gd")
+const SPECIAL_SESSION = preload("res://scripts/special_session.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -516,7 +517,7 @@ func _build_frost_armor(new_board, level):
 
 
 func _memory_key(coord):
-	return SESSION._memory_key(self, coord)
+	return SPECIAL_SESSION._memory_key(self, coord)
 
 
 
@@ -527,10 +528,10 @@ func _memory_key(coord):
 
 
 func _memory_schedule_hide(coords, delay):
-	return SESSION._memory_schedule_hide(self, coords, delay)
+	return SPECIAL_SESSION._memory_schedule_hide(self, coords, delay)
 
 func _start_memory_preview():
-	return SESSION._start_memory_preview(self)
+	return SPECIAL_SESSION._start_memory_preview(self)
 
 func _on_second_tick():
 	return HUD_TIMERS._on_second_tick(self)
@@ -561,10 +562,10 @@ func _on_time_freeze_timeout():
 
 
 func _on_memory_hide_timeout():
-	return SESSION._on_memory_hide_timeout(self)
+	return SPECIAL_SESSION._on_memory_hide_timeout(self)
 
 func _on_memory_preview_timeout():
-	return SESSION._on_memory_preview_timeout(self)
+	return SPECIAL_SESSION._on_memory_preview_timeout(self)
 
 
 
@@ -739,7 +740,7 @@ func _dissolve_all_chains():
 	return BOARD_MECHANICS.dissolve_all_chains(self)
 
 func _fail_race_lost():
-	return SESSION._fail_race_lost(self)
+	return SPECIAL_SESSION._fail_race_lost(self)
 
 func _break_chains_around(coords):
 	return BOARD_MECHANICS.break_chains_around(self, coords)
@@ -832,17 +833,17 @@ func _on_time_up():
 	return SESSION._on_time_up(self)
 
 func _record_special_completion():
-	return SESSION._record_special_completion(self)
+	return SPECIAL_SESSION._record_special_completion(self)
 
 
 func _start_special_mode(mode_id):
-	return SESSION._start_special_mode(self, mode_id)
+	return SPECIAL_SESSION._start_special_mode(self, mode_id)
 
 func _unlock_achievements(ids):
 	return SESSION._unlock_achievements(self, ids)
 
 func _exit_special_mode():
-	return SESSION._exit_special_mode(self)
+	return SPECIAL_SESSION._exit_special_mode(self)
 
 func _apply_combo_gain(base_score):
 	return SESSION._apply_combo_gain(self, base_score)
@@ -857,7 +858,7 @@ func _resolve_after_board_changed():
 	return SESSION._resolve_after_board_changed(self)
 
 func _resolve_special_clear():
-	return SESSION._resolve_special_clear(self)
+	return SPECIAL_SESSION._resolve_special_clear(self)
 
 
 func _remaining_tiles_count():
@@ -1061,10 +1062,10 @@ func _on_tray_shuffle_pressed():
 	TILE_MATCH.build_view(self)
 
 func _resolve_tray_clear():
-	return SESSION._resolve_tray_clear(self)
+	return SPECIAL_SESSION._resolve_tray_clear(self)
 
 func _fail_tray_full():
-	return SESSION._fail_tray_full(self)
+	return SPECIAL_SESSION._fail_tray_full(self)
 
 func _on_revive_pressed():
 	return SESSION._revive(self)
@@ -1089,4 +1090,7 @@ func _on_flip_back_timeout():
 	return MEMORY_FLIP.unflip_misses(self)
 
 func _resolve_flip_clear():
-	return SESSION._resolve_flip_clear(self)
+	return SPECIAL_SPECIAL_SESSION._resolve_flip_clear(self)
+
+func _resolve_collect_clear():
+	return SPECIAL_SESSION._resolve_collect_clear(self)

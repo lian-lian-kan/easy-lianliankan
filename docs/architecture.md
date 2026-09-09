@@ -9,6 +9,7 @@
 | `scripts/board_mechanics.gd` | 机制状态域：五机制的消除伤害（冰甲两段/锁链解锁/叠层顶出）、重力压实触发、迷雾层数、可选性判定 | `panels_probe.gd`（机制行为断言）+ `frost/variants/mechanics_probe.gd` |
 | `scripts/board_view.gd` | 棋盘视觉：全量刷新、格子样式/尺寸、图标映射、出生/洗牌动画 | `panels_probe.gd`（视觉断言） |
 | `scripts/game_input.gd` | 输入：棋盘点击（选中/配对/待发道具路由）、盲盒翻牌、键盘路由、提示/自动消 | `panels_probe.gd`（输入行为断言） |
+| `scripts/special_session.gd` | 特殊模式会话：17 种玩法进出、结算纪录与发放、竞速判负、盲盒记忆 | `flip_probe.gd` + `variants_probe.gd` |
 | `scripts/session.gd` | 会话生命周期：关卡会话重置、走子后裁决（胜负/重排/重力）、特殊模式进出、结算与判负 | `panels_probe.gd`（会话行为断言） |
 | `scripts/game_config.gd` | 配置装载：JSON 覆盖 + 代码内默认回退（关卡表/调参/图标集/模式配置） | `panels_probe.gd`（重载断言） |
 | `scripts/progress_store.gd` | 进度存取：加载/保存/补丁式更新（special 会话过滤战役字段） | `panels_probe.gd`（持久化断言） |
