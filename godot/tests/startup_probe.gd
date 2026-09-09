@@ -94,6 +94,7 @@ func _init() -> void:
 		game.SPECIAL_SESSION._exit_special_mode(game)
 		check(game.special_mode == "" && game.stage_status == game.STATUS_PLAYING,
 			"%s exits back to the campaign" % mode_id)
+		print("DBG %s done: highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
 
 	# the campaign board itself
 	game._start_level(0, true)
