@@ -822,3 +822,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **严重发现并修复**：BN 轮拆分剪切时丢失了 _start_special_mode 中 collect/flip 的 level 构建分支——选这两个玩法会错误启动成无尽模式棋盘（CI 纯逻辑探针未覆盖启动路径故未拦截）。分支已恢复，并在 page_probe 加防回归守卫：tray/collect/flip 启动后必须构建出带各自 mode_id 的 level。
 - 保留：progression/audio_manager 的 5 个未接线 API（体量小且属公开接口，删除收益为零）。
 - Validation: 本地零测试，薄壳完整性扫描零缺失，全量验证由 CI 远端执行。
+
+## 2026-09-10 (重构 Round BR：战役结算提取 _settle_campaign_clear)
+- 审查：_resolve_after_board_changed 约 115 行，战役 clear 的结算段（时间奖励/金币/星级/解锁推进/终局与中间关双分支）深嵌套内联。
+- 变更：结算段原样提取为 _settle_campaign_clear(game)（含 is_final 判定收敛），裁决函数回归"分支判断 + 委派"形态。逻辑零改动（时间奖励/金币/星级/推进数值逐一对照）。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

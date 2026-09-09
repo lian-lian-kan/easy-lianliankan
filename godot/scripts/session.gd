@@ -190,63 +190,71 @@ static func _resolve_after_board_changed(game):
 			game._refresh_board_visuals()
 		return
 	if game._remaining_tiles_count() == 0:
-		var time_bonus_multiplier = float(game._current_level().get("time_bonus_multiplier", 2.0))
-		var time_bonus = int(round(float(game.time_left) * time_bonus_multiplier))
-		game.total_score += time_bonus
-		game.level_score += time_bonus
-
-		var coin_reward = ECONOMY.award_level_clear(game, game._current_level())
-		var stars = 1
-		var level_time = int(game._current_level().get("time_limit", 0))
-		if level_time > 0:
-			var ratio = float(game.time_left) / float(level_time)
-			stars = 3 if ratio >= 0.5 else (2 if ratio >= 0.25 else 1)
-		var progress_patch := {
-			"score_candidate": game.total_score,
-			"combo_candidate": game.combo,
-			"coins_delta": coin_reward,
-			"stars": {"level_index": game.level_index, "stars": stars}
-		}
-		if game.level_index >= game.campaign_levels.size() - 1:
-			progress_patch["current_level_index"] = 0
-			progress_patch["highest_unlocked_level_index"] = max(0, game.campaign_levels.size() - 1)
-		else:
-			progress_patch["current_level_index"] = game.level_index + 1
-			progress_patch["highest_unlocked_level_index"] = game.level_index + 1
-		game._patch_progress_state(progress_patch)
-
-		game._reset_combo()
-		game.second_timer.stop()
-		game.stage_panel_label.visible = false
-
-		if game.level_index >= game.campaign_levels.size() - 1:
-			game.stage_status = game.STATUS_COMPLETED
-			game.stage_panel_label.text = "全部关卡已完成，点击'再来一轮'" + "  ⭐".repeat(stars)
-			game.stage_panel_label.visible = true
-			AudioManager.play_win()
-			game._show_message("全部通关！时间奖励 +" + str(time_bonus), 2.5)
-			game._play_stage_clear_celebration(true)
-		else:
-			game.stage_status = game.STATUS_CLEARED
-			game.pending_level_index = game.level_index + 1
-			game.stage_panel_label.text = "过关结算中，准备进入下一关  " + "⭐".repeat(stars)
-			game.stage_panel_label.visible = true
-			AudioManager.play_win()
-			game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus) + " · 🌸+" + str(coin_reward), 1.2)
-			game._play_stage_clear_celebration(false)
-			game.level_advance_timer.stop()
-			game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
-			game.level_advance_timer.start()
-
-		game._refresh_ui()
-		game._refresh_board_visuals()
-		game._check_achievements_on_clear()
+		_settle_campaign_clear(game)
 		return
 
 	if game._find_any_hint(game.board).empty():
 		game._reshuffle_board(game.board)
 		game._show_message("无解，已自动重排", 1.0)
 		game._refresh_board_visuals()
+
+
+# Campaign clear settle: time bonus, blossom payout, star rating (by the
+# remaining-time ratio), next-level unlock and the win flow for both the
+# final and intermediate levels.
+static func _settle_campaign_clear(game):
+	var time_bonus_multiplier = float(game._current_level().get("time_bonus_multiplier", 2.0))
+	var time_bonus = int(round(float(game.time_left) * time_bonus_multiplier))
+	game.total_score += time_bonus
+	game.level_score += time_bonus
+
+	var coin_reward = ECONOMY.award_level_clear(game, game._current_level())
+	var stars = 1
+	var level_time = int(game._current_level().get("time_limit", 0))
+	if level_time > 0:
+		var ratio = float(game.time_left) / float(level_time)
+		stars = 3 if ratio >= 0.5 else (2 if ratio >= 0.25 else 1)
+	var progress_patch := {
+		"score_candidate": game.total_score,
+		"combo_candidate": game.combo,
+		"coins_delta": coin_reward,
+		"stars": {"level_index": game.level_index, "stars": stars}
+	}
+	var is_final = game.level_index >= game.campaign_levels.size() - 1
+	if is_final:
+		progress_patch["current_level_index"] = 0
+		progress_patch["highest_unlocked_level_index"] = max(0, game.campaign_levels.size() - 1)
+	else:
+		progress_patch["current_level_index"] = game.level_index + 1
+		progress_patch["highest_unlocked_level_index"] = game.level_index + 1
+	game._patch_progress_state(progress_patch)
+
+	game._reset_combo()
+	game.second_timer.stop()
+	game.stage_panel_label.visible = false
+
+	if is_final:
+		game.stage_status = game.STATUS_COMPLETED
+		game.stage_panel_label.text = "全部关卡已完成，点击'再来一轮'" + "  ⭐".repeat(stars)
+		game.stage_panel_label.visible = true
+		AudioManager.play_win()
+		game._show_message("全部通关！时间奖励 +" + str(time_bonus), 2.5)
+		game._play_stage_clear_celebration(true)
+	else:
+		game.stage_status = game.STATUS_CLEARED
+		game.pending_level_index = game.level_index + 1
+		game.stage_panel_label.text = "过关结算中，准备进入下一关  " + "⭐".repeat(stars)
+		game.stage_panel_label.visible = true
+		AudioManager.play_win()
+		game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus) + " · 🌸+" + str(coin_reward), 1.2)
+		game._play_stage_clear_celebration(false)
+		game.level_advance_timer.stop()
+		game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
+		game.level_advance_timer.start()
+
+	game._refresh_ui()
+	game._refresh_board_visuals()
+	game._check_achievements_on_clear()
 
 static func _apply_combo_gain(game, base_score):
 	var now_ms = OS.get_ticks_msec()
