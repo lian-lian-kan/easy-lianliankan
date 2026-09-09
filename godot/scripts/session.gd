@@ -1,6 +1,7 @@
 extends Reference
 
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
+const TILE_MATCH = preload("res://scripts/tile_match.gd")
 
 # Session lifecycle: level session reset, post-move resolution (win/lose/
 # reshuffle/gravity), and special-mode session entry/exit. Statics take the
@@ -25,6 +26,8 @@ static func _start_special_mode(game, mode_id):
 	elif mode_id == "frost":
 		var tier = game.SPECIAL_MODES_SCRIPT.frost_tier(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
 		level = game.SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
+	elif mode_id == "tray":
+		level = game.SPECIAL_MODES_SCRIPT.build_tray_level(config)
 	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
 				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain":
 		level = game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
@@ -46,6 +49,28 @@ static func _exit_special_mode(game):
 
 static func _reset_level_session(game, level, reset_total = false):
 	PAGE_ROUTER.collect_level_icons(game)
+	if game.special_mode == "tray":
+		game.board = []
+		game.board_armor = []
+		game.board_lower = []
+		game.board_chain = []
+		game._fog_layers = 0
+		game.selected = Vector2(-1, -1)
+		game.hint_tiles.clear()
+		game.error_tiles.clear()
+		game.moves = 0
+		game.level_score = 0
+		game.total_score = 0
+		game.time_left = int(level.get("time_limit", 240))
+		TILE_MATCH.new_round(game)
+		if game.second_timer:
+			game.second_timer.stop()
+			game.second_timer.start()
+		return
+	if game.tray_layer:
+		TILE_MATCH.clear_view(game)
+		game.tray_layer.visible = false
+		game.board_grid.visible = true
 	game.board = game._create_playable_board(level)
 	game.board_armor = game._build_frost_armor(game.board, level)
 	game.board_lower = []
@@ -429,6 +454,27 @@ static func _consume_move(game):
 	if game.moves_left <= 0 and game._remaining_tiles_count() > 0:
 		game._fail_moves_exhausted()
 
+
+static func _resolve_tray_clear(game):
+	game.stage_status = game.STATUS_CLEARED
+	var coin_reward = 20
+	game.total_score = TILE_MATCH.score_for(game.tray_state)
+	game.level_score = game.total_score
+	game._patch_progress_state({
+		"tray_result": game.total_score,
+		"coins_delta": coin_reward
+	})
+	AudioManager.play_win()
+	game._record_special_completion()
+	game._play_stage_clear_celebration(false)
+	game._show_message("叠叠消通关！🌸+" + str(coin_reward), 2.0)
+	game._refresh_ui()
+
+static func _fail_tray_full(game):
+	game.stage_status = game.STATUS_FAILED
+	AudioManager.play_shuffle()
+	game._show_message("槽位满了！再试一次", 1.8)
+	game._refresh_ui()
 
 static func _pause_stage(game):
 	if game.stage_status != game.STATUS_PLAYING:

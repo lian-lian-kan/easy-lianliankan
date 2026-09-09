@@ -30,6 +30,7 @@ const UI_FONTS = preload("res://scripts/ui_fonts.gd")
 const HUD_TIMERS = preload("res://scripts/hud_timers.gd")
 const HUD_LAYOUT = preload("res://scripts/hud_layout.gd")
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
+const TILE_MATCH = preload("res://scripts/tile_match.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -180,6 +181,9 @@ var game_font
 var level_highlight_timer
 const LEVEL_HIGHLIGHT_COLOR = Color("fbbf24")  # 琥珀色高亮
 const LEVEL_NORMAL_COLOR = Color("ffffff")  # 正常白色
+
+var tray_state = {}  # 叠叠消：牌堆/槽位状态（tile_match.gd 管理）
+var tray_layer  # 叠叠消渲染层（挂在棋盘区内）
 
 var pages_root  # 多页面容器（旅程/图鉴/有礼/小铺）
 var page_content
@@ -1023,3 +1027,28 @@ func _on_shop_use_pressed(set_index):
 
 func _on_shop_buy_pressed(set_index):
 	PAGE_ROUTER.buy_icon_set(self, set_index)
+
+# --- 叠叠消（tile_match 的薄壳）---
+func _on_tray_tile_pressed(tile_index):
+	var result = TILE_MATCH.pick(tray_state, tile_index)
+	if result == "match":
+		_play_eliminate_effects([Vector2(2, 2)])
+	if result == "cleared":
+		_resolve_tray_clear()
+	elif result == "lost":
+		_fail_tray_full()
+	TILE_MATCH.build_view(self)
+
+func _on_tray_undo_pressed():
+	TILE_MATCH.undo(tray_state)
+	TILE_MATCH.build_view(self)
+
+func _on_tray_shuffle_pressed():
+	TILE_MATCH.shuffle(tray_state)
+	TILE_MATCH.build_view(self)
+
+func _resolve_tray_clear():
+	return SESSION._resolve_tray_clear(self)
+
+func _fail_tray_full():
+	return SESSION._fail_tray_full(self)

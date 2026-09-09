@@ -775,3 +775,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 变更：①新增 page_router.gd 多页面外壳——底部五格导航（主页/旅程/图鉴/有礼/小铺）+ 全屏页面容器，打开页面走 modal 暂停语义并冻结过关推进、隐藏主屏浮层；②旅程页：3 章 15 节点地图（解锁/当前/锁定态，点节点进关）；③图鉴页：14 套图集 210 图案收集册（收集/❓未知/进度）；④有礼页：7 天循环签到（5~50🌸递增，漏签重置）；⑤小铺页：图集商店（30🌸/套，购买自动装备，余额不足拒绝）；⑥经济：progression 新字段 coins/collected/owned_sets/signin_streak/last_signin（normalize/apply_update/same_progress 全扩展），过关奖励 8+2×关 id、开局收集图案 +2/个；⑦header 樱花币钱包 chip，refresh_ui 同步；⑧export 排除 tests/tools。
 - 字体：新页面文案触发缺字（樱园初语→樱园初），恢复全量字体（NotoColorEmoji 10.7MB/NotoSansSC 8.3MB/ZCOOL 1.5MB，均超守卫阈值）重跑 subset_fonts.py，887 源字符重切子集并入库。
 - 验证：panels_probe 162 断言（加固 special 会话进度断言为相对比较）+ 新增 page_probe 26 断言（导航/页面暂停恢复/地图节点三态/图鉴进度/签到发放与防重/商店购买装备与余额拒绝/过关发币/钱包落盘）本地全绿后合入；其余批次验证移交 CI。
+
+## 2026-09-10 (玩法迭代：第 15 种玩法「叠叠消」——三消槽位核心)
+- 调研：Tile Match（羊了个羊/3 Tiles/Triple Match）为当前最热配对品类，主流规则=7 格槽位+三张同面消除+多层堆叠遮挡（上层压下层）+槽满即败，常见道具为洗牌/撤销。
+- 变更：①新增 tile_match.gd——纯状态机（generate 每 pattern 3 的倍数+洗乱/is_covered 九宫格遮挡判定/pick 入槽+三消+胜负转换/undo 退牌/shuffle 重排剩余图案，各限一次）+ 全量重建视图（层叠偏移 Button 牌面、7 格槽位、道具行）；②special_modes 注册 tray（第 16 关解锁、240s、4 层×5×6、10 种图案）+ label/intro/callout/RECORD_MODES/panel rows（14 卡）；③session tray 分支：reset 替代棋盘生成（board 置空+牌堆渲染层）、_resolve_tray_clear（tray_result 纪录+🌸+20+结算面板）、_fail_tray_full；④progression 新增 tray_best_score 全 schema 与 tray_first 成就；⑤字体子集重切（897 字符）；⑥deploy.yml CI 测试清单补齐本地全量（mode_meta/stat/panels/page/tray_probe）——今后全部验证都在 CI 远端执行。
+- Validation: 本地仅做纯文本自查；全量测试/导出/冒烟由 CI 远端执行（本次为本地零测试提交的首次实践）。

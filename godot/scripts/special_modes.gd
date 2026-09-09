@@ -153,6 +153,18 @@ const DEFAULT_CONFIGS = {
 		"kinds": 8,
 		"time_limit": 140,
 		"chain_ratio": 0.22
+	},
+	"tray": {
+		"mode_id": "tray",
+		"name": "叠叠消",
+		"description": "点牌入槽，三张同面即消",
+		"unlock_level": 16,
+		"time_limit": 240,
+		"layers": 4,
+		"layer_rows": 5,
+		"layer_cols": 6,
+		"kinds": 10,
+		"tray_capacity": 7
 	}
 }
 
@@ -405,10 +417,17 @@ const INTRO_TEXTS = {
 	"race": "竞速对战！抢在机器人前面消完全部"
 }
 
+const MODE_LABELS_EXTRA = {"tray": "叠叠消"}
+const INTRO_TEXTS_EXTRA = {"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败"}
+
 static func mode_label(mode: String) -> String:
+	if MODE_LABELS_EXTRA.has(mode):
+		return str(MODE_LABELS_EXTRA[mode])
 	return str(MODE_LABELS.get(mode, '未知'))
 
 static func intro_text(mode_id: String) -> String:
+	if INTRO_TEXTS_EXTRA.has(mode_id):
+		return str(INTRO_TEXTS_EXTRA[mode_id])
 	return str(INTRO_TEXTS.get(mode_id, "特殊模式开始"))
 
 # Stage-opening callout (title banner): mode -> [text, color]. Campaign
@@ -425,6 +444,8 @@ static func stage_callout(mode: String, level, level_index: int, endless_round: 
 		return ["盲盒模式", Color("3bc9db")]
 	if mode == "frost":
 		return ["冰雪挑战 · %d%% 方块结了冰" % int(round(float(level.get("frost_ratio", 0.3)) * 100)), Color("4dabf7")]
+	if mode == "tray":
+		return ["叠叠消", Color("20c997")]
 	return ["第" + str(int(level.get("id", level_index + 1))) + "关 · " + str(level.get("name", "关卡")), Color("e64980")]
 
 # ---- 特殊模式结算表：纪录补丁键 / 首通成就 / 面板标题 ----
@@ -434,6 +455,7 @@ const RECORD_MODES = {
 	"gravity": {"label": "重力挑战", "patch_key": "gravity_result", "best_key": "gravity_best_score", "achievements": ["gravity_first"]},
 	"fog": {"label": "迷雾散尽", "patch_key": "fog_result", "best_key": "fog_best_score", "achievements": ["fog_first"]},
 	"chain": {"label": "锁链尽断", "patch_key": "chain_result", "best_key": "chain_best_score", "achievements": ["chain_first"]},
+	"tray": {"label": "叠叠消通关", "patch_key": "tray_result", "best_key": "tray_best_score", "achievements": ["tray_first"]},
 	"zen": {"label": "休闲一局", "patch_key": "zen_result", "best_key": "zen_best_score", "achievements": ["zen_first"]},
 	"hell": {"label": "地狱挑战", "patch_key": "hell_result", "best_key": "hell_best_score", "achievements": ["hell_first"]},
 	"moves": {"label": "步数挑战", "patch_key": "moves_result", "best_key": "moves_best_score", "achievements": ["moves_first"]},
@@ -452,6 +474,19 @@ static func bonus_achievements(mode: String, context := {}) -> Array:
 	return bonus
 
 # 玩法面板 13 张卡的展示数据（标题 + 详情行），纯函数便于直测。
+static func build_tray_level(config):
+	return {
+		"mode_id": "tray",
+		"name": "叠叠消",
+		"time_limit": int(config.get("time_limit", 240)),
+		"layers": int(config.get("layers", 4)),
+		"layer_rows": int(config.get("layer_rows", 5)),
+		"layer_cols": int(config.get("layer_cols", 6)),
+		"kinds": int(config.get("kinds", 10)),
+		"tray_capacity": int(config.get("tray_capacity", 7)),
+		"score_multiplier": 1.0
+	}
+
 static func modes_panel_rows(progression_state) -> Array:
 	var today = date_string(OS.get_date())
 	var daily = progression_state.get("daily_challenge", {})
@@ -470,5 +505,6 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "gravity", "title": "🍎 重力模式", "detail": "消除后方块掉落补位 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))},
 		{"id": "fog", "title": "🌫️ 迷雾模式", "detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))},
 		{"id": "chain", "title": "⛓️ 锁链模式", "detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))},
+		{"id": "tray", "title": "🀄 叠叠消", "detail": "点牌入槽三张即消 · 最佳%d分" % int(progression_state.get("tray_best_score", 0))},
 		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]}
 	]
