@@ -127,7 +127,6 @@ func _init() -> void:
 	# and per-mode payloads must stay inside legal bounds (BQ found unlock
 	# levels beyond the campaign once already) ---
 	check(DATA.DEFAULT_CONFIGS.size() == 16, "data module carries 16 mode configs")
-	var campaign_levels = int(CAMPAIGN.default_campaign_levels().size())
 	var inv_ok = true
 	var unlock_too_high = ""
 	for mode_id in DATA.DEFAULT_CONFIGS:
