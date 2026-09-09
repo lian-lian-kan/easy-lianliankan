@@ -55,15 +55,15 @@ func _init() -> void:
 	check(bool(state["cards"][0]["removed"]) && bool(state["cards"][partner_idx]["removed"]), "matched cards are removed")
 
 	# --- mismatch flips back after unflip ---
-	var odd_pattern = int(state["cards"][odd_idx]["pattern"])
-	var odd_partner = -1
+	var mismatch_idx = -1
 	for i in range(state["cards"].size()):
-		if i != odd_idx && !bool(state["cards"][i]["removed"]) && int(state["cards"][i]["pattern"]) == odd_pattern:
-			odd_partner = i
-	check(odd_partner != -1, "found the odd pattern partner")
+		if i != odd_idx && !bool(state["cards"][i]["removed"]) && int(state["cards"][i]["pattern"]) != int(state["cards"][odd_idx]["pattern"]):
+			mismatch_idx = i
+			break
+	check(mismatch_idx != -1, "found a card of another pattern")
 	var r3 = MF.flip(game, odd_idx)
 	check(r3 == "" && int(state["open"].size()) == 1, "single odd flip stays open")
-	var r4 = MF.flip(game, odd_partner)
+	var r4 = MF.flip(game, mismatch_idx)
 	check(r4 == "miss", "mismatched pair is a miss")
 	MF.unflip_misses(game)
 	check(int(state["open"].size()) == 0, "unflip clears the open queue")
