@@ -64,7 +64,8 @@ static func _reset_level_session(game, level, reset_total = false):
 		if game.tray_layer:
 			game.tray_layer.visible = true
 			game.board_grid.visible = false
-		TILE_MATCH.new_round(game)
+		game.tray_state = TILE_MATCH.generate(level)
+		TILE_MATCH.build_view(game)
 		if game.second_timer:
 			game.second_timer.stop()
 			game.second_timer.start()

@@ -131,6 +131,9 @@ func _init() -> void:
 		var built_mode = str(game.special_level.get("mode_id", ""))
 		check(built_mode == mode_id, "special mode %s builds its own level" % mode_id)
 		check(int(game.time_left) > 0, "%s starts with its time limit" % mode_id)
+		if mode_id == "tray":
+			check(game.tray_state.has("tiles") && game.tray_state["tiles"].size() == 120,
+				"tray start deals 120 tiles into the state")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
 	# --- settle probes: tray / collect / flip wins pay, record and settle ---
