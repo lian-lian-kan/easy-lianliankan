@@ -58,10 +58,10 @@ func _init() -> void:
 
 	# --- triple clear and win on a tiny deterministic board ---
 	var mini = TM.generate({"layers": 1, "layer_rows": 1, "layer_cols": 3, "kinds": 1, "tray_capacity": 7})
-	var tiles: Array = mini["tiles"]
+	var mini_tiles: Array = mini["tiles"]
 	var seq = [0, 0, 0]
-	for i in range(tiles.size()):
-		tiles[i]["pattern"] = seq[i]
+	for i in range(mini_tiles.size()):
+		mini_tiles[i]["pattern"] = seq[i]
 	var third = TM.pick(mini, 2)
 	check(third == "cleared" && int(mini["tray"].size()) == 0, "three of a kind clear the tray and the pile")
 	check(TM.score_for(mini) == 30, "one triple scores 30")

@@ -480,7 +480,7 @@ static func build_collect_row(game):
 	row.visible = false
 	var hbox = HBoxContainer.new()
 	hbox.add_constant_override("separation", 14)
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.alignment = BoxContainer.ALIGN_CENTER
 	row.add_child(hbox)
 	game.collect_row = row
 	game.collect_labels = []
