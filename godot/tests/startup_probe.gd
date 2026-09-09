@@ -44,6 +44,14 @@ func _init() -> void:
 
 	for mode_id in modes:
 		game.SPECIAL_SESSION._start_special_mode(game, mode_id)
+		if game.special_mode != mode_id:
+			var dbg_cfg = game.game_mode_configs.get(mode_id, {})
+			print("DBG %s: special=%s unlocked=%s unlock_level=%s highest=%s coins=%s" % [
+				mode_id, game.special_mode,
+				str(game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(mode_id, dbg_cfg, int(game.progression_state.get("highest_unlocked_level_index", 0)))),
+				str(dbg_cfg.get("unlock_level", "?")),
+				str(int(game.progression_state.get("highest_unlocked_level_index", 0))),
+				str(int(game.progression_state.get("coins", 0)))])
 		check(game.special_mode == mode_id, "%s enters its session" % mode_id)
 		check(game.stage_status == game.STATUS_PLAYING, "%s lands in PLAYING" % mode_id)
 
