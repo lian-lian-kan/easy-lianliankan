@@ -62,14 +62,17 @@ func _init() -> void:
 	var seq = [0, 0, 0]
 	for i in range(mini_tiles.size()):
 		mini_tiles[i]["pattern"] = seq[i]
+	var first_pick = TM.pick(mini, 0)
+	var second_pick = TM.pick(mini, 1)
+	check(first_pick == "" && second_pick == "", "first two picks just fill the tray")
 	var third = TM.pick(mini, 2)
 	check(third == "cleared" && int(mini["tray"].size()) == 0, "three of a kind clear the tray and the pile")
 	check(TM.score_for(mini) == 30, "one triple scores 30")
 
 	# --- tray jam -> lost ---
-	var jam = TM.generate({"layers": 1, "layer_rows": 1, "layer_cols": 9, "kinds": 3, "tray_capacity": 7})
+	var jam = TM.generate({"layers": 1, "layer_rows": 1, "layer_cols": 9, "kinds": 9, "tray_capacity": 7})
 	var jt: Array = jam["tiles"]
-	var seq2 = [0, 1, 2, 0, 1, 2, 0, 1, 2]
+	var seq2 = [0, 1, 2, 3, 4, 5, 6, 0, 1]
 	for i in range(jt.size()):
 		jt[i]["pattern"] = seq2[i]
 	var last = ""
