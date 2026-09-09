@@ -827,3 +827,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：_resolve_after_board_changed 约 115 行，战役 clear 的结算段（时间奖励/金币/星级/解锁推进/终局与中间关双分支）深嵌套内联。
 - 变更：结算段原样提取为 _settle_campaign_clear(game)（含 is_final 判定收敛），裁决函数回归"分支判断 + 委派"形态。逻辑零改动（时间奖励/金币/星级/推进数值逐一对照）。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round BS：三玩法结算路径单测)
+- 审查：tray/collect/flip 的达标结算（纪录/花/结算面板）此前无直接断言，属测试盲区。
+- 变更：page_probe 补结算探针——tray 清堆后纪录 ≥1200 分且 +🌸20 并显示结算面板；collect 目标填满后纪录并 +🌸20；flip 全消后 bonus 200 纪录并 +🌸20。三个特殊会话结算函数（special_session._resolve_*）行为全覆盖。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

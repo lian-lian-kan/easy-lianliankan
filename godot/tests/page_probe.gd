@@ -133,6 +133,37 @@ func _init() -> void:
 		check(int(game.time_left) > 0, "%s starts with its time limit" % mode_id)
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- settle probes: tray / collect / flip wins pay, record and settle ---
+	# tray: an emptied pile resolves as a win with its score
+	game.SPECIAL_SESSION._start_special_mode(game, "tray")
+	for t in game.tray_state["tiles"]:
+		t["removed"] = true
+	game.tray_state["tray"] = []
+	var coins_before_tray = int(game.progression_state.get("coins", 0))
+	game._resolve_tray_clear()
+	check(int(game.progression_state.get("tray_best_score", 0)) >= 1200, "tray win records its score")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_tray + 20, "tray win pays 20 blossoms")
+	check(game.stage_panel_label.visible, "tray win shows the settle panel")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
+	# collect: filling every target resolves immediately and pays
+	game.SPECIAL_SESSION._start_special_mode(game, "collect")
+	var coins_before_collect = int(game.progression_state.get("coins", 0))
+	for target in game.collect_targets.keys():
+		game.collect_progress[target] = int(game.collect_targets[target])
+	game._resolve_collect_clear()
+	check(int(game.progression_state.get("collect_best_score", 0)) >= 0, "collect win records its result")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_collect + 20, "collect win pays 20 blossoms")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
+	# flip: clearing every pair records and pays
+	game.SPECIAL_SESSION._start_special_mode(game, "flip")
+	var coins_before_flip = int(game.progression_state.get("coins", 0))
+	game._resolve_flip_clear()
+	check(int(game.progression_state.get("flip_best_score", 0)) >= 200, "flip win records its bonus score")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_flip + 20, "flip win pays 20 blossoms")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})
