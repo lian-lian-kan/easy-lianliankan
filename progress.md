@@ -806,3 +806,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 变更：拆出 special_session.gd（227 行）——_start/_exit_special_mode、_resolve_special_clear、_record_special_completion、竞速判负、盲盒记忆五函数；session.gd 回归战役会话（467 行）：reset/裁决/时钟/暂停/复活/成就/翻翻乐与叠叠消的棋盘分支。依赖方向收敛为 session→special_session 单向（经 game 薄壳回调成就，无 preload 环）。
 - 顺手修复潜伏崩溃：economy.collect_pair 达标时调用的 game._resolve_collect_clear 薄壳从未定义（collect 玩法达标即 crash，CI 未覆盖此路径）——全仓 game._* 薄壳完整性扫描工具化（python 静态对照），确认零缺失。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (重构 Round BO：主屏构建独立 home_screen.gd)
+- 审查：ui_hud.gd 698 行中 build_main_ui 单函数约 330 行（背景/页头/统计卡/道具行/控制区/棋盘区/结算浮层/页面挂载），是文件膨胀主因。
+- 变更：build_main_ui 原样迁入新模块 home_screen.gd（零逻辑改动，纯搬移——状态全在 game 节点上，refresh_ui 留守 ui_hud）。ui_hud 698→345 行，回归"主屏刷新+消息+控制+成就通知"职责；game.gd 的 _build_ui 薄壳改向 HOME_SCREEN。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

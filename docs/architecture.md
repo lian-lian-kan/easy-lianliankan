@@ -24,6 +24,7 @@
 | `scripts/page_ui.gd` | 页面框架工具：公共页头（返回+标题）与滚动内容区 | `page_probe.gd` |
 | `scripts/economy.gd` | 樱花币经济：钱包 chip、每日签到、图集商店、收集进度统计 | `page_probe.gd` |
 | `scripts/page_router.gd` | 多页面外壳：底部导航 + 旅程地图/图鉴/每日有礼/小铺四页 + 樱花币经济（过关/签到/收集发放，图集解锁消费） | `page_probe.gd` |
+| `scripts/home_screen.gd` | 主屏构建：背景/页头/统计卡/道具行/控制区/棋盘区/钱包/页面与导航挂载 | `panels_probe.gd` |
 | `scripts/ui_hud.gd` | 主屏结构：构建/状态刷新/消息横幅/控制按钮/关卡选择胶水/连击条/成就通知 | `panels_probe.gd`（结构+行为断言） |
 | `scripts/hud_layout.gd` | 屏幕适配：视口分类（手机/竖屏/紧凑）与响应式布局（棋盘高度/边距/网格间距/统计卡与控件尺寸/竖屏头部压缩） | `panels_probe.gd`（布局断言） |
 | `scripts/hud_timers.gd` | 会话心跳：计时器工厂与时钟/消息/错误/连击/高亮/推进/解冻/竞速回调 | `panels_probe.gd`（心跳行为断言） |
