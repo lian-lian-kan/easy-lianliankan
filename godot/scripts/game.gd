@@ -217,14 +217,7 @@ var modes_content  # 玩法模式面板行容器
 var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法模式入口按钮
 
-func _animate_select(coord):
-	return BOARD_VIEW._animate_select(self, coord)
-
-func _pulse_tile(coord, peak_scale, half_duration, loops = 1):
-	return BOARD_VIEW._pulse_tile(self, coord, peak_scale, half_duration, loops)
-
-func _shake_tile(coord):
-	return BOARD_VIEW._shake_tile(self, coord)
+# ═══ 生命周期与全局 ═══
 
 func _ready():
 	print("[Game] boot: ready")
@@ -246,7 +239,6 @@ func _process(delta):
 	_update_combo_progress()
 	_update_time_warning_pulse(delta)
 
-
 func _notification(what):
 	if what == NOTIFICATION_RESIZED:
 		_update_layout_for_screen_size()
@@ -258,27 +250,10 @@ func _notification(what):
 	# Panels are mounted inside full-rect CenterContainer holders (see
 	# _mount_modal_panel), so dynamic content never knocks them off-center.
 
-# A CenterContainer holder keeps dialogs centered whatever their content
-# size does; mouse_filter IGNORE lets board clicks pass through when the
-# dialog is hidden.
+func _start_bgm():
+	AudioManager.start_bgm()
 
-func _update_modal_panel_sizes(viewport_size, is_portrait):
-	return UI_PANELS._update_modal_panel_sizes(self, viewport_size, is_portrait)
-
-func _viewport_flags(viewport_size):
-	return HUD_LAYOUT._viewport_flags(self, viewport_size)
-
-func _update_layout_for_screen_size():
-	HUD_LAYOUT.update_layout(self)
-
-
-func _mount_modal_panel(panel):
-	return UI_PANELS._mount_modal_panel(self, panel)
-
-var _font_cache = {}
-
-func _font_at_size(px):
-	return UI_FONTS.font_at_size(self, px)
+# ═══ 输入路由（game_input） ═══
 
 func _on_tile_pressed(button):
 	return GAME_INPUT._on_tile_pressed(self, button)
@@ -289,282 +264,11 @@ func _on_memory_tile_pressed(point, r, c):
 func _unhandled_input(event):
 	return GAME_INPUT._unhandled_input(self, event)
 
-func _init_font():
-	UI_FONTS.init_theme(self)
-
-
-
-
-
-
-
-
-
-
-func _progress_best_score():
-	return PROGRESSION_SCRIPT.best_score(progression_state)
-
-func _progress_best_combo():
-	return PROGRESSION_SCRIPT.best_combo(progression_state)
-
-
-
-func _default_campaign_levels():
-	return CAMPAIGN_LEVELS_SCRIPT.default_campaign_levels()
-
-
-func _build_ui():
-	UI_HUD.build_main_ui(self)
-
-
-func _build_onboarding_panel():
-	UI_PANELS._onboarding_panel(self)
-
-func _build_settings_panel():
-	UI_PANELS._settings_panel(self)
-
-func _load_config():
-	return GAME_CONFIG._load_config(self)
-
-func _load_progress_state():
-	return PROGRESS_STORE._load_progress_state(self)
-
-func _save_progress_state():
-	return PROGRESS_STORE._save_progress_state(self)
-
-func _patch_progress_state(patch):
-	return PROGRESS_STORE._patch_progress_state(self, patch)
-
-func _load_json_file(path: String):
-	return GAME_CONFIG._load_json_file(self, path)
-
-func _load_campaign_levels():
-	return GAME_CONFIG._load_campaign_levels(self)
-
-func _load_tuning():
-	return GAME_CONFIG._load_tuning(self)
-
-func _load_icon_sets():
-	return GAME_CONFIG._load_icon_sets(self)
-
-func _load_game_mode_configs():
-	return GAME_CONFIG._load_game_mode_configs(self)
-
-func _default_tuning():
-	return GAME_CONFIG._default_tuning(self)
-
-func _default_icon_sets():
-	return GAME_CONFIG._default_icon_sets(self)
-
-func _build_achievements_panel():
-	UI_PANELS._achievements_panel(self)
-
-func _build_pause_panel():
-	UI_PANELS._pause_panel(self)
-
-func _build_modes_panel():
-	UI_PANELS._modes_panel(self)
-
-
-
-
-func _add_stat_card(parent, title, key):
-	STATS_HUD.add_card(self, parent, title, key)
-
-
-
-func _create_power_up_label(power_up_id, icon, shortcut):
-	return STATS_HUD._create_power_up_label(self, power_up_id, icon, shortcut)
-
-func _create_chip_label():
-	return STATS_HUD._create_chip_label(self)
-
-
-func _populate_icon_set_options():
-	return UI_PANELS._populate_icon_set_options(self)
-
-func _on_icon_set_selected(index):
-	return UI_PANELS._on_icon_set_selected(self, index)
-
-func _is_level_unlocked(level_idx):
-	return PROGRESSION_SCRIPT.is_level_unlocked(progression_state, level_idx, campaign_levels.size())
-
-func _selected_level_option_index():
-	return UI_HUD._selected_level_option_index(self)
-
-func _sync_level_select_selection():
-	return UI_HUD._sync_level_select_selection(self)
-
-func _level_label_by_index(level_idx):
-	return UI_HUD._level_label_by_index(self, level_idx)
-
-
-func _on_level_select_changed(index):
-	return UI_HUD._on_level_select_changed(self, index)
-
-
-func _trigger_level_highlight():
-	return UI_HUD._trigger_level_highlight(self)
-
-
-func _start_bgm():
-	AudioManager.start_bgm()
-
-func _on_clear_progress_pressed():
-	progression_state = PROGRESSION_SCRIPT.default_progress(campaign_levels.size())
-	_save_progress_state()
-	_populate_level_select_options()
-	_start_level(0, true)
-	_show_message("本地进度已清除，已回到第1关", 1.3)
-
-
-
-
-
-
-func _current_level():
-	if special_mode != "":
-		return special_level
-	return campaign_levels[level_index]
-
-func _create_playable_board(level):
-	return BOARD_ENGINE.create_playable_board(level, self, "_is_coord_playable")
-
-func _start_level(next_index, reset_total = false):
-	return SESSION._start_level(self, next_index, reset_total)
-
-func _color_for(value):
-	return BOARD_VIEW.color_for(self, value)
-
-func _apply_glass_style(panel, bg_color, alpha):
-	return UI_PANELS._apply_glass_style(self, panel, bg_color, alpha)
-
-func _apply_button_style(button, bg_color, border_color):
-	return UI_PANELS._apply_button_style(self, button, bg_color, border_color)
-
-func _style_dialog_buttons(node):
-	return UI_PANELS._style_dialog_buttons(self, node)
-
-func _refresh_board_visuals():
-	return BOARD_VIEW._refresh_board_visuals(self)
-
-func _render_board():
-	return BOARD_VIEW._render_board(self)
-
-func _update_tile_sizes():
-	return BOARD_VIEW._update_tile_sizes(self)
-
-func _apply_tile_style(button, bg_color, border_color, highlight):
-	return BOARD_VIEW._apply_tile_style(self, button, bg_color, border_color, highlight)
-
-func _icon_for(value):
-	return BOARD_VIEW._icon_for(self, value)
-
-func _contains_coord(list, coord):
-	return BOARD_ENGINE.contains_coord(list, coord)
-
-
-func _is_memory_mode():
-	return special_mode == "memory"
-
-func _is_frost_mode():
-	return special_mode == "frost"
-
-func _is_stack_mode():
-	return special_mode == "stack"
-
-func _is_gravity_mode():
-	return special_mode == "gravity"
-
-func _is_fog_mode():
-	return special_mode == "fog"
-
-func _is_chain_mode():
-	return special_mode == "chain"
-
-func _is_fogged(coord):
-	return BOARD_MECHANICS.is_fogged(self, coord)
-
-# 迷雾/锁链 make a tile unselectable; clicks, hints and auto tools skip it.
-func _is_coord_playable(coord):
-	return BOARD_MECHANICS.is_coord_playable(self, coord)
-
-func _build_frost_armor(new_board, level):
-	return BOARD_ENGINE.build_frost_armor_grid(new_board, float(level.get("frost_ratio", 0.0)))
-
-
-
-
-func _memory_key(coord):
-	return SPECIAL_SESSION._memory_key(self, coord)
-
-
-
-
-
-
-
-
-
-func _memory_schedule_hide(coords, delay):
-	return SPECIAL_SESSION._memory_schedule_hide(self, coords, delay)
-
-func _start_memory_preview():
-	return SPECIAL_SESSION._start_memory_preview(self)
-
-func _on_second_tick():
-	return HUD_TIMERS._on_second_tick(self)
-
-func _on_race_tick():
-	return HUD_TIMERS._on_race_tick(self)
-
-func _on_message_timeout():
-	return HUD_TIMERS._on_message_timeout(self)
-
-func _on_error_timeout():
-	return HUD_TIMERS._on_error_timeout(self)
-
-func _on_combo_reset_timeout():
-	return HUD_TIMERS._on_combo_reset_timeout(self)
-
-func _on_level_highlight_timeout():
-	return HUD_TIMERS._on_level_highlight_timeout(self)
-
-func _on_level_advance_timeout():
-	return HUD_TIMERS._on_level_advance_timeout(self)
-
-func _on_time_freeze_timeout():
-	return HUD_TIMERS._on_time_freeze_timeout(self)
-
-
-
-
-
-func _on_memory_hide_timeout():
-	return SPECIAL_SESSION._on_memory_hide_timeout(self)
-
-func _on_memory_preview_timeout():
-	return SPECIAL_SESSION._on_memory_preview_timeout(self)
-
-
-
-func _pause_stage():
-	return SESSION._pause_stage(self)
-
 func _on_hint_pressed():
 	return GAME_INPUT._on_hint_pressed(self)
 
 func _on_auto_pressed():
 	return GAME_INPUT._on_auto_pressed(self)
-
-
-
-
-
-
-
-func _resume_stage():
-	return SESSION._resume_stage(self)
 
 func _on_shuffle_pressed():
 	return GAME_INPUT._on_shuffle_pressed(self)
@@ -584,124 +288,180 @@ func _cycle_level_selection(step):
 func _toggle_fullscreen_mode():
 	return GAME_INPUT._toggle_fullscreen_mode(self)
 
-func _try_get_tile_button(coord):
-	return BOARD_VIEW.tile_button_at(self, coord)
+# ═══ 战役会话（session） ═══
 
+func _on_clear_progress_pressed():
+	progression_state = PROGRESSION_SCRIPT.default_progress(campaign_levels.size())
+	_save_progress_state()
+	_populate_level_select_options()
+	_start_level(0, true)
+	_show_message("本地进度已清除，已回到第1关", 1.3)
 
+func _current_level():
+	if special_mode != "":
+		return special_level
+	return campaign_levels[level_index]
 
-func _make_fx_tween(node_to_free = null):
-	return FX.make_tween(self, node_to_free)
+func _start_level(next_index, reset_total = false):
+	return SESSION._start_level(self, next_index, reset_total)
 
+func _pause_stage():
+	return SESSION._pause_stage(self)
 
+func _resume_stage():
+	return SESSION._resume_stage(self)
 
+# 步数挑战: every removed pair costs one move; running dry loses.
+func _consume_move():
+	return SESSION._consume_move(self)
 
+func _consume_time_cost(seconds):
+	return SESSION._consume_time_cost(self, seconds)
 
+func _on_time_up():
+	return SESSION._on_time_up(self)
 
+# Achievement system
+func _unlock_achievements(ids):
+	return SESSION._unlock_achievements(self, ids)
 
+func _apply_combo_gain(base_score):
+	return SESSION._apply_combo_gain(self, base_score)
 
+func _reset_level_session(level, reset_total = false):
+	return SESSION._reset_level_session(self, level, reset_total)
+
+func _fail_moves_exhausted():
+	return SESSION._fail_moves_exhausted(self)
+
+func _resolve_after_board_changed():
+	return SESSION._resolve_after_board_changed(self)
+
+func _check_achievements_on_clear():
+	return SESSION._check_achievements_on_clear(self)
+
+func _on_revive_pressed():
+	return SESSION._revive(self)
+
+# ═══ 特殊模式会话（special_session） ═══
+
+func _is_memory_mode():
+	return special_mode == "memory"
+
+func _is_frost_mode():
+	return special_mode == "frost"
+
+func _is_stack_mode():
+	return special_mode == "stack"
+
+func _is_gravity_mode():
+	return special_mode == "gravity"
+
+func _is_fog_mode():
+	return special_mode == "fog"
+
+func _is_chain_mode():
+	return special_mode == "chain"
+
+func _memory_key(coord):
+	return SPECIAL_SESSION._memory_key(self, coord)
+
+func _memory_schedule_hide(coords, delay):
+	return SPECIAL_SESSION._memory_schedule_hide(self, coords, delay)
+
+func _start_memory_preview():
+	return SPECIAL_SESSION._start_memory_preview(self)
+
+func _on_memory_hide_timeout():
+	return SPECIAL_SESSION._on_memory_hide_timeout(self)
+
+func _on_memory_preview_timeout():
+	return SPECIAL_SESSION._on_memory_preview_timeout(self)
 
 func _play_level_intro_animation(level):
 	var callout = SPECIAL_MODES_SCRIPT.stage_callout(special_mode, level, level_index, endless_round)
 	_show_stage_callout(callout[0], callout[1], 19)
 	_animate_board_spawn()
 
-
-func _animate_board_spawn():
-	return BOARD_VIEW._animate_board_spawn(self)
-
-func _animate_shuffle_wave():
-	return BOARD_VIEW._animate_shuffle_wave(self)
-
-func _build_timers():
-	return HUD_TIMERS._build_timers(self)
-
-func _show_message(text, duration_sec = 1.0):
-	return UI_HUD._show_message(self, text, duration_sec)
-
-func _hide_message():
-	return UI_HUD._hide_message(self)
-
-func _show_stage_callout(text, color, font_size):
-	return UI_HUD._show_stage_callout(self, text, color, font_size)
-
-func _build_petals():
-	FX.build_petals(self)
-
-func _on_petal_tick():
-	FX.petal_tick(self)
-
-func _spawn_confetti(count):
-	FX.spawn_confetti(self, count)
-
-func _play_stage_clear_celebration(is_final_clear):
-	return FX.stage_clear_celebration(self, is_final_clear)
-
-
-
-
-
-func _play_eliminate_effects(coords):
-	return FX._play_eliminate_effects(self, coords)
-
-func _tile_center_in_effect_layer(coord):
-	return FX._tile_center_in_effect_layer(self, coord)
-
-
-func _spawn_ring_effect(center, color, duration, base_size):
-	return FX._spawn_ring_effect(self, center, color, duration, base_size)
-
-func _spawn_particle_burst(center, color, particle_count, intensity):
-	return FX._spawn_particle_burst(self, center, color, particle_count, intensity)
-
-func _spawn_combo_particle_burst(center, color, particle_count, combo_level):
-	return FX._spawn_combo_particle_burst(self, center, color, particle_count, combo_level)
-
-func _spawn_board_particles(count, color, intensity):
-	return FX._spawn_board_particles(self, count, color, intensity)
-
-func _show_combo_burst(text):
-	return FX._show_combo_burst(self, text)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# One successful match hits both tiles. Frozen cells (armor 1) crack instead
-# of clearing and need a second match; cracked tiles keep blocking paths.
-# 步数挑战: every removed pair costs one move; running dry loses.
-func _flash_error_tiles(coords):
-	return FX._flash_error_tiles(self, coords)
-
-func _animate_hint_tiles(coords):
-	return FX._animate_hint_tiles(self, coords)
-
-func _show_path(path, preview_type, duration_ms):
-	return FX._show_path(self, path, preview_type, duration_ms)
-
-func _path_to_overlay_points(path):
-	return FX._path_to_overlay_points(self, path)
-
-
-
 # 竞速对战: the AI clears one pair per ai_interval seconds.
+func _fail_race_lost():
+	return SPECIAL_SESSION._fail_race_lost(self)
 
+func _record_special_completion():
+	return SPECIAL_SESSION._record_special_completion(self)
+
+func _start_special_mode(mode_id):
+	return SPECIAL_SESSION._start_special_mode(self, mode_id)
+
+func _exit_special_mode():
+	return SPECIAL_SESSION._exit_special_mode(self)
+
+func _resolve_special_clear():
+	return SPECIAL_SESSION._resolve_special_clear(self)
+
+func _on_special_mode_pressed(mode_id):
+	_on_modes_close_pressed()
+	_start_special_mode(mode_id)
+
+func _on_exit_special_pressed():
+	_hide_pause_panel()
+	_exit_special_mode()
+
+func _on_tray_tile_pressed(tile_index):
+	var result = TILE_MATCH.pick(tray_state, tile_index)
+	if result == "match":
+		_play_eliminate_effects([Vector2(2, 2)])
+	if result == "cleared":
+		_resolve_tray_clear()
+	elif result == "lost":
+		_fail_tray_full()
+	TILE_MATCH.build_view(self)
+
+func _on_tray_undo_pressed():
+	TILE_MATCH.undo(tray_state)
+	TILE_MATCH.build_view(self)
+
+func _on_tray_shuffle_pressed():
+	TILE_MATCH.shuffle(tray_state)
+	TILE_MATCH.build_view(self)
+
+func _resolve_tray_clear():
+	return SPECIAL_SESSION._resolve_tray_clear(self)
+
+func _fail_tray_full():
+	return SPECIAL_SESSION._fail_tray_full(self)
+
+func _on_flip_card_pressed(card_index):
+	var result = MEMORY_FLIP.flip(self, card_index)
+	if result == "match":
+		_play_eliminate_effects([Vector2(2, 2)])
+	elif result == "miss":
+		if flip_back_timer:
+			flip_back_timer.start()
+	if result == "cleared":
+		_resolve_flip_clear()
+		return
+	MEMORY_FLIP.build_view(self)
+
+func _on_flip_back_timeout():
+	return MEMORY_FLIP.unflip_misses(self)
+
+func _resolve_flip_clear():
+	return SPECIAL_SESSION._resolve_flip_clear(self)
+
+func _resolve_collect_clear():
+	return SPECIAL_SESSION._resolve_collect_clear(self)
+
+# ═══ 棋盘机制（board_mechanics） ═══
+
+func _is_fogged(coord):
+	return BOARD_MECHANICS.is_fogged(self, coord)
+
+# 迷雾/锁链 make a tile unselectable; clicks, hints and auto tools skip it.
+func _is_coord_playable(coord):
+	return BOARD_MECHANICS.is_coord_playable(self, coord)
 
 # 叠层: lift a share of tiles onto a visible cover with a buried twin.
-func _consume_move():
-	return SESSION._consume_move(self)
-
 func _build_stack_layers(ratio):
 	return BOARD_MECHANICS.build_stack_layers(self, ratio)
 
@@ -714,9 +474,6 @@ func _chains_remaining():
 
 func _dissolve_all_chains():
 	return BOARD_MECHANICS.dissolve_all_chains(self)
-
-func _fail_race_lost():
-	return SPECIAL_SESSION._fail_race_lost(self)
 
 func _break_chains_around(coords):
 	return BOARD_MECHANICS.break_chains_around(self, coords)
@@ -736,13 +493,311 @@ func _pop_stack_at(coord):
 func _apply_match_damage(a, b):
 	return BOARD_MECHANICS.apply_match_damage(self, a, b)
 
+# One successful match hits both tiles. Frozen cells (armor 1) crack instead
+# of clearing and need a second match; cracked tiles keep blocking paths.
 func _damage_tile(coord, cracked, removed = null):
 	return BOARD_MECHANICS.damage_tile(self, coord, cracked, removed)
 
+# ═══ 棋盘视图（board_view） ═══
 
+func _animate_select(coord):
+	return BOARD_VIEW._animate_select(self, coord)
+
+func _pulse_tile(coord, peak_scale, half_duration, loops = 1):
+	return BOARD_VIEW._pulse_tile(self, coord, peak_scale, half_duration, loops)
+
+func _shake_tile(coord):
+	return BOARD_VIEW._shake_tile(self, coord)
+
+func _color_for(value):
+	return BOARD_VIEW.color_for(self, value)
+
+func _refresh_board_visuals():
+	return BOARD_VIEW._refresh_board_visuals(self)
+
+func _render_board():
+	return BOARD_VIEW._render_board(self)
+
+func _update_tile_sizes():
+	return BOARD_VIEW._update_tile_sizes(self)
+
+func _apply_tile_style(button, bg_color, border_color, highlight):
+	return BOARD_VIEW._apply_tile_style(self, button, bg_color, border_color, highlight)
+
+func _icon_for(value):
+	return BOARD_VIEW._icon_for(self, value)
+
+func _try_get_tile_button(coord):
+	return BOARD_VIEW.tile_button_at(self, coord)
+
+func _animate_board_spawn():
+	return BOARD_VIEW._animate_board_spawn(self)
+
+func _animate_shuffle_wave():
+	return BOARD_VIEW._animate_shuffle_wave(self)
+
+# ═══ 棋盘算法（board_engine） ═══
+
+func _create_playable_board(level):
+	return BOARD_ENGINE.create_playable_board(level, self, "_is_coord_playable")
+
+func _contains_coord(list, coord):
+	return BOARD_ENGINE.contains_coord(list, coord)
+
+func _build_frost_armor(new_board, level):
+	return BOARD_ENGINE.build_frost_armor_grid(new_board, float(level.get("frost_ratio", 0.0)))
 
 func _board_edge_path(a, b):
 	return BOARD_ENGINE.edge_path(a, b)
+
+func _remaining_tiles_count():
+	return BOARD_ENGINE.count_tiles(board)
+
+func _format_time(seconds):
+	return BOARD_ENGINE.format_time(seconds)
+
+func _format_time_seconds(time_seconds):
+	return BOARD_ENGINE.format_time_seconds(time_seconds)
+
+func _find_path(board_state, a, b):
+	return BOARD_ENGINE.find_path(board_state, a, b)
+
+func _node_key(r, c, d, t):
+	return BOARD_ENGINE.node_key(r, c, d, t)
+
+func _find_any_hint(board_state):
+	return BOARD_ENGINE.find_any_hint(board_state, self, "_is_coord_playable")
+
+func _reshuffle_board(board_state):
+	BOARD_ENGINE.reshuffle_board(board_state, self, "_is_coord_playable")
+
+# ═══ 主屏构建（home_screen） ═══
+
+func _build_ui():
+	UI_HUD.build_main_ui(self)
+
+# ═══ 主屏刷新（ui_hud） ═══
+
+func _selected_level_option_index():
+	return UI_HUD._selected_level_option_index(self)
+
+func _sync_level_select_selection():
+	return UI_HUD._sync_level_select_selection(self)
+
+func _level_label_by_index(level_idx):
+	return UI_HUD._level_label_by_index(self, level_idx)
+
+func _on_level_select_changed(index):
+	return UI_HUD._on_level_select_changed(self, index)
+
+func _trigger_level_highlight():
+	return UI_HUD._trigger_level_highlight(self)
+
+func _show_message(text, duration_sec = 1.0):
+	return UI_HUD._show_message(self, text, duration_sec)
+
+func _hide_message():
+	return UI_HUD._hide_message(self)
+
+func _show_stage_callout(text, color, font_size):
+	return UI_HUD._show_stage_callout(self, text, color, font_size)
+
+func _reset_combo():
+	return UI_HUD._reset_combo(self)
+
+func _update_combo_progress():
+	return UI_HUD._update_combo_progress(self)
+
+func _refresh_ui():
+	UI_HUD.refresh_ui(self)
+
+func _status_label(status):
+	return UI_HUD._status_label(self, status)
+
+func _on_achievement_dismiss(notification):
+	var tween = Tween.new()
+	add_child(tween)
+	tween.interpolate_property(notification, "modulate", notification.modulate, Color(1, 1, 1, 0), 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	tween.start()
+	yield(tween, "tween_completed")
+	notification.queue_free()
+	tween.queue_free()
+
+func _create_control_button(text):
+	return UI_HUD._create_control_button(self, text)
+
+func _populate_level_select_options():
+	return UI_HUD._populate_level_select_options(self)
+
+func _show_achievement_notification(achievement_name):
+	return UI_HUD._show_achievement_notification(self, achievement_name)
+
+# ═══ 屏幕适配（hud_layout） ═══
+
+func _viewport_flags(viewport_size):
+	return HUD_LAYOUT._viewport_flags(self, viewport_size)
+
+func _update_layout_for_screen_size():
+	HUD_LAYOUT.update_layout(self)
+
+# ═══ 弹窗面板（ui_panels） ═══
+
+func _update_modal_panel_sizes(viewport_size, is_portrait):
+	return UI_PANELS._update_modal_panel_sizes(self, viewport_size, is_portrait)
+
+# A CenterContainer holder keeps dialogs centered whatever their content
+# size does; mouse_filter IGNORE lets board clicks pass through when the
+# dialog is hidden.
+func _mount_modal_panel(panel):
+	return UI_PANELS._mount_modal_panel(self, panel)
+
+func _build_onboarding_panel():
+	UI_PANELS._onboarding_panel(self)
+
+func _build_settings_panel():
+	UI_PANELS._settings_panel(self)
+
+func _build_achievements_panel():
+	UI_PANELS._achievements_panel(self)
+
+func _build_pause_panel():
+	UI_PANELS._pause_panel(self)
+
+func _build_modes_panel():
+	UI_PANELS._modes_panel(self)
+
+func _populate_icon_set_options():
+	return UI_PANELS._populate_icon_set_options(self)
+
+func _on_icon_set_selected(index):
+	return UI_PANELS._on_icon_set_selected(self, index)
+
+func _apply_glass_style(panel, bg_color, alpha):
+	return UI_PANELS._apply_glass_style(self, panel, bg_color, alpha)
+
+func _apply_button_style(button, bg_color, border_color):
+	return UI_PANELS._apply_button_style(self, button, bg_color, border_color)
+
+func _style_dialog_buttons(node):
+	return UI_PANELS._style_dialog_buttons(self, node)
+
+func _show_onboarding_if_needed():
+	if progression_state.get(ONBOARDING_SEEN_KEY, false):
+		return
+	UI_PANELS.open_modal(self, onboarding_panel)
+
+func _on_onboarding_dismissed():
+	print("[Game] onboarding dismissed")
+	UI_PANELS.close_modal(self, onboarding_panel)
+	_patch_progress_state({ONBOARDING_SEEN_KEY: true})
+
+func _on_settings_pressed():
+	UI_PANELS.open_modal(self, settings_panel)
+
+func _on_settings_close():
+	UI_PANELS.close_modal(self, settings_panel)
+
+func _on_master_volume_changed(value):
+	AudioManager.set_master_volume(value)
+
+func _on_music_toggled(enabled):
+	AudioManager.set_music_enabled(enabled)
+
+func _on_effects_toggled(enabled):
+	return UI_PANELS._on_effects_toggled(self, enabled)
+
+func _on_mute_toggled(muted):
+	AudioManager.set_muted(muted)
+
+func _on_achievements_pressed():
+	UI_PANELS.reopen_achievements(self)
+	UI_PANELS.open_modal(self, achievements_panel)
+
+func _on_achievements_close():
+	UI_PANELS.close_modal(self, achievements_panel)
+
+func _refresh_modes_panel():
+	UI_PANELS.refresh_modes_rows(self)
+
+func _on_modes_pressed():
+	_refresh_modes_panel()
+	if modes_panel:
+		modes_panel.visible = true
+
+func _on_modes_close_pressed():
+	if modes_panel:
+		modes_panel.visible = false
+
+func _show_pause_panel():
+	UI_PANELS.refresh_pause_panel(self)
+
+func _hide_pause_panel():
+	UI_PANELS.hide_pause_panel(self)
+
+func _on_restart_current_level():
+	return UI_PANELS.restart_current_level(self)
+
+func _on_back_to_first_level():
+	return UI_PANELS.back_to_first_level(self)
+
+# ═══ 页面导航（page_router） ═══
+
+func _on_nav_pressed(page_id):
+	return PAGE_ROUTER.show_page(self, page_id)
+
+func _on_nav_home_pressed():
+	return PAGE_ROUTER.close_page(self)
+
+func _on_map_level_pressed(level_index):
+	PAGE_ROUTER.close_page(self)
+	_start_level(level_index, true)
+	_show_message("进入第%d关" % (level_index + 1), 1.0)
+
+func _on_map_locked_pressed():
+	_sync_level_select_selection()
+	_show_message("该关卡尚未解锁", 0.9)
+
+# ═══ 经济（economy） ═══
+
+func _on_signin_claim_pressed(today, yesterday):
+	ECONOMY.claim_signin(self, today, yesterday)
+
+func _on_shop_use_pressed(set_index):
+	ECONOMY.use_icon_set(self, set_index)
+
+func _on_shop_buy_pressed(set_index):
+	ECONOMY.buy_icon_set(self, set_index)
+
+func _on_collect_pair_progress(patterns):
+	return ECONOMY.collect_pair(self, patterns)
+
+# ═══ 统计 HUD（stats_hud） ═══
+
+func _add_stat_card(parent, title, key):
+	STATS_HUD.add_card(self, parent, title, key)
+
+func _create_power_up_label(power_up_id, icon, shortcut):
+	return STATS_HUD._create_power_up_label(self, power_up_id, icon, shortcut)
+
+func _create_chip_label():
+	return STATS_HUD._create_chip_label(self)
+
+func _update_power_ups_display():
+	return STATS_HUD.refresh_power_ups(self)
+
+func _set_stat_text(key, value):
+	STATS_HUD.set_text(self, key, value)
+
+func _is_time_danger():
+	return STATS_HUD.is_time_danger(self)
+
+func _update_time_warning_pulse(_delta):
+	STATS_HUD.pulse(self, _is_time_danger(), _delta)
+
+func _set_time_card_state(is_danger):
+	STATS_HUD.set_card_state(self, is_danger)
+
+# ═══ 道具（powerups） ═══
 
 func _init_power_ups(level):
 	return POWERUPS._init_power_ups(self, level)
@@ -783,275 +838,153 @@ func _execute_bomb(point):
 func _execute_rainbow_click(point):
 	return POWERUPS._execute_rainbow_click(self, point)
 
+# ═══ 特效（fx_layer） ═══
+
+func _make_fx_tween(node_to_free = null):
+	return FX.make_tween(self, node_to_free)
+
+func _build_petals():
+	FX.build_petals(self)
+
+func _on_petal_tick():
+	FX.petal_tick(self)
+
+func _spawn_confetti(count):
+	FX.spawn_confetti(self, count)
+
+func _play_stage_clear_celebration(is_final_clear):
+	return FX.stage_clear_celebration(self, is_final_clear)
+
+func _play_eliminate_effects(coords):
+	return FX._play_eliminate_effects(self, coords)
+
+func _tile_center_in_effect_layer(coord):
+	return FX._tile_center_in_effect_layer(self, coord)
+
+func _spawn_ring_effect(center, color, duration, base_size):
+	return FX._spawn_ring_effect(self, center, color, duration, base_size)
+
+func _spawn_particle_burst(center, color, particle_count, intensity):
+	return FX._spawn_particle_burst(self, center, color, particle_count, intensity)
+
+func _spawn_combo_particle_burst(center, color, particle_count, combo_level):
+	return FX._spawn_combo_particle_burst(self, center, color, particle_count, combo_level)
+
+func _spawn_board_particles(count, color, intensity):
+	return FX._spawn_board_particles(self, count, color, intensity)
+
+func _show_combo_burst(text):
+	return FX._show_combo_burst(self, text)
+
+func _flash_error_tiles(coords):
+	return FX._flash_error_tiles(self, coords)
+
+func _animate_hint_tiles(coords):
+	return FX._animate_hint_tiles(self, coords)
+
+func _show_path(path, preview_type, duration_ms):
+	return FX._show_path(self, path, preview_type, duration_ms)
+
+func _path_to_overlay_points(path):
+	return FX._path_to_overlay_points(self, path)
+
+# ═══ 计时器心跳（hud_timers） ═══
+
+func _on_second_tick():
+	return HUD_TIMERS._on_second_tick(self)
+
+func _on_race_tick():
+	return HUD_TIMERS._on_race_tick(self)
+
+func _on_message_timeout():
+	return HUD_TIMERS._on_message_timeout(self)
+
+func _on_error_timeout():
+	return HUD_TIMERS._on_error_timeout(self)
+
+func _on_combo_reset_timeout():
+	return HUD_TIMERS._on_combo_reset_timeout(self)
+
+func _on_level_highlight_timeout():
+	return HUD_TIMERS._on_level_highlight_timeout(self)
+
+func _on_level_advance_timeout():
+	return HUD_TIMERS._on_level_advance_timeout(self)
+
+func _on_time_freeze_timeout():
+	return HUD_TIMERS._on_time_freeze_timeout(self)
+
+func _build_timers():
+	return HUD_TIMERS._build_timers(self)
 
 func _start_second_timer():
 	return UI_HUD.start_second_timer(self)
 
+# ═══ 字体（ui_fonts） ═══
 
+var _font_cache = {}
 
+func _font_at_size(px):
+	return UI_FONTS.font_at_size(self, px)
 
+func _init_font():
+	UI_FONTS.init_theme(self)
 
-
-func _reset_combo():
-	return UI_HUD._reset_combo(self)
-
-func _update_combo_progress():
-	return UI_HUD._update_combo_progress(self)
-
-
-
-
-func _consume_time_cost(seconds):
-	return SESSION._consume_time_cost(self, seconds)
-
-
-func _on_time_up():
-	return SESSION._on_time_up(self)
-
-func _record_special_completion():
-	return SPECIAL_SESSION._record_special_completion(self)
-
-
-func _start_special_mode(mode_id):
-	return SPECIAL_SESSION._start_special_mode(self, mode_id)
-
-func _unlock_achievements(ids):
-	return SESSION._unlock_achievements(self, ids)
-
-func _exit_special_mode():
-	return SPECIAL_SESSION._exit_special_mode(self)
-
-func _apply_combo_gain(base_score):
-	return SESSION._apply_combo_gain(self, base_score)
-
-func _reset_level_session(level, reset_total = false):
-	return SESSION._reset_level_session(self, level, reset_total)
-
-func _fail_moves_exhausted():
-	return SESSION._fail_moves_exhausted(self)
-
-func _resolve_after_board_changed():
-	return SESSION._resolve_after_board_changed(self)
-
-func _resolve_special_clear():
-	return SPECIAL_SESSION._resolve_special_clear(self)
-
-
-func _remaining_tiles_count():
-	return BOARD_ENGINE.count_tiles(board)
-
-func _refresh_ui():
-	UI_HUD.refresh_ui(self)
-
-
-func _update_power_ups_display():
-	return STATS_HUD.refresh_power_ups(self)
-
-func _set_stat_text(key, value):
-	STATS_HUD.set_text(self, key, value)
-
-func _is_time_danger():
-	return STATS_HUD.is_time_danger(self)
-
-func _update_time_warning_pulse(_delta):
-	STATS_HUD.pulse(self, _is_time_danger(), _delta)
-
-func _set_time_card_state(is_danger):
-	STATS_HUD.set_card_state(self, is_danger)
+# ═══ 玩法数据（special_modes） ═══
 
 func _mode_label(mode):
 	return SPECIAL_MODES_SCRIPT.mode_label(mode)
 
+# ═══ 进度模型（progression） ═══
 
-func _format_time(seconds):
-	return BOARD_ENGINE.format_time(seconds)
+func _progress_best_score():
+	return PROGRESSION_SCRIPT.best_score(progression_state)
 
-func _format_time_seconds(time_seconds):
-	return BOARD_ENGINE.format_time_seconds(time_seconds)
+func _progress_best_combo():
+	return PROGRESSION_SCRIPT.best_combo(progression_state)
 
-# Achievement system
+func _is_level_unlocked(level_idx):
+	return PROGRESSION_SCRIPT.is_level_unlocked(progression_state, level_idx, campaign_levels.size())
 
+# ═══ 关卡表（campaign_levels） ═══
 
+func _default_campaign_levels():
+	return CAMPAIGN_LEVELS_SCRIPT.default_campaign_levels()
 
-func _status_label(status):
-	return UI_HUD._status_label(self, status)
+# ═══ 配置装载（game_config） ═══
 
-func _on_achievement_dismiss(notification):
-	var tween = Tween.new()
-	add_child(tween)
-	tween.interpolate_property(notification, "modulate", notification.modulate, Color(1, 1, 1, 0), 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-	tween.start()
-	yield(tween, "tween_completed")
-	notification.queue_free()
-	tween.queue_free()
+func _load_config():
+	return GAME_CONFIG._load_config(self)
 
-func _find_path(board_state, a, b):
-	return BOARD_ENGINE.find_path(board_state, a, b)
+func _load_json_file(path: String):
+	return GAME_CONFIG._load_json_file(self, path)
 
-func _check_achievements_on_clear():
-	return SESSION._check_achievements_on_clear(self)
+func _load_campaign_levels():
+	return GAME_CONFIG._load_campaign_levels(self)
 
-func _node_key(r, c, d, t):
-	return BOARD_ENGINE.node_key(r, c, d, t)
+func _load_tuning():
+	return GAME_CONFIG._load_tuning(self)
 
-func _find_any_hint(board_state):
-	return BOARD_ENGINE.find_any_hint(board_state, self, "_is_coord_playable")
+func _load_icon_sets():
+	return GAME_CONFIG._load_icon_sets(self)
 
-func _create_control_button(text):
-	return UI_HUD._create_control_button(self, text)
+func _load_game_mode_configs():
+	return GAME_CONFIG._load_game_mode_configs(self)
 
-func _populate_level_select_options():
-	return UI_HUD._populate_level_select_options(self)
+func _default_tuning():
+	return GAME_CONFIG._default_tuning(self)
 
-func _show_achievement_notification(achievement_name):
-	return UI_HUD._show_achievement_notification(self, achievement_name)
+func _default_icon_sets():
+	return GAME_CONFIG._default_icon_sets(self)
 
-func _reshuffle_board(board_state):
-	BOARD_ENGINE.reshuffle_board(board_state, self, "_is_coord_playable")
+# ═══ 进度存取（progress_store） ═══
 
-# --- UI 面板回调与状态方法（Round D 从 ui_panels.gd 迁回；Round AL 生命周期收敛到 ui_panels）---
-func _show_onboarding_if_needed():
-	if progression_state.get(ONBOARDING_SEEN_KEY, false):
-		return
-	UI_PANELS.open_modal(self, onboarding_panel)
+func _load_progress_state():
+	return PROGRESS_STORE._load_progress_state(self)
 
-func _on_onboarding_dismissed():
-	print("[Game] onboarding dismissed")
-	UI_PANELS.close_modal(self, onboarding_panel)
-	_patch_progress_state({ONBOARDING_SEEN_KEY: true})
+func _save_progress_state():
+	return PROGRESS_STORE._save_progress_state(self)
 
-func _on_settings_pressed():
-	UI_PANELS.open_modal(self, settings_panel)
+func _patch_progress_state(patch):
+	return PROGRESS_STORE._patch_progress_state(self, patch)
 
-func _on_settings_close():
-	UI_PANELS.close_modal(self, settings_panel)
-
-func _on_master_volume_changed(value):
-	AudioManager.set_master_volume(value)
-
-
-func _on_music_toggled(enabled):
-	AudioManager.set_music_enabled(enabled)
-
-func _on_effects_toggled(enabled):
-	return UI_PANELS._on_effects_toggled(self, enabled)
-
-func _on_mute_toggled(muted):
-	AudioManager.set_muted(muted)
-
-func _on_achievements_pressed():
-	UI_PANELS.reopen_achievements(self)
-	UI_PANELS.open_modal(self, achievements_panel)
-
-func _on_achievements_close():
-	UI_PANELS.close_modal(self, achievements_panel)
-
-func _refresh_modes_panel():
-	UI_PANELS.refresh_modes_rows(self)
-
-func _on_modes_pressed():
-	_refresh_modes_panel()
-	if modes_panel:
-		modes_panel.visible = true
-
-func _on_modes_close_pressed():
-	if modes_panel:
-		modes_panel.visible = false
-
-func _on_special_mode_pressed(mode_id):
-	_on_modes_close_pressed()
-	_start_special_mode(mode_id)
-
-func _on_exit_special_pressed():
-	_hide_pause_panel()
-	_exit_special_mode()
-
-func _show_pause_panel():
-	UI_PANELS.refresh_pause_panel(self)
-
-func _hide_pause_panel():
-	UI_PANELS.hide_pause_panel(self)
-
-func _on_restart_current_level():
-	return UI_PANELS.restart_current_level(self)
-
-func _on_back_to_first_level():
-	return UI_PANELS.back_to_first_level(self)
-
-# --- 多页面导航（page_router 的薄壳）---
-func _on_nav_pressed(page_id):
-	return PAGE_ROUTER.show_page(self, page_id)
-
-func _on_nav_home_pressed():
-	return PAGE_ROUTER.close_page(self)
-
-func _on_map_level_pressed(level_index):
-	PAGE_ROUTER.close_page(self)
-	_start_level(level_index, true)
-	_show_message("进入第%d关" % (level_index + 1), 1.0)
-
-func _on_map_locked_pressed():
-	_sync_level_select_selection()
-	_show_message("该关卡尚未解锁", 0.9)
-
-func _on_signin_claim_pressed(today, yesterday):
-	ECONOMY.claim_signin(self, today, yesterday)
-
-func _on_shop_use_pressed(set_index):
-	ECONOMY.use_icon_set(self, set_index)
-
-func _on_shop_buy_pressed(set_index):
-	ECONOMY.buy_icon_set(self, set_index)
-
-# --- 叠叠消（tile_match 的薄壳）---
-func _on_tray_tile_pressed(tile_index):
-	var result = TILE_MATCH.pick(tray_state, tile_index)
-	if result == "match":
-		_play_eliminate_effects([Vector2(2, 2)])
-	if result == "cleared":
-		_resolve_tray_clear()
-	elif result == "lost":
-		_fail_tray_full()
-	TILE_MATCH.build_view(self)
-
-func _on_tray_undo_pressed():
-	TILE_MATCH.undo(tray_state)
-	TILE_MATCH.build_view(self)
-
-func _on_tray_shuffle_pressed():
-	TILE_MATCH.shuffle(tray_state)
-	TILE_MATCH.build_view(self)
-
-func _resolve_tray_clear():
-	return SPECIAL_SESSION._resolve_tray_clear(self)
-
-func _fail_tray_full():
-	return SPECIAL_SESSION._fail_tray_full(self)
-
-func _on_revive_pressed():
-	return SESSION._revive(self)
-
-# --- 收集挑战 / 翻翻乐（薄壳）---
-func _on_collect_pair_progress(patterns):
-	return ECONOMY.collect_pair(self, patterns)
-
-func _on_flip_card_pressed(card_index):
-	var result = MEMORY_FLIP.flip(self, card_index)
-	if result == "match":
-		_play_eliminate_effects([Vector2(2, 2)])
-	elif result == "miss":
-		if flip_back_timer:
-			flip_back_timer.start()
-	if result == "cleared":
-		_resolve_flip_clear()
-		return
-	MEMORY_FLIP.build_view(self)
-
-func _on_flip_back_timeout():
-	return MEMORY_FLIP.unflip_misses(self)
-
-func _resolve_flip_clear():
-	return SPECIAL_SESSION._resolve_flip_clear(self)
-
-func _resolve_collect_clear():
-	return SPECIAL_SESSION._resolve_collect_clear(self)
