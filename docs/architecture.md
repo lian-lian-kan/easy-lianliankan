@@ -17,6 +17,7 @@
 | `scripts/campaign_levels.gd` | 战役关卡数据表（深拷贝访问器） | `campaign_levels_test.gd`（数据不变量） |
 | `scripts/powerups.gd` | 道具域：载荷规则、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
 | `scripts/stats_hud.gd` | 统计 HUD：卡片构建/文本/道具槽显示/告警脉冲 + 标签工厂 | `stat_probe.gd` + `panels_probe.gd` |
+| `scripts/memory_flip.gd` | 翻翻乐：全暗牌翻配对状态机（翻错盖回）+ 卡面渲染 | `flip_probe.gd` |
 | `scripts/tile_match.gd` | 三消槽位玩法「叠叠消」：堆叠生成/遮挡判定/入槽三消状态机 + 牌堆与槽位渲染 | `tray_probe.gd` |
 | `scripts/page_router.gd` | 多页面外壳 + 樱花币经济：底部导航、旅程地图（星级显示）、图鉴、签到、图集商店 | `page_probe.gd` |
 | `scripts/page_router.gd` | 多页面外壳：底部导航 + 旅程地图/图鉴/每日有礼/小铺四页 + 樱花币经济（过关/签到/收集发放，图集解锁消费） | `page_probe.gd` |

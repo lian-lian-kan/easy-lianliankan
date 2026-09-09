@@ -468,6 +468,69 @@ static func refresh_current(game):
 
 # --- Economy hooks (wired through game thin wrappers) ---
 
+static func build_collect_row(game):
+	# Target progress strip (visible only during the collect challenge).
+	var row = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color("fff0f6")
+	style.set_corner_radius_all(12)
+	style.set_border_width_all(1)
+	style.border_color = Color("f09ebb")
+	row.add_stylebox_override("panel", style)
+	row.visible = false
+	var hbox = HBoxContainer.new()
+	hbox.add_constant_override("separation", 14)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(hbox)
+	game.collect_row = row
+	game.collect_labels = []
+	for i in range(3):
+		var label = Label.new()
+		label.add_font_override("font", game._font_at_size(14))
+		label.add_color_override("font_color", Color("d6336c"))
+		hbox.add_child(label)
+		game.collect_labels.append(label)
+	return row
+
+static func update_collect_labels(game):
+	var icons: Array = game.icon_sets[game.icon_set_index].get("icons", [])
+	for i in range(game.collect_labels.size()):
+		var label = game.collect_labels[i]
+		if label == null:
+			continue
+		var pattern_keys = game.collect_targets.keys()
+		if i >= pattern_keys.size():
+			label.text = ""
+			continue
+		var pattern = int(pattern_keys[i])
+		var glyph = _pattern_glyph(game, pattern)
+		label.text = "%s %d/%d" % [glyph, int(game.collect_progress.get(pattern, 0)), int(game.collect_targets[pattern])]
+
+static func collect_pair(game, patterns):
+	# Count cleared pairs toward the collect-challenge targets.
+	if game.special_mode != "collect" or game.collect_targets.empty():
+		return
+	var changed = false
+	for pattern in patterns:
+		if game.collect_targets.has(pattern) and int(game.collect_progress.get(pattern, 0)) < int(game.collect_targets[pattern]):
+			game.collect_progress[pattern] = int(game.collect_progress.get(pattern, 0)) + 1
+			changed = true
+	update_collect_labels(game)
+	if not changed:
+		return
+	var all_done = true
+	for pattern in game.collect_targets:
+		if int(game.collect_progress.get(pattern, 0)) < int(game.collect_targets[pattern]):
+			all_done = false
+	if all_done:
+		game._resolve_collect_clear()
+
+static func _pattern_glyph(game, pattern) -> String:
+	var icons: Array = game.icon_sets[game.icon_set_index].get("icons", [])
+	if pattern < icons.size():
+		return str(icons[pattern])
+	return "?"
+
 static func collect_level_icons(game):
 	# A level's icon set marks its patterns as collected when play begins.
 	if game.icon_sets.empty():

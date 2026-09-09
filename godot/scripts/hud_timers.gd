@@ -52,6 +52,12 @@ static func _build_timers(game):
 	game.memory_hide_timer.connect("timeout", game, "_on_memory_hide_timeout")
 	game.add_child(game.memory_hide_timer)
 
+	game.flip_back_timer = Timer.new()
+	game.flip_back_timer.one_shot = true
+	game.flip_back_timer.wait_time = 0.7
+	game.flip_back_timer.connect("timeout", game, "_on_flip_back_timeout")
+	game.add_child(game.flip_back_timer)
+
 	game.race_timer = Timer.new()
 	game.race_timer.wait_time = 1.0
 	game.race_timer.one_shot = false

@@ -13,6 +13,8 @@ const ACHIEVEMENTS = [
 	{"id": "perfect_clear", "name": "完美通关", "desc": "不使用提示和自动消除完成一关"},
 	{"id": "completionist", "name": "通关达人", "desc": "完成所有关卡"},
 	{"id": "tray_first", "name": "叠叠消初胜", "desc": "首次完成叠叠消"},
+	{"id": "collect_first", "name": "收集达人", "desc": "首次完成收集挑战"},
+	{"id": "flip_first", "name": "记忆大师", "desc": "首次完成翻翻乐"},
 	{"id": "memory_first", "name": "盲盒初体验", "desc": "完成一局盲盒模式"},
 	{"id": "daily_streak_7", "name": "七日之约", "desc": "每日挑战连胜达到7天"},
 	{"id": "endless_round_5", "name": "无尽探索者", "desc": "无尽模式达到第5轮"},
@@ -56,6 +58,8 @@ static func default_progress(level_count: int) :
 		"fog_best_score": 0,
 		"chain_best_score": 0,
 		"tray_best_score": 0,
+		"collect_best_score": 0,
+		"flip_best_score": 0,
 		"coins": 0,
 		"collected": [],
 		"owned_sets": ["fruit"],
@@ -122,6 +126,8 @@ static func normalize_progress(raw, level_count: int) :
 		normalized["fog_best_score"] = max(0, int(raw.get("fog_best_score", 0)))
 		normalized["chain_best_score"] = max(0, int(raw.get("chain_best_score", 0)))
 		normalized["tray_best_score"] = max(0, int(raw.get("tray_best_score", 0)))
+		normalized["collect_best_score"] = max(0, int(raw.get("collect_best_score", 0)))
+		normalized["flip_best_score"] = max(0, int(raw.get("flip_best_score", 0)))
 
 	normalized["current_level_index"] = clamp(int(normalized["current_level_index"]), 0, max_level_index)
 	normalized["highest_unlocked_level_index"] = clamp(int(normalized["highest_unlocked_level_index"]), 0, max_level_index)
@@ -243,6 +249,10 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		next_state["chain_best_score"] = max(int(next_state["chain_best_score"]), max(0, int(patch["chain_result"])))
 	if patch.has("tray_result"):
 		next_state["tray_best_score"] = max(int(next_state["tray_best_score"]), max(0, int(patch["tray_result"])))
+	if patch.has("collect_result"):
+		next_state["collect_best_score"] = max(int(next_state["collect_best_score"]), max(0, int(patch["collect_result"])))
+	if patch.has("flip_result"):
+		next_state["flip_best_score"] = max(int(next_state["flip_best_score"]), max(0, int(patch["flip_result"])))
 
 	next_state["version"] = SAVE_VERSION
 	return next_state
@@ -270,6 +280,8 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("fog_best_score", 0)) == int(bb.get("fog_best_score", 0)) \
 		and int(aa.get("chain_best_score", 0)) == int(bb.get("chain_best_score", 0)) \
 		and int(aa.get("tray_best_score", 0)) == int(bb.get("tray_best_score", 0)) \
+		and int(aa.get("collect_best_score", 0)) == int(bb.get("collect_best_score", 0)) \
+		and int(aa.get("flip_best_score", 0)) == int(bb.get("flip_best_score", 0)) \
 		and bool(aa.get("onboarding_seen", false)) == bool(bb.get("onboarding_seen", false)) \
 		and int(aa.get("coins", 0)) == int(bb.get("coins", 0)) \
 		and _arrays_equal(aa.get("collected", []), bb.get("collected", [])) \

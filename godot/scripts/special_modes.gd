@@ -165,6 +165,28 @@ const DEFAULT_CONFIGS = {
 		"layer_cols": 6,
 		"kinds": 10,
 		"tray_capacity": 7
+	},
+	"collect": {
+		"mode_id": "collect",
+		"name": "收集挑战",
+		"description": "限时收集指定的目标图案",
+		"unlock_level": 17,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 10,
+		"time_limit": 150,
+		"target_count": 3,
+		"target_pairs": 3
+	},
+	"flip": {
+		"mode_id": "flip",
+		"name": "翻翻乐",
+		"description": "全暗牌翻配对，靠记忆全消",
+		"unlock_level": 18,
+		"rows": 4,
+		"cols": 6,
+		"pairs": 12,
+		"time_limit": 180
 	}
 }
 
@@ -417,8 +439,16 @@ const INTRO_TEXTS = {
 	"race": "竞速对战！抢在机器人前面消完全部"
 }
 
-const MODE_LABELS_EXTRA = {"tray": "叠叠消"}
-const INTRO_TEXTS_EXTRA = {"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败"}
+const MODE_LABELS_EXTRA = {
+	"tray": "叠叠消",
+	"collect": "收集挑战",
+	"flip": "翻翻乐",
+}
+const INTRO_TEXTS_EXTRA = {
+	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
+	"collect": "收集挑战！限时集齐目标图案",
+	"flip": "翻翻乐！全部盖着，靠记忆翻出配对",
+}
 
 static func mode_label(mode: String) -> String:
 	if MODE_LABELS_EXTRA.has(mode):
@@ -446,6 +476,10 @@ static func stage_callout(mode: String, level, level_index: int, endless_round: 
 		return ["冰雪挑战 · %d%% 方块结了冰" % int(round(float(level.get("frost_ratio", 0.3)) * 100)), Color("4dabf7")]
 	if mode == "tray":
 		return ["叠叠消", Color("20c997")]
+	if mode == "collect":
+		return ["收集挑战", Color("f59f00")]
+	if mode == "flip":
+		return ["翻翻乐", Color("9775fa")]
 	return ["第" + str(int(level.get("id", level_index + 1))) + "关 · " + str(level.get("name", "关卡")), Color("e64980")]
 
 # ---- 特殊模式结算表：纪录补丁键 / 首通成就 / 面板标题 ----
@@ -456,6 +490,8 @@ const RECORD_MODES = {
 	"fog": {"label": "迷雾散尽", "patch_key": "fog_result", "best_key": "fog_best_score", "achievements": ["fog_first"]},
 	"chain": {"label": "锁链尽断", "patch_key": "chain_result", "best_key": "chain_best_score", "achievements": ["chain_first"]},
 	"tray": {"label": "叠叠消通关", "patch_key": "tray_result", "best_key": "tray_best_score", "achievements": ["tray_first"]},
+	"collect": {"label": "收集达成", "patch_key": "collect_result", "best_key": "collect_best_score", "achievements": ["collect_first"]},
+	"flip": {"label": "翻翻乐全消", "patch_key": "flip_result", "best_key": "flip_best_score", "achievements": ["flip_first"]},
 	"zen": {"label": "休闲一局", "patch_key": "zen_result", "best_key": "zen_best_score", "achievements": ["zen_first"]},
 	"hell": {"label": "地狱挑战", "patch_key": "hell_result", "best_key": "hell_best_score", "achievements": ["hell_first"]},
 	"moves": {"label": "步数挑战", "patch_key": "moves_result", "best_key": "moves_best_score", "achievements": ["moves_first"]},
@@ -487,6 +523,40 @@ static func build_tray_level(config):
 		"score_multiplier": 1.0
 	}
 
+static func build_collect_level(config):
+	var kinds = int(config.get("kinds", 10))
+	var target_count = int(config.get("target_count", 3))
+	var pool := []
+	for i in range(kinds):
+		pool.append(i)
+	var targets := []
+	for _i in range(target_count):
+		var pick_index = randi() % pool.size()
+		targets.append(pool[pick_index])
+		pool.remove(pick_index)
+	return {
+		"mode_id": "collect",
+		"name": "收集挑战",
+		"rows": int(config.get("rows", 10)),
+		"cols": int(config.get("cols", 8)),
+		"kinds": kinds,
+		"time_limit": int(config.get("time_limit", 150)),
+		"targets": targets,
+		"target_pairs": int(config.get("target_pairs", 3)),
+		"score_multiplier": 1.0
+	}
+
+static func build_memory_flip_level(config):
+	return {
+		"mode_id": "flip",
+		"name": "翻翻乐",
+		"rows": int(config.get("rows", 4)),
+		"cols": int(config.get("cols", 6)),
+		"pairs": int(config.get("pairs", 12)),
+		"time_limit": int(config.get("time_limit", 180)),
+		"score_multiplier": 1.0
+	}
+
 static func modes_panel_rows(progression_state) -> Array:
 	var today = date_string(OS.get_date())
 	var daily = progression_state.get("daily_challenge", {})
@@ -506,5 +576,7 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "fog", "title": "🌫️ 迷雾模式", "detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))},
 		{"id": "chain", "title": "⛓️ 锁链模式", "detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))},
 		{"id": "tray", "title": "🀄 叠叠消", "detail": "点牌入槽三张即消 · 最佳%d分" % int(progression_state.get("tray_best_score", 0))},
+		{"id": "collect", "title": "🎯 收集挑战", "detail": "限时集齐目标图案 · 最佳%d分" % int(progression_state.get("collect_best_score", 0))},
+		{"id": "flip", "title": "🃏 翻翻乐", "detail": "记忆翻牌全消 · 最佳%d分" % int(progression_state.get("flip_best_score", 0))},
 		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]}
 	]

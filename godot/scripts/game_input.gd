@@ -96,7 +96,9 @@ static func _on_tile_pressed(game, button):
 	game._show_path(path, "eliminate", int(game.tuning.get("path_preview_ms", 420)))
 	game._play_eliminate_effects([a, b])
 
+	var pair_patterns = [int(game.board[a.x][a.y]), int(game.board[b.x][b.y])]
 	game._apply_match_damage(a, b)
+	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
 
 	game._refresh_ui()
@@ -167,7 +169,9 @@ static func _on_memory_tile_pressed(game, point, r, c):
 	game._show_path(path, "eliminate", int(game.tuning.get("path_preview_ms", 420)))
 	game._play_eliminate_effects([a, b])
 
+	var pair_patterns = [int(game.board[a.x][a.y]), int(game.board[b.x][b.y])]
 	game._apply_match_damage(a, b)
+	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
 
 	game._refresh_ui()

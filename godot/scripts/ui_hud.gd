@@ -296,9 +296,15 @@ static func build_main_ui(game):
 	game.board_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_inner.add_child(game.board_center)
 
+	game.collect_row = PAGE_ROUTER.build_collect_row(game)
+	root.add_child(game.collect_row)
+
 	game.tray_layer = Control.new()
 	game.tray_layer.visible = false
 	game.board_wrapper.add_child(game.tray_layer)
+	game.flip_layer = Control.new()
+	game.flip_layer.visible = false
+	game.board_wrapper.add_child(game.flip_layer)
 
 	game.board_grid = GridContainer.new()
 	game.board_grid.columns = 6

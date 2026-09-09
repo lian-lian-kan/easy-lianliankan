@@ -31,6 +31,7 @@ const HUD_TIMERS = preload("res://scripts/hud_timers.gd")
 const HUD_LAYOUT = preload("res://scripts/hud_layout.gd")
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const TILE_MATCH = preload("res://scripts/tile_match.gd")
+const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -184,6 +185,14 @@ const LEVEL_NORMAL_COLOR = Color("ffffff")  # 正常白色
 
 var revive_button  # 樱花币复活按钮（失败结算浮层）
 var revive_cost = 30
+
+var flip_state = {}  # 翻翻乐：暗牌状态（memory_flip.gd 管理）
+var flip_layer  # 翻翻乐渲染层
+var flip_back_timer  # 翻错盖回延时器
+var collect_targets = {}  # 收集挑战：目标图案 -> 需要对数
+var collect_progress = {}  # 收集挑战：已完成对数
+var collect_row  # 目标进度行
+var collect_labels = []  # 每个目标的进度 Label
 
 var tray_state = {}  # 叠叠消：牌堆/槽位状态（tile_match.gd 管理）
 var tray_layer  # 叠叠消渲染层（挂在棋盘区内）
@@ -1058,3 +1067,25 @@ func _fail_tray_full():
 
 func _on_revive_pressed():
 	return SESSION._revive(self)
+
+# --- 收集挑战 / 翻翻乐（薄壳）---
+func _on_collect_pair_progress(patterns):
+	return PAGE_ROUTER.collect_pair(self, patterns)
+
+func _on_flip_card_pressed(card_index):
+	var result = MEMORY_FLIP.flip(self, card_index)
+	if result == "match":
+		_play_eliminate_effects([Vector2(2, 2)])
+	elif result == "miss":
+		if flip_back_timer:
+			flip_back_timer.start()
+	if result == "cleared":
+		_resolve_flip_clear()
+		return
+	MEMORY_FLIP.build_view(self)
+
+func _on_flip_back_timeout():
+	return MEMORY_FLIP.unflip_misses(self)
+
+func _resolve_flip_clear():
+	return SESSION._resolve_flip_clear(self)

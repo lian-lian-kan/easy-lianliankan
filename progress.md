@@ -790,3 +790,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 
 ## 2026-09-10 (定名更正：Sophia的连连看)
 - 游戏名由「李米，索菲亚的连连看」更正为「Sophia的连连看」，四处统一（主页标题×2/欢迎面板/加载壳/落地页 title+h1）；字体子集重跑确认 Sophia 拉丁字形在快乐体核心覆盖内。
+
+## 2026-09-10 (玩法迭代二期：收集挑战 + 翻翻乐，玩法池 15→17)
+- 调研：关卡目标三大类（障碍消除/道具生成/物块收集，腾讯游戏学院）与翻牌记忆配对（百度百科）为微信小游戏连连看常见机制，本项目此前均未覆盖。
+- 变更：①「收集挑战」(collect，第 17 关解锁，150s)——随机 3 种目标图案各需消 3 对，board_wrapper 上方目标进度行实时更新，全部达标即过关（无需清空棋盘）；消除统计钩子挂 board_mechanics.apply_match_damage 调用方 game_input（damage 前取图案对）。②「翻翻乐」(flip，第 18 关解锁，180s)——新模块 memory_flip.gd：12 对全暗牌、翻两张同面消除、异面 0.7s 后盖回（新增 flip_back_timer 于 hud_timers）、全消获胜；flip_layer 挂棋盘区。③progression 新增 collect_best_score/flip_best_score 与 collect_first/flip_first 成就；special_modes 补 config/label/intro/callout/RECORD/panel rows（16 卡）；CI 清单加 flip_probe。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

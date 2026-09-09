@@ -2,6 +2,7 @@ extends Reference
 
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const TILE_MATCH = preload("res://scripts/tile_match.gd")
+const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 
 # Session lifecycle: level session reset, post-move resolution (win/lose/
 # reshuffle/gravity), and special-mode session entry/exit. Statics take the
@@ -51,6 +52,41 @@ static func _reset_level_session(game, level, reset_total = false):
 	if game.revive_button:
 		game.revive_button.visible = false
 	PAGE_ROUTER.collect_level_icons(game)
+	if game.collect_row:
+		game.collect_row.visible = game.special_mode == "collect"
+	if game.flip_layer:
+		MEMORY_FLIP.clear_view(game)
+		game.flip_layer.visible = false
+	if game.board_grid:
+		game.board_grid.visible = true
+	if game.special_mode == "collect":
+		game.collect_targets = {}
+		game.collect_progress = {}
+		for target in game.special_level.get("targets", []):
+			game.collect_targets[int(target)] = int(game.special_level.get("target_pairs", 3))
+			game.collect_progress[int(target)] = 0
+		PAGE_ROUTER.update_collect_labels(game)
+	if game.special_mode == "flip":
+		game.board = []
+		game.board_armor = []
+		game.board_lower = []
+		game.board_chain = []
+		game._fog_layers = 0
+		game.selected = Vector2(-1, -1)
+		game.hint_tiles.clear()
+		game.error_tiles.clear()
+		game.moves = 0
+		game.level_score = 0
+		game.total_score = 0
+		game.time_left = int(level.get("time_limit", 180))
+		if game.flip_layer:
+			game.flip_layer.visible = true
+			game.board_grid.visible = false
+		MEMORY_FLIP.new_round(game)
+		if game.second_timer:
+			game.second_timer.stop()
+			game.second_timer.start()
+		return
 	if game.special_mode == "tray":
 		game.board = []
 		game.board_armor = []
@@ -64,6 +100,9 @@ static func _reset_level_session(game, level, reset_total = false):
 		game.level_score = 0
 		game.total_score = 0
 		game.time_left = int(level.get("time_limit", 240))
+		if game.tray_layer:
+			game.tray_layer.visible = true
+			game.board_grid.visible = false
 		TILE_MATCH.new_round(game)
 		if game.second_timer:
 			game.second_timer.stop()
@@ -72,6 +111,10 @@ static func _reset_level_session(game, level, reset_total = false):
 	if game.tray_layer:
 		TILE_MATCH.clear_view(game)
 		game.tray_layer.visible = false
+	if game.flip_layer:
+		MEMORY_FLIP.clear_view(game)
+		game.flip_layer.visible = false
+	if game.board_grid:
 		game.board_grid.visible = true
 	game.board = game._create_playable_board(level)
 	game.board_armor = game._build_frost_armor(game.board, level)
@@ -479,6 +522,37 @@ static func _resolve_tray_clear(game):
 	game._play_stage_clear_celebration(false)
 	game._show_message("叠叠消通关！🌸+" + str(coin_reward), 2.0)
 	game._refresh_ui()
+
+static func _resolve_collect_clear(game):
+	game.stage_status = game.STATUS_CLEARED
+	var coin_reward = 20
+	game._patch_progress_state({
+		"collect_result": game.total_score,
+		"coins_delta": coin_reward
+	})
+	AudioManager.play_win()
+	game._record_special_completion()
+	game._play_stage_clear_celebration(false)
+	game._show_message("目标收集达成！🌸+" + str(coin_reward), 2.0)
+	game._refresh_ui()
+
+static func _resolve_flip_clear(game):
+	game.stage_status = game.STATUS_CLEARED
+	var coin_reward = 20
+	game.total_score += 200
+	game.level_score = game.total_score
+	game._patch_progress_state({
+		"flip_result": game.total_score,
+		"coins_delta": coin_reward
+	})
+	AudioManager.play_win()
+	game._record_special_completion()
+	game._play_stage_clear_celebration(false)
+	game._show_message("全部配对完成！🌸+" + str(coin_reward), 2.0)
+	game._refresh_ui()
+
+static func _on_flip_back_timeout(game):
+	MEMORY_FLIP.unflip_misses(game)
 
 static func _fail_tray_full(game):
 	game.stage_status = game.STATUS_FAILED

@@ -24,6 +24,8 @@ func _init() -> void:
 		"hell": "地狱模式", "moves": "步数挑战", "race": "竞速对战",
 		"stack": "叠层模式", "gravity": "重力模式", "fog": "迷雾模式", "chain": "锁链模式",
 		"tray": "叠叠消",
+		"collect": "收集挑战",
+		"flip": "翻翻乐",
 	}
 	var all_ok = true
 	for mode in labels:
@@ -34,7 +36,7 @@ func _init() -> void:
 	check(SM.mode_label("nope") == "未知", "unknown mode falls back to 未知")
 	check(SM.mode_label("tray") == "叠叠消", "tray label registered")
 
-	var intros = ["daily", "time_attack", "endless", "frost", "zen", "hell", "moves", "race", "tray"]
+	var intros = ["daily", "time_attack", "endless", "frost", "zen", "hell", "moves", "race", "tray", "collect", "flip"]
 	var intros_ok = true
 	for mode in intros:
 		var txt = SM.intro_text(mode)
@@ -48,7 +50,7 @@ func _init() -> void:
 	var defined_ids = {}
 	for a in PROGRESSION.ACHIEVEMENTS:
 		defined_ids[a["id"]] = true
-	check(SM.RECORD_MODES.size() == 11, "record table covers 11 modes")
+	check(SM.RECORD_MODES.size() == 13, "record table covers 13 modes")
 	var table_ok = true
 	var ach_ok = true
 	for mode in SM.RECORD_MODES:
@@ -69,20 +71,21 @@ func _init() -> void:
 	check(SM.bonus_achievements("race", {}) == [], "race has no conditional bonus")
 
 	# --- modes_panel_rows: 13 ordered rows, best-score formatting, daily done branch.
-	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "tray", "endless"]
+	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip", "endless"]
 	var state := {
 		"daily_challenge": {"streak": 2, "best_score": 88},
 		"time_attack_best_score": 120, "memory_best_score": 34, "frost_best_score": 56,
 		"zen_best_score": 7, "hell_best_score": 90, "moves_best_score": 11, "race_best_score": 22,
 		"stack_best_score": 33, "gravity_best_score": 44, "fog_best_score": 55, "chain_best_score": 66,
 		"tray_best_score": 77,
+		"collect_best_score": 88, "flip_best_score": 99,
 		"endless_best": {"round": 3, "score": 456},
 	}
 	var rows = SM.modes_panel_rows(state)
 	var got_ids := []
 	for r in rows:
 		got_ids.append(r["id"])
-	check(got_ids == want_ids, "modes_panel_rows returns 14 rows in panel order")
+	check(got_ids == want_ids, "modes_panel_rows returns 16 rows in panel order")
 	var titles_ok := true
 	for r in rows:
 		if r["title"] == "" or r["detail"] == "":
@@ -97,7 +100,7 @@ func _init() -> void:
 			details_ok = false
 			push_error("detail mismatch for %s: %s" % [r["id"], r["detail"]])
 	check(details_ok, "special-mode details end with their best score")
-	var endless_row = rows[13]
+	var endless_row = rows[15]
 	check(endless_row["detail"].find("最佳第3轮") != -1 and endless_row["detail"].find("最高456分") != -1, "endless detail shows round and score")
 	var daily_row = rows[0]
 	check(daily_row["detail"].find("今日已完成") == -1, "daily shows not-done without today's date")
