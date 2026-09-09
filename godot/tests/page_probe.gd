@@ -167,6 +167,45 @@ func _init() -> void:
 	check(int(game.progression_state.get("coins", 0)) == coins_before_flip + 20, "flip win pays 20 blossoms")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- tray tools: undo refunds the pickup, shuffle rerolls the pile ---
+	var TM = load("res://scripts/tile_match.gd")
+	game.SPECIAL_SESSION._start_special_mode(game, "tray")
+	var picked = -1
+	for i in range(game.tray_state["tiles"].size()):
+		if not TM.is_covered(game.tray_state, game.tray_state["tiles"][i]):
+			picked = i
+			break
+	check(picked != -1, "tray has an uncovered tile to pick")
+	game._on_tray_tile_pressed(picked)
+	check(int(game.tray_state["tray"].size()) == 1, "tray pickup lands in the slot")
+	var undo_left = int(game.tray_state["undo_left"])
+	game._on_tray_undo_pressed()
+	check(int(game.tray_state["tray"].size()) == 0 && int(game.tray_state["undo_left"]) == undo_left - 1,
+		"tray undo returns the tile and spends the charge")
+	var live_before = 0
+	for t in game.tray_state["tiles"]:
+		if not bool(t["removed"]):
+			live_before += 1
+	game._on_tray_shuffle_pressed()
+	var live_after = 0
+	for t in game.tray_state["tiles"]:
+		if not bool(t["removed"]):
+			live_after += 1
+	check(int(game.tray_state["shuffle_left"]) == 0 && live_after == live_before,
+		"tray shuffle rerolls patterns keeping the count")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
+	# --- collect auto-resolve: filling every target ends the session ---
+	game.SPECIAL_SESSION._start_special_mode(game, "collect")
+	var coins_before_auto = int(game.progression_state.get("coins", 0))
+	for target_key in game.collect_targets.keys():
+		game.collect_progress[target_key] = int(game.collect_targets[target_key]) - 1
+	var last_target = int(game.collect_targets.keys()[0])
+	game._on_collect_pair_progress([last_target, last_target])
+	check(game.stage_status == game.STATUS_CLEARED, "filling all targets auto-resolves the collect session")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_auto + 20, "collect auto-resolve pays 20 blossoms")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})

@@ -841,3 +841,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 动机：BP 轮拆出的 special_modes_data.gd（16 模式配置表）此前无专属测试；BQ 的解锁死锁（unlock_level 超出战役上限）正是这类数据问题。
 - 变更：mode_meta_test 补数据不变量断言——16 个 config 的 mode_id/name/description 完整性、unlock_level ∈ [1,15]（防解锁死锁回归）、time_limit 非负、tray 牌堆可整除且容量充足、flip 对数为偶。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round BV：tray 道具路径与 collect 自动过关探针)
+- page_probe 补断言：叠叠消可点牌拾取入槽、撤销退牌耗次数、洗牌重排保持牌数；收集挑战填满目标后 collect_pair 自动触发结算并发放 🌸20（此前结算探针绕过了自动触发路径）。
+- Validation: 本地零测试，全量验证由 CI 远端执行。
