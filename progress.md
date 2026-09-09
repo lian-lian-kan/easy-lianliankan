@@ -795,3 +795,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 调研：关卡目标三大类（障碍消除/道具生成/物块收集，腾讯游戏学院）与翻牌记忆配对（百度百科）为微信小游戏连连看常见机制，本项目此前均未覆盖。
 - 变更：①「收集挑战」(collect，第 17 关解锁，150s)——随机 3 种目标图案各需消 3 对，board_wrapper 上方目标进度行实时更新，全部达标即过关（无需清空棋盘）；消除统计钩子挂 board_mechanics.apply_match_damage 调用方 game_input（damage 前取图案对）。②「翻翻乐」(flip，第 18 关解锁，180s)——新模块 memory_flip.gd：12 对全暗牌、翻两张同面消除、异面 0.7s 后盖回（新增 flip_back_timer 于 hud_timers）、全消获胜；flip_layer 挂棋盘区。③progression 新增 collect_best_score/flip_best_score 与 collect_first/flip_first 成就；special_modes 补 config/label/intro/callout/RECORD/panel rows（16 卡）；CI 清单加 flip_probe。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (重构 Round BM：page_router 按域拆分，经济独立 economy.gd)
+- 审查：page_router.gd 经多页面/经济/签到/商店多轮迭代膨胀到 562 行，导航壳、四页构建、经济逻辑三职责混装。
+- 变更：①新增 page_ui.gd（50 行）——公共页头与滚动内容区工具，依赖中立供两个页面模块共用（避免 preload 环）；②新增 economy.gd（311 行）——钱包 chip/每日签到页与领取/图集商店页与购买装备/收集进度统计与图鉴收集发放，全部经济域内聚；③page_router.gd 回归纯导航壳（215 行）：容器/nav/show/close/旅程/图鉴。game/session/ui_hud 的经济调用薄壳全部改向 ECONOMY，page_router 仅保留导航调用。
+- Validation: 本地零测试（既定约束），静态自查已知 GDScript 3 陷阱（ALIGNMENT/offset/数组字面量索引）均无命中；全量验证由 CI 远端执行。

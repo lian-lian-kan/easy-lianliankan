@@ -1,6 +1,7 @@
 extends Reference
 
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
+const ECONOMY = preload("res://scripts/economy.gd")
 
 # Main screen construction, extracted from gd so the 300+ line HUD/board
 # layout lives beside the dialog factories in ui_panels.gd. Every call takes
@@ -87,7 +88,7 @@ static func build_main_ui(game):
 	game.status_chip_label.add_stylebox_override("normal", status_style)
 	title_row.add_child(game.status_chip_label)
 
-	var coin_chip = PAGE_ROUTER.build_coin_chip(game)
+	var coin_chip = ECONOMY.build_coin_chip(game)
 	title_row.add_child(coin_chip)
 
 	game.level_progress_caption_label = Label.new()
@@ -296,7 +297,7 @@ static func build_main_ui(game):
 	game.board_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_inner.add_child(game.board_center)
 
-	game.collect_row = PAGE_ROUTER.build_collect_row(game)
+	game.collect_row = ECONOMY.build_collect_row(game)
 	root.add_child(game.collect_row)
 
 	game.tray_layer = Control.new()
@@ -368,7 +369,7 @@ static func build_main_ui(game):
 	game.call_deferred("_update_layout_for_screen_size")
 
 static func refresh_ui(game):
-	PAGE_ROUTER.update_coin_label(game)
+	ECONOMY.update_coin_label(game)
 	var level = game._current_level()
 	var level_id = int(level.get("id", game.level_index + 1))
 	var level_name = str(level.get("name", "关卡"))

@@ -32,6 +32,7 @@ const HUD_LAYOUT = preload("res://scripts/hud_layout.gd")
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const TILE_MATCH = preload("res://scripts/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
+const ECONOMY = preload("res://scripts/economy.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -1032,13 +1033,13 @@ func _on_map_locked_pressed():
 	_show_message("该关卡尚未解锁", 0.9)
 
 func _on_signin_claim_pressed(today, yesterday):
-	PAGE_ROUTER.claim_signin(self, today, yesterday)
+	ECONOMY.claim_signin(self, today, yesterday)
 
 func _on_shop_use_pressed(set_index):
-	PAGE_ROUTER.use_icon_set(self, set_index)
+	ECONOMY.use_icon_set(self, set_index)
 
 func _on_shop_buy_pressed(set_index):
-	PAGE_ROUTER.buy_icon_set(self, set_index)
+	ECONOMY.buy_icon_set(self, set_index)
 
 # --- 叠叠消（tile_match 的薄壳）---
 func _on_tray_tile_pressed(tile_index):
@@ -1070,7 +1071,7 @@ func _on_revive_pressed():
 
 # --- 收集挑战 / 翻翻乐（薄壳）---
 func _on_collect_pair_progress(patterns):
-	return PAGE_ROUTER.collect_pair(self, patterns)
+	return ECONOMY.collect_pair(self, patterns)
 
 func _on_flip_card_pressed(card_index):
 	var result = MEMORY_FLIP.flip(self, card_index)

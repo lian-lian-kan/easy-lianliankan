@@ -19,7 +19,9 @@
 | `scripts/stats_hud.gd` | 统计 HUD：卡片构建/文本/道具槽显示/告警脉冲 + 标签工厂 | `stat_probe.gd` + `panels_probe.gd` |
 | `scripts/memory_flip.gd` | 翻翻乐：全暗牌翻配对状态机（翻错盖回）+ 卡面渲染 | `flip_probe.gd` |
 | `scripts/tile_match.gd` | 三消槽位玩法「叠叠消」：堆叠生成/遮挡判定/入槽三消状态机 + 牌堆与槽位渲染 | `tray_probe.gd` |
-| `scripts/page_router.gd` | 多页面外壳 + 樱花币经济：底部导航、旅程地图（星级显示）、图鉴、签到、图集商店 | `page_probe.gd` |
+| `scripts/page_router.gd` | 多页面外壳：底部导航 + 页面容器/转场 + 旅程地图与图鉴页 | `page_probe.gd` |
+| `scripts/page_ui.gd` | 页面框架工具：公共页头（返回+标题）与滚动内容区 | `page_probe.gd` |
+| `scripts/economy.gd` | 樱花币经济：钱包 chip、每日签到、图集商店、收集进度统计 | `page_probe.gd` |
 | `scripts/page_router.gd` | 多页面外壳：底部导航 + 旅程地图/图鉴/每日有礼/小铺四页 + 樱花币经济（过关/签到/收集发放，图集解锁消费） | `page_probe.gd` |
 | `scripts/ui_hud.gd` | 主屏结构：构建/状态刷新/消息横幅/控制按钮/关卡选择胶水/连击条/成就通知 | `panels_probe.gd`（结构+行为断言） |
 | `scripts/hud_layout.gd` | 屏幕适配：视口分类（手机/竖屏/紧凑）与响应式布局（棋盘高度/边距/网格间距/统计卡与控件尺寸/竖屏头部压缩） | `panels_probe.gd`（布局断言） |

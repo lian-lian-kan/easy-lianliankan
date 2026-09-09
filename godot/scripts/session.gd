@@ -3,6 +3,7 @@ extends Reference
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const TILE_MATCH = preload("res://scripts/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
+const ECONOMY = preload("res://scripts/economy.gd")
 
 # Session lifecycle: level session reset, post-move resolution (win/lose/
 # reshuffle/gravity), and special-mode session entry/exit. Statics take the
@@ -51,7 +52,7 @@ static func _exit_special_mode(game):
 static func _reset_level_session(game, level, reset_total = false):
 	if game.revive_button:
 		game.revive_button.visible = false
-	PAGE_ROUTER.collect_level_icons(game)
+	ECONOMY.collect_level_icons(game)
 	if game.collect_row:
 		game.collect_row.visible = game.special_mode == "collect"
 	if game.flip_layer:
@@ -65,7 +66,7 @@ static func _reset_level_session(game, level, reset_total = false):
 		for target in game.special_level.get("targets", []):
 			game.collect_targets[int(target)] = int(game.special_level.get("target_pairs", 3))
 			game.collect_progress[int(target)] = 0
-		PAGE_ROUTER.update_collect_labels(game)
+		ECONOMY.update_collect_labels(game)
 	if game.special_mode == "flip":
 		game.board = []
 		game.board_armor = []
@@ -234,7 +235,7 @@ static func _resolve_after_board_changed(game):
 		game.total_score += time_bonus
 		game.level_score += time_bonus
 
-		var coin_reward = PAGE_ROUTER.award_level_clear(game, game._current_level())
+		var coin_reward = ECONOMY.award_level_clear(game, game._current_level())
 		var stars = 1
 		var level_time = int(game._current_level().get("time_limit", 0))
 		if level_time > 0:
