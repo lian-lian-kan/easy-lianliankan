@@ -836,3 +836,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-10 (测试补充 Round BT：全玩法启动冒烟探针 startup_probe.gd)
 - 动机：BQ 轮抓到的 collect/flip 启动分支丢失与 BS 轮的叠叠消 new_round 缺失，同源于"玩法启动路径无测试"。本探针把 16 种特殊模式逐个真实启动：会话进入/PLAYING/时钟/状态载体（tray 120 张牌、flip 24 卡、collect 3 目标、frost 护甲、stack 埋层、chain 锁、fog 迷雾环、race 对数、moves 预算…）+ 干净退出回战役。
 - Validation: 本地零测试，探针随 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round BU：special_modes_data 数据不变量)
+- 动机：BP 轮拆出的 special_modes_data.gd（16 模式配置表）此前无专属测试；BQ 的解锁死锁（unlock_level 超出战役上限）正是这类数据问题。
+- 变更：mode_meta_test 补数据不变量断言——16 个 config 的 mode_id/name/description 完整性、unlock_level ∈ [1,15]（防解锁死锁回归）、time_limit 非负、tray 牌堆可整除且容量充足、flip 对数为偶。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

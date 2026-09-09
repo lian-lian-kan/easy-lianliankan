@@ -3,6 +3,7 @@ extends SceneTree
 # Mode display metadata tests: labels, intro texts, and the record table.
 
 const SM = preload("res://scripts/special_modes.gd")
+const DATA = preload("res://scripts/special_modes_data.gd")
 const PROGRESSION = preload("res://scripts/progression.gd")
 
 var failures := 0
@@ -121,6 +122,39 @@ func _init() -> void:
 	check(SM.stage_callout("memory", campaign_level, 2, 1)[1] == Color("3bc9db"), "memory callout carries its color")
 	var frost_callout = SM.stage_callout("frost", {"frost_ratio": 0.38}, 2, 1)
 	check(frost_callout[0].find("38%") != -1, "frost callout embeds the frozen percentage")
+
+	# --- special_modes_data invariants: the whole campaign's unlock curve
+	# and per-mode payloads must stay inside legal bounds (BQ found unlock
+	# levels beyond the campaign once already) ---
+	check(DATA.DEFAULT_CONFIGS.size() == 16, "data module carries 16 mode configs")
+	var campaign_levels = int(CAMPAIGN.default_campaign_levels().size())
+	var inv_ok = true
+	var unlock_too_high = ""
+	for mode_id in DATA.DEFAULT_CONFIGS:
+		var cfg = DATA.DEFAULT_CONFIGS[mode_id]
+		if str(cfg.get("mode_id", "")) != str(mode_id):
+			inv_ok = false
+			push_error("mode_id mismatch in %s" % mode_id)
+		if str(cfg.get("name", "")) == "" or str(cfg.get("description", "")) == "":
+			inv_ok = false
+			push_error("missing name/description in %s" % mode_id)
+		var unlock_level = int(cfg.get("unlock_level", 1))
+		if unlock_level < 1 or unlock_level > 15:
+			inv_ok = false
+			unlock_too_high = mode_id
+		if int(cfg.get("time_limit", 1)) < 0:
+			inv_ok = false
+	check(inv_ok, "all 16 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
+
+	# tray pile must be fully dealable with every pattern count a multiple of 3
+	var tray_cfg = DATA.DEFAULT_CONFIGS["tray"]
+	var tray_total = int(tray_cfg["layers"]) * int(tray_cfg["layer_rows"]) * int(tray_cfg["layer_cols"])
+	check(tray_total % 3 == 0, "tray pile size is a multiple of 3")
+	check(tray_total >= int(tray_cfg["kinds"]) * 3, "tray pile fits every kind at least three times")
+
+	# flip pairs must be an exact multiple so every card has a partner
+	var flip_total = int(DATA.DEFAULT_CONFIGS["flip"]["pairs"])
+	check(flip_total % 2 == 0, "flip pairs count is even")
 
 	if failures == 0:
 		print("mode_meta_test: ALL PASSED")
