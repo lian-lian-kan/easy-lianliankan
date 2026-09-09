@@ -1,5 +1,7 @@
 extends Reference
 
+const PAGE_ROUTER = preload("res://scripts/page_router.gd")
+
 # Session lifecycle: level session reset, post-move resolution (win/lose/
 # reshuffle/gravity), and special-mode session entry/exit. Statics take the
 # live game node.
@@ -43,6 +45,7 @@ static func _exit_special_mode(game):
 	game._show_message("已返回关卡模式", 1.0)
 
 static func _reset_level_session(game, level, reset_total = false):
+	PAGE_ROUTER.collect_level_icons(game)
 	game.board = game._create_playable_board(level)
 	game.board_armor = game._build_frost_armor(game.board, level)
 	game.board_lower = []
@@ -161,9 +164,11 @@ static func _resolve_after_board_changed(game):
 		game.total_score += time_bonus
 		game.level_score += time_bonus
 
+		var coin_reward = PAGE_ROUTER.award_level_clear(game, game._current_level())
 		var progress_patch := {
 			"score_candidate": game.total_score,
-			"combo_candidate": game.combo
+			"combo_candidate": game.combo,
+			"coins_delta": coin_reward
 		}
 		if game.level_index >= game.campaign_levels.size() - 1:
 			progress_patch["current_level_index"] = 0
@@ -190,7 +195,7 @@ static func _resolve_after_board_changed(game):
 			game.stage_panel_label.text = "过关结算中，准备进入下一关"
 			game.stage_panel_label.visible = true
 			AudioManager.play_win()
-			game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus), 1.2)
+			game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关通过！时间奖励 +" + str(time_bonus) + " · 🌸+" + str(coin_reward), 1.2)
 			game._play_stage_clear_celebration(false)
 			game.level_advance_timer.stop()
 			game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0

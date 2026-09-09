@@ -17,6 +17,7 @@
 | `scripts/campaign_levels.gd` | 战役关卡数据表（深拷贝访问器） | `campaign_levels_test.gd`（数据不变量） |
 | `scripts/powerups.gd` | 道具域：载荷规则、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
 | `scripts/stats_hud.gd` | 统计 HUD：卡片构建/文本/道具槽显示/告警脉冲 + 标签工厂 | `stat_probe.gd` + `panels_probe.gd` |
+| `scripts/page_router.gd` | 多页面外壳：底部导航 + 旅程地图/图鉴/每日有礼/小铺四页 + 樱花币经济（过关/签到/收集发放，图集解锁消费） | `page_probe.gd` |
 | `scripts/ui_hud.gd` | 主屏结构：构建/状态刷新/消息横幅/控制按钮/关卡选择胶水/连击条/成就通知 | `panels_probe.gd`（结构+行为断言） |
 | `scripts/hud_layout.gd` | 屏幕适配：视口分类（手机/竖屏/紧凑）与响应式布局（棋盘高度/边距/网格间距/统计卡与控件尺寸/竖屏头部压缩） | `panels_probe.gd`（布局断言） |
 | `scripts/hud_timers.gd` | 会话心跳：计时器工厂与时钟/消息/错误/连击/高亮/推进/解冻/竞速回调 | `panels_probe.gd`（心跳行为断言） |

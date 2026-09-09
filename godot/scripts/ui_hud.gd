@@ -1,5 +1,7 @@
 extends Reference
 
+const PAGE_ROUTER = preload("res://scripts/page_router.gd")
+
 # Main screen construction, extracted from gd so the 300+ line HUD/board
 # layout lives beside the dialog factories in ui_panels.gd. Every call takes
 # the live game node and assigns straight onto its members.
@@ -84,6 +86,9 @@ static func build_main_ui(game):
 	status_style.set_corner_radius_all(16)
 	game.status_chip_label.add_stylebox_override("normal", status_style)
 	title_row.add_child(game.status_chip_label)
+
+	var coin_chip = PAGE_ROUTER.build_coin_chip(game)
+	title_row.add_child(coin_chip)
 
 	game.level_progress_caption_label = Label.new()
 	game.level_progress_caption_label.text = "闯关进度"
@@ -334,9 +339,11 @@ static func build_main_ui(game):
 	game._build_achievements_panel()
 	game._build_pause_panel()
 	game._build_modes_panel()
+	PAGE_ROUTER.build_pages(game)
 	game.call_deferred("_update_layout_for_screen_size")
 
 static func refresh_ui(game):
+	PAGE_ROUTER.update_coin_label(game)
 	var level = game._current_level()
 	var level_id = int(level.get("id", game.level_index + 1))
 	var level_name = str(level.get("name", "关卡"))

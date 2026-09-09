@@ -27,11 +27,13 @@ static func update_layout(game):
 
 	# Adjust margins based on screen size
 	var margin_value = 6 if is_compact_height else (8 if is_mobile else 16)
+	# The bottom strip also reserves room for the persistent navigation bar.
+	var nav_strip = 58 if is_mobile else 64
 	if game.margin_container:
 		game.margin_container.add_constant_override("margin_left", margin_value)
 		game.margin_container.add_constant_override("margin_right", margin_value)
 		game.margin_container.add_constant_override("margin_top", margin_value)
-		game.margin_container.add_constant_override("margin_bottom", margin_value)
+		game.margin_container.add_constant_override("margin_bottom", margin_value + nav_strip)
 
 	# Adjust header font sizes
 	if game.title_label:

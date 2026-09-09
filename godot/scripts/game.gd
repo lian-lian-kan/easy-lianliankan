@@ -29,6 +29,7 @@ const UI_HUD = preload("res://scripts/ui_hud.gd")
 const UI_FONTS = preload("res://scripts/ui_fonts.gd")
 const HUD_TIMERS = preload("res://scripts/hud_timers.gd")
 const HUD_LAYOUT = preload("res://scripts/hud_layout.gd")
+const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -179,6 +180,13 @@ var game_font
 var level_highlight_timer
 const LEVEL_HIGHLIGHT_COLOR = Color("fbbf24")  # 琥珀色高亮
 const LEVEL_NORMAL_COLOR = Color("ffffff")  # 正常白色
+
+var pages_root  # 多页面容器（旅程/图鉴/有礼/小铺）
+var page_content
+var nav_bar
+var nav_buttons = {}
+var coin_label
+var current_page = ""
 
 var onboarding_panel  # 首次启动引导面板
 const ONBOARDING_SEEN_KEY = "onboarding_seen"
@@ -990,3 +998,28 @@ func _on_restart_current_level():
 
 func _on_back_to_first_level():
 	return UI_PANELS.back_to_first_level(self)
+
+# --- 多页面导航（page_router 的薄壳）---
+func _on_nav_pressed(page_id):
+	return PAGE_ROUTER.show_page(self, page_id)
+
+func _on_nav_home_pressed():
+	return PAGE_ROUTER.close_page(self)
+
+func _on_map_level_pressed(level_index):
+	PAGE_ROUTER.close_page(self)
+	_start_level(level_index, true)
+	_show_message("进入第%d关" % (level_index + 1), 1.0)
+
+func _on_map_locked_pressed():
+	_sync_level_select_selection()
+	_show_message("该关卡尚未解锁", 0.9)
+
+func _on_signin_claim_pressed(today, yesterday):
+	PAGE_ROUTER.claim_signin(self, today, yesterday)
+
+func _on_shop_use_pressed(set_index):
+	PAGE_ROUTER.use_icon_set(self, set_index)
+
+func _on_shop_buy_pressed(set_index):
+	PAGE_ROUTER.buy_icon_set(self, set_index)

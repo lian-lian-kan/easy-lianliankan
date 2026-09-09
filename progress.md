@@ -769,3 +769,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 背景：用户报"原来秒出现在很慢"。实测定位：本机到 github.io 仅 ~37KB/s，wasm(5.5MB gz)+pck(2.7MB gz) 并行下载需 150~230 秒；"原来秒出"是缓存命中，高频部署使缓存反复失效。体积侧取证：wasm 为官方模板恒定体积，pck 内 emoji 位图(796 张 128px 调色板 PNG, p50 2.6KB)已是 Google 发布态、重压缩无收益(102~107%)——打包体积接近内容下限，优化杠杆在缓存。
 - 变更：①新增 shell/sw.js 离线缓存——payload(wasm/pck/js/png) cache-first 永久缓存，二次访问零网络下载（Playwright 实测 transferSize 全 0）；index.html network-first 发现新部署，sw.js 顶部构建 hash（CI sed $GITHUB_SHA 前 7 位）变更触发整组缓存后台换新，当前局继续玩旧缓存、下次打开即新版；②deploy.yml 导出后注入 hash 并附带 sw.js；③export_presets exclude tests/*, tools/*（pck 62→60 文件，2.97→2.85MB）。
 - Validation: 13 项 headless 测试 + web_entry + offscreen_font 全绿；SW 二次加载缓存命中实测通过。
+
+## 2026-09-10 (产品升级一期：多页面框架 + 樱花币养成闭环)
+- 调研：2025-26 休闲配对品类共识=「配对核心+重 meta 层」（收集册/装扮/连续签到/赛季活动，Appmagic/GameRefinery/Deconstructor of Fun）；本项目 14 种玩法核心已齐，缺口正是 meta 层与页面结构。
+- 变更：①新增 page_router.gd 多页面外壳——底部五格导航（主页/旅程/图鉴/有礼/小铺）+ 全屏页面容器，打开页面走 modal 暂停语义并冻结过关推进、隐藏主屏浮层；②旅程页：3 章 15 节点地图（解锁/当前/锁定态，点节点进关）；③图鉴页：14 套图集 210 图案收集册（收集/❓未知/进度）；④有礼页：7 天循环签到（5~50🌸递增，漏签重置）；⑤小铺页：图集商店（30🌸/套，购买自动装备，余额不足拒绝）；⑥经济：progression 新字段 coins/collected/owned_sets/signin_streak/last_signin（normalize/apply_update/same_progress 全扩展），过关奖励 8+2×关 id、开局收集图案 +2/个；⑦header 樱花币钱包 chip，refresh_ui 同步；⑧export 排除 tests/tools。
+- 字体：新页面文案触发缺字（樱园初语→樱园初），恢复全量字体（NotoColorEmoji 10.7MB/NotoSansSC 8.3MB/ZCOOL 1.5MB，均超守卫阈值）重跑 subset_fonts.py，887 源字符重切子集并入库。
+- 验证：panels_probe 162 断言（加固 special 会话进度断言为相对比较）+ 新增 page_probe 26 断言（导航/页面暂停恢复/地图节点三态/图鉴进度/签到发放与防重/商店购买装备与余额拒绝/过关发币/钱包落盘）本地全绿后合入；其余批次验证移交 CI。

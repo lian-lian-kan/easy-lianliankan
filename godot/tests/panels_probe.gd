@@ -136,10 +136,11 @@ func _init() -> void:
 	check(File.new().file_exists(game.PROGRESS_SAVE_PATH), "progress persisted to disk")
 
 	# progress_store: special sessions persist their own records only
+	var campaign_current_before = int(game.progression_state.get("current_level_index", 0))
 	game.special_mode = "zen"
 	game._patch_progress_state({"combo_candidate": 12, "current_level_index": 3})
 	check(int(game.progression_state.get("best_combo", 0)) >= 41, "special session combo candidate never lowers campaign best")
-	check(int(game.progression_state.get("current_level_index", 0)) != 3, "special session never touches campaign progress")
+	check(int(game.progression_state.get("current_level_index", 0)) == campaign_current_before, "special session never touches campaign progress")
 	game._patch_progress_state({"zen_result": 99})
 	check(int(game.progression_state.get("zen_best_score", 0)) >= 99, "special session persists its own record")
 

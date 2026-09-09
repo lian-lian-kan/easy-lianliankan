@@ -52,7 +52,12 @@ static func default_progress(level_count: int) :
 		"stack_best_score": 0,
 		"gravity_best_score": 0,
 		"fog_best_score": 0,
-		"chain_best_score": 0
+		"chain_best_score": 0,
+		"coins": 0,
+		"collected": [],
+		"owned_sets": ["fruit"],
+		"signin_streak": 0,
+		"last_signin": ""
 	}
 
 
@@ -70,6 +75,16 @@ static func normalize_progress(raw, level_count: int) :
 			normalized["achievements"] = raw_achievements.duplicate()
 		# Load onboarding seen
 		normalized["onboarding_seen"] = bool(raw.get("onboarding_seen", false))
+		# Load meta-economy state (coins / collection / themes / sign-in)
+		normalized["coins"] = max(0, int(raw.get("coins", 0)))
+		var raw_collected = raw.get("collected", [])
+		if typeof(raw_collected) == TYPE_ARRAY:
+			normalized["collected"] = raw_collected.duplicate()
+		var raw_owned_sets = raw.get("owned_sets", [])
+		if typeof(raw_owned_sets) == TYPE_ARRAY and raw_owned_sets.size() > 0:
+			normalized["owned_sets"] = raw_owned_sets.duplicate()
+		normalized["signin_streak"] = max(0, int(raw.get("signin_streak", 0)))
+		normalized["last_signin"] = str(raw.get("last_signin", ""))
 		# Load level best times
 		var raw_best_times = raw.get("level_best_times", {})
 		if typeof(raw_best_times) == TYPE_DICTIONARY:
@@ -131,6 +146,35 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		next_state["best_combo"] = max(int(next_state["best_combo"]), max(0, int(patch["combo_candidate"])))
 	if patch.has("onboarding_seen"):
 		next_state["onboarding_seen"] = bool(patch["onboarding_seen"])
+	# Meta-economy: coin deltas, collection entries, theme unlocks, sign-in.
+	if patch.has("coins_delta"):
+		next_state["coins"] = max(0, int(next_state["coins"]) + int(patch["coins_delta"]))
+	if patch.has("collect"):
+		var collected_id = str(patch["collect"])
+		if not next_state["collected"].has(collected_id):
+			next_state["collected"].append(collected_id)
+	if patch.has("collect_many"):
+		var collected_ids = patch["collect_many"]
+		if typeof(collected_ids) == TYPE_ARRAY:
+			for collected_entry in collected_ids:
+				var collected_key = str(collected_entry)
+				if not next_state["collected"].has(collected_key):
+					next_state["collected"].append(collected_key)
+	if patch.has("unlock_set"):
+		var set_id = str(patch["unlock_set"])
+		if not next_state["owned_sets"].has(set_id):
+			next_state["owned_sets"].append(set_id)
+	if patch.has("signin"):
+		var sign_in = patch["signin"]
+		if typeof(sign_in) == TYPE_DICTIONARY and sign_in.has("date") and sign_in.has("yesterday"):
+			var sign_date = str(sign_in["date"])
+			var sign_yesterday = str(sign_in["yesterday"])
+			if str(next_state["last_signin"]) != sign_date:
+				var sign_streak = SPECIAL_MODES.next_daily_streak(
+					str(next_state["last_signin"]), sign_date, sign_yesterday,
+					int(next_state["signin_streak"]))
+				next_state["last_signin"] = sign_date
+				next_state["signin_streak"] = sign_streak
 	# Update level best times if provided
 	if patch.has("level_best_time"):
 		var time_data = patch["level_best_time"]
@@ -208,7 +252,12 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("gravity_best_score", 0)) == int(bb.get("gravity_best_score", 0)) \
 		and int(aa.get("fog_best_score", 0)) == int(bb.get("fog_best_score", 0)) \
 		and int(aa.get("chain_best_score", 0)) == int(bb.get("chain_best_score", 0)) \
-		and bool(aa.get("onboarding_seen", false)) == bool(bb.get("onboarding_seen", false))
+		and bool(aa.get("onboarding_seen", false)) == bool(bb.get("onboarding_seen", false)) \
+		and int(aa.get("coins", 0)) == int(bb.get("coins", 0)) \
+		and _arrays_equal(aa.get("collected", []), bb.get("collected", [])) \
+		and _arrays_equal(aa.get("owned_sets", []), bb.get("owned_sets", [])) \
+		and int(aa.get("signin_streak", 0)) == int(bb.get("signin_streak", 0)) \
+		and str(aa.get("last_signin", "")) == str(bb.get("last_signin", ""))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :
