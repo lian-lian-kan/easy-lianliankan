@@ -55,12 +55,14 @@ const BOARD_RATIO_MOBILE_LANDSCAPE = 0.46
 const BOARD_RATIO_DESKTOP = 0.52
 const BOARD_MIN_HEIGHT = 200.0
 
+# ═══ 数据与配置（game_config / special_modes / progress_store） ═══
 var campaign_levels = []
 var tuning = {}
 var icon_sets = []
 var icon_set_index = 0
 var game_mode_configs = {}
 
+# ═══ 特殊模式会话（special_session / memory_flip / tile_match） ═══
 # Special session state ("daily" / "time_attack" / "endless"); empty means
 # the normal campaign flow. special_level is the virtual level dict in play.
 var special_mode = ""
@@ -75,6 +77,7 @@ var memory_pending_hide = []
 var memory_preview_timer
 var memory_hide_timer
 
+# ═══ 棋盘状态（board_mechanics / board_view） ═══
 var board = []
 var cell_buttons = []
 
@@ -82,24 +85,29 @@ var selected = Vector2(-1, -1)
 var hint_tiles = []
 var error_tiles = []
 
+# ═══ 战役会话进度（session） ═══
 var level_index = 0
 var pending_level_index = -1
 
+# ═══ 计分与资源（economy / session） ═══
 var total_score = 0
 var level_score = 0
 var moves = 0
 var combo = 0
 var combo_expires_ms = 0
 
+# ═══ 时钟与会话状态 ═══
 var time_left = 0
 var stage_status = STATUS_PLAYING
 var progression_state = {}
 
+# ═══ 成就追踪 ═══
 # Achievement tracking
 var level_start_time = 0
 var level_hints_used = 0
 var level_auto_used = 0
 
+# ═══ 道具（powerups） ═══
 # Power-ups system
 var power_ups: Dictionary = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "warm_patch": 0}
 var time_frozen = false
@@ -112,6 +120,7 @@ var frost_pending = false
 # Warm patches used this frost session (gates the 寒冰骑士 achievement).
 var frost_uses = 0
 
+# ═══ 机制网格（board_mechanics） ═══
 # Frost mode: parallel to board, 1 = frozen cell (needs one extra match).
 # Ice binds to the POSITION: reshuffles swap tiles under the ice sheet.
 var board_armor = []
@@ -122,6 +131,7 @@ var board_chain = []      # chain: 1 = chained (unlock via adjacent clears)
 var _fog_layers = 0       # fog: current outer-ring count
 
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
+# ═══ 竞速对战 ═══
 var moves_left = 0
 var race_ai_pairs = 0
 var race_total_pairs = 0
@@ -129,6 +139,7 @@ var race_elapsed = 0
 var race_timer
 
 # Sakura petals drifting over the background, confetti on stage clear.
+# ═══ 视图与浮层引用 ═══
 var _petal_layer
 var _petal_timer
 

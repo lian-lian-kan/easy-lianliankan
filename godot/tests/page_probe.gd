@@ -208,6 +208,17 @@ func _init() -> void:
 	check(int(game.progression_state.get("coins", 0)) == coins_before_auto + 20, "collect auto-resolve pays 20 blossoms")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- economy: wallet starts at zero and over-collection is capped ---
+	check(int(game.coin_label.text.split(" ")[1]) >= 0, "wallet chip reflects a non-negative balance")
+	game.SPECIAL_SESSION._start_special_mode(game, "collect")
+	var target_key = int(game.collect_targets.keys()[0])
+	var needed = int(game.collect_targets[target_key])
+	game.collect_progress[target_key] = needed - 1
+	game._on_collect_pair_progress([target_key, target_key, target_key])
+	check(int(game.collect_progress[target_key]) == needed, "over-collection is capped at the target")
+	check(game.stage_status == game.STATUS_CLEARED, "hitting the target auto-resolves the session")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})
