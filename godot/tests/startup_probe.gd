@@ -43,6 +43,7 @@ func _init() -> void:
 		"moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip"]
 
 	for mode_id in modes:
+		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
 		game.SPECIAL_SESSION._start_special_mode(game, mode_id)
 		if game.special_mode != mode_id:
 			var dbg_cfg = game.game_mode_configs.get(mode_id, {})
