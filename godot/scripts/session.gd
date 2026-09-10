@@ -92,6 +92,7 @@ static func _reset_level_session(game, level, reset_total = false):
 	game.stage_status = game.STATUS_PLAYING
 
 	# Reset achievement tracking
+	game.combo_milestones_hit = []
 	game.level_start_time = OS.get_ticks_msec()
 	game.level_hints_used = 0
 	game.level_auto_used = 0
@@ -297,6 +298,9 @@ static func _apply_combo_gain(game, base_score):
 	})
 	game._mission_pair_cleared()
 	game._mission_combo_reached(game.combo)
+	var cheer = game._combo_cheer(gain)
+	if cheer != "":
+		game._show_combo_burst(cheer)
 
 	return {
 		"combo": game.combo,

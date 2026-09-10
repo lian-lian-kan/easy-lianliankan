@@ -423,6 +423,33 @@ func _init() -> void:
 	check(found_mission_section, "sign-in page hosts the weekly missions section")
 	game._on_nav_home_pressed()
 
+	# --- combo cheers: tiered decks, no repeats, one-shot milestones ---
+	var cheer_pool = 0
+	for tier in game.CHEERS.TIERS:
+		cheer_pool += tier["lines"].size()
+	check(cheer_pool >= 30, "cheer pool holds at least 30 distinct lines")
+	check(str(game.CHEERS.draw(game, 2)) != "", "low combos draw a praise line")
+	check(str(game.CHEERS.draw(game, 1)) == "", "combo 1 stays silent")
+	var seen_lines = {}
+	var no_repeat = true
+	for _i in range(8):
+		var drawn = game.CHEERS.draw(game, 2)
+		if seen_lines.has(drawn):
+			no_repeat = false
+		seen_lines[drawn] = true
+	check(no_repeat, "a tier deck does not repeat until it runs dry")
+	game.combo_milestones_hit = []
+	var coins_before_ms = int(game.progression_state.get("coins", 0))
+	game.CHEERS.on_combo(game, 5, 20)
+	game.CHEERS.on_combo(game, 5, 20)
+	var milestone_paid = int(game.progression_state.get("coins", 0)) - coins_before_ms
+	check(milestone_paid == 5, "combo milestones pay 3-tier+5-tier once each (paid %d)" % milestone_paid)
+	game.combo = 0
+	game.combo_expires_ms = OS.get_ticks_msec() + 99999
+	game._apply_combo_gain(10)
+	game._apply_combo_gain(10)
+	check(str(game.combo_burst_label.text) != "", "combo gain bursts a praise line (got %s)" % str(game.combo_burst_label.text))
+
 	# --- wallet persists to disk ---
 	game._patch_progress_state({"coins_delta": 7})
 	check(File.new().file_exists(game.PROGRESS_SAVE_PATH), "wallet persists to the save file")

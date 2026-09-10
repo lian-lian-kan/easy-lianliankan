@@ -34,6 +34,7 @@ const TILE_MATCH = preload("res://scripts/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 const ECONOMY = preload("res://scripts/economy.gd")
 const MISSIONS = preload("res://scripts/missions.gd")
+const CHEERS = preload("res://scripts/cheers.gd")
 const SPECIAL_SESSION = preload("res://scripts/special_session.gd")
 
 const DIRS = [
@@ -168,6 +169,8 @@ var margin_container
 var icon_set_option
 var level_select_option
 var level_select_label
+var cheer_decks
+var combo_milestones_hit
 var hint_button
 var auto_button
 var shuffle_button
@@ -240,6 +243,8 @@ var stats_button  # 数据统计入口按钮
 func _ready():
 	print("[Game] boot: ready")
 	randomize()
+	cheer_decks = {}
+	combo_milestones_hit = []
 	_init_font()
 	_load_config()
 	print("[Game] boot: config loaded, levels=", campaign_levels.size())
@@ -820,6 +825,9 @@ func _mission_special_done():
 
 func _on_mission_claim_pressed(task_id):
 	MISSIONS.claim(self, task_id)
+
+func _combo_cheer(gain):
+	return CHEERS.on_combo(self, combo, gain)
 
 # ═══ 统计 HUD（stats_hud） ═══
 

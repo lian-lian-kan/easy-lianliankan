@@ -243,9 +243,6 @@ static func _execute_bomb(game, point):
 	game._show_message("💥 轰！", 0.8)
 
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
-	if score_result["combo"] > 1:
-		game._show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
 	# Explosions shatter ice along with the tile.
 	game.board[point.x][point.y] = 0
 	game.board[partner.x][partner.y] = 0
@@ -291,9 +288,6 @@ static func _execute_rainbow_click(game, point):
 	game._show_message("🌈 彩虹消除 +✨", 0.9)
 
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
-	if score_result["combo"] > 1:
-		game._show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
 	# Rainbow light pierces ice: board and armor both go.
 	game.board[a.x][a.y] = 0
 	game.board[b.x][b.y] = 0

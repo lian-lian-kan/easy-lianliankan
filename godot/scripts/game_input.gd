@@ -89,10 +89,6 @@ static func _on_tile_pressed(game, button):
 	AudioManager.play_eliminate_combo(game.combo)
 
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
-	if score_result["combo"] > 1:
-		game._show_message("连击 x" + str(score_result["combo"]) + " +" + str(score_result["gain"]), 0.88)
-		game._show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
 	game._show_path(path, "eliminate", int(game.tuning.get("path_preview_ms", 420)))
 	game._play_eliminate_effects([a, b])
 
@@ -162,10 +158,6 @@ static func _on_memory_tile_pressed(game, point, r, c):
 
 	AudioManager.play_eliminate_combo(game.combo)
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
-	if score_result["combo"] > 1:
-		game._show_message("连击 x" + str(score_result["combo"]) + " +" + str(score_result["gain"]), 0.88)
-		game._show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
 	game._show_path(path, "eliminate", int(game.tuning.get("path_preview_ms", 420)))
 	game._play_eliminate_effects([a, b])
 
@@ -315,9 +307,6 @@ static func _on_auto_pressed(game):
 
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
 	game._show_message("自动消除 +" + str(score_result["gain"]), 0.9)
-	if score_result["combo"] > 1:
-		game._show_combo_burst(str(score_result["combo"]) + " 连击 +" + str(score_result["gain"]))
-
 	if not will_clear:
 		game._consume_time_cost(int(game.tuning.get("auto_eliminate_time_cost_seconds", 2)))
 
