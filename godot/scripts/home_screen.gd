@@ -52,12 +52,12 @@ static func build_main_ui(game):
 	header_panel.add_child(game.header_box)
 
 	game.title_row = HBoxContainer.new()
-	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	game.header_box.add_child(title_row)
+	game.title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	game.header_box.add_child(game.title_row)
 
 	var title_col = VBoxContainer.new()
 	title_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_row.add_child(title_col)
+	game.title_row.add_child(title_col)
 
 	game.title_label = Label.new()
 	game.title_label.text = "Sophia的连连看"
@@ -89,10 +89,10 @@ static func build_main_ui(game):
 	status_style.bg_color = Color("e6fcf5")
 	status_style.set_corner_radius_all(16)
 	game.status_chip_label.add_stylebox_override("normal", status_style)
-	title_row.add_child(game.status_chip_label)
+	game.title_row.add_child(game.status_chip_label)
 
 	var coin_chip = ECONOMY.build_coin_chip(game)
-	title_row.add_child(coin_chip)
+	game.title_row.add_child(coin_chip)
 
 	game.level_progress_caption_label = Label.new()
 	game.level_progress_caption_label.text = "闯关进度"
