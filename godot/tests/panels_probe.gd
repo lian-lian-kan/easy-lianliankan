@@ -128,7 +128,7 @@ func _init() -> void:
 	game._update_layout_for_screen_size()
 	var vp_height = float(game.get_viewport_rect().size.y)
 	var wrapper_ratio = float(game.board_wrapper.rect_min_size.y) / vp_height
-	check(wrapper_ratio >= 0.80, "portrait board wrapper claims >=80%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	check(wrapper_ratio >= 0.84, "portrait board wrapper claims >=84%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
 	check(game.subtitle_label != null && !game.subtitle_label.visible, "portrait hides the subtitle line")
 	check(game.status_chip_label != null && !game.status_chip_label.visible, "portrait hides the status badge")
 	check(game.mode_chip_label != null && !game.mode_chip_label.visible && game.kinds_chip_label != null && !game.kinds_chip_label.visible, "portrait hides the meta chips")

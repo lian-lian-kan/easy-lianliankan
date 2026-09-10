@@ -22,15 +22,15 @@ static func update_layout(game):
 		var mobile_ratio = game.BOARD_RATIO_MOBILE_PORTRAIT if is_portrait else game.BOARD_RATIO_MOBILE_LANDSCAPE
 		# Portrait is the flagship layout: the board is the product, the header
 		# is chrome. Cap lifted to 80% so tall boards (endless/hell) can breathe.
-		var portrait_cap = 0.82 if is_portrait else 0.62
+		var portrait_cap = 0.86 if is_portrait else 0.62
 		game.board_wrapper.rect_min_size = Vector2(0, min(max(game.BOARD_MIN_HEIGHT, viewport_size.y * mobile_ratio), viewport_size.y * portrait_cap))
 	else:
 		game.board_wrapper.rect_min_size = Vector2(0, max(420.0, viewport_size.y * game.BOARD_RATIO_DESKTOP))
 
 	# Adjust margins based on screen size
-	var margin_value = 2 if (is_mobile and is_portrait) else (6 if is_compact_height else (8 if is_mobile else 16))
+	var margin_value = 0 if (is_mobile and is_portrait) else (6 if is_compact_height else (8 if is_mobile else 16))
 	# The bottom strip also reserves room for the persistent navigation bar.
-	var nav_strip = 42 if is_mobile else 64
+	var nav_strip = 40 if is_mobile else 64
 	# Keep the floating message banner parked just above the navigation bar.
 	if game.message_label:
 		game.message_label.margin_bottom = -(nav_strip + 4)

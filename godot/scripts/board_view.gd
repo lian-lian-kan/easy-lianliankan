@@ -103,7 +103,7 @@ static func _update_tile_sizes(game):
 	var is_mobile = flags["is_mobile"]
 	var is_portrait = flags["is_portrait"]
 	var is_compact_height = flags["is_compact_height"]
-	var padding = 4 if is_mobile and is_compact_height else (6 if is_mobile and is_portrait else (10 if is_mobile else 24))
+	var padding = 4 if is_mobile and is_compact_height else (4 if is_mobile and is_portrait else (10 if is_mobile else 24))
 	var board_area = game.board_wrapper.rect_size
 	if board_area.x <= 1 or board_area.y <= 1:
 		board_area = game.board_wrapper.rect_min_size
