@@ -449,6 +449,8 @@ func _init() -> void:
 	game._apply_combo_gain(10)
 	game._apply_combo_gain(10)
 	check(str(game.combo_burst_label.text) != "", "combo gain bursts a praise line (got %s)" % str(game.combo_burst_label.text))
+	check(game.CHEERS.CLEAR_LINES.size() >= 12, "victory pet-phrase pool holds at least 12 lines")
+	check(str(game.CHEERS.clear_cheer(game)) != "", "victory screens draw a pet phrase")
 
 	# --- wallet persists to disk ---
 	game._patch_progress_state({"coins_delta": 7})

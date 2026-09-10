@@ -17,6 +17,7 @@ static func _finish_special_win(game, message):
 	AudioManager.play_win()
 	game._record_special_completion()
 	game._play_stage_clear_celebration(false)
+	game._show_combo_burst(game.CHEERS.clear_cheer(game))
 	game._show_message(message, 2.0)
 	game._refresh_ui()
 

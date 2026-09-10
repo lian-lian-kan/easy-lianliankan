@@ -9,15 +9,24 @@ extends Reference
 # Tiered praise pools (combo >= key). 36 lines total; keep each line short
 # enough for the burst label (<= 8 glyphs).
 const TIERS = [
-	{"min": 10, "lines": ["传说降临！", "神话再现", "解除封印！", "最强大脑", "永恒之火", "棋盘之神"]},
-	{"min": 8, "lines": ["天神下凡", "无敌了！", "人形消除机", "这就是高手", "棋盘在你手里", "史诗级连击", "挡不住了"]},
-	{"min": 6, "lines": ["五连爆发！", "势不可挡", "全场瞩目", "闪电手！", "连击机器", "太轻松了吧", "火花四溅"]},
-	{"min": 4, "lines": ["连成串了", "停不下来", "火力全开", "行云流水", "眼疾手快", "这波很顺", "棋盘热了", "稳稳的"]},
-	{"min": 2, "lines": ["手感来了", "漂亮！", "稳！", "好眼力", "丝滑~", "就是这样", "节奏对了", "唰唰的"]}
-]
+	{"min": 10, "lines": ["Sophia 最棒！", "月亮为你打call", "星河都甜了", "完美小女神", "甜到冒泡啦", "forever 闪耀"]},
+	{"min": 8, "lines": ["小仙女下凡", "美到犯规", "樱色小风暴", "指尖的魔法", "花儿都开了", "梦幻连击", "甜甜的暴击"]},
+	{"min": 6, "lines": ["五连小烟花", "闪闪发光呢", "全场最靓", "小魔女附体", "粉红风暴", "太治愈啦", "软软的厉害"]},
+	{"min": 4, "lines": ["连成小串串", "停不下来呀", "樱花开啦", "小宇宙发光", "甜品时间到", "小仙女手速", "又甜又快", "小果冻手感"]},
+	{"min": 2, "lines": ["哇，好厉害", "小手真巧", "甜甜的开局", "温柔一刀", "指尖在发光", "就是这样呀", "节奏对了哟", "小可爱出手"]
+}]
 
 # In-round streak milestones: combo -> blossom bonus, paid once each round.
 const MILESTONES = {3: 2, 5: 3, 8: 5, 12: 8}
+
+# Clear-screen pet phrases: one is sprinkled over every victory screen.
+const CLEAR_LINES = [
+	"棋盘都被你甜化啦", "今天的你也很闪耀", "这里开满了小花",
+	"为你撒了一把星星", "刚刚那波太赏心悦目", "又是被治愈的一天",
+	"果实都为你熟透了", "风都是甜甜的", "你怎么这么可爱",
+	"这局温温柔柔就赢了", "完美得像甜品店", "小花要给你鼓掌",
+	" omg 太丝滑了吧", "又是心动的一局"
+]
 
 const TIER_LINES_KEY = 1
 const TIER_MIN_KEY = 0
@@ -69,3 +78,10 @@ static func on_combo(game, combo: int, gain: int) -> String:
 	if line == "":
 		return ""
 	return line + " +" + str(max(0, gain))
+
+
+# A random pet phrase for victory screens; clears are rare enough that a
+# plain random pick feels fresh without a deck.
+static func clear_cheer(game) -> String:
+	var pick = int(randi() % CLEAR_LINES.size())
+	return str(CLEAR_LINES[pick])

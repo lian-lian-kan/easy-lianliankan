@@ -254,6 +254,7 @@ static func _settle_campaign_clear(game):
 		game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
 		game.level_advance_timer.start()
 
+	game._show_combo_burst(game.CHEERS.clear_cheer(game))
 	game._refresh_ui()
 	game._refresh_board_visuals()
 	game._check_achievements_on_clear()
