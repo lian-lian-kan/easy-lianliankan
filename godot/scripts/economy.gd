@@ -257,39 +257,18 @@ static func build_shop(game):
 		var theme: Dictionary = THEMES[theme_id]
 		var theme_owned: bool = owned_themes.has(theme_id)
 		var theme_in_use: bool = current_theme == theme_id
-		var theme_card = PanelContainer.new()
-		game._apply_glass_style(theme_card, Color("ffffff"), 0.88)
-		theme_grid.add_child(theme_card)
-		var theme_box = VBoxContainer.new()
-		theme_box.add_constant_override("separation", 4)
-		theme_card.add_child(theme_box)
-		var theme_name = Label.new()
-		theme_name.text = str(theme["name"])
-		theme_name.align = Label.ALIGN_CENTER
-		theme_name.add_font_override("font", game._font_at_size(14))
-		theme_name.add_color_override("font_color", Color("5c3a4d"))
-		theme_box.add_child(theme_name)
+		var theme_box = _card_shell(game, str(theme["name"]))
+		theme_grid.add_child(theme_box.get_parent())
 		var swatch = ColorRect.new()
 		swatch.color = Color(str(theme["bg"]))
 		swatch.rect_min_size = Vector2(0, 18)
 		theme_box.add_child(swatch)
-		var theme_action = Button.new()
-		if theme_in_use:
-			theme_action.text = "使用中"
-		elif theme_owned:
-			theme_action.text = "使用"
-		else:
-			theme_action.text = "🌸%d 解锁" % int(theme["price"])
-		theme_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		theme_action.add_font_override("font", game._font_at_size(13))
-		game._apply_button_style(theme_action, Color("f06ba8"), Color("d6336c"))
-		theme_action.add_color_override("font_color", Color("ffffff"))
-		if theme_in_use:
-			theme_action.disabled = true
-		elif theme_owned:
-			theme_action.connect("pressed", game, "_on_theme_use_pressed", [theme_id])
-		else:
-			theme_action.connect("pressed", game, "_on_theme_buy_pressed", [theme_id])
+		var theme_action = _action_button(game, theme_in_use, theme_owned, int(theme["price"]))
+		if not theme_action.disabled:
+			if theme_owned:
+				theme_action.connect("pressed", game, "_on_theme_use_pressed", [theme_id])
+			else:
+				theme_action.connect("pressed", game, "_on_theme_buy_pressed", [theme_id])
 		theme_box.add_child(theme_action)
 	var grid = GridContainer.new()
 	grid.columns = 2
@@ -299,23 +278,51 @@ static func build_shop(game):
 	for set_index in range(game.icon_sets.size()):
 		grid.add_child(_shop_card(game, set_index, owned, current_set))
 
-static func _shop_card(game, set_index, owned, current_set):
-	var icon_set: Dictionary = game.icon_sets[set_index]
-	var set_id = str(icon_set.get("id", str(set_index)))
-	var icons: Array = icon_set.get("icons", [])
-	var is_owned = owned.has(set_id)
-	var in_use = current_set.get("id", "") == set_id
+# Glass card shell shared by the theme and icon-set shop grids: panel +
+# centered title. Returns the body VBox; the panel itself is its parent.
+static func _card_shell(game, title):
 	var card = PanelContainer.new()
 	game._apply_glass_style(card, Color("ffffff"), 0.88)
 	var card_box = VBoxContainer.new()
 	card_box.add_constant_override("separation", 4)
 	card.add_child(card_box)
 	var name_label = Label.new()
-	name_label.text = str(icon_set.get("name", "图集"))
+	name_label.text = title
 	name_label.align = Label.ALIGN_CENTER
 	name_label.add_font_override("font", game._font_at_size(14))
 	name_label.add_color_override("font_color", Color("5c3a4d"))
 	card_box.add_child(name_label)
+	return card_box
+
+
+# The three-state shop action: in use (disabled) / owned ("使用") / buy.
+# Callers wire the pressed connect themselves — the targets differ per card.
+static func _action_button(game, in_use, is_owned, price, min_height = 0):
+	var action = Button.new()
+	if in_use:
+		action.text = "使用中"
+	elif is_owned:
+		action.text = "使用"
+	else:
+		action.text = "🌸%d 解锁" % price
+	action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if min_height > 0:
+		action.rect_min_size = Vector2(0, min_height)
+	action.add_font_override("font", game._font_at_size(13))
+	game._apply_button_style(action, Color("f06ba8"), Color("d6336c"))
+	action.add_color_override("font_color", Color("ffffff"))
+	if in_use:
+		action.disabled = true
+	return action
+
+static func _shop_card(game, set_index, owned, current_set):
+	var icon_set: Dictionary = game.icon_sets[set_index]
+	var set_id = str(icon_set.get("id", str(set_index)))
+	var icons: Array = icon_set.get("icons", [])
+	var is_owned = owned.has(set_id)
+	var in_use = current_set.get("id", "") == set_id
+	var card_box = _card_shell(game, str(icon_set.get("name", "图集")))
+	var card = card_box.get_parent()
 	var preview = Label.new()
 	var preview_text = ""
 	for i in range(min(3, icons.size())):
@@ -324,24 +331,12 @@ static func _shop_card(game, set_index, owned, current_set):
 	preview.align = Label.ALIGN_CENTER
 	preview.add_font_override("font", game._font_at_size(18))
 	card_box.add_child(preview)
-	var action = Button.new()
-	if in_use:
-		action.text = "使用中"
-	elif is_owned:
-		action.text = "使用"
-	else:
-		action.text = "🌸%d 解锁" % SET_PRICE
-	action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	action.rect_min_size = Vector2(0, 34)
-	action.add_font_override("font", game._font_at_size(13))
-	game._apply_button_style(action, Color("f06ba8"), Color("d6336c"))
-	action.add_color_override("font_color", Color("ffffff"))
-	if in_use:
-		action.disabled = true
-	elif is_owned:
-		action.connect("pressed", game, "_on_shop_use_pressed", [set_index])
-	else:
-		action.connect("pressed", game, "_on_shop_buy_pressed", [set_index])
+	var action = _action_button(game, in_use, is_owned, SET_PRICE, 34)
+	if not action.disabled:
+		if is_owned:
+			action.connect("pressed", game, "_on_shop_use_pressed", [set_index])
+		else:
+			action.connect("pressed", game, "_on_shop_buy_pressed", [set_index])
 	card_box.add_child(action)
 	return card
 
