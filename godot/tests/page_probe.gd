@@ -386,6 +386,40 @@ func _init() -> void:
 	check(game.stage_status == game.STATUS_CLEARED, "empty board resolves as cleared")
 	check(int(game.progression_state.get("coins", 0)) == coins_before_clear + 14, "level 3 clear pays 14 blossoms (8+2x3)")
 
+	# --- weekly missions: progress, max-semantics, claim-once, week roll ---
+	game.progression_state["weekly_missions"] = {"week_key": "", "progress": {}, "claimed": []}
+	var missions_week = game.MISSIONS.current_week_key(game)
+	check(str(missions_week).begins_with("W"), "week key derives from unix time")
+	game._mission_pair_cleared()
+	var missions_state = game.progression_state.get("weekly_missions", {})
+	check(str(missions_state.get("week_key", "")) == missions_week, "first record adopts the current week")
+	check(game.MISSIONS.progress_of(missions_state, "pairs_30") == 1, "pair hook bumps pairs_30")
+	game._mission_combo_reached(3)
+	game._mission_combo_reached(2)
+	missions_state = game.progression_state.get("weekly_missions", {})
+	check(game.MISSIONS.progress_of(missions_state, "combo_5") == 3, "combo mission keeps the max seen, not the sum")
+	game._mission_combo_reached(5)
+	missions_state = game.progression_state.get("weekly_missions", {})
+	check(game.MISSIONS.is_complete(missions_state, "combo_5"), "combo mission completes at the target")
+	var coins_pre_claim = int(game.progression_state.get("coins", 0))
+	game._on_mission_claim_pressed("combo_5")
+	check(int(game.progression_state.get("coins", 0)) == coins_pre_claim + 15, "claiming pays the mission reward")
+	missions_state = game.progression_state.get("weekly_missions", {})
+	check(game.MISSIONS.progress_of(missions_state, "coins_100") == 15, "reward income feeds coins_100 via the wallet gate")
+	game._on_mission_claim_pressed("combo_5")
+	check(int(game.progression_state.get("coins", 0)) == coins_pre_claim + 15, "double claim pays nothing more")
+	game.progression_state["weekly_missions"] = {"week_key": "W0", "progress": {"pairs_30": 30, "combo_5": 5}, "claimed": ["combo_5"]}
+	game.MISSIONS.active_state(game)
+	missions_state = game.progression_state.get("weekly_missions", {})
+	check(str(missions_state.get("week_key", "")) == missions_week && !game.MISSIONS.is_claimed(missions_state, "combo_5") && game.MISSIONS.progress_of(missions_state, "pairs_30") == 0, "stale week rolls over to a fresh state")
+	game._on_nav_pressed("signin")
+	var found_mission_section = false
+	for label_text in _page_labels(game):
+		if str(label_text).find("周任务") != -1:
+			found_mission_section = true
+	check(found_mission_section, "sign-in page hosts the weekly missions section")
+	game._on_nav_home_pressed()
+
 	# --- wallet persists to disk ---
 	game._patch_progress_state({"coins_delta": 7})
 	check(File.new().file_exists(game.PROGRESS_SAVE_PATH), "wallet persists to the save file")

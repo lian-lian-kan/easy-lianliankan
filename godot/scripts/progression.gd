@@ -66,7 +66,8 @@ static func default_progress(level_count: int) :
 		"owned_themes": ["sakura"],
 		"current_theme": "sakura",
 		"signin_streak": 0,
-		"last_signin": ""
+		"last_signin": "",
+		"weekly_missions": {"week_key": "", "progress": {}, "claimed": []}
 	}
 
 
@@ -98,6 +99,15 @@ static func normalize_progress(raw, level_count: int) :
 		normalized["current_theme"] = str(raw.get("current_theme", "sakura"))
 		normalized["signin_streak"] = max(0, int(raw.get("signin_streak", 0)))
 		normalized["last_signin"] = str(raw.get("last_signin", ""))
+		var raw_missions = raw.get("weekly_missions", {})
+		if typeof(raw_missions) == TYPE_DICTIONARY:
+			var mission_progress = raw_missions.get("progress", {})
+			var mission_claimed = raw_missions.get("claimed", [])
+			normalized["weekly_missions"] = {
+				"week_key": str(raw_missions.get("week_key", "")),
+				"progress": mission_progress.duplicate() if typeof(mission_progress) == TYPE_DICTIONARY else {},
+				"claimed": mission_claimed.duplicate() if typeof(mission_claimed) == TYPE_ARRAY else []
+			}
 		# Load level best times
 		var raw_best_times = raw.get("level_best_times", {})
 		if typeof(raw_best_times) == TYPE_DICTIONARY:
@@ -265,6 +275,12 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		next_state["collect_best_score"] = max(int(next_state["collect_best_score"]), max(0, int(patch["collect_result"])))
 	if patch.has("flip_result"):
 		next_state["flip_best_score"] = max(int(next_state["flip_best_score"]), max(0, int(patch["flip_result"])))
+	# Weekly missions: missions.gd owns the rolling-week logic and hands us
+	# a complete, already-consistent dictionary to persist.
+	if patch.has("weekly_missions"):
+		var patch_missions = patch["weekly_missions"]
+		if typeof(patch_missions) == TYPE_DICTIONARY and patch_missions.has("week_key"):
+			next_state["weekly_missions"] = patch_missions.duplicate(true)
 
 	next_state["version"] = SAVE_VERSION
 	return next_state
@@ -302,7 +318,8 @@ static func same_progress(a, b, level_count: int) :
 		and str(aa.get("current_theme", "")) == str(bb.get("current_theme", "")) \
 		and int(aa.get("signin_streak", 0)) == int(bb.get("signin_streak", 0)) \
 		and str(aa.get("last_signin", "")) == str(bb.get("last_signin", "")) \
-		and _dicts_equal(aa.get("level_stars", {}), bb.get("level_stars", {}))
+		and _dicts_equal(aa.get("level_stars", {}), bb.get("level_stars", {})) \
+		and _dicts_equal(aa.get("weekly_missions", {}), bb.get("weekly_missions", {}))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :

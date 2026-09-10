@@ -33,6 +33,7 @@ const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const TILE_MATCH = preload("res://scripts/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 const ECONOMY = preload("res://scripts/economy.gd")
+const MISSIONS = preload("res://scripts/missions.gd")
 const SPECIAL_SESSION = preload("res://scripts/special_session.gd")
 
 const DIRS = [
@@ -794,6 +795,26 @@ func _on_theme_use_pressed(theme_id):
 
 func _on_collect_pair_progress(patterns):
 	return ECONOMY.collect_pair(self, patterns)
+
+# ═══ 周任务（missions） ═══
+
+func _mission_pair_cleared():
+	MISSIONS.record(self, "pairs_30", 1)
+
+func _mission_level_cleared():
+	MISSIONS.record(self, "levels_5", 1)
+
+func _mission_coins_earned(amount):
+	MISSIONS.record(self, "coins_100", amount)
+
+func _mission_combo_reached(combo):
+	MISSIONS.record(self, "combo_5", combo)
+
+func _mission_special_done():
+	MISSIONS.record(self, "specials_3", 1)
+
+func _on_mission_claim_pressed(task_id):
+	MISSIONS.claim(self, task_id)
 
 # ═══ 统计 HUD（stats_hud） ═══
 

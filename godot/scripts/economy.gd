@@ -5,6 +5,7 @@ extends Reference
 # scaffolding comes from page_ui.gd, navigation stays in page_router.gd.
 
 const PAGE_UI = preload("res://scripts/page_ui.gd")
+const MISSIONS = preload("res://scripts/missions.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
 
 const SIGNIN_REWARDS = [5, 10, 15, 20, 25, 35, 50]
@@ -171,6 +172,7 @@ static func build_signin(game):
 	box.add_child(grid)
 	for day in range(SIGNIN_REWARDS.size()):
 		grid.add_child(_signin_cell(game, day, signed_today, slot, today, yesterday))
+	MISSIONS.build_section(game, box)
 
 static func _signin_cell(game, day, signed_today, slot, today, yesterday):
 	var cell = PanelContainer.new()

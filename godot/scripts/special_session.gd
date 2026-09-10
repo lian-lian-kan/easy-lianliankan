@@ -65,6 +65,7 @@ static func _exit_special_mode(game):
 	game._show_message("已返回关卡模式", 1.0)
 
 static func _resolve_special_clear(game):
+	game._mission_level_cleared()
 	# 步数挑战: unused moves convert into bonus score.
 	if game.special_mode == "moves":
 		var move_bonus = game.moves_left * 20
@@ -105,6 +106,7 @@ static func _resolve_special_clear(game):
 	game._refresh_board_visuals()
 
 static func _record_special_completion(game):
+	game._mission_special_done()
 	var today = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
 	var record = game.SPECIAL_MODES_SCRIPT.RECORD_MODES.get(game.special_mode, {})
 	if not record.empty():

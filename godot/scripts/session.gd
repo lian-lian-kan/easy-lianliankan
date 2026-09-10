@@ -203,6 +203,7 @@ static func _resolve_after_board_changed(game):
 # remaining-time ratio), next-level unlock and the win flow for both the
 # final and intermediate levels.
 static func _settle_campaign_clear(game):
+	game._mission_level_cleared()
 	var time_bonus_multiplier = float(game._current_level().get("time_bonus_multiplier", 2.0))
 	var time_bonus = int(round(float(game.time_left) * time_bonus_multiplier))
 	game.total_score += time_bonus
@@ -294,6 +295,8 @@ static func _apply_combo_gain(game, base_score):
 		"score_candidate": game.total_score,
 		"combo_candidate": game.combo
 	})
+	game._mission_pair_cleared()
+	game._mission_combo_reached(game.combo)
 
 	return {
 		"combo": game.combo,

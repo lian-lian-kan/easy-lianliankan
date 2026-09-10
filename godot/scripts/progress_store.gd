@@ -1,5 +1,7 @@
 extends Reference
 
+const MISSIONS = preload("res://scripts/missions.gd")
+
 # Progression persistence: load/save/patch of the progression state file.
 # Special sessions never persist campaign progress fields.
 
@@ -37,6 +39,11 @@ static func _patch_progress_state(game, patch):
 		if filtered.empty():
 			return
 		patch = filtered
+	# Every blossom INCOME flows through here (clears, sign-in, collection,
+	# mission rewards), so this is the single missions hook for coins_100.
+	# The nested record() patch carries no coins_delta — no recursion.
+	if int(patch.get("coins_delta", 0)) > 0:
+		MISSIONS.record(game, "coins_100", int(patch["coins_delta"]))
 	var prev_current = int(game.progression_state.get("current_level_index", 0))
 	var prev_unlocked = int(game.progression_state.get("highest_unlocked_level_index", 0))
 	var next_state = game.PROGRESSION_SCRIPT.apply_update(game.progression_state, game.campaign_levels.size(), patch)
