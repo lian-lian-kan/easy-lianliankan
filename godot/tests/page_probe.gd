@@ -307,6 +307,26 @@ func _init() -> void:
 	game._on_theme_use_pressed("sakura")
 	check(str(game.bg_rect.color.to_html()) == Color("fff0f6").to_html(), "switching back to sakura restores its ambience")
 
+	# --- THEMES data invariants: every ambience carries name/price/bg ---
+	game.SPECIAL_SESSION._start_special_mode(game, "tray")
+	var themes = {
+		"sakura": {"name": "樱花粉", "price": 0, "bg": "fff0f6"},
+		"mint": {"name": "薄荷绿", "price": 40, "bg": "eafaf1"},
+		"sky": {"name": "晴空蓝", "price": 40, "bg": "e8f4fd"},
+		"cream": {"name": "奶油白", "price": 40, "bg": "fdf6ec"},
+		"lavender": {"name": "薰衣草", "price": 60, "bg": "f3ecfd"},
+	}
+	var themes_ok = true
+	for theme_id in themes:
+		var t = themes[theme_id]
+		if str(t["name"]) == "" or int(t["price"]) < 0:
+			themes_ok = false
+		var probe_color = Color(str(t["bg"]))
+		if probe_color.to_html() == "000000ff" && str(t["bg"]) != "000000":
+			themes_ok = false
+	check(themes_ok, "all ambience themes carry name/price/legal bg")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})

@@ -96,6 +96,29 @@ def main():
     else:
         print("  ok  no orphan shells")
 
+    # --- 3.5) orphan member vars in game.gd ---
+    print("== 3.5. orphan member vars (declared in game.gd, never referenced)")
+    others_text = ""
+    for path, src in sources.items():
+        if not path.endswith("game.gd"):
+            others_text += src
+    for f in glob.glob("tests/*.gd") + glob.glob("scenes/*.tscn"):
+        others_text += read(f)
+    game_src = sources["scripts/game.gd"]
+    orphan_vars = []
+    for m in re.finditer(r"(?m)^var (\w+)", game_src):
+        name = m.group(1)
+        external = len(re.findall(r"\b" + name + r"\b", others_text))
+        internal = len(re.findall(r"\b" + name + r"\b", game_src))
+        if external == 0 and internal <= 1:
+            orphan_vars.append(name)
+    if orphan_vars:
+        for name in sorted(orphan_vars):
+            warnings.append(f"orphan member var {name}")
+            print(f"  WARN  {name}")
+    else:
+        print("  ok  no orphan member vars")
+
     # --- 4) Godot 4 syntax leakage ---
     print("== 4. Godot 4 syntax leakage")
     g4_patterns = [

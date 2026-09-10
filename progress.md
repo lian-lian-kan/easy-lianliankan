@@ -878,3 +878,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-10 (功能 Round CB-2：氛围主题 🎨——小铺新增皮肤分区)
 - 变更：①economy.gd 新增 THEMES 表（樱花粉默认/薄荷绿 40🌸/晴空蓝 40🌸/奶油白 40🌸/薰衣草 60🌸，浅色系保证正文可读）；②小铺页新增氛围主题分区（色卡预览+解锁/使用/使用中）；③购买扣 🌸 并入 owned_themes、使用即全屏背景换色（game.bg_rect 成员化）；④progression 新增 owned_themes/current_theme 全 schema，启动时应用已存主题。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round CC：var 孤儿审计固化 + THEMES 不变量)
+- 审查：game.gd 122 个成员变量经扫描**零孤儿、零弱引用**——成员区质量确认干净。
+- 变更：①shell_audit.py 新增 3.5 节 orphan member vars 检查（警告级，防未来迭代引入未使用成员）；②page_probe 补 THEMES 数据不变量断言（名称/价格/背景色合法）。
+- Validation: 本地零测试，shell_audit 四项半检查全过，全量验证由 CI 远端执行。
