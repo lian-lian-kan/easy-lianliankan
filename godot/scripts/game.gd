@@ -542,6 +542,9 @@ func _update_tile_sizes():
 func _apply_tile_style(button, bg_color, border_color, highlight):
 	return BOARD_VIEW._apply_tile_style(self, button, bg_color, border_color, highlight)
 
+func _apply_cleared_tile_style(button):
+	return BOARD_VIEW._apply_cleared_tile_style(self, button)
+
 func _icon_for(value):
 	return BOARD_VIEW._icon_for(self, value)
 

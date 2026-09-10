@@ -52,6 +52,13 @@ func _init() -> void:
 	check(float(game.cell_buttons[0][0].rect_min_size.x) >= 30.0, "tile size clamped to readable minimum")
 	check(float(game.cell_buttons[0][0].rect_min_size.x) >= 55.0, "6-column board fills the canvas with >=55px tiles (got %d)" % int(game.cell_buttons[0][0].rect_min_size.x))
 
+	# Cleared cells disappear visually but keep their grid slot.
+	game.board[0][0] = 0
+	game._refresh_board_visuals()
+	var cleared_style = game.cell_buttons[0][0].get_stylebox("normal")
+	check(cleared_style != null && typeof(cleared_style.bg_color) == TYPE_COLOR && cleared_style.bg_color.a == 0.0, "cleared cells paint fully invisible")
+	check(game.cell_buttons[0][0].rect_min_size.x == game.cell_buttons[0][1].rect_min_size.x, "cleared slot keeps its grid footprint")
+
 	# ui_hud layout: mobile-portrait compaction applied at logical 390x844
 	game._update_layout_for_screen_size()
 	check(float(game.margin_container.get_constant("margin_left")) <= 8.0, "compact margins applied on mobile portrait")

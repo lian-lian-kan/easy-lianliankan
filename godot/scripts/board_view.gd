@@ -19,7 +19,7 @@ static func _refresh_board_visuals(game):
 			if value == 0:
 				button.text = ""
 				button.disabled = true
-				game._apply_tile_style(button, Color("fff5f8"), Color("ffc2d4"), false)
+				game._apply_cleared_tile_style(button)
 				continue
 
 			var face_down = game._is_memory_mode() and not game.memory_previewing 				and not game.memory_revealed.has(game._memory_key(Vector2(r, c))) 				and not (game.selected.x == r and game.selected.y == c)
@@ -135,6 +135,23 @@ static func _update_tile_sizes(game):
 			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			button.add_font_override("font", tile_font)
+
+# Cleared cells vanish entirely: a visible empty tile keeps pulling the
+# player's eye long after the pair is gone. The button must keep its place
+# in the GridContainer (hiding it would reflow the whole board), so it is
+# painted fully transparent instead.
+static func _apply_cleared_tile_style(game, button):
+	var clear_style = StyleBoxFlat.new()
+	clear_style.bg_color = Color(1, 1, 1, 0)
+	clear_style.set_border_width_all(0)
+	clear_style.set_corner_radius_all(14)
+	clear_style.shadow_size = 0
+	button.add_stylebox_override("normal", clear_style)
+	button.add_stylebox_override("pressed", clear_style)
+	button.add_stylebox_override("focus", clear_style)
+	button.add_stylebox_override("hover", clear_style)
+	button.add_stylebox_override("disabled", clear_style)
+
 
 static func _apply_tile_style(game, button, bg_color, border_color, highlight):
 	var normal = StyleBoxFlat.new()
