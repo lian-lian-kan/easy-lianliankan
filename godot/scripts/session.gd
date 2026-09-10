@@ -28,18 +28,7 @@ static func _reset_level_session(game, level, reset_total = false):
 			game.collect_progress[int(target)] = 0
 		ECONOMY.update_collect_labels(game)
 	if game.special_mode == "flip":
-		game.board = []
-		game.board_armor = []
-		game.board_lower = []
-		game.board_chain = []
-		game._fog_layers = 0
-		game.selected = Vector2(-1, -1)
-		game.hint_tiles.clear()
-		game.error_tiles.clear()
-		game.moves = 0
-		game.level_score = 0
-		game.total_score = 0
-		game.time_left = int(level.get("time_limit", 180))
+		_reset_special_board_state(game, int(level.get("time_limit", 180)))
 		if game.flip_layer:
 			game.flip_layer.visible = true
 			game.board_grid.visible = false
@@ -49,18 +38,7 @@ static func _reset_level_session(game, level, reset_total = false):
 			game.second_timer.start()
 		return
 	if game.special_mode == "tray":
-		game.board = []
-		game.board_armor = []
-		game.board_lower = []
-		game.board_chain = []
-		game._fog_layers = 0
-		game.selected = Vector2(-1, -1)
-		game.hint_tiles.clear()
-		game.error_tiles.clear()
-		game.moves = 0
-		game.level_score = 0
-		game.total_score = 0
-		game.time_left = int(level.get("time_limit", 240))
+		_reset_special_board_state(game, int(level.get("time_limit", 240)))
 		if game.tray_layer:
 			game.tray_layer.visible = true
 			game.board_grid.visible = false
@@ -151,9 +129,24 @@ static func _reset_level_session(game, level, reset_total = false):
 		game._start_second_timer()
 		game._play_level_intro_animation(level)
 
-static func _fail_moves_exhausted(game):
-	if game.stage_status != game.STATUS_PLAYING:
-		return
+# Shared wipe for tray/flip sessions: the campaign board is torn down and the
+# round resources (score/time/counters) restart from the level defaults.
+static func _reset_special_board_state(game, time_limit):
+	game.board = []
+	game.board_armor = []
+	game.board_lower = []
+	game.board_chain = []
+	game._fog_layers = 0
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+	game.moves = 0
+	game.level_score = 0
+	game.total_score = 0
+	game.time_left = time_limit
+
+
+static func _fail_stage(game, panel_text):
 	game.stage_status = game.STATUS_FAILED
 	AudioManager.play_fail()
 	game._reset_combo()
@@ -161,11 +154,17 @@ static func _fail_moves_exhausted(game):
 	game.hint_tiles.clear()
 	game.error_tiles.clear()
 	game.second_timer.stop()
-	game.stage_panel_label.text = "步数用完了！还剩 %d 对没消除\n点击「重开」再战，或「暂停」后返回玩法" % int(game._remaining_tiles_count() / 2)
+	game.stage_panel_label.text = panel_text
 	game.stage_panel_label.visible = true
-	game._show_message("步数耗尽，挑战失败", 1.8)
 	game._refresh_ui()
 	game._refresh_board_visuals()
+
+
+static func _fail_moves_exhausted(game):
+	if game.stage_status != game.STATUS_PLAYING:
+		return
+	_fail_stage(game, "步数用完了！还剩 %d 对没消除\n点击「重开」再战，或「暂停」后返回玩法" % int(game._remaining_tiles_count() / 2))
+	game._show_message("步数耗尽，挑战失败", 1.8)
 
 static func _resolve_after_board_changed(game):
 	# 重力模式: compact columns before any win/lose evaluation.
@@ -306,45 +305,23 @@ static func _on_time_up(game):
 	if game.stage_status != game.STATUS_PLAYING:
 		return
 	if game.special_mode != "":
-		game.stage_status = game.STATUS_FAILED
-		AudioManager.play_fail()
-		game._reset_combo()
-		game.selected = Vector2(-1, -1)
-		game.hint_tiles.clear()
-		game.error_tiles.clear()
-		game.second_timer.stop()
-		game.stage_panel_label.text = "挑战失败！得分 " + str(game.total_score) + "\n点击「重开」再战，或「暂停」后返回关卡"
-		game.stage_panel_label.visible = true
-		game._refresh_ui()
-		game._refresh_board_visuals()
+		# Special sessions have no revival: _revive resolves campaign fields.
+		_fail_stage(game, "挑战失败！得分 " + str(game.total_score) + "\n点击「重开」再战，或「暂停」后返回关卡")
 		return
-		_offer_revive(game, 30)
 	game._patch_progress_state({
 		"current_level_index": game.level_index,
 		"score_candidate": game.total_score,
 		"combo_candidate": game.combo
 	})
-
-	game.stage_status = game.STATUS_FAILED
-	AudioManager.play_fail()
-	game._reset_combo()
-	game.selected = Vector2(-1, -1)
-	game.hint_tiles.clear()
-	game.error_tiles.clear()
-
-	game.second_timer.stop()
-	game.stage_panel_label.text = "本关失败，点击\"重开\"重试，或复活续战"
-	game.stage_panel_label.visible = true
+	_fail_stage(game, "本关失败，点击\"重开\"重试，或复活续战")
 	_offer_revive(game, 30)
 	game._show_message("时间到！第" + str(game._current_level().get("id", game.level_index + 1)) + "关失败", 1.8)
 
-	game._refresh_ui()
-	game._refresh_board_visuals()
-
 
 static func _consume_time_cost(game, seconds):
-	# Clockless modes (endless/zen/moves/race) have no time to drain.
-	if game.special_mode == "endless" or int(game._current_level().get("time_limit", 90)) <= 0:
+	# Clockless modes (endless/zen/moves/race) carry time_limit 0, so there is
+	# nothing to drain; guard against a divide of the clock into negatives.
+	if int(game._current_level().get("time_limit", 90)) <= 0:
 		return
 	if seconds <= 0 or game.stage_status != game.STATUS_PLAYING:
 		return
@@ -444,11 +421,16 @@ static func _unlock_achievements(game, ids):
 		if not game.PROGRESSION_SCRIPT.has_achievement(game.progression_state, achievement_id):
 			game.progression_state = game.PROGRESSION_SCRIPT.unlock_achievement(game.progression_state, achievement_id)
 			new_unlocks.append(achievement_id)
-	if new_unlocks.size() > 0:
-		game._save_progress_state()
-		for achievement_id in new_unlocks:
-			var info = game.PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
-			game._show_achievement_notification(info["name"])
+	_announce_achievements(game, new_unlocks)
+
+
+static func _announce_achievements(game, ids):
+	if ids.size() <= 0:
+		return
+	game._save_progress_state()
+	for achievement_id in ids:
+		var info = game.PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
+		game._show_achievement_notification(info["name"])
 
 
 static func _check_achievements_on_clear(game):
@@ -467,9 +449,5 @@ static func _check_achievements_on_clear(game):
 	})
 	for achievement_id in new_unlocks:
 		game.progression_state = game.PROGRESSION_SCRIPT.unlock_achievement(game.progression_state, achievement_id)
-	if new_unlocks.size() > 0:
-		game._save_progress_state()
-		for achievement_id in new_unlocks:
-			var info = game.PROGRESSION_SCRIPT.get_achievement_info(achievement_id)
-			game._show_achievement_notification(info["name"])
+	_announce_achievements(game, new_unlocks)
 
