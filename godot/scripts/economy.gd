@@ -203,14 +203,21 @@ static func claim_signin(game, today, yesterday):
 	# delta must only fire once per day.
 	if str(game.progression_state.get("last_signin", "")) == today:
 		return
-	var streak = int(game.progression_state.get("signin_streak", 0))
-	var slot = streak % SIGNIN_REWARDS.size()
+	# The reward slot follows the NEW streak: a broken streak restarts at
+	# day 1 (lowest reward), a continuous run advances one slot per day and
+	# wraps after day 7.
+	var prev_streak = int(game.progression_state.get("signin_streak", 0))
+	var prev_last = str(game.progression_state.get("last_signin", ""))
+	var new_streak = game.SPECIAL_MODES_SCRIPT.next_daily_streak(prev_last, today, yesterday, prev_streak)
+	var slot = (new_streak - 1) % SIGNIN_REWARDS.size()
 	var reward = SIGNIN_REWARDS[slot]
 	game._patch_progress_state({
 		"signin": {"date": today, "yesterday": yesterday},
+		"signin_streak": new_streak,
+		"last_signin": today,
 		"coins_delta": reward,
 	})
-	game._show_message("签到成功 · 🌸+%d" % reward, 1.4)
+	game._show_message("签到成功 · 第%d天 · 🌸+%d" % [new_streak, reward], 1.4)
 	refresh_economy_page(game)
 
 # --- Theme shop page ---

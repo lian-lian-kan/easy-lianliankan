@@ -170,9 +170,9 @@ func _init() -> void:
 	game._on_signin_claim_pressed(today, yesterday)
 	check(int(game.progression_state.get("signin_streak", 0)) == 1, "broken streak restarts at day 1")
 	check(int(game.progression_state.get("coins", 0)) == coins_before_broken + 5, "restarted streak pays the day-1 reward")
-	# loop over: after seven consecutive days the curve wraps back to day 1
+	# loop over: a continuous run past day 7 wraps the reward curve
 	game.progression_state["signin_streak"] = 7
-	game.progression_state["last_signin"] = ""
+	game.progression_state["last_signin"] = yesterday
 	var coins_before_loop = int(game.progression_state.get("coins", 0))
 	game.SPECIAL_SESSION._start_special_mode(game, "signin")
 	game._on_signin_claim_pressed(today, yesterday)
