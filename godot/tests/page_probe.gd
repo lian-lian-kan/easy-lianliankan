@@ -159,6 +159,27 @@ func _init() -> void:
 	check(int(game.progression_state.get("coins", 0)) == coins_before_collect + 20, "collect win pays 20 blossoms")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- signin curve boundaries: broken streak resets, day-7 loops over ---
+	var yd2 = OS.get_date()
+	var two_days_ago = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_datetime_from_unix_time(OS.get_unix_time_from_datetime(yd2) - 172800))
+	# broken streak: last sign-in was two days ago, so the streak restarts at 1
+	game.progression_state["signin_streak"] = 6
+	game.progression_state["last_signin"] = two_days_ago
+	var coins_before_broken = int(game.progression_state.get("coins", 0))
+	game.SPECIAL_SESSION._start_special_mode(game, "signin")
+	game._on_signin_claim_pressed(today, yesterday)
+	check(int(game.progression_state.get("signin_streak", 0)) == 1, "broken streak restarts at day 1")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_broken + 5, "restarted streak pays the day-1 reward")
+	# loop over: after seven consecutive days the curve wraps back to day 1
+	game.progression_state["signin_streak"] = 7
+	game.progression_state["last_signin"] = ""
+	var coins_before_loop = int(game.progression_state.get("coins", 0))
+	game.SPECIAL_SESSION._start_special_mode(game, "signin")
+	game._on_signin_claim_pressed(today, yesterday)
+	check(int(game.progression_state.get("coins", 0)) == coins_before_loop + 5, "day-7 wrap pays the day-1 reward again")
+	check(int(game.progression_state.get("signin_streak", 0)) == 8, "streak keeps counting past the wrap")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# flip: clearing every pair records and pays
 	game.SPECIAL_SESSION._start_special_mode(game, "flip")
 	var coins_before_flip = int(game.progression_state.get("coins", 0))

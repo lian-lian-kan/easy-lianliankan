@@ -860,3 +860,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 检查项：①薄壳完整性（全仓 game._x 调用必须在 game.gd 定义）；②信号 connect 目标存在性（game/self 两类）；③孤儿薄壳（警告级）；④Godot 4 语法残留（ALIGNMENT_CENTER / offset_top / offset_bottom）。ERROR 退出码 1 纳入 CI 硬门禁。
 - 接入：deploy.yml 无头测试步骤末尾执行 (cd godot && python3 tools/shell_audit.py)。
 - Validation: 本地与 CI 均四项全过（薄壳/connect/孤儿/G4 全干净）；全量测试由 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round BZ：签到曲线边界探针)
+- page_probe 补签到曲线边界断言——断签重置（隔两天签到 streak 归 1 且发第 1 天奖励 5🌸）与第 7 天循环跨越（连续 7 天后再签发第 1 天奖励且 streak 继续累计 8）。
+- Validation: 本地零测试，全量验证由 CI 远端执行。
