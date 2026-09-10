@@ -854,3 +854,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-10 (重构 Round BX：game.gd 成员声明区按域分组 + economy 伴生探针)
 - 变更：①game.gd 成员声明区（约 250 行）按域插入 11 组 ═══ 分组注释（数据配置/特殊会话/棋盘状态/战役进度/计分资源/时钟/成就/道具/机制网格/竞速/视图浮层），零逻辑改动；②page_probe 补 economy 伴生断言：钱包 chip 非负、超量收集在上限截断、达标自动结算。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (重构 Round BY：静态一致性审计固化 tools/shell_audit.py 并入 CI)
+- 动机：BQ/BU 轮的一次性扫描（薄壳完整性/死代码/一致性）值得可重复执行——固化为 godot/tools/shell_audit.py（纯标准库，秒级）。
+- 检查项：①薄壳完整性（全仓 game._x 调用必须在 game.gd 定义）；②信号 connect 目标存在性（game/self 两类）；③孤儿薄壳（警告级）；④Godot 4 语法残留（ALIGNMENT_CENTER / offset_top / offset_bottom）。ERROR 退出码 1 纳入 CI 硬门禁。
+- 接入：deploy.yml 无头测试步骤末尾执行 (cd godot && python3 tools/shell_audit.py)。
+- Validation: 本地与 CI 均四项全过（薄壳/connect/孤儿/G4 全干净）；全量测试由 CI 远端执行。

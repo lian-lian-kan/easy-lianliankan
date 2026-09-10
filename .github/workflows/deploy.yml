@@ -61,6 +61,10 @@ jobs:
             echo "== $t"
             timeout 120 "$G" --no-window --path godot -s "res://tests/${t}.gd"
           done
+          # Static consistency audit: thin shells, connect targets, orphan
+          # shells, Godot 4 syntax leakage (pure text analysis, ~1s).
+          echo "== shell_audit"
+          (cd godot && python3 tools/shell_audit.py)
 
       - name: Import project resources
         run: timeout 300 ~/godot-bin/godot --no-window --editor --quit --path godot || true
