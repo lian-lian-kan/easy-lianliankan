@@ -10,6 +10,16 @@ const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
 const TILE_MATCH = preload("res://scripts/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 
+
+# Shared tail of the per-mode win settlements: record, celebration, banner.
+static func _finish_special_win(game, message):
+	game.stage_status = game.STATUS_CLEARED
+	AudioManager.play_win()
+	game._record_special_completion()
+	game._play_stage_clear_celebration(false)
+	game._show_message(message, 2.0)
+	game._refresh_ui()
+
 static func _start_special_mode(game, mode_id):
 	var config = game.game_mode_configs.get(mode_id, {})
 	if not game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(mode_id, config, int(game.progression_state.get("highest_unlocked_level_index", 0))):
@@ -167,7 +177,6 @@ static func _on_memory_hide_timeout(game):
 	game._refresh_board_visuals()
 
 static func _resolve_tray_clear(game):
-	game.stage_status = game.STATUS_CLEARED
 	var coin_reward = 20
 	game.total_score = TILE_MATCH.score_for(game.tray_state)
 	game.level_score = game.total_score
@@ -175,27 +184,17 @@ static func _resolve_tray_clear(game):
 		"tray_result": game.total_score,
 		"coins_delta": coin_reward
 	})
-	AudioManager.play_win()
-	game._record_special_completion()
-	game._play_stage_clear_celebration(false)
-	game._show_message("叠叠消通关！🌸+" + str(coin_reward), 2.0)
-	game._refresh_ui()
+	_finish_special_win(game, "叠叠消通关！🌸+" + str(coin_reward))
 
 static func _resolve_collect_clear(game):
-	game.stage_status = game.STATUS_CLEARED
 	var coin_reward = 20
 	game._patch_progress_state({
 		"collect_result": game.total_score,
 		"coins_delta": coin_reward
 	})
-	AudioManager.play_win()
-	game._record_special_completion()
-	game._play_stage_clear_celebration(false)
-	game._show_message("目标收集达成！🌸+" + str(coin_reward), 2.0)
-	game._refresh_ui()
+	_finish_special_win(game, "目标收集达成！🌸+" + str(coin_reward))
 
 static func _resolve_flip_clear(game):
-	game.stage_status = game.STATUS_CLEARED
 	var coin_reward = 20
 	game.total_score += 200
 	game.level_score = game.total_score
@@ -203,11 +202,7 @@ static func _resolve_flip_clear(game):
 		"flip_result": game.total_score,
 		"coins_delta": coin_reward
 	})
-	AudioManager.play_win()
-	game._record_special_completion()
-	game._play_stage_clear_celebration(false)
-	game._show_message("全部配对完成！🌸+" + str(coin_reward), 2.0)
-	game._refresh_ui()
+	_finish_special_win(game, "全部配对完成！🌸+" + str(coin_reward))
 
 static func _on_flip_back_timeout(game):
 	MEMORY_FLIP.unflip_misses(game)
@@ -221,17 +216,7 @@ static func _fail_tray_full(game):
 static func _fail_race_lost(game):
 	if game.stage_status != game.STATUS_PLAYING:
 		return
-	game.stage_status = game.STATUS_FAILED
-	AudioManager.play_fail()
-	game._reset_combo()
-	game.selected = Vector2(-1, -1)
-	game.hint_tiles.clear()
-	game.error_tiles.clear()
-	game.second_timer.stop()
 	if game.race_timer:
 		game.race_timer.stop()
-	game.stage_panel_label.text = "对手先完成了！你消除了 %d/%d 对\n点击「重开」再战" % [game.race_total_pairs - int(game._remaining_tiles_count() / 2), game.race_total_pairs]
-	game.stage_panel_label.visible = true
+	game.SESSION._fail_stage(game, "对手先完成了！你消除了 %d/%d 对\n点击「重开」再战" % [game.race_total_pairs - int(game._remaining_tiles_count() / 2), game.race_total_pairs])
 	game._show_message("惜败！再快一点点", 1.8)
-	game._refresh_ui()
-	game._refresh_board_visuals()
