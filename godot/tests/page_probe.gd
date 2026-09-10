@@ -390,6 +390,9 @@ func _init() -> void:
 	game.progression_state["weekly_missions"] = {"week_key": "", "progress": {}, "claimed": []}
 	var missions_week = game.MISSIONS.current_week_key(game)
 	check(str(missions_week).begins_with("W"), "week key derives from unix time")
+	check(game.MISSIONS.week_key_for(0) == "W0", "epoch maps to W0")
+	check(game.MISSIONS.week_key_for(604799) == "W0", "last second of week 0 stays W0")
+	check(game.MISSIONS.week_key_for(604800) == "W1", "week boundary rolls exactly")
 	game._mission_pair_cleared()
 	var missions_state = game.progression_state.get("weekly_missions", {})
 	check(str(missions_state.get("week_key", "")) == missions_week, "first record adopts the current week")

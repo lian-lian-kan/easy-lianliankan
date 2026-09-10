@@ -75,6 +75,10 @@ static func record(game, task_id: String, amount: int):
 		return
 	state["progress"][task_id] = updated
 	game._patch_progress_state({"weekly_missions": state})
+	# One-shot nudge at the moment the target is reached (later records cap
+	# out at updated == current and never re-enter this branch).
+	if updated >= target and not is_claimed(state, task_id):
+		game._show_message("📋 周任务达成：%s" % str(MISSIONS[task_id]["desc"]), 1.8)
 
 
 static func claim(game, task_id: String):
