@@ -93,7 +93,7 @@ static func _resolve_special_clear(game):
 		game.special_level = game.SPECIAL_MODES_SCRIPT.build_endless_level(game.game_mode_configs.get("endless", {}), game.endless_round)
 		game.stage_status = game.STATUS_CLEARED
 		game._play_stage_clear_celebration(false)
-		game._show_message("第" + str(finished_round) + "轮完成！时间奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
+		game._show_message("第" + str(finished_round) + "轮完成～奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
 		# Kick the advance timer so the next (bigger) round actually starts.
 		game.level_advance_timer.stop()
 		game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
@@ -119,7 +119,7 @@ static func _record_special_completion(game):
 			"move_budget": int(game._current_level().get("move_budget", 0)),
 		}))
 		game._unlock_achievements(achievements)
-		game.stage_panel_label.text = record["label"] + "完成！得分 " + str(game.total_score) + " · 最佳 " + str(int(game.progression_state.get(record["best_key"], 0)))
+		game.stage_panel_label.text = record["label"] + "完成～得分 " + str(game.total_score) + " · 最佳 " + str(int(game.progression_state.get(record["best_key"], 0)))
 		game.stage_panel_label.visible = true
 		return
 	if game.special_mode == "daily":
@@ -131,12 +131,12 @@ static func _record_special_completion(game):
 			}
 		})
 		var daily = game.progression_state.get("daily_challenge", {})
-		game.stage_panel_label.text = "今日挑战完成！得分 " + str(game.total_score) + " · 连胜 " + str(int(daily.get("streak", 0))) + " 天\n明天还有新的棋盘，点击「重开」可再玩今日棋盘"
+		game.stage_panel_label.text = "今日挑战完成，辛苦啦！得分 " + str(game.total_score) + " · 连胜 " + str(int(daily.get("streak", 0))) + " 天\n明天还有新的棋盘，点击「重开」可再玩今日棋盘"
 		if int(daily.get("streak", 0)) >= 7:
 			game._unlock_achievements(["daily_streak_7"])
 	elif game.special_mode == "time_attack":
 		game._patch_progress_state({"time_attack_result": game.total_score})
-		game.stage_panel_label.text = "限时挑战结束！得分 " + str(game.total_score) + " · 最佳 " + str(int(game.progression_state.get("time_attack_best_score", 0)))
+		game.stage_panel_label.text = "限时挑战结束～得分 " + str(game.total_score) + " · 最佳 " + str(int(game.progression_state.get("time_attack_best_score", 0)))
 		if game.total_score >= 1000:
 			game._unlock_achievements(["time_attack_1000"])
 	else:

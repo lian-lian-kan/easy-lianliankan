@@ -157,9 +157,9 @@ static func build_signin(game):
 
 	var status = Label.new()
 	if signed_today:
-		status.text = "今日已领取（连续 %d 天）明天再来～" % streak
+		status.text = "今天也乖乖来啦，已连签 %d 天～明天见" % streak
 	else:
-		status.text = "连续 %d 天 · 今日可领第 %d 天好礼！" % [streak, slot + 1]
+		status.text = "已连签 %d 天 · 第 %d 天小礼物等你领～" % [streak, slot + 1]
 	status.align = Label.ALIGN_CENTER
 	status.add_font_override("font", game._font_at_size(13))
 	status.add_color_override("font_color", Color("8f6b80"))
@@ -230,7 +230,7 @@ static func claim_signin(game, today, yesterday):
 		"last_signin": today,
 		"coins_delta": reward,
 	})
-	game._show_message("签到成功 · 第%d天 · 🌸+%d" % [new_streak, reward], 1.4)
+	game._show_message("Sophia 签到成功 · 第%d天 · 🌸+%d" % [new_streak, reward], 1.4)
 	refresh_economy_page(game)
 
 # --- Theme shop page ---
