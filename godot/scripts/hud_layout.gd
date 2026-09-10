@@ -20,15 +20,17 @@ static func update_layout(game):
 	if is_mobile:
 		# Portrait relies on EXPAND_FILL for remaining space; keep the min small to avoid overflow.
 		var mobile_ratio = game.BOARD_RATIO_MOBILE_PORTRAIT if is_portrait else game.BOARD_RATIO_MOBILE_LANDSCAPE
-		var ratio = 0.42 if is_portrait else mobile_ratio
-		game.board_wrapper.rect_min_size = Vector2(0, min(max(game.BOARD_MIN_HEIGHT, viewport_size.y * ratio), viewport_size.y * 0.62))
+		# Portrait is the flagship layout: the board is the product, the header
+		# is chrome. Cap lifted to 80% so tall boards (endless/hell) can breathe.
+		var portrait_cap = 0.80 if is_portrait else 0.62
+		game.board_wrapper.rect_min_size = Vector2(0, min(max(game.BOARD_MIN_HEIGHT, viewport_size.y * mobile_ratio), viewport_size.y * portrait_cap))
 	else:
 		game.board_wrapper.rect_min_size = Vector2(0, max(420.0, viewport_size.y * game.BOARD_RATIO_DESKTOP))
 
 	# Adjust margins based on screen size
-	var margin_value = 6 if is_compact_height else (8 if is_mobile else 16)
+	var margin_value = 4 if (is_mobile and is_portrait) else (6 if is_compact_height else (8 if is_mobile else 16))
 	# The bottom strip also reserves room for the persistent navigation bar.
-	var nav_strip = 58 if is_mobile else 64
+	var nav_strip = 50 if is_mobile else 64
 	if game.margin_container:
 		game.margin_container.add_constant_override("margin_left", margin_value)
 		game.margin_container.add_constant_override("margin_right", margin_value)
@@ -51,11 +53,12 @@ static func update_layout(game):
 
 	# Adjust tile separation based on screen size
 	if is_mobile and is_compact_height:
-		game.board_grid.add_constant_override("h_separation", 4)
-		game.board_grid.add_constant_override("v_separation", 4)
+		game.board_grid.add_constant_override("h_separation", 3)
+		game.board_grid.add_constant_override("v_separation", 3)
 	elif is_mobile:
-		game.board_grid.add_constant_override("h_separation", 6)
-		game.board_grid.add_constant_override("v_separation", 6)
+		# Portrait phones are width-bound: tighter separation buys ~1 tile of width.
+		game.board_grid.add_constant_override("h_separation", 3)
+		game.board_grid.add_constant_override("v_separation", 3)
 	else:
 		game.board_grid.add_constant_override("h_separation", 10)
 		game.board_grid.add_constant_override("v_separation", 10)
@@ -83,6 +86,11 @@ static func update_layout(game):
 	for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.jump_level_button, game.clear_progress_button, game.modes_button]:
 		if button:
 			button.rect_min_size = control_min
+	# Portrait: compact taps keep both control rows on single lines.
+	if is_mobile and is_portrait:
+		for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.modes_button, game.stats_button, game.settings_button]:
+			if button:
+				button.rect_min_size = Vector2(62, 34)
 
 	if game.controls_flow_container:
 		game.controls_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
@@ -91,20 +99,40 @@ static func update_layout(game):
 		game.progression_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
 		game.progression_flow_container.add_constant_override("v_separation", 6 if is_mobile else 8)
 
-	# Portrait phones: compress the header so the board fits the visible canvas.
+	# Portrait phones: compress the header so the board owns the screen.
+	# The board is the product — every hidden strip here is board real estate.
 	if is_mobile and is_portrait:
 		if game.root_vbox:
 			game.root_vbox.add_constant_override("separation", 4)
 		if game.header_box:
 			game.header_box.add_constant_override("separation", 3)
+		# Title column: keep only the game name; status/meta chips are noise.
+		if game.subtitle_label:
+			game.subtitle_label.visible = false
+		if game.desc_label:
+			game.desc_label.visible = false
+		if game.status_chip_label:
+			game.status_chip_label.visible = false
+		if game.mode_chip_label:
+			game.mode_chip_label.visible = false
+		if game.kinds_chip_label:
+			game.kinds_chip_label.visible = false
 		if game.level_progress_caption_label:
 			game.level_progress_caption_label.visible = false
+		if game.level_progress_bar:
+			game.level_progress_bar.rect_min_size = Vector2(0, 6)
 		if game.jump_level_button:
 			game.jump_level_button.visible = false
 		if game.clear_progress_button:
 			game.clear_progress_button.visible = false
+		# Set picking lives in the shop page, level picking in the journey map:
+		# the two dropdowns only cost header rows on touch screens.
+		if game.icon_set_option:
+			game.icon_set_option.visible = false
 		if game.level_select_option:
-			game.level_select_option.rect_min_size = Vector2(150, control_min.y)
+			game.level_select_option.visible = false
+		if game.level_select_label:
+			game.level_select_label.visible = false
 		if game.combo_progress_bar:
 			game.combo_progress_bar.rect_min_size = Vector2(0, 4)
 		# Single row of the 4 essential cards keeps the header to one stat line.
@@ -112,6 +140,20 @@ static func update_layout(game):
 			if game.stat_values.has(hidden_key) and game.stat_values[hidden_key].has("card"):
 				game.stat_values[hidden_key]["card"].visible = false
 	else:
+		if game.subtitle_label:
+			game.subtitle_label.visible = true
+		if game.status_chip_label:
+			game.status_chip_label.visible = true
+		if game.mode_chip_label:
+			game.mode_chip_label.visible = true
+		if game.kinds_chip_label:
+			game.kinds_chip_label.visible = true
+		if game.icon_set_option:
+			game.icon_set_option.visible = true
+		if game.level_select_option:
+			game.level_select_option.visible = true
+		if game.level_select_label:
+			game.level_select_label.visible = true
 		for hidden_key in ["level_score", "moves", "best_total_score", "best_combo"]:
 			if game.stat_values.has(hidden_key) and game.stat_values[hidden_key].has("card"):
 				game.stat_values[hidden_key]["card"].visible = true

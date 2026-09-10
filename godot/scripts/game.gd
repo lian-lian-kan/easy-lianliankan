@@ -51,7 +51,7 @@ const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
 const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/campaign_levels.gd")
 const MOBILE_SHORT_SIDE_MAX = 860.0
 const MOBILE_COMPACT_HEIGHT_MAX = 460.0
-const BOARD_RATIO_MOBILE_PORTRAIT = 0.60
+const BOARD_RATIO_MOBILE_PORTRAIT = 0.72
 const BOARD_RATIO_MOBILE_LANDSCAPE = 0.46
 const BOARD_RATIO_DESKTOP = 0.52
 const BOARD_MIN_HEIGHT = 200.0
@@ -166,6 +166,7 @@ var margin_container
 
 var icon_set_option
 var level_select_option
+var level_select_label
 var hint_button
 var auto_button
 var shuffle_button
