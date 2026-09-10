@@ -36,6 +36,8 @@ static func update_layout(game):
 	# Keep the floating message banner parked just above the navigation bar.
 	if game.message_label:
 		game.message_label.margin_bottom = -(nav_strip + 4)
+	if game.husband_button:
+		game.husband_button.margin_bottom = -(nav_strip + 42)
 	if game.margin_container:
 		game.margin_container.add_constant_override("margin_left", margin_value)
 		game.margin_container.add_constant_override("margin_right", margin_value)

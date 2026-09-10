@@ -15,6 +15,11 @@ static func build_main_ui(game):
 
 static func refresh_ui(game):
 	ECONOMY.update_coin_label(game)
+	# Husband rescue surfaces only when the clock is genuinely running out:
+	# playing, has a clock, <= 15 seconds, and not used this round.
+	if game.husband_button:
+		var rescue_ready = game.stage_status == game.STATUS_PLAYING 			and not game.husband_called 			and game.special_mode != "endless" 			and int(game._current_level().get("time_limit", 90)) > 0 			and game.time_left > 0 and game.time_left <= 15
+		game.husband_button.visible = rescue_ready
 	var level = game._current_level()
 	var level_id = int(level.get("id", game.level_index + 1))
 	var level_name = str(level.get("name", "关卡"))

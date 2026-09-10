@@ -452,6 +452,30 @@ func _init() -> void:
 	check(game.CHEERS.CLEAR_LINES.size() >= 12, "victory pet-phrase pool holds at least 12 lines")
 	check(str(game.CHEERS.clear_cheer(game)) != "", "victory screens draw a pet phrase")
 
+	# --- husband rescue: scarcity gate, one-shot, +15s and a free hint ---
+	check(game.CHEERS.HUSBAND_LINES.size() >= 10, "husband one-liner pool holds at least 10 lines")
+	game._start_level(0, true)
+	game.stage_status = game.STATUS_PLAYING
+	game.husband_called = false
+	game.time_left = 60
+	game._refresh_ui()
+	check(game.husband_button != null && !game.husband_button.visible, "husband button hides while time is comfortable")
+	game.time_left = 10
+	game._refresh_ui()
+	check(game.husband_button.visible, "husband button surfaces when the clock runs dry")
+	var time_before_call = int(game.time_left)
+	game._call_husband()
+	check(int(game.time_left) == time_before_call + 15, "husband rescue adds 15 seconds")
+	check(game.husband_called, "rescue marks itself used")
+	check(game.hint_tiles.size() == 2, "rescue highlights a free pair")
+	var coins_note = int(game.progression_state.get("coins", 0))
+	game.time_left = 8
+	game._call_husband()
+	check(int(game.time_left) == 23 && game.husband_called, "second call is refused (one rescue per round)")
+	check(int(game.progression_state.get("coins", 0)) == coins_note, "rescue is free of blossom charges")
+	game._start_level(0, true)
+	check(!game.husband_called, "a fresh round resets the rescue")
+
 	# --- wallet persists to disk ---
 	game._patch_progress_state({"coins_delta": 7})
 	check(File.new().file_exists(game.PROGRESS_SAVE_PATH), "wallet persists to the save file")

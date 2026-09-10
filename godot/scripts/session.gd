@@ -93,6 +93,7 @@ static func _reset_level_session(game, level, reset_total = false):
 
 	# Reset achievement tracking
 	game.combo_milestones_hit = []
+	game.husband_called = false
 	game.level_start_time = OS.get_ticks_msec()
 	game.level_hints_used = 0
 	game.level_auto_used = 0
@@ -324,6 +325,32 @@ static func _on_time_up(game):
 	_fail_stage(game, "本关失败，点击\"重开\"重试，或复活续战")
 	_offer_revive(game, 30)
 	game._show_message("时间到！第" + str(game._current_level().get("id", game.level_index + 1)) + "关失败", 1.8)
+
+
+# Husband rescue: the product gimmick. When time runs short the floating
+# button appears; calling the husband once per round grants +15 seconds and
+# a free pair hint (without charging the hint counter), wrapped in a
+# doting one-liner.
+static func call_husband(game):
+	if game.husband_called or game.stage_status != game.STATUS_PLAYING:
+		return
+	game.husband_called = true
+	game.time_left = min(999, game.time_left + 15)
+	AudioManager.play_hint()
+	var hint = game._find_any_hint(game.board)
+	if hint.empty():
+		game._reshuffle_board(game.board)
+		hint = game._find_any_hint(game.board)
+	if not hint.empty():
+		if game._is_memory_mode():
+			game.memory_revealed[game._memory_key(hint["a"])] = true
+			game.memory_revealed[game._memory_key(hint["b"])] = true
+		game.hint_tiles = [hint["a"], hint["b"]]
+		game.error_tiles.clear()
+		game._animate_hint_tiles(game.hint_tiles)
+	game._show_message(game.CHEERS.husband_line(game) + " · ⏰+15 秒", 2.2)
+	game._refresh_ui()
+	game._refresh_board_visuals()
 
 
 static func _consume_time_cost(game, seconds):

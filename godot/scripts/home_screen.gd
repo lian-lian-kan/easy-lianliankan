@@ -372,6 +372,21 @@ static func build_main_ui(game):
 	game.revive_button.connect("pressed", game, "_on_revive_pressed")
 	root.add_child(game.revive_button)
 
+	# Husband rescue button: floats above the board's bottom edge, appears
+	# only when the clock is running low (visibility driven by _refresh_ui).
+	game.husband_button = Button.new()
+	game.husband_button.text = "🆘 求助老公"
+	game.husband_button.rect_min_size = Vector2(180, 40)
+	game.husband_button.add_font_override("font", game._font_at_size(14))
+	game._apply_button_style(game.husband_button, Color("f06ba8"), Color("d6336c"))
+	game.husband_button.add_color_override("font_color", Color("ffffff"))
+	game.husband_button.visible = false
+	game.husband_button.set_anchors_and_margins_preset(Control.PRESET_BOTTOM_WIDE)
+	game.husband_button.margin_left = 120
+	game.husband_button.margin_right = 120
+	game.husband_button.connect("pressed", game, "_on_husband_pressed")
+	root.add_child(game.husband_button)
+
 	game.combo_burst_label = Label.new()
 	game.combo_burst_label.add_font_override("font", game.game_font)
 	game.combo_burst_label.align = Label.ALIGN_CENTER

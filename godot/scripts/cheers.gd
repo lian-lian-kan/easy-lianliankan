@@ -10,10 +10,10 @@ extends Reference
 # enough for the burst label (<= 8 glyphs).
 const TIERS = [
 	{"min": 10, "lines": ["Sophia 最棒！", "月亮为你打call", "星河都甜了", "完美小女神", "甜到冒泡啦", "forever 闪耀"]},
-	{"min": 8, "lines": ["小仙女下凡", "美到犯规", "樱色小风暴", "指尖的魔法", "花儿都开了", "梦幻连击", "甜甜的暴击"]},
-	{"min": 6, "lines": ["五连小烟花", "闪闪发光呢", "全场最靓", "小魔女附体", "粉红风暴", "太治愈啦", "软软的厉害"]},
-	{"min": 4, "lines": ["连成小串串", "停不下来呀", "樱花开啦", "小宇宙发光", "甜品时间到", "小仙女手速", "又甜又快", "小果冻手感"]},
-	{"min": 2, "lines": ["哇，好厉害", "小手真巧", "甜甜的开局", "温柔一刀", "指尖在发光", "就是这样呀", "节奏对了哟", "小可爱出手"]
+	{"min": 8, "lines": ["小仙女下凡", "Sophia 美到犯规", "樱色小风暴", "指尖的魔法", "花儿都开了", "梦幻连击", "甜甜的暴击"]},
+	{"min": 6, "lines": ["五连小烟花", "闪闪发光呢", "全场最靓", "Sophia 小魔女", "粉红风暴", "太治愈啦", "软软的厉害"]},
+	{"min": 4, "lines": ["连成小串串", "停不下来呀", "樱花开啦", "小宇宙发光", "甜品时间到", "Sophia 手速", "又甜又快", "小果冻手感"]},
+	{"min": 2, "lines": ["哇，好厉害", "Sophia 小手真巧", "甜甜的开局", "温柔一刀", "指尖在发光", "就是这样呀", "节奏对了哟", "小可爱出手"]
 }]
 
 # In-round streak milestones: combo -> blossom bonus, paid once each round.
@@ -78,6 +78,20 @@ static func on_combo(game, combo: int, gain: int) -> String:
 	if line == "":
 		return ""
 	return line + " +" + str(max(0, gain))
+
+
+# Husband rescue lines: warm, doting, a little show-offy. The rescue is a
+# product gimmick — the husband is always ready when time runs out.
+const HUSBAND_LINES = [
+	"老公来了，别怕！", "这有一对，看那里~", "别急，老公帮你看着呢",
+	"时间？老公给你要来了", "慢慢来，我陪着你", "老公的外挂已上线",
+	"小仙女只需要负责美", "剩下的交给老公", "深呼吸，就是那对", "老公时刻在线"
+]
+
+
+static func husband_line(game) -> String:
+	var pick = int(randi() % HUSBAND_LINES.size())
+	return str(HUSBAND_LINES[pick])
 
 
 # A random pet phrase for victory screens; clears are rare enough that a

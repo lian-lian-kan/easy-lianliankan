@@ -171,6 +171,8 @@ var level_select_option
 var level_select_label
 var cheer_decks
 var combo_milestones_hit
+var husband_called
+var husband_button
 var hint_button
 var auto_button
 var shuffle_button
@@ -245,6 +247,7 @@ func _ready():
 	randomize()
 	cheer_decks = {}
 	combo_milestones_hit = []
+	husband_called = false
 	_init_font()
 	_load_config()
 	print("[Game] boot: config loaded, levels=", campaign_levels.size())
@@ -828,6 +831,12 @@ func _on_mission_claim_pressed(task_id):
 
 func _combo_cheer(gain):
 	return CHEERS.on_combo(self, combo, gain)
+
+func _call_husband():
+	return SESSION.call_husband(self)
+
+func _on_husband_pressed():
+	_call_husband()
 
 # ═══ 统计 HUD（stats_hud） ═══
 
