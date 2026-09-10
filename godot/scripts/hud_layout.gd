@@ -17,13 +17,15 @@ static func update_layout(game):
 	var is_compact_height = flags["is_compact_height"]
 
 	# Give board more vertical room on mobile and wide desktop.
-	if is_mobile:
-		# Portrait relies on EXPAND_FILL for remaining space; keep the min small to avoid overflow.
-		var mobile_ratio = game.BOARD_RATIO_MOBILE_PORTRAIT if is_portrait else game.BOARD_RATIO_MOBILE_LANDSCAPE
-		# Portrait is the flagship layout: the board is the product, the header
-		# is chrome. Cap lifted to 80% so tall boards (endless/hell) can breathe.
-		var portrait_cap = 0.86 if is_portrait else 0.62
-		game.board_wrapper.rect_min_size = Vector2(0, min(max(game.BOARD_MIN_HEIGHT, viewport_size.y * mobile_ratio), viewport_size.y * portrait_cap))
+	if is_mobile and not is_portrait:
+		game.board_wrapper.rect_min_size = Vector2(0, max(game.BOARD_MIN_HEIGHT, viewport_size.y * game.BOARD_RATIO_MOBILE_LANDSCAPE))
+	elif is_mobile:
+		# Portrait layout authority lives with the container: the wrapper is
+		# EXPAND_FILL with stretch_ratio 1.0, so it receives EXACTLY the space
+		# left after the header's natural height — no hand-computed ratio that
+		# can overflow into the nav bar and cover the last tile row. Whatever
+		# the header grows or shrinks, the board absorbs the remainder.
+		game.board_wrapper.rect_min_size = Vector2(0, game.BOARD_MIN_HEIGHT)
 	else:
 		game.board_wrapper.rect_min_size = Vector2(0, max(420.0, viewport_size.y * game.BOARD_RATIO_DESKTOP))
 
@@ -98,9 +100,12 @@ static func update_layout(game):
 	if game.controls_flow_container:
 		game.controls_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
 		game.controls_flow_container.add_constant_override("v_separation", 6 if is_mobile else 8)
+		# Compact rows look ragged left-aligned on a narrow phone; center them.
+		game.controls_flow_container.alignment = BoxContainer.ALIGN_CENTER if (is_mobile and is_portrait) else BoxContainer.ALIGN_BEGIN
 	if game.progression_flow_container:
 		game.progression_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
 		game.progression_flow_container.add_constant_override("v_separation", 6 if is_mobile else 8)
+		game.progression_flow_container.alignment = BoxContainer.ALIGN_CENTER if (is_mobile and is_portrait) else BoxContainer.ALIGN_BEGIN
 
 	# Portrait phones: compress the header so the board owns the screen.
 	# The board is the product — every hidden strip here is board real estate.

@@ -132,8 +132,11 @@ func _init() -> void:
 	# --- portrait board dominance: the canvas owns the screen, header is chrome ---
 	game._update_layout_for_screen_size()
 	var vp_height = float(game.get_viewport_rect().size.y)
-	var wrapper_ratio = float(game.board_wrapper.rect_min_size.y) / vp_height
-	check(wrapper_ratio >= 0.84, "portrait board wrapper claims >=84%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	# The wrapper is container-assigned (EXPAND_FILL takes all remaining
+	# height after the header); assert the REALIZED frame, not the min.
+	var wrapper_ratio = float(game.board_wrapper.rect_size.y) / vp_height
+	check(wrapper_ratio >= 0.78, "portrait board realizes >=78%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	check(float(game.board_wrapper.rect_min_size.y) <= float(game.BOARD_MIN_HEIGHT) + 0.5, "portrait wrapper carries no oversized hand-set minimum")
 	check(game.subtitle_label != null && !game.subtitle_label.visible, "portrait hides the subtitle line")
 	check(game.status_chip_label != null && !game.status_chip_label.visible, "portrait hides the status badge")
 	check(game.mode_chip_label != null && !game.mode_chip_label.visible && game.kinds_chip_label != null && !game.kinds_chip_label.visible, "portrait hides the meta chips")
@@ -142,6 +145,16 @@ func _init() -> void:
 	check(game.title_row != null && !game.title_row.visible, "portrait hides the whole title strip (wallet lives on shop/gift pages)")
 	check(game.level_progress_bar != null && !game.level_progress_bar.visible, "portrait hides the level progress bar (journey page owns it)")
 	check(game.combo_progress_bar != null && !game.combo_progress_bar.visible, "portrait hides the combo bar (burst text carries the feedback)")
+	# Never-cover lock: the last tile row must end above the navigation bar.
+	# Wait two frames so the container re-sort lands after _start_level.
+	yield(self, "idle_frame")
+	yield(self, "idle_frame")
+	var last_row_bottom = 0.0
+	for c in range(game.board[0].size()):
+		var btn = game.cell_buttons[game.board.size() - 1][c]
+		last_row_bottom = max(last_row_bottom, float(btn.get_global_position().y) + float(btn.rect_size.y))
+	var nav_top = float(game.nav_bar.get_global_position().y)
+	check(last_row_bottom <= nav_top, "last tile row stays above the nav bar (tiles end %.0f, nav starts %.0f)" % [last_row_bottom, nav_top])
 	check(game.power_ups_container != null && !game.power_ups_container.visible, "portrait hides the power-up count strip")
 
 	# --- header height stability: nothing dynamic may live in the layout flow ---
