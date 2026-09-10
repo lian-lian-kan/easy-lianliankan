@@ -864,3 +864,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 ## 2026-09-10 (测试补充 Round BZ：签到曲线边界探针)
 - page_probe 补签到曲线边界断言——断签重置（隔两天签到 streak 归 1 且发第 1 天奖励 5🌸）与第 7 天循环跨越（连续 7 天后再签发第 1 天奖励且 streak 继续累计 8）。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round CA：daily 结算纪录 / endless 跨轮推进探针 + 修复 endless 卡轮)
+- 审查：endless 清盘后 special_level 已换下一轮但**没有任何定时器触发 reset**——玩家停在 CLEARED 空盘，点重开还会把轮数清回 1（上线以来的真 bug）。
+- 变更：①special_session._resolve_special_clear 的 endless 分支启动 level_advance_timer（1.2s 后经既有 _on_level_advance_timeout 进入下一轮，零新路径）；②page_probe 补 daily 结算纪录（落 today/连胜推进/最佳分）与 endless 跨轮探针（CLEARED→纪录轮数→advance 启动→下一轮跑分保留）。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

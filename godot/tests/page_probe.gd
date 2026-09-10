@@ -244,6 +244,38 @@ func _init() -> void:
 	check(game.stage_status == game.STATUS_CLEARED, "hitting the target auto-resolves the session")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- daily settle: clearing the daily board stamps the streak ---
+	game.SPECIAL_SESSION._start_special_mode(game, "daily")
+	var today_str = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	for r in range(game.board.size()):
+		for c in range(game.board[r].size()):
+			game.board[r][c] = 0
+	game.stage_status = game.STATUS_PLAYING
+	game._resolve_after_board_changed()
+	var daily_state = game.progression_state.get("daily_challenge", {})
+	check(str(daily_state.get("last_date", "")) == today_str, "daily clear stamps today")
+	check(int(daily_state.get("streak", 0)) >= 1, "daily clear advances the streak")
+	check(int(game.progression_state.get("daily_challenge", {}).get("best_score", 0)) >= int(game.total_score) - 500, "daily best reflects the run")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
+	# --- endless cross-round: resolve advances, score carries over ---
+	game.SPECIAL_SESSION._start_special_mode(game, "endless")
+	game.total_score = 800
+	game.level_score = 800
+	for r in range(game.board.size()):
+		for c in range(game.board[r].size()):
+			game.board[r][c] = 0
+	game.stage_status = game.STATUS_PLAYING
+	game._resolve_after_board_changed()
+	check(game.stage_status == game.STATUS_CLEARED, "endless clear lands in CLEARED")
+	check(int(game.progression_state.get("endless_best", {}).get("round", 0)) >= 1, "endless clear records the round")
+	check(int(game.endless_round) == 2, "endless resolve builds round 2")
+	check(game.level_advance_timer && !game.level_advance_timer.is_stopped(), "endless schedules the next round")
+	game._on_level_advance_timeout()
+	check(int(game.endless_round) == 2 && game.stage_status == game.STATUS_PLAYING, "advance starts the next endless round")
+	check(int(game.total_score) >= 800, "endless keeps the running score across rounds")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})

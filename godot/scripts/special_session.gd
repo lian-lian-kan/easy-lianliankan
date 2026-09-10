@@ -82,6 +82,10 @@ static func _resolve_special_clear(game):
 		game.stage_status = game.STATUS_CLEARED
 		game._play_stage_clear_celebration(false)
 		game._show_message("第" + str(finished_round) + "轮完成！时间奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
+		# Kick the advance timer so the next (bigger) round actually starts.
+		game.level_advance_timer.stop()
+		game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
+		game.level_advance_timer.start()
 	else:
 		game._record_special_completion()
 		game.stage_status = game.STATUS_COMPLETED
