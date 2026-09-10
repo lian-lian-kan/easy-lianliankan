@@ -869,3 +869,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：endless 清盘后 special_level 已换下一轮但**没有任何定时器触发 reset**——玩家停在 CLEARED 空盘，点重开还会把轮数清回 1（上线以来的真 bug）。
 - 变更：①special_session._resolve_special_clear 的 endless 分支启动 level_advance_timer（1.2s 后经既有 _on_level_advance_timeout 进入下一轮，零新路径）；②page_probe 补 daily 结算纪录（落 today/连胜推进/最佳分）与 endless 跨轮探针（CLEARED→纪录轮数→advance 启动→下一轮跑分保留）。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (功能 Round CB：统计页 📊 数据)
+- 变更：①新增统计页（page_router PAGE_STATS + _build_stats）——一页汇总 21 项数据：最佳总分/连击/樱花币/图鉴进度/连续签到/每日与无尽纪录/全部 13 个特殊模式最佳分（从 progression_state 现有字段读取，零新 schema）；②主页进度行新增「📊 数据」入口按钮（_on_stats_pressed → show_page("stats")，走标准页面导航）。
+- 探针：page_probe 补 stats 页断言（页面打开/钱包与最佳分行/叠叠消与图鉴行）；tray 结算探针顺带验证 tray_best≥1200 落库后 stats 可见。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

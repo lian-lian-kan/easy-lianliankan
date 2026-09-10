@@ -13,6 +13,7 @@ const PAGE_LEVEL_MAP = "level_map"
 const PAGE_COLLECTION = "collection"
 const PAGE_SIGNIN = "signin"
 const PAGE_SHOP = "shop"
+const PAGE_STATS = "stats"
 
 static func nav_items():
 	return [
@@ -99,6 +100,8 @@ static func show_page(game, page_id):
 				ECONOMY.build_signin(game)
 			PAGE_SHOP:
 				ECONOMY.build_shop(game)
+			PAGE_STATS:
+				_build_stats(game)
 
 static func close_page(game):
 	UI_PANELS.close_modal(game, game.pages_root)
@@ -207,6 +210,59 @@ static func _collection_cell(game, glyph_text, colors, index, has_it):
 	glyph.modulate = Color(1, 1, 1) if has_it else Color(1, 1, 1, 0.55)
 	cell.add_child(glyph)
 	return cell
+
+# --- Stats page: every best, streak and collection number on one page ---
+
+static func _build_stats(game):
+	var page_content = game.page_content
+	var collected: Array = game.progression_state.get("collected", [])
+	var total_icons = _total_icons(game)
+	PAGE_UI.page_frame(game, page_content, "📊 数据", "你的连连看足迹")
+	var box = PAGE_UI.scroll_area(game, page_content)
+
+	var rows := [
+		["🏆 最佳总分", str(int(game.progression_state.get("best_total_score", 0)))],
+		["🔥 最佳连击", "x" + str(int(game.progression_state.get("best_combo", 0)))],
+		["🌸 樱花币", str(int(game.progression_state.get("coins", 0)))],
+		["📖 图鉴收集", "%d / %d" % [collected.size(), total_icons]],
+		["🎁 连续签到", "%d 天" % int(game.progression_state.get("signin_streak", 0))],
+		["📅 每日挑战最佳", str(int(game.progression_state.get("daily_challenge", {}).get("best_score", 0)))],
+		["∞ 无尽模式", "第%d轮 · %d分" % [int(game.progression_state.get("endless_best", {}).get("round", 0)), int(game.progression_state.get("endless_best", {}).get("score", 0))]],
+		["⏱️ 限时最佳", str(int(game.progression_state.get("time_attack_best_score", 0)))],
+		["🎁 盲盒最佳", str(int(game.progression_state.get("memory_best_score", 0)))],
+		["❄️ 冰雪最佳", str(int(game.progression_state.get("frost_best_score", 0)))],
+		["🍵 休闲最佳", str(int(game.progression_state.get("zen_best_score", 0)))],
+		["🔥 地狱最佳", str(int(game.progression_state.get("hell_best_score", 0)))],
+		["🧮 步数最佳", str(int(game.progression_state.get("moves_best_score", 0)))],
+		["🤖 竞速最佳", str(int(game.progression_state.get("race_best_score", 0)))],
+		["🥞 叠层最佳", str(int(game.progression_state.get("stack_best_score", 0)))],
+		["🍎 重力最佳", str(int(game.progression_state.get("gravity_best_score", 0)))],
+		["🌫️ 迷雾最佳", str(int(game.progression_state.get("fog_best_score", 0)))],
+		["⛓️ 锁链最佳", str(int(game.progression_state.get("chain_best_score", 0)))],
+		["🀄 叠叠消最佳", str(int(game.progression_state.get("tray_best_score", 0)))],
+		["🎯 收集挑战最佳", str(int(game.progression_state.get("collect_best_score", 0)))],
+		["🃏 翻翻乐最佳", str(int(game.progression_state.get("flip_best_score", 0)))],
+	]
+	for row_data in rows:
+		var row_panel = PanelContainer.new()
+		var row_style = StyleBoxFlat.new()
+		row_style.bg_color = Color("ffffff")
+		row_style.set_corner_radius_all(10)
+		row_panel.add_stylebox_override("panel", row_style)
+		var hbox = HBoxContainer.new()
+		var name_label = Label.new()
+		name_label.text = row_data[0]
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.add_font_override("font", game._font_at_size(14))
+		name_label.add_color_override("font_color", Color("8f6b80"))
+		hbox.add_child(name_label)
+		var value_label = Label.new()
+		value_label.text = row_data[1]
+		value_label.add_font_override("font", game._font_at_size(14))
+		value_label.add_color_override("font_color", Color("d6336c"))
+		hbox.add_child(value_label)
+		row_panel.add_child(hbox)
+		box.add_child(row_panel)
 
 static func _total_icons(game):
 	var total = 0

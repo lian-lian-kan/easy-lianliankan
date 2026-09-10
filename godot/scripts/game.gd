@@ -227,6 +227,7 @@ var modes_panel  # 玩法模式面板
 var modes_content  # 玩法模式面板行容器
 var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法模式入口按钮
+var stats_button  # 数据统计入口按钮
 
 # ═══ 生命周期与全局 ═══
 
@@ -729,6 +730,9 @@ func _on_achievements_close():
 
 func _refresh_modes_panel():
 	UI_PANELS.refresh_modes_rows(self)
+
+func _on_stats_pressed():
+	return PAGE_ROUTER.show_page(self, "stats")
 
 func _on_modes_pressed():
 	_refresh_modes_panel()

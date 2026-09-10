@@ -231,6 +231,10 @@ static func build_main_ui(game):
 	game.modes_button.connect("pressed", game, "_on_modes_pressed")
 	game.progression_flow_container.add_child(game.modes_button)
 
+	game.stats_button = game._create_control_button("📊 数据")
+	game.stats_button.connect("pressed", game, "_on_stats_pressed")
+	game.progression_flow_container.add_child(game.stats_button)
+
 	var level_select_label = Label.new()
 	level_select_label.text = "关卡："
 	level_select_label.add_font_override("font", game.game_font)

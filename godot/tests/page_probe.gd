@@ -159,6 +159,26 @@ func _init() -> void:
 	check(int(game.progression_state.get("coins", 0)) == coins_before_collect + 20, "collect win pays 20 blossoms")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- stats page: every headline number renders from progression state ---
+	game.SPECIAL_SESSION._start_special_mode(game, "tray")
+	game.tray_state = game.TILE_MATCH.generate(game.special_level)
+	game._resolve_tray_clear()
+	game._on_nav_pressed("stats")
+	check(game.current_page == "stats" && game.pages_root.visible, "stats page opens as its own page")
+	var stat_labels = []
+	var stack = [game.page_content]
+	while stack.size() > 0:
+		var node = stack.pop_back()
+		if node is Label:
+			stat_labels.append(str(node.text))
+		for child in node.get_children():
+			stack.append(child)
+	var all_text = " | ".join(stat_labels)
+	check(all_text.find("最佳总分") != -1 && all_text.find("樱花币") != -1, "stats page shows wallet and best-score rows")
+	check(all_text.find("叠叠消最佳") != -1, "stats page lists the tray best row")
+	check(all_text.find("图鉴收集") != -1, "stats page lists collection progress")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- signin curve boundaries: broken streak resets, day-7 loops over ---
 	var yd2 = OS.get_date()
 	var two_days_ago = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_datetime_from_unix_time(OS.get_unix_time_from_datetime(yd2) - 172800))
