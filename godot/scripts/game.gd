@@ -196,6 +196,9 @@ var level_highlight_timer
 const LEVEL_HIGHLIGHT_COLOR = Color("fbbf24")  # 琥珀色高亮
 const LEVEL_NORMAL_COLOR = Color("ffffff")  # 正常白色
 
+var bg_rect  # 全屏背景（氛围皮肤换色目标）
+var current_theme_id = "sakura"
+
 var revive_button  # 樱花币复活按钮（失败结算浮层）
 var revive_cost = 30
 
@@ -782,6 +785,12 @@ func _on_shop_use_pressed(set_index):
 
 func _on_shop_buy_pressed(set_index):
 	ECONOMY.buy_icon_set(self, set_index)
+
+func _on_theme_buy_pressed(theme_id):
+	return ECONOMY.buy_theme(self, theme_id)
+
+func _on_theme_use_pressed(theme_id):
+	return ECONOMY.use_theme(self, theme_id)
 
 func _on_collect_pair_progress(patterns):
 	return ECONOMY.collect_pair(self, patterns)

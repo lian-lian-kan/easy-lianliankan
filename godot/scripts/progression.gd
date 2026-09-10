@@ -63,6 +63,8 @@ static func default_progress(level_count: int) :
 		"coins": 0,
 		"collected": [],
 		"owned_sets": ["fruit"],
+		"owned_themes": ["sakura"],
+		"current_theme": "sakura",
 		"signin_streak": 0,
 		"last_signin": ""
 	}
@@ -90,6 +92,10 @@ static func normalize_progress(raw, level_count: int) :
 		var raw_owned_sets = raw.get("owned_sets", [])
 		if typeof(raw_owned_sets) == TYPE_ARRAY and raw_owned_sets.size() > 0:
 			normalized["owned_sets"] = raw_owned_sets.duplicate()
+		var raw_owned_themes = raw.get("owned_themes", [])
+		if typeof(raw_owned_themes) == TYPE_ARRAY and raw_owned_themes.size() > 0:
+			normalized["owned_themes"] = raw_owned_themes.duplicate()
+		normalized["current_theme"] = str(raw.get("current_theme", "sakura"))
 		normalized["signin_streak"] = max(0, int(raw.get("signin_streak", 0)))
 		normalized["last_signin"] = str(raw.get("last_signin", ""))
 		# Load level best times
@@ -177,6 +183,12 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 		var set_id = str(patch["unlock_set"])
 		if not next_state["owned_sets"].has(set_id):
 			next_state["owned_sets"].append(set_id)
+	if patch.has("unlock_theme"):
+		var theme_id = str(patch["unlock_theme"])
+		if not next_state["owned_themes"].has(theme_id):
+			next_state["owned_themes"].append(theme_id)
+	if patch.has("current_theme"):
+		next_state["current_theme"] = str(patch["current_theme"])
 	if patch.has("signin"):
 		var sign_in = patch["signin"]
 		if typeof(sign_in) == TYPE_DICTIONARY and sign_in.has("date") and sign_in.has("yesterday"):
@@ -286,6 +298,8 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("coins", 0)) == int(bb.get("coins", 0)) \
 		and _arrays_equal(aa.get("collected", []), bb.get("collected", [])) \
 		and _arrays_equal(aa.get("owned_sets", []), bb.get("owned_sets", [])) \
+		and _arrays_equal(aa.get("owned_themes", []), bb.get("owned_themes", [])) \
+		and str(aa.get("current_theme", "")) == str(bb.get("current_theme", "")) \
 		and int(aa.get("signin_streak", 0)) == int(bb.get("signin_streak", 0)) \
 		and str(aa.get("last_signin", "")) == str(bb.get("last_signin", "")) \
 		and _dicts_equal(aa.get("level_stars", {}), bb.get("level_stars", {}))

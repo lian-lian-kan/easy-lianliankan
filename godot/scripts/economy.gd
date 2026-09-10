@@ -10,6 +10,17 @@ const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
 const SIGNIN_REWARDS = [5, 10, 15, 20, 25, 35, 50]
 const SET_PRICE = 30
 const COLLECT_REWARD = 2
+const THEME_PRICE = 40
+
+# Board ambience themes (light palettes only: body text stays dark).
+# id -> {name, price, bg}
+const THEMES = {
+	"sakura": {"name": "樱花粉", "price": 0, "bg": "fff0f6"},
+	"mint": {"name": "薄荷绿", "price": 40, "bg": "eafaf1"},
+	"sky": {"name": "晴空蓝", "price": 40, "bg": "e8f4fd"},
+	"cream": {"name": "奶油白", "price": 40, "bg": "fdf6ec"},
+	"lavender": {"name": "薰衣草", "price": 60, "bg": "f3ecfd"},
+}
 
 # --- Wallet ---
 
@@ -228,6 +239,58 @@ static func build_shop(game):
 	var current_set = game.icon_sets[game.icon_set_index] if game.icon_sets.size() > 0 else {}
 	PAGE_UI.page_frame(game, page_content, "🛍️ 小铺", "樱花币解锁新图集 · 已拥有 %d/%d 套" % [owned.size(), game.icon_sets.size()])
 	var box = PAGE_UI.scroll_area(game, page_content)
+
+	# ambience themes section
+	var theme_title = Label.new()
+	theme_title.text = "🌫️ 氛围主题"
+	theme_title.add_font_override("font", game._font_at_size(15))
+	theme_title.add_color_override("font_color", Color("a85878"))
+	box.add_child(theme_title)
+	var theme_grid = GridContainer.new()
+	theme_grid.columns = 2
+	theme_grid.add_constant_override("h_separation", 8)
+	theme_grid.add_constant_override("v_separation", 8)
+	box.add_child(theme_grid)
+	var owned_themes: Array = game.progression_state.get("owned_themes", ["sakura"])
+	var current_theme = str(game.progression_state.get("current_theme", "sakura"))
+	for theme_id in THEMES:
+		var theme: Dictionary = THEMES[theme_id]
+		var theme_owned: bool = owned_themes.has(theme_id)
+		var theme_in_use: bool = current_theme == theme_id
+		var theme_card = PanelContainer.new()
+		game._apply_glass_style(theme_card, Color("ffffff"), 0.88)
+		theme_grid.add_child(theme_card)
+		var theme_box = VBoxContainer.new()
+		theme_box.add_constant_override("separation", 4)
+		theme_card.add_child(theme_box)
+		var theme_name = Label.new()
+		theme_name.text = str(theme["name"])
+		theme_name.align = Label.ALIGN_CENTER
+		theme_name.add_font_override("font", game._font_at_size(14))
+		theme_name.add_color_override("font_color", Color("5c3a4d"))
+		theme_box.add_child(theme_name)
+		var swatch = ColorRect.new()
+		swatch.color = Color(str(theme["bg"]))
+		swatch.rect_min_size = Vector2(0, 18)
+		theme_box.add_child(swatch)
+		var theme_action = Button.new()
+		if theme_in_use:
+			theme_action.text = "使用中"
+		elif theme_owned:
+			theme_action.text = "使用"
+		else:
+			theme_action.text = "🌸%d 解锁" % int(theme["price"])
+		theme_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		theme_action.add_font_override("font", game._font_at_size(13))
+		game._apply_button_style(theme_action, Color("f06ba8"), Color("d6336c"))
+		theme_action.add_color_override("font_color", Color("ffffff"))
+		if theme_in_use:
+			theme_action.disabled = true
+		elif theme_owned:
+			theme_action.connect("pressed", game, "_on_theme_use_pressed", [theme_id])
+		else:
+			theme_action.connect("pressed", game, "_on_theme_buy_pressed", [theme_id])
+		theme_box.add_child(theme_action)
 	var grid = GridContainer.new()
 	grid.columns = 2
 	grid.add_constant_override("h_separation", 8)
@@ -308,6 +371,37 @@ static func buy_icon_set(game, set_index):
 	game._patch_progress_state({"coins_delta": -SET_PRICE, "unlock_set": set_id})
 	game._show_message("解锁图集：" + str(icon_set.get("name", "图集")) + "！", 1.4)
 	use_icon_set(game, set_index)
+
+static func apply_theme(game, theme_id):
+	var theme: Dictionary = THEMES.get(theme_id, {})
+	if theme.empty() or game.bg_rect == null:
+		return
+	game.bg_rect.color = Color(str(theme["bg"]))
+	game.current_theme_id = theme_id
+
+static func use_theme(game, theme_id):
+	if not THEMES.has(theme_id):
+		return
+	game._patch_progress_state({"current_theme": theme_id})
+	apply_theme(game, theme_id)
+	game._show_message("已启用氛围：" + str(THEMES[theme_id]["name"]), 1.2)
+	refresh_economy_page(game)
+
+static func buy_theme(game, theme_id):
+	if not THEMES.has(theme_id):
+		return
+	var owned_themes: Array = game.progression_state.get("owned_themes", ["sakura"])
+	if owned_themes.has(theme_id):
+		use_theme(game, theme_id)
+		return
+	var price = int(THEMES[theme_id]["price"])
+	var coins = int(game.progression_state.get("coins", 0))
+	if coins < price:
+		game._show_message("樱花币不足，还差 %d 🌸" % (price - coins), 1.4)
+		return
+	game._patch_progress_state({"coins_delta": -price, "unlock_theme": theme_id})
+	game._show_message("解锁氛围：" + str(THEMES[theme_id]["name"]) + "！", 1.4)
+	use_theme(game, theme_id)
 
 static func refresh_economy_page(game):
 	update_coin_label(game)

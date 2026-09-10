@@ -874,3 +874,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 变更：①新增统计页（page_router PAGE_STATS + _build_stats）——一页汇总 21 项数据：最佳总分/连击/樱花币/图鉴进度/连续签到/每日与无尽纪录/全部 13 个特殊模式最佳分（从 progression_state 现有字段读取，零新 schema）；②主页进度行新增「📊 数据」入口按钮（_on_stats_pressed → show_page("stats")，走标准页面导航）。
 - 探针：page_probe 补 stats 页断言（页面打开/钱包与最佳分行/叠叠消与图鉴行）；tray 结算探针顺带验证 tray_best≥1200 落库后 stats 可见。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-10 (功能 Round CB-2：氛围主题 🎨——小铺新增皮肤分区)
+- 变更：①economy.gd 新增 THEMES 表（樱花粉默认/薄荷绿 40🌸/晴空蓝 40🌸/奶油白 40🌸/薰衣草 60🌸，浅色系保证正文可读）；②小铺页新增氛围主题分区（色卡预览+解锁/使用/使用中）；③购买扣 🌸 并入 owned_themes、使用即全屏背景换色（game.bg_rect 成员化）；④progression 新增 owned_themes/current_theme 全 schema，启动时应用已存主题。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

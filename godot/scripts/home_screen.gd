@@ -17,6 +17,7 @@ static func build_main_ui(game):
 	bg_rect.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	bg_rect.color = Color("fff0f6")
 	game.add_child(bg_rect)
+	game.bg_rect = bg_rect
 
 	game._petal_layer = Control.new()
 	game._petal_layer.set_anchors_and_margins_preset(Control.PRESET_WIDE)
@@ -372,4 +373,6 @@ static func build_main_ui(game):
 	game._build_pause_panel()
 	game._build_modes_panel()
 	PAGE_ROUTER.build_pages(game)
+	# Apply the saved ambience theme (falls back to sakura pink).
+	ECONOMY.apply_theme(game, str(game.progression_state.get("current_theme", "sakura")))
 	game.call_deferred("_update_layout_for_screen_size")

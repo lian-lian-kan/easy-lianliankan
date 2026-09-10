@@ -296,6 +296,17 @@ func _init() -> void:
 	check(int(game.total_score) >= 800, "endless keeps the running score across rounds")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- theme shop: buy with blossoms, apply the ambience, persist ---
+	game._on_theme_buy_pressed("mint")
+	var owned_themes: Array = game.progression_state.get("owned_themes", [])
+	check(owned_themes.has("mint") && str(game.bg_rect.color.to_html()) == Color("eafaf1").to_html(),
+		"buying mint unlocks and applies its ambience")
+	game.SPECIAL_SESSION._start_special_mode(game, "collect")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+	check(str(game.bg_rect.color.to_html()) == Color("eafaf1").to_html(), "purchased ambience survives mode switches")
+	game._on_theme_use_pressed("sakura")
+	check(str(game.bg_rect.color.to_html()) == Color("fff0f6").to_html(), "switching back to sakura restores its ambience")
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})
