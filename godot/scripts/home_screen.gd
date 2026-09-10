@@ -51,7 +51,7 @@ static func build_main_ui(game):
 	game.header_box.add_constant_override("separation", 8)
 	header_panel.add_child(game.header_box)
 
-	var title_row = HBoxContainer.new()
+	game.title_row = HBoxContainer.new()
 	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game.header_box.add_child(title_row)
 

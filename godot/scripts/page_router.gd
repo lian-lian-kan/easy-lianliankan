@@ -53,8 +53,8 @@ static func build_pages(game):
 
 	var nav = HBoxContainer.new()
 	nav.set_anchors_and_margins_preset(Control.PRESET_BOTTOM_WIDE)
-	nav.margin_top = -60
-	nav.margin_bottom = -8
+	nav.margin_top = -54
+	nav.margin_bottom = -6
 	nav.add_constant_override("separation", 6)
 	game.add_child(nav)
 	game.nav_bar = nav
@@ -62,7 +62,7 @@ static func build_pages(game):
 		var button = Button.new()
 		button.text = item[1] + "\n" + item[2]
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.rect_min_size = Vector2(0, 52)
+		button.rect_min_size = Vector2(0, 46)
 		button.add_font_override("font", game._font_at_size(12))
 		game._apply_button_style(button, Color("f06ba8"), Color("d6336c"))
 		button.add_color_override("font_color", Color("ffffff"))
