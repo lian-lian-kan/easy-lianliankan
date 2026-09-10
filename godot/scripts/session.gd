@@ -341,16 +341,8 @@ static func call_husband(game):
 	if hint.empty():
 		game._reshuffle_board(game.board)
 		hint = game._find_any_hint(game.board)
-	if not hint.empty():
-		if game._is_memory_mode():
-			game.memory_revealed[game._memory_key(hint["a"])] = true
-			game.memory_revealed[game._memory_key(hint["b"])] = true
-		game.hint_tiles = [hint["a"], hint["b"]]
-		game.error_tiles.clear()
-		game._animate_hint_tiles(game.hint_tiles)
+	game.GAME_INPUT.reveal_hint_pair(game, hint)
 	game._show_message(game.CHEERS.husband_line(game) + " · ⏰+15 秒", 2.2)
-	game._refresh_ui()
-	game._refresh_board_visuals()
 
 
 static func _consume_time_cost(game, seconds):

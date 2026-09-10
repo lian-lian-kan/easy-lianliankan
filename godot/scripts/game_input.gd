@@ -235,6 +235,25 @@ static func _unhandled_input(game, event):
 					game.accept_event()
 
 
+# Reveal a hint pair: face-up in memory mode, highlight tiles, draw the
+# hint path and refresh. Shared by the hint button and the husband rescue.
+# Returns false when the hint is empty (callers decide reshuffle etc).
+static func reveal_hint_pair(game, hint):
+	if hint.empty():
+		return false
+	if game._is_memory_mode():
+		game.memory_revealed[game._memory_key(hint["a"])] = true
+		game.memory_revealed[game._memory_key(hint["b"])] = true
+	game.hint_tiles = [hint["a"], hint["b"]]
+	game.error_tiles.clear()
+	var hint_path: Array = hint["path"]
+	game._show_path(hint_path, "hint", int(game.tuning.get("hint_preview_ms", 1400)))
+	game._animate_hint_tiles(game.hint_tiles)
+	game._refresh_ui()
+	game._refresh_board_visuals()
+	return true
+
+
 static func _on_hint_pressed(game):
 	if game.stage_status != game.STATUS_PLAYING:
 		return
@@ -247,31 +266,18 @@ static func _on_hint_pressed(game):
 		game._on_shuffle_pressed()
 		return
 
-	if game._is_memory_mode():
-		game.memory_revealed[game._memory_key(hint["a"])] = true
-		game.memory_revealed[game._memory_key(hint["b"])] = true
-		game.hint_tiles = [hint["a"], hint["b"]]
-		game.error_tiles.clear()
-		var mem_path: Array = hint["path"]
-		game._show_path(mem_path, "hint", int(game.tuning.get("hint_preview_ms", 1400)))
-		game._animate_hint_tiles(game.hint_tiles)
-		game._show_message("已翻开一组可消除方块", 1.1)
+	var is_memory = game._is_memory_mode()
+	# Selected state must land before the reveal's refresh so the first
+	# tile renders its selection styling in the same pass.
+	if not is_memory:
+		game.selected = hint["a"]
+	reveal_hint_pair(game, hint)
+	if is_memory:
 		game._memory_schedule_hide([hint["a"], hint["b"]], float(game.special_level.get("memory_face_up", 1.0)) * 1.5)
-		game._refresh_ui()
-		game._refresh_board_visuals()
-		return
-
-	game.selected = hint["a"]
-	game.hint_tiles = [hint["a"], hint["b"]]
-	game.error_tiles.clear()
-
-	var hint_path: Array = hint["path"]
-	game._show_path(hint_path, "hint", int(game.tuning.get("hint_preview_ms", 1400)))
-	game._animate_hint_tiles(game.hint_tiles)
-	game._show_message("已高亮一组可消除方块", 1.1)
-	game._consume_time_cost(int(game.tuning.get("hint_time_cost_seconds", 1)))
-	game._refresh_ui()
-	game._refresh_board_visuals()
+		game._show_message("已翻开一组可消除方块", 1.1)
+	else:
+		game._show_message("已高亮一组可消除方块", 1.1)
+		game._consume_time_cost(int(game.tuning.get("hint_time_cost_seconds", 1)))
 
 static func _on_auto_pressed(game):
 	if game.stage_status != game.STATUS_PLAYING:
