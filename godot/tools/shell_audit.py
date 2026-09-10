@@ -8,8 +8,12 @@ Checks, in order:
      resolves to a game.gd method (autoload-internal connects excluded).
   3. Orphan thin shells       — game.gd delegate shells nothing references
      anymore (warning only; they are cheap but worth pruning).
+  3.5 Orphan member vars      — game.gd vars nothing references (warning only).
   4. Godot 4 syntax leakage   — known G4-only spellings that break GDScript 3
      (ALIGNMENT_CENTER, Control.offset_top/offset_bottom assignments).
+  5. Cross-module calls       — every `ALIAS.fn(...)` / `game.ALIAS.fn(...)`
+     call resolves to a function in the preloaded target script (the class of
+     breakage behind the tile_match.new_round startup crash).
 
 Exit code 0 when clean, 1 when any ERROR-level finding exists.
 Run:  python3 tools/shell_audit.py
@@ -136,6 +140,47 @@ def main():
         report("ERROR", leak)
     if not leaks:
         print("  ok  no Godot 4 syntax leakage")
+
+    # --- 5) cross-module calls resolve ---
+    # Aliases are file-scoped consts, so each file's own preload map is used.
+    print("== 5. cross-module calls resolve")
+    all_gd = SCRIPTS + sorted(glob.glob("tests/*.gd"))
+    module_funcs = {}
+    for path in all_gd:
+        module_funcs[path] = set(re.findall(r"(?m)^(?:static )?func (\w+)\(", read(path)))
+    dangling = []
+    for path in all_gd:
+        src = read(path)
+        # Round A: file-scoped aliases (`ALIAS.fn(`), declared in this file.
+        for m in re.finditer(r'(?m)^const (\w+) = preload\("res://(scripts|tests)/([\w.]+)"\)', src):
+            alias, target = m.group(1), f"{m.group(2)}/{m.group(3)}"
+            if target not in module_funcs:
+                continue
+            for call in re.finditer(r"\b" + alias + r"\.(\w+)\s*\(", src):
+                fn = call.group(1)
+                if fn in ("new", "instance"):
+                    continue
+                if fn not in module_funcs[target]:
+                    line_no = src[: call.start()].count("\n") + 1
+                    dangling.append(f"{path}:{line_no}  {alias}.{fn}() missing in {target}")
+        # Round B: game-member aliases (`game.ALIAS.fn(`), declared in game.gd.
+        if path.endswith("game.gd"):
+            continue
+        for m in re.finditer(r'(?m)^const (\w+) = preload\("res://([\w./]+)"\)', game_src):
+            alias, target = m.group(1), m.group(2)
+            if target not in module_funcs:
+                continue
+            for call in re.finditer(r"\bgame\." + alias + r"\.(\w+)\s*\(", src):
+                fn = call.group(1)
+                if fn in ("new", "instance"):
+                    continue
+                if fn not in module_funcs[target]:
+                    line_no = src[: call.start()].count("\n") + 1
+                    dangling.append(f"{path}:{line_no}  game.{alias}.{fn}() missing in {target}")
+    for item in sorted(set(dangling)):
+        report("ERROR", f"dangling cross-module call: {item}")
+    if not dangling:
+        print("  ok  every cross-module call resolves")
 
     finish()
 
