@@ -883,3 +883,8 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：game.gd 122 个成员变量经扫描**零孤儿、零弱引用**——成员区质量确认干净。
 - 变更：①shell_audit.py 新增 3.5 节 orphan member vars 检查（警告级，防未来迭代引入未使用成员）；②page_probe 补 THEMES 数据不变量断言（名称/价格/背景色合法）。
 - Validation: 本地零测试，shell_audit 四项半检查全过，全量验证由 CI 远端执行。
+
+## 2026-09-10 (测试补充 Round CD：限时挑战 Fever 边界探针)
+- 审查：time_attack 的 fever 机制（连击≥5 → gain×1.5 + 额外 1 秒返还）此前零测试覆盖——限时模式的核心爽点无回归保护。
+- 变更：page_probe 补 fever 边界探针——阈值前每次返还 3 秒、达到阈值后每次 4 秒（base 3 + combo bonus 1），以 config 驱动不硬编码。
+- Validation: 本地零测试，全量验证由 CI 远端执行。

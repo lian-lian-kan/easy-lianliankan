@@ -327,6 +327,27 @@ func _init() -> void:
 	check(themes_ok, "all ambience themes carry name/price/legal bg")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- time_attack fever: the threshold flips the time refund per match ---
+	game.SPECIAL_SESSION._start_special_mode(game, "time_attack")
+	var fever_cfg = game.game_mode_configs.get("time_attack", {})
+	var fever_threshold = int(fever_cfg.get("fever_mode_threshold", 5))
+	game.combo = 0
+	game.combo_expires_ms = 0
+	game.time_left = 100
+	var refund_normal = 0
+	var refund_fever = 0
+	for i in range(fever_threshold + 1):
+		var time_before_gain = int(game.time_left)
+		game._apply_combo_gain(10)
+		var refunded = int(game.time_left) - time_before_gain
+		if i + 1 < fever_threshold:
+			refund_normal += refunded
+		else:
+			refund_fever += refunded
+	check(refund_normal == 3 * (fever_threshold - 1), "matches below the fever refund 3s each")
+	check(refund_fever == 4, "fever matches refund 4 seconds (base + combo bonus)")
+	game.SPECIAL_SESSION._exit_special_mode(game)
+
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
 	game.progression_state["owned_sets"] = ["fruit"]
 	game._patch_progress_state({"coins_delta": 100})
