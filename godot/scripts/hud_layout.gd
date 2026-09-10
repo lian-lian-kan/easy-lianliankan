@@ -31,6 +31,9 @@ static func update_layout(game):
 	var margin_value = 2 if (is_mobile and is_portrait) else (6 if is_compact_height else (8 if is_mobile else 16))
 	# The bottom strip also reserves room for the persistent navigation bar.
 	var nav_strip = 42 if is_mobile else 64
+	# Keep the floating message banner parked just above the navigation bar.
+	if game.message_label:
+		game.message_label.margin_bottom = -(nav_strip + 4)
 	if game.margin_container:
 		game.margin_container.add_constant_override("margin_left", margin_value)
 		game.margin_container.add_constant_override("margin_right", margin_value)

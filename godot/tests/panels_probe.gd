@@ -138,6 +138,16 @@ func _init() -> void:
 	check(game.level_progress_bar != null && !game.level_progress_bar.visible, "portrait hides the level progress bar (journey page owns it)")
 	check(game.power_ups_container != null && !game.power_ups_container.visible, "portrait hides the power-up count strip")
 
+	# --- header height stability: nothing dynamic may live in the layout flow ---
+	check(game.message_label.get_parent() != game.header_box, "message banner is out of the header flow")
+	check(float(game.message_label.anchor_top) >= 0.9, "message banner is bottom-anchored over the board")
+	var clip_ok = true
+	for stat_key in ["total_score", "time_left", "remaining", "combo"]:
+		var value_label = game.stat_values[stat_key]["value"]
+		if value_label.get_parent() == null or not value_label.get_parent().rect_clip_content:
+			clip_ok = false
+	check(clip_ok, "stat values sit in clipped holders so digits never widen the cards")
+
 	# game_config: reload pipeline keeps the campaign table intact
 	var level_count_before = int(game.campaign_levels.size())
 	game._load_config()

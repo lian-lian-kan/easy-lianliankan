@@ -266,11 +266,29 @@ static func build_main_ui(game):
 	achievements_button.connect("pressed", game, "_on_achievements_pressed")
 	game.progression_flow_container.add_child(achievements_button)
 
+	# Message banner: floats over the board, anchored to the bottom bar.
+	# It used to live inside the header — every "combo x3 / 🌸+2" appearance
+	# grew the header by a text line and shoved the board up, then it
+	# vanished and the board sprang back: the canvas was constantly bouncing.
 	game.message_label = Label.new()
 	game.message_label.add_font_override("font", game.game_font)
-	game.message_label.add_color_override("font_color", Color("d6336c"))
+	game.message_label.add_color_override("font_color", Color("ffffff"))
+	game.message_label.align = Label.ALIGN_CENTER
+	game.message_label.valign = Label.VALIGN_CENTER
 	game.message_label.visible = false
-	game.header_box.add_child(game.message_label)
+	var banner_style = StyleBoxFlat.new()
+	banner_style.bg_color = Color("d6336ce6")
+	banner_style.set_corner_radius_all(16)
+	banner_style.content_margin_left = 14
+	banner_style.content_margin_right = 14
+	banner_style.content_margin_top = 5
+	banner_style.content_margin_bottom = 5
+	game.message_label.add_stylebox_override("normal", banner_style)
+	game.message_label.set_anchors_and_margins_preset(Control.PRESET_BOTTOM_WIDE)
+	game.message_label.margin_left = 14
+	game.message_label.margin_right = 14
+	game.message_label.rect_min_size = Vector2(0, 32)
+	game.add_child(game.message_label)
 
 	game.board_wrapper = Control.new()
 	game.board_wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
