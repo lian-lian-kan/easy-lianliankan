@@ -105,8 +105,15 @@ static func _update_tile_sizes(game):
 	var is_compact_height = flags["is_compact_height"]
 	var padding = 4 if is_mobile and is_compact_height else (4 if is_mobile and is_portrait else (10 if is_mobile else 24))
 	var board_area = game.board_wrapper.rect_size
-	if board_area.x <= 1 or board_area.y <= 1:
-		board_area = game.board_wrapper.rect_min_size
+	var wanted_area = game.board_wrapper.rect_min_size
+	# Early in boot the VBox has not re-laid-out yet, so rect_size still
+	# carries the stale (small) frame and every tile would be computed from
+	# it and stay tiny forever. The min_size is the size we just ordered,
+	# so prefer it whenever the live frame has not caught up.
+	if board_area.y < wanted_area.y - 4:
+		board_area.y = wanted_area.y
+	if board_area.x <= 1 or board_area.x < wanted_area.x - 4:
+		board_area.x = wanted_area.x
 	var available = board_area - Vector2(padding * 2, padding * 2)
 	available.x = max(available.x, 120.0)
 	available.y = max(available.y, 120.0)

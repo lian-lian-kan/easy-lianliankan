@@ -70,7 +70,7 @@ static func update_layout(game):
 		game.stats_flow_container.add_constant_override("h_separation", 4 if is_mobile else 6)
 		game.stats_flow_container.add_constant_override("v_separation", 6 if is_mobile else 6)
 
-	var stat_card_size = Vector2(66, 40) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
+	var stat_card_size = Vector2(64, 36) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
 	var stat_value_size = 16 if is_mobile and is_portrait else (20 if is_mobile else 22)
 	var stat_title_size = 10 if is_mobile else 11
 	for key in game.stat_values.keys():
@@ -93,7 +93,7 @@ static func update_layout(game):
 	if is_mobile and is_portrait:
 		for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.modes_button, game.stats_button, game.settings_button]:
 			if button:
-				button.rect_min_size = Vector2(62, 32)
+				button.rect_min_size = Vector2(58, 28)
 
 	if game.controls_flow_container:
 		game.controls_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
@@ -148,7 +148,7 @@ static func update_layout(game):
 		if game.level_select_label:
 			game.level_select_label.visible = false
 		if game.combo_progress_bar:
-			game.combo_progress_bar.rect_min_size = Vector2(0, 3)
+			game.combo_progress_bar.visible = false
 		# Single row of the 4 essential cards keeps the header to one stat line.
 		for hidden_key in ["level_score", "moves", "best_total_score", "best_combo"]:
 			if game.stat_values.has(hidden_key) and game.stat_values[hidden_key].has("card"):
@@ -160,6 +160,8 @@ static func update_layout(game):
 			game.level_progress_bar.visible = true
 		if game.power_ups_container:
 			game.power_ups_container.visible = true
+		if game.combo_progress_bar:
+			game.combo_progress_bar.visible = true
 		if game.subtitle_label:
 			game.subtitle_label.visible = true
 		if game.status_chip_label:
@@ -185,6 +187,9 @@ static func update_layout(game):
 			game.clear_progress_button.visible = true
 
 	game._update_modal_panel_sizes(viewport_size, is_portrait)
+	# Tile sizing depends on the wrapper frame above; re-run once the
+	# container has actually applied it, or tiles stay at the boot-time size.
+	game.call_deferred("_update_tile_sizes")
 
 
 static func _viewport_flags(game, viewport_size):

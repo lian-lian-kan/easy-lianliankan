@@ -46,6 +46,7 @@ func _init() -> void:
 	check(found_value > 0 && face_text != "", "tile face renders its icon after refresh")
 	game._update_tile_sizes()
 	check(float(game.cell_buttons[0][0].rect_min_size.x) >= 30.0, "tile size clamped to readable minimum")
+	check(float(game.cell_buttons[0][0].rect_min_size.x) >= 55.0, "tiles fill the wide canvas (>=55px on the opening board, got %d)" % int(game.cell_buttons[0][0].rect_min_size.x))
 
 	# ui_hud layout: mobile-portrait compaction applied at logical 390x844
 	game._update_layout_for_screen_size()
@@ -136,6 +137,7 @@ func _init() -> void:
 	check(game.level_select_option != null && !game.level_select_option.visible && game.level_select_label != null && !game.level_select_label.visible, "portrait hides the level dropdown (journey map owns it)")
 	check(game.title_row != null && !game.title_row.visible, "portrait hides the whole title strip (wallet lives on shop/gift pages)")
 	check(game.level_progress_bar != null && !game.level_progress_bar.visible, "portrait hides the level progress bar (journey page owns it)")
+	check(game.combo_progress_bar != null && !game.combo_progress_bar.visible, "portrait hides the combo bar (burst text carries the feedback)")
 	check(game.power_ups_container != null && !game.power_ups_container.visible, "portrait hides the power-up count strip")
 
 	# --- header height stability: nothing dynamic may live in the layout flow ---
