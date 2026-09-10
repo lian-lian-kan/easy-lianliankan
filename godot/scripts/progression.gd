@@ -319,7 +319,7 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("signin_streak", 0)) == int(bb.get("signin_streak", 0)) \
 		and str(aa.get("last_signin", "")) == str(bb.get("last_signin", "")) \
 		and _dicts_equal(aa.get("level_stars", {}), bb.get("level_stars", {})) \
-		and _dicts_equal(aa.get("weekly_missions", {}), bb.get("weekly_missions", {}))
+		and _missions_equal(aa.get("weekly_missions", {}), bb.get("weekly_missions", {}))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :
@@ -329,6 +329,21 @@ static func _dicts_equal(a: Dictionary, b: Dictionary) :
 		if not b.has(key) or a[key] != b[key]:
 			return false
 	return true
+
+
+# weekly_missions nests containers (progress dict / claimed array); GDScript 3
+# compares those by reference with ==, so equality needs per-element walks.
+static func _missions_equal(a: Dictionary, b: Dictionary) :
+	if str(a.get("week_key", "")) != str(b.get("week_key", "")):
+		return false
+	var mission_progress_a = a.get("progress", {})
+	var mission_progress_b = b.get("progress", {})
+	if mission_progress_a.size() != mission_progress_b.size():
+		return false
+	for task_id in mission_progress_a.keys():
+		if not mission_progress_b.has(task_id) or int(mission_progress_a[task_id]) != int(mission_progress_b[task_id]):
+			return false
+	return _arrays_equal(a.get("claimed", []), b.get("claimed", []))
 
 
 static func _arrays_equal(a: Array, b: Array) :
