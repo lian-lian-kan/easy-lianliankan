@@ -93,6 +93,7 @@ static func _reset_level_session(game, level, reset_total = false):
 
 	# Reset achievement tracking
 	game.combo_milestones_hit = []
+	game.perfect_misses = 0
 	game.husband_called = false
 	game.level_start_time = OS.get_ticks_msec()
 	game.level_hints_used = 0
@@ -148,9 +149,23 @@ static func _reset_special_board_state(game, time_limit):
 	game.time_left = time_limit
 
 
+# Perfect mode bookkeeping: a wrong pair costs one of the 3 misses; the
+# third one fails the stage. Other modes never call this (guarded in input).
+static func _register_perfect_miss(game):
+	if game.special_mode != "perfect" or game.stage_status != game.STATUS_PLAYING:
+		return
+	var miss_limit = int(game.special_level.get("miss_limit", 3))
+	game.perfect_misses += 1
+	if game.perfect_misses >= miss_limit:
+		_fail_stage(game, "失误达到 %d 次！得分 %d\n点击「重开」再战，或「暂停」后返回玩法" % [miss_limit, game.total_score])
+	else:
+		game._show_message("失误 %d/%d，要零失误才完美哦" % [game.perfect_misses, miss_limit], 1.2)
+
+
 static func _fail_stage(game, panel_text):
 	game.stage_status = game.STATUS_FAILED
 	AudioManager.play_fail()
+	game.VOICE_LINES.play(game, "fail")
 	game._reset_combo()
 	game.selected = Vector2(-1, -1)
 	game.hint_tiles.clear()
@@ -256,6 +271,7 @@ static func _settle_campaign_clear(game):
 		game.level_advance_timer.start()
 
 	game._show_combo_burst(game.CHEERS.clear_cheer(game))
+	game.VOICE_LINES.play(game, "clear")
 	game._refresh_ui()
 	game._refresh_board_visuals()
 	game._check_achievements_on_clear()
@@ -281,9 +297,10 @@ static func _apply_combo_gain(game, base_score):
 	var combo_multiplier = 1.5 + (game.combo - 1) * 0.5
 	var gain = int(scaled_base * combo_multiplier)
 
-	# Time attack: matches refund time and a hot streak ignites fever mode.
-	if game.special_mode == "time_attack":
-		var attack_cfg = game.game_mode_configs.get("time_attack", {})
+	# Time attack / fever: matches refund time and a hot streak ignites
+	# fever mode (fever runs it permanently from combo 2).
+	if game.special_mode == "time_attack" or game.special_mode == "fever":
+		var attack_cfg = game.game_mode_configs.get(game.special_mode, {})
 		if game.combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
 			gain = int(round(gain * float(attack_cfg.get("fever_multiplier", 1.5))))
 			game._show_message("🔥 Fever x" + str(game.combo), 0.8)
@@ -454,6 +471,7 @@ static func _unlock_achievements(game, ids):
 static func _announce_achievements(game, ids):
 	if ids.size() <= 0:
 		return
+	game.VOICE_LINES.play(game, "achievement")
 	game._save_progress_state()
 	for achievement_id in ids:
 		var info = game.PROGRESSION_SCRIPT.get_achievement_info(achievement_id)

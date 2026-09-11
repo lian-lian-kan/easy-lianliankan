@@ -75,6 +75,7 @@ static func on_combo(game, combo: int, gain: int) -> String:
 			var reward = int(MILESTONES[milestone])
 			game._patch_progress_state({"coins_delta": reward})
 			game._show_message("🌈 %d 连击达成 · 🌸+%d" % [int(milestone), reward], 1.6)
+			game.VOICE_LINES.play(game, "milestone")
 	if line == "":
 		return ""
 	return line + " +" + str(max(0, gain))

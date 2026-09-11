@@ -109,6 +109,11 @@ static func _settings_panel(game):
 	effects_row.toggle.connect("toggled", game, "_on_effects_toggled")
 	content.add_child(effects_row.container)
 
+	# Voice lines enabled
+	var voice_row = _create_toggle_row(game, "语音", AudioManager.voice_enabled)
+	voice_row.toggle.connect("toggled", game, "_on_voice_toggled")
+	content.add_child(voice_row.container)
+
 	# Music enabled
 	var music_row = _create_toggle_row(game, "背景音乐", AudioManager.music_enabled)
 	music_row.toggle.connect("toggled", game, "_on_music_toggled")
@@ -459,6 +464,10 @@ static func _on_icon_set_selected(game, index):
 
 static func _on_effects_toggled(game, enabled):
 	AudioManager.set_effects_enabled(enabled)
+
+
+static func _on_voice_toggled(game, enabled):
+	AudioManager.set_voice_enabled(enabled)
 
 
 static func _update_modal_panel_sizes(game, viewport_size, is_portrait):

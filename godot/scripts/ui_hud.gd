@@ -102,6 +102,10 @@ static func _subtitle_text(game, level_id, level_name, unlocked_level_count):
 		return "迷雾模式 · 最佳%d分" % int(game.progression_state.get("fog_best_score", 0))
 	elif game.special_mode == "chain":
 		return "锁链模式 · 最佳%d分" % int(game.progression_state.get("chain_best_score", 0))
+	elif game.special_mode == "fever":
+		return "狂热模式 · 最佳%d分" % int(game.progression_state.get("fever_best_score", 0))
+	elif game.special_mode == "perfect":
+		return "完美模式 · 最佳%d分 · 失误%d/%d" % [int(game.progression_state.get("perfect_best_score", 0)), game.perfect_misses, int(game.special_level.get("miss_limit", 3))]
 	return "第" + str(level_id) + "/" + str(game.campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(game.campaign_levels.size())
 
 # Status chip text + tinted pill style for the current stage status.

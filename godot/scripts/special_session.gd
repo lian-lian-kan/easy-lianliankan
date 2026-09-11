@@ -1,6 +1,6 @@
 extends Reference
 
-# Special-mode session domain: entering/leaving the 17 special modes, their
+# Special-mode session domain: entering/leaving the 19 special modes, their
 # settlement (score records, achievements, blossom payouts) and their unique
 # failure paths. Campaign session flow stays in session.gd. Functions the
 # modes share with the campaign (clock, combos, revival) remain there.
@@ -15,6 +15,7 @@ const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 static func _finish_special_win(game, message):
 	game.stage_status = game.STATUS_CLEARED
 	AudioManager.play_win()
+	game.VOICE_LINES.play(game, "clear")
 	game._record_special_completion()
 	game._play_stage_clear_celebration(false)
 	game._show_combo_burst(game.CHEERS.clear_cheer(game))
@@ -47,7 +48,8 @@ static func _start_special_mode(game, mode_id):
 	elif mode_id == "flip":
 		level = game.SPECIAL_MODES_SCRIPT.build_memory_flip_level(config)
 	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
-				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain":
+				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain" \
+				or mode_id == "fever" or mode_id == "perfect":
 		level = game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
 	else:
 		level = game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)

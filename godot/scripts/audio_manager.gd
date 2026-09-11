@@ -7,7 +7,14 @@ var _players: Dictionary = {}
 var master_volume: float = 0.7
 var effects_enabled: bool = true
 var music_enabled: bool = true
+var voice_enabled: bool = true
 var muted: bool = false
+
+# Voice line playback: one dedicated player (a new clip interrupts the
+# previous one) and a stream cache. Loading is fault-tolerant — the headless
+# test env has no ogg import cache, so a failed load just means silence.
+var _voice_player: AudioStreamPlayer = null
+var _voice_cache: Dictionary = {}
 
 # Sound effect streams (using procedural audio or simple beeps for web compatibility)
 var _sounds: Dictionary = {}
@@ -42,6 +49,9 @@ func _ready() :
 	_bgm_timer.one_shot = true
 	_bgm_timer.connect("timeout", self, "_play_next_bgm_note")
 	add_child(_bgm_timer)
+	_voice_player = AudioStreamPlayer.new()
+	_voice_player.volume_db = -2.0
+	add_child(_voice_player)
 
 func _load_settings() :
 	# Try to load from config file
@@ -51,6 +61,7 @@ func _load_settings() :
 		master_volume = config.get_value("audio", "master_volume", 0.7)
 		effects_enabled = config.get_value("audio", "effects_enabled", true)
 		music_enabled = config.get_value("audio", "music_enabled", true)
+		voice_enabled = config.get_value("audio", "voice_enabled", true)
 		muted = config.get_value("audio", "muted", false)
 
 func save_settings() :
@@ -58,6 +69,7 @@ func save_settings() :
 	config.set_value("audio", "master_volume", master_volume)
 	config.set_value("audio", "effects_enabled", effects_enabled)
 	config.set_value("audio", "music_enabled", music_enabled)
+	config.set_value("audio", "voice_enabled", voice_enabled)
 	config.set_value("audio", "muted", muted)
 	config.save("user://audio_settings.cfg")
 
@@ -270,3 +282,39 @@ func toggle_muted() -> bool:
 func set_effects_enabled(enabled: bool) :
 	effects_enabled = enabled
 	save_settings()
+
+func set_voice_enabled(enabled: bool) :
+	voice_enabled = enabled
+	save_settings()
+
+func play_voice_path(path: String) :
+	if muted or not voice_enabled:
+		return
+	if path == "":
+		return
+	var stream = _load_voice_stream(path)
+	if stream == null:
+		return
+	_voice_player.stop()
+	_voice_player.stream = stream
+	_voice_player.play()
+
+func _load_voice_stream(path: String):
+	if _voice_cache.has(path):
+		return _voice_cache[path]
+	var stream = null
+	# Preferred: the imported resource (game + CI after the import step).
+	if ResourceLoader.exists(path):
+		stream = load(path)
+	# Fallback: feed raw ogg bytes (headless test env without imports).
+	if stream == null:
+		var file = File.new()
+		if file.open(path, File.READ) == OK:
+			var bytes = file.get_buffer(file.get_len())
+			file.close()
+			var ogg = AudioStreamOGGVorbis.new()
+			if "data" in ogg:
+				ogg.data = bytes
+				stream = ogg
+	_voice_cache[path] = stream
+	return stream

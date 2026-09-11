@@ -894,3 +894,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 变更：①home_screen.build_main_ui 改为编排器，按原顺序调用 9 个 section builder（_build_root/_build_header_identity/_build_header_progress/_build_power_ups/_build_controls_flow/_build_progression_flow/_build_message_banner/_build_board_area/_build_floating_overlays/_finalize_build），逐段原样搬移，add_child 次序（z 序/布局）不变；共享 dropdown_style 局部提为 _dropdown_style() 工厂（两处 OptionButton 各得独立副本，视觉等价）；②ui_hud.refresh_ui 拆出 _subtitle_text（13 个特殊模式副标题链，else 改末尾 return，语义等价）、_refresh_status_chip、_refresh_action_buttons 三个助手，本体降到 52 行。对外 API（HOME_SCREEN.build_main_ui / UI_HUD.refresh_ui）零变化。
 - 审计：新旧版本 game.* 成员赋值序列 45 条逐一相同；add_child 52 处次序相同（仅计划内 root→game.root_vbox 替换 6 处）；connect 15 处、锚点 preset 13 处次序相同；旧 refresh_ui 全部语句在新文件各恰好一次；shell_audit 六项全过。最大函数 401→63 行。
 - Validation: 本地零引擎测试，全量验证由 CI 远端执行。
+
+## 2026-09-12 (功能 Round CF：狂热/完美双新玩法 + Sophia 语音包)
+- 玩法：①狂热模式（fever，15 关解锁）——10×8 盘 90 秒，连击 2 起全程 ×1.5 分且每消返 1 秒，复用 time_attack 的 fever 分支（cfg 键改 game.special_mode 动态取）；②完美模式（perfect，15 关解锁）——无时限 10×8 盘，失误 3 次判负（图案不合/路径不通两处 mismatch 分支经新薄壳 _register_perfect_miss 计数，副标题实时显示 失误x/3）。均走 build_classic_style_level 表驱动路径，RECORD_MODES/成就（燃烧吧小宇宙/零失误女神）/模式面板卡/统计页行/副标题全链配置化。
+- 语音：Tingting TTS 本地生成 15 条甜系语音（216KB ogg，+6% 音高提亮），新模块 voice_lines.gd 照 cheers 范式（5 事件池 clear/fail/milestone/signin/achievement + game.voice_decks 洗牌牌堆）；6 个钩子点（战役/特殊过关、_fail_stage、连击里程碑、签到、成就通知）；audio_manager 新增 voice_enabled 设置（ConfigFile 持久化）+ 专属 AudioStreamPlayer；加载三级容错（导入资源 → 裸字节喂 AudioStreamOGGVorbis → 静默跳过，兼容无导入缓存的 headless 测试环境）；设置面板新增「语音」开关。
+- 测试：mode_meta 16→18 configs、13→15 record、label 17→19 + 语音池不变量（5 事件覆盖/路径合法/15 个 clip 文件存在）；startup_probe 补 fever/perfect 启动断言 + perfect 三失误判负路径；panels_probe 模式卡 16→18；字体子集重跑（1007→1037 字符）。shell_audit 六项全过。
+- Validation: 本地零引擎测试，全量验证由 CI 远端执行。

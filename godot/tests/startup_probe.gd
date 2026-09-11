@@ -40,7 +40,8 @@ func _init() -> void:
 
 	# mode_id -> [expect_timed(bool), extra check lambda replaced by inline ifs]
 	var modes = ["daily", "time_attack", "endless", "memory", "frost", "zen", "hell",
-		"moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip"]
+		"moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip",
+		"fever", "perfect"]
 
 	for mode_id in modes:
 		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
@@ -88,6 +89,14 @@ func _init() -> void:
 				check(int(game.race_total_pairs) > 0, "race counts its pairs")
 			"moves":
 				check(int(game.moves_left) > 0, "moves mode has its budget")
+			"fever":
+				check(_board_cells(game) > 0, "fever deals a real board")
+				check(int(game.game_mode_configs["fever"]["fever_mode_threshold"]) == 2,
+					"fever ignites from combo 2")
+			"perfect":
+				check(_board_cells(game) > 0, "perfect deals a real board")
+				check(int(game.perfect_misses) == 0, "perfect starts with zero misses")
+				check(int(game.special_level.get("miss_limit", 0)) == 3, "perfect allows 3 misses")
 			_:
 				check(_board_cells(game) > 0, "%s deals a real board" % mode_id)
 
@@ -96,6 +105,17 @@ func _init() -> void:
 		check(game.special_mode == "" && game.stage_status == game.STATUS_PLAYING,
 			"%s exits back to the campaign" % mode_id)
 		print("DBG %s done: highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
+
+	# perfect mode must fail on the third miss: two misses warn, the third
+	# one fails the stage and bumps the miss counter each time.
+	game.SPECIAL_SESSION._start_special_mode(game, "perfect")
+	check(game.special_mode == "perfect" && game.stage_status == game.STATUS_PLAYING,
+		"perfect re-enters for the miss-out probe")
+	for i in range(3):
+		game.SESSION._register_perfect_miss(game)
+		check(int(game.perfect_misses) == i + 1, "perfect counts miss %d" % (i + 1))
+	check(game.stage_status == game.STATUS_FAILED, "perfect fails on the third miss")
+	game.SPECIAL_SESSION._exit_special_mode(game)
 
 	# the campaign board itself
 	game._start_level(0, true)

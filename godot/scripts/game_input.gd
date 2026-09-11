@@ -61,6 +61,7 @@ static func _on_tile_pressed(game, button):
 		game.selected = point
 		game.hint_tiles.clear()
 		AudioManager.play_error()
+		game._register_perfect_miss()
 		game._flash_error_tiles([previous, point])
 		game._animate_select(point)
 		game._show_message("请先选择相同图案", 0.7)
@@ -73,6 +74,7 @@ static func _on_tile_pressed(game, button):
 		game.selected = point
 		game.hint_tiles.clear()
 		AudioManager.play_error()
+		game._register_perfect_miss()
 		game._flash_error_tiles([previous, point])
 		game._animate_select(point)
 		game._show_message("路径不通：最多只能拐2次弯", 0.9)

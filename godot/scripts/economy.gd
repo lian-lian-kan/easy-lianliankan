@@ -231,6 +231,7 @@ static func claim_signin(game, today, yesterday):
 		"coins_delta": reward,
 	})
 	game._show_message("Sophia 签到成功 · 第%d天 · 🌸+%d" % [new_streak, reward], 1.4)
+	game.VOICE_LINES.play(game, "signin")
 	refresh_economy_page(game)
 
 # --- Theme shop page ---

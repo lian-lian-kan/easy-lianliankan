@@ -35,6 +35,7 @@ const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
 const ECONOMY = preload("res://scripts/economy.gd")
 const MISSIONS = preload("res://scripts/missions.gd")
 const CHEERS = preload("res://scripts/cheers.gd")
+const VOICE_LINES = preload("res://scripts/voice_lines.gd")
 const SPECIAL_SESSION = preload("res://scripts/special_session.gd")
 
 const DIRS = [
@@ -171,6 +172,8 @@ var level_select_option
 var level_select_label
 var cheer_decks
 var combo_milestones_hit
+var voice_decks
+var perfect_misses
 var husband_called
 var husband_button
 var hint_button
@@ -247,6 +250,8 @@ func _ready():
 	randomize()
 	cheer_decks = {}
 	combo_milestones_hit = []
+	voice_decks = {}
+	perfect_misses = 0
 	husband_called = false
 	_init_font()
 	_load_config()
@@ -734,6 +739,12 @@ func _on_music_toggled(enabled):
 
 func _on_effects_toggled(enabled):
 	return UI_PANELS._on_effects_toggled(self, enabled)
+
+func _on_voice_toggled(enabled):
+	return UI_PANELS._on_voice_toggled(self, enabled)
+
+func _register_perfect_miss():
+	return SESSION._register_perfect_miss(self)
 
 func _on_mute_toggled(muted):
 	AudioManager.set_muted(muted)

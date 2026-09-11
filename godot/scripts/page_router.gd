@@ -239,6 +239,8 @@ static func _build_stats(game):
 		["🍎 重力最佳", str(int(game.progression_state.get("gravity_best_score", 0)))],
 		["🌫️ 迷雾最佳", str(int(game.progression_state.get("fog_best_score", 0)))],
 		["⛓️ 锁链最佳", str(int(game.progression_state.get("chain_best_score", 0)))],
+		["🌶️ 狂热最佳", str(int(game.progression_state.get("fever_best_score", 0)))],
+		["💎 完美最佳", str(int(game.progression_state.get("perfect_best_score", 0)))],
 		["🀄 叠叠消最佳", str(int(game.progression_state.get("tray_best_score", 0)))],
 		["🎯 收集挑战最佳", str(int(game.progression_state.get("collect_best_score", 0)))],
 		["🃏 翻翻乐最佳", str(int(game.progression_state.get("flip_best_score", 0)))],

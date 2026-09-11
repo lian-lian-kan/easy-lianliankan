@@ -218,6 +218,8 @@ static func build_classic_style_level(config, mode_id: String):
 	}
 	if config.has("move_budget"):
 		level["move_budget"] = int(config.get("move_budget", 56))
+	if config.has("miss_limit"):
+		level["miss_limit"] = int(config.get("miss_limit", 3))
 	if config.has("ai_interval"):
 		level["ai_interval"] = float(config.get("ai_interval", 8.5))
 	if config.has("stack_ratio"):
@@ -352,6 +354,8 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "gravity", "title": "🍎 重力模式", "detail": "消除后方块掉落补位 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))},
 		{"id": "fog", "title": "🌫️ 迷雾模式", "detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))},
 		{"id": "chain", "title": "⛓️ 锁链模式", "detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))},
+		{"id": "fever", "title": "🌶️ 狂热模式", "detail": "全程x1.5分消除返时间 · 最佳%d分" % int(progression_state.get("fever_best_score", 0))},
+		{"id": "perfect", "title": "💎 完美模式", "detail": "无时限但失误3次即败 · 最佳%d分" % int(progression_state.get("perfect_best_score", 0))},
 		{"id": "tray", "title": "🀄 叠叠消", "detail": "点牌入槽三张即消 · 最佳%d分" % int(progression_state.get("tray_best_score", 0))},
 		{"id": "collect", "title": "🎯 收集挑战", "detail": "限时集齐目标图案 · 最佳%d分" % int(progression_state.get("collect_best_score", 0))},
 		{"id": "flip", "title": "🃏 翻翻乐", "detail": "记忆翻牌全消 · 最佳%d分" % int(progression_state.get("flip_best_score", 0))},

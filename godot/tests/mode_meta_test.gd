@@ -27,31 +27,33 @@ func _init() -> void:
 		"tray": "叠叠消",
 		"collect": "收集挑战",
 		"flip": "翻翻乐",
+		"fever": "狂热模式",
+		"perfect": "完美模式",
 	}
 	var all_ok = true
 	for mode in labels:
 		if SM.mode_label(mode) != labels[mode]:
 			all_ok = false
 			push_error("label mismatch: %s -> %s (want %s)" % [mode, SM.mode_label(mode), labels[mode]])
-	check(all_ok, "mode_label covers all 17 modes")
+	check(all_ok, "mode_label covers all 19 modes")
 	check(SM.mode_label("nope") == "未知", "unknown mode falls back to 未知")
 	check(SM.mode_label("tray") == "叠叠消", "tray label registered")
 
-	var intros = ["daily", "time_attack", "endless", "frost", "zen", "hell", "moves", "race", "tray", "collect", "flip"]
+	var intros = ["daily", "time_attack", "endless", "frost", "zen", "hell", "moves", "race", "tray", "collect", "flip", "fever", "perfect"]
 	var intros_ok = true
 	for mode in intros:
 		var txt = SM.intro_text(mode)
 		if txt == "" or txt == "特殊模式开始":
 			intros_ok = false
 			push_error("intro missing for " + mode)
-	check(intros_ok, "intro_text covers all 8 special modes")
+	check(intros_ok, "intro_text covers every listed special mode")
 	check(SM.intro_text("nope") == "特殊模式开始", "unknown mode falls back to the default intro")
 
 	# --- RECORD_MODES: keys consistent with progression, achievements defined.
 	var defined_ids = {}
 	for a in PROGRESSION.ACHIEVEMENTS:
 		defined_ids[a["id"]] = true
-	check(SM.RECORD_MODES.size() == 13, "record table covers 13 modes")
+	check(SM.RECORD_MODES.size() == 15, "record table covers 15 modes")
 	var table_ok = true
 	var ach_ok = true
 	for mode in SM.RECORD_MODES:
@@ -126,7 +128,7 @@ func _init() -> void:
 	# --- special_modes_data invariants: the whole campaign's unlock curve
 	# and per-mode payloads must stay inside legal bounds (BQ found unlock
 	# levels beyond the campaign once already) ---
-	check(DATA.DEFAULT_CONFIGS.size() == 16, "data module carries 16 mode configs")
+	check(DATA.DEFAULT_CONFIGS.size() == 18, "data module carries 18 mode configs")
 	var inv_ok = true
 	var unlock_too_high = ""
 	for mode_id in DATA.DEFAULT_CONFIGS:
@@ -143,7 +145,9 @@ func _init() -> void:
 			unlock_too_high = mode_id
 		if int(cfg.get("time_limit", 1)) < 0:
 			inv_ok = false
-	check(inv_ok, "all 16 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
+	check(inv_ok, "all 18 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
+	check(int(DATA.DEFAULT_CONFIGS["fever"]["fever_mode_threshold"]) >= 2, "fever needs combo 2+")
+	check(int(DATA.DEFAULT_CONFIGS["perfect"]["miss_limit"]) >= 1, "perfect carries a miss budget")
 
 	# tray pile must be fully dealable with every pattern count a multiple of 3
 	var tray_cfg = DATA.DEFAULT_CONFIGS["tray"]
@@ -154,6 +158,21 @@ func _init() -> void:
 	# flip pairs must be an exact multiple so every card has a partner
 	var flip_total = int(DATA.DEFAULT_CONFIGS["flip"]["pairs"])
 	check(flip_total % 2 == 0, "flip pairs count is even")
+
+	# --- voice line pools: every event keyed pool carries existing clips ---
+	var VOICE = load("res://scripts/voice_lines.gd")
+	check(VOICE.POOLS.has("clear") && VOICE.POOLS.has("fail") && VOICE.POOLS.has("milestone")
+		&& VOICE.POOLS.has("signin") && VOICE.POOLS.has("achievement"),
+		"voice pools cover the five events")
+	check(VOICE.pools_valid(), "voice pool paths all point at assets/voice ogg clips")
+	var clips_ok = true
+	for key in VOICE.POOLS:
+		for clip in VOICE.POOLS[key]:
+			var f = File.new()
+			if not f.file_exists(str(clip)):
+				clips_ok = false
+				push_error("missing voice clip: " + str(clip))
+	check(clips_ok, "every voice clip file exists in the project")
 
 	if failures == 0:
 		print("mode_meta_test: ALL PASSED")

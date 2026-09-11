@@ -154,6 +154,31 @@ const DEFAULT_CONFIGS = {
 		"time_limit": 140,
 		"chain_ratio": 0.22
 	},
+	"fever": {
+		"mode_id": "fever",
+		"name": "狂热模式",
+		"description": "全程狂热，消除得分x1.5还返时间",
+		"unlock_level": 15,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 90,
+		"fever_mode_threshold": 2,
+		"fever_multiplier": 1.5,
+		"time_bonus_per_match": 1,
+		"combo_time_bonus": 0
+	},
+	"perfect": {
+		"mode_id": "perfect",
+		"name": "完美模式",
+		"description": "没有时限，但失误3次即败",
+		"unlock_level": 15,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 0,
+		"miss_limit": 3
+	},
 	"tray": {
 		"mode_id": "tray",
 		"name": "叠叠消",
@@ -213,11 +238,15 @@ const MODE_LABELS_EXTRA = {
 	"tray": "叠叠消",
 	"collect": "收集挑战",
 	"flip": "翻翻乐",
+	"fever": "狂热模式",
+	"perfect": "完美模式",
 }
 const INTRO_TEXTS_EXTRA = {
 	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
 	"collect": "收集挑战！限时集齐目标图案",
 	"flip": "翻翻乐！全部盖着，靠记忆翻出配对",
+	"fever": "狂热模式！连击 2 起全程 x1.5 分，消除还返时间",
+	"perfect": "完美模式！没有时限，但失误 3 次就失败啦",
 }
 
 const RECORD_MODES = {
@@ -234,6 +263,8 @@ const RECORD_MODES = {
 	"race": {"label": "竞速对战", "patch_key": "race_result", "best_key": "race_best_score", "achievements": ["race_first"]},
 	"frost": {"label": "冰雪挑战", "patch_key": "frost_result", "best_key": "frost_best_score", "achievements": ["frost_first"]},
 	"memory": {"label": "盲盒挑战", "patch_key": "memory_result", "best_key": "memory_best_score", "achievements": ["memory_first"]},
+	"fever": {"label": "狂热燃尽", "patch_key": "fever_result", "best_key": "fever_best_score", "achievements": ["fever_first"]},
+	"perfect": {"label": "完美零失误", "patch_key": "perfect_result", "best_key": "perfect_best_score", "achievements": ["perfect_first"]},
 }
 
 # 结算后按模式语境补发的条件成就。
