@@ -888,3 +888,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 审查：time_attack 的 fever 机制（连击≥5 → gain×1.5 + 额外 1 秒返还）此前零测试覆盖——限时模式的核心爽点无回归保护。
 - 变更：page_probe 补 fever 边界探针——阈值前每次返还 3 秒、达到阈值后每次 4 秒（base 3 + combo bonus 1），以 config 驱动不硬编码。
 - Validation: 本地零测试，全量验证由 CI 远端执行。
+
+## 2026-09-11 (重构 Round CE：home_screen 主屏构建拆 section builder)
+- 背景：代码质量治理首刀。home_screen.build_main_ui 单函数 401 行（全仓最大函数，此前从 ui_hud.gd 原样搬入），ui_hud.refresh_ui 126 行次之。
+- 变更：①home_screen.build_main_ui 改为编排器，按原顺序调用 9 个 section builder（_build_root/_build_header_identity/_build_header_progress/_build_power_ups/_build_controls_flow/_build_progression_flow/_build_message_banner/_build_board_area/_build_floating_overlays/_finalize_build），逐段原样搬移，add_child 次序（z 序/布局）不变；共享 dropdown_style 局部提为 _dropdown_style() 工厂（两处 OptionButton 各得独立副本，视觉等价）；②ui_hud.refresh_ui 拆出 _subtitle_text（13 个特殊模式副标题链，else 改末尾 return，语义等价）、_refresh_status_chip、_refresh_action_buttons 三个助手，本体降到 52 行。对外 API（HOME_SCREEN.build_main_ui / UI_HUD.refresh_ui）零变化。
+- 审计：新旧版本 game.* 成员赋值序列 45 条逐一相同；add_child 52 处次序相同（仅计划内 root→game.root_vbox 替换 6 处）；connect 15 处、锚点 preset 13 处次序相同；旧 refresh_ui 全部语句在新文件各恰好一次；shell_audit 六项全过。最大函数 401→63 行。
+- Validation: 本地零引擎测试，全量验证由 CI 远端执行。

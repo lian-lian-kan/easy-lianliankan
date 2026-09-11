@@ -4,12 +4,29 @@ extends Reference
 # stat cards, power-up row, controls, board area, wallet) plus the page
 # surface and nav mount. Extraction is a verbatim move from ui_hud.gd —
 # state lives on the game node, refresh_ui stays in ui_hud.gd.
+# build_main_ui only sequences the section builders below; each one mirrors
+# a contiguous block of the original function, in the original order, so
+# add_child ordering (z-order and layout) is unchanged.
 
 const PAGE_ROUTER = preload("res://scripts/page_router.gd")
 const ECONOMY = preload("res://scripts/economy.gd")
 const PATH_OVERLAY_SCRIPT = preload("res://scripts/path_overlay.gd")
 
 static func build_main_ui(game):
+	_build_root(game)
+	_build_header_identity(game)
+	_build_header_progress(game)
+	_build_power_ups(game)
+	_build_controls_flow(game)
+	_build_progression_flow(game)
+	_build_message_banner(game)
+	_build_board_area(game)
+	_build_floating_overlays(game)
+	_finalize_build(game)
+
+# Background, petals, outer margin and the root vbox everything hangs off.
+
+static func _build_root(game):
 	game.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 
 	# Add gradient background
@@ -41,11 +58,14 @@ static func build_main_ui(game):
 	margin.add_child(root)
 	game.root_vbox = root
 
+# Header panel: title / subtitle / description / status chip / coin chip.
+
+static func _build_header_identity(game):
 	# Header panel with glass morphism effect
 	var header_panel = PanelContainer.new()
 	header_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game._apply_glass_style(header_panel, Color("ffffff"), 0.9)
-	root.add_child(header_panel)
+	game.root_vbox.add_child(header_panel)
 
 	game.header_box = VBoxContainer.new()
 	game.header_box.add_constant_override("separation", 8)
@@ -94,6 +114,9 @@ static func build_main_ui(game):
 	var coin_chip = ECONOMY.build_coin_chip(game)
 	game.title_row.add_child(coin_chip)
 
+# Level progress bar, mode/kinds chips and the stat card grid.
+
+static func _build_header_progress(game):
 	game.level_progress_caption_label = Label.new()
 	game.level_progress_caption_label.text = "闯关进度"
 	game.level_progress_caption_label.add_font_override("font", game.game_font)
@@ -144,6 +167,9 @@ static func build_main_ui(game):
 	game._add_stat_card(game.stats_flow_container, "历史连击", "best_combo")
 	game._add_stat_card(game.stats_flow_container, "对手", "race")
 
+# Power-up chips row plus the combo timer bar underneath.
+
+static func _build_power_ups(game):
 	# Power-ups display container
 	# Single row, centered. On phones the [1]-[7] shortcut chips are hidden
 	# (keyboard-only affordance) so all 7 power-ups fit a 390px width.
@@ -179,6 +205,9 @@ static func build_main_ui(game):
 	game.combo_progress_bar.add_stylebox_override("fill", combo_fill)
 	game.header_box.add_child(game.combo_progress_bar)
 
+# Tool row: icon-set dropdown and the five play controls.
+
+static func _build_controls_flow(game):
 	game.controls_flow_container = HFlowContainer.new()
 	game.controls_flow_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game.controls_flow_container.add_constant_override("h_separation", 8)
@@ -189,16 +218,7 @@ static func build_main_ui(game):
 	game.icon_set_option.add_font_override("font", game.game_font)
 	game.icon_set_option.rect_min_size = Vector2(140, 42)
 	game.icon_set_option.connect("item_selected", game, "_on_icon_set_selected")
-	# Style the dropdown
-	var dropdown_style = StyleBoxFlat.new()
-	dropdown_style.bg_color = Color("ffffff")
-	dropdown_style.set_corner_radius_all(10)
-	dropdown_style.shadow_color = Color("00000010")
-	dropdown_style.shadow_size = 4
-	dropdown_style.shadow_offset = Vector2(0, 2)
-	dropdown_style.set_border_width_all(1)
-	dropdown_style.border_color = Color("ffd9e8")
-	game.icon_set_option.add_stylebox_override("normal", dropdown_style)
+	game.icon_set_option.add_stylebox_override("normal", _dropdown_style())
 	game.icon_set_option.add_color_override("font_color", Color("8f6b80"))
 	game.controls_flow_container.add_child(game.icon_set_option)
 
@@ -222,6 +242,9 @@ static func build_main_ui(game):
 	game.reset_button.connect("pressed", game, "_on_reset_pressed")
 	game.controls_flow_container.add_child(game.reset_button)
 
+# Progression row: modes / stats / level select / jump / clear / settings.
+
+static func _build_progression_flow(game):
 	game.progression_flow_container = HFlowContainer.new()
 	game.progression_flow_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game.progression_flow_container.add_constant_override("h_separation", 8)
@@ -246,7 +269,7 @@ static func build_main_ui(game):
 	game.level_select_option.add_font_override("font", game.game_font)
 	game.level_select_option.rect_min_size = Vector2(172, 42)
 	game.level_select_option.connect("item_selected", game, "_on_level_select_changed")
-	game.level_select_option.add_stylebox_override("normal", dropdown_style)
+	game.level_select_option.add_stylebox_override("normal", _dropdown_style())
 	game.level_select_option.add_color_override("font_color", Color("8f6b80"))
 	game.progression_flow_container.add_child(game.level_select_option)
 
@@ -266,10 +289,24 @@ static func build_main_ui(game):
 	achievements_button.connect("pressed", game, "_on_achievements_pressed")
 	game.progression_flow_container.add_child(achievements_button)
 
-	# Message banner: floats over the board, anchored to the bottom bar.
-	# It used to live inside the header — every "combo x3 / 🌸+2" appearance
-	# grew the header by a text line and shoved the board up, then it
-	# vanished and the board sprang back: the canvas was constantly bouncing.
+# Shared rounded white style for both OptionButtons (was one local in the
+# original function, now a factory so each control gets its own copy).
+
+static func _dropdown_style():
+	var dropdown_style = StyleBoxFlat.new()
+	dropdown_style.bg_color = Color("ffffff")
+	dropdown_style.set_corner_radius_all(10)
+	dropdown_style.shadow_color = Color("00000010")
+	dropdown_style.shadow_size = 4
+	dropdown_style.shadow_offset = Vector2(0, 2)
+	dropdown_style.set_border_width_all(1)
+	dropdown_style.border_color = Color("ffd9e8")
+	return dropdown_style
+
+# Message banner floats over the board's bottom edge (not inside the header:
+# a header banner made the canvas bounce on every combo).
+
+static func _build_message_banner(game):
 	game.message_label = Label.new()
 	game.message_label.add_font_override("font", game.game_font)
 	game.message_label.add_color_override("font_color", Color("ffffff"))
@@ -290,11 +327,14 @@ static func build_main_ui(game):
 	game.message_label.rect_min_size = Vector2(0, 32)
 	game.add_child(game.message_label)
 
+# Board wrapper, panel, center container, grid and the overlay layers.
+
+static func _build_board_area(game):
 	game.board_wrapper = Control.new()
 	game.board_wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game.board_wrapper.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	game.board_wrapper.rect_min_size = Vector2(0, 400)
-	root.add_child(game.board_wrapper)
+	game.root_vbox.add_child(game.board_wrapper)
 	# Let the board absorb ALL remaining height instead of overflowing the canvas.
 	game.board_wrapper.size_flags_stretch_ratio = 1.0
 
@@ -323,7 +363,7 @@ static func build_main_ui(game):
 	board_inner.add_child(game.board_center)
 
 	game.collect_row = ECONOMY.build_collect_row(game)
-	root.add_child(game.collect_row)
+	game.root_vbox.add_child(game.collect_row)
 
 	game.tray_layer = Control.new()
 	game.tray_layer.visible = false
@@ -350,12 +390,15 @@ static func build_main_ui(game):
 	game.effect_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board_inner.add_child(game.effect_layer)
 
+# Floating combat text and rescue buttons anchored over the board.
+
+static func _build_floating_overlays(game):
 	game.stage_panel_label = Label.new()
 	game.stage_panel_label.add_font_override("font", game.game_font)
 	game.stage_panel_label.align = Label.ALIGN_CENTER
 	game.stage_panel_label.add_color_override("font_color", Color("6d4a5e"))
 	game.stage_panel_label.visible = false
-	root.add_child(game.stage_panel_label)
+	game.root_vbox.add_child(game.stage_panel_label)
 
 	# Blossom revive offer, shown beside the failed-settle text.
 	game.revive_button = Button.new()
@@ -370,7 +413,7 @@ static func build_main_ui(game):
 	game.revive_button.margin_left = 85
 	game.revive_button.margin_right = 85
 	game.revive_button.connect("pressed", game, "_on_revive_pressed")
-	root.add_child(game.revive_button)
+	game.root_vbox.add_child(game.revive_button)
 
 	# Husband rescue button: floats above the board's bottom edge, appears
 	# only when the clock is running low (visibility driven by _refresh_ui).
@@ -385,7 +428,7 @@ static func build_main_ui(game):
 	game.husband_button.margin_left = 120
 	game.husband_button.margin_right = 120
 	game.husband_button.connect("pressed", game, "_on_husband_pressed")
-	root.add_child(game.husband_button)
+	game.root_vbox.add_child(game.husband_button)
 
 	game.combo_burst_label = Label.new()
 	game.combo_burst_label.add_font_override("font", game.game_font)
@@ -398,6 +441,9 @@ static func build_main_ui(game):
 	game.combo_burst_label.margin_right = 0
 	game.add_child(game.combo_burst_label)
 
+# Post-construction wiring: options, dialog panels, pages, theme, layout.
+
+static func _finalize_build(game):
 	game._populate_icon_set_options()
 	game._populate_level_select_options()
 	game._build_onboarding_panel()
