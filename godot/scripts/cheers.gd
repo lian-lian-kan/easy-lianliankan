@@ -28,13 +28,9 @@ const CLEAR_LINES = [
 	" omg 太丝滑了吧", "又是心动的一局"
 ]
 
-const TIER_LINES_KEY = 1
-const TIER_MIN_KEY = 0
-
-
 static func tier_for(combo: int) -> Dictionary:
 	for tier in TIERS:
-		if combo >= int(tier[TIER_MIN_KEY]):
+		if combo >= int(tier["min"]):
 			return tier
 	return {}
 
@@ -46,12 +42,12 @@ static func draw(game, combo: int) -> String:
 	var tier = tier_for(combo)
 	if tier.empty():
 		return ""
-	var tier_key = str(tier[TIER_MIN_KEY])
+	var tier_key = str(tier["min"])
 	if not game.cheer_decks.has(tier_key):
 		game.cheer_decks[tier_key] = []
 	var deck: Array = game.cheer_decks[tier_key]
 	if deck.empty():
-		var lines: Array = tier[TIER_LINES_KEY]
+		var lines: Array = tier["lines"]
 		deck = lines.duplicate()
 		for i in range(deck.size() - 1, 0, -1):
 			var j = int(randi() % (i + 1))

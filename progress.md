@@ -900,3 +900,4 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 语音：Tingting TTS 本地生成 15 条甜系语音（216KB ogg，+6% 音高提亮），新模块 voice_lines.gd 照 cheers 范式（5 事件池 clear/fail/milestone/signin/achievement + game.voice_decks 洗牌牌堆）；6 个钩子点（战役/特殊过关、_fail_stage、连击里程碑、签到、成就通知）；audio_manager 新增 voice_enabled 设置（ConfigFile 持久化）+ 专属 AudioStreamPlayer；加载三级容错（导入资源 → 裸字节喂 AudioStreamOGGVorbis → 静默跳过，兼容无导入缓存的 headless 测试环境）；设置面板新增「语音」开关。
 - 测试：mode_meta 16→18 configs、13→15 record、label 17→19 + 语音池不变量（5 事件覆盖/路径合法/15 个 clip 文件存在）；startup_probe 补 fever/perfect 启动断言 + perfect 三失误判负路径；panels_probe 模式卡 16→18；字体子集重跑（1007→1037 字符）。shell_audit 六项全过。
 - Validation: 本地零引擎测试，全量验证由 CI 远端执行。
+- 修复（同轮带出）：cheers.gd 自 CR 轮潜伏 bug——TIERS 用字符串键 min/lines，代码却以 TIER_MIN_KEY/TIER_LINES_KEY(0/1) 整型索引，每次查档必抛脚本错误，夸赞爆字从未真正显示（里程碑🌸正常）。改为字符串键直取；main 的 CI 日志可证该错误早于本轮存在（power_ups_probe 窗口）。mode_meta_test 面板行断言 16→18 行 + 样例字典补 fever/perfect 最佳分键 + endless 行索引 15→17。

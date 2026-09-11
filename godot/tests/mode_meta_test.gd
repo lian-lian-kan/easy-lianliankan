@@ -74,7 +74,7 @@ func _init() -> void:
 	check(SM.bonus_achievements("race", {}) == [], "race has no conditional bonus")
 
 	# --- modes_panel_rows: 13 ordered rows, best-score formatting, daily done branch.
-	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip", "endless"]
+	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "tray", "collect", "flip", "endless"]
 	var state := {
 		"daily_challenge": {"streak": 2, "best_score": 88},
 		"time_attack_best_score": 120, "memory_best_score": 34, "frost_best_score": 56,
@@ -82,13 +82,14 @@ func _init() -> void:
 		"stack_best_score": 33, "gravity_best_score": 44, "fog_best_score": 55, "chain_best_score": 66,
 		"tray_best_score": 77,
 		"collect_best_score": 88, "flip_best_score": 99,
+		"fever_best_score": 101, "perfect_best_score": 111,
 		"endless_best": {"round": 3, "score": 456},
 	}
 	var rows = SM.modes_panel_rows(state)
 	var got_ids := []
 	for r in rows:
 		got_ids.append(r["id"])
-	check(got_ids == want_ids, "modes_panel_rows returns 16 rows in panel order")
+	check(got_ids == want_ids, "modes_panel_rows returns 18 rows in panel order")
 	var titles_ok := true
 	for r in rows:
 		if r["title"] == "" or r["detail"] == "":
@@ -103,7 +104,7 @@ func _init() -> void:
 			details_ok = false
 			push_error("detail mismatch for %s: %s" % [r["id"], r["detail"]])
 	check(details_ok, "special-mode details end with their best score")
-	var endless_row = rows[15]
+	var endless_row = rows[17]
 	check(endless_row["detail"].find("最佳第3轮") != -1 and endless_row["detail"].find("最高456分") != -1, "endless detail shows round and score")
 	var daily_row = rows[0]
 	check(daily_row["detail"].find("今日已完成") == -1, "daily shows not-done without today's date")
