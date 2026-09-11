@@ -415,7 +415,7 @@ func _init() -> void:
 	game._refresh_modes_panel()
 	check(game.modes_panel != null, "modes panel built")
 	check(game.modes_content != null && game.modes_content.get_child_count() == 18,
-		"modes panel has 16 mode cards (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
+		"modes panel has 18 mode cards (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
 
 	# modal lifecycle: open pauses the stage clock, close resumes it
 	game.stage_status = game.STATUS_PLAYING
@@ -476,7 +476,7 @@ func _init() -> void:
 			else:
 				unlocked_count += 1
 				unlocked_wired = unlocked_wired && mode_button.is_connected("pressed", game, "_on_special_mode_pressed")
-	check(locked_count == 14 && unlocked_count == 2, "fresh save unlocks only daily and zen (locked %d unlocked %d)" % [locked_count, unlocked_count])
+	check(locked_count == 16 && unlocked_count == 2, "fresh save unlocks only daily and zen (locked %d unlocked %d)" % [locked_count, unlocked_count])
 	check(unlocked_wired, "unlocked mode rows wire the session start")
 	var locked_sample = ""
 	for mode_button in game.modes_content.get_children():
