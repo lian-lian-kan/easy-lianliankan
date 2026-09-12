@@ -141,6 +141,10 @@ func _init() -> void:
 
 	# --- portrait board dominance: the canvas owns the screen, header is chrome ---
 	game._update_layout_for_screen_size()
+	# Container re-sort lands on the next idle frames; measure the REALIZED
+	# frame, not the boot-time one (same discipline as the nav lock below).
+	yield(self, "idle_frame")
+	yield(self, "idle_frame")
 	var vp_height = float(game.get_viewport_rect().size.y)
 	# The wrapper is container-assigned (EXPAND_FILL takes all remaining
 	# height after the header); assert the REALIZED frame, not the min.
