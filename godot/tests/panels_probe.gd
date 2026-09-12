@@ -30,7 +30,17 @@ func _init() -> void:
 	check(game.controls_flow_container != null, "toolbar row built")
 	check(game.modes_button != null and game.modes_button.get_parent() == game.controls_flow_container
 		and game.settings_button != null and game.settings_button.get_parent() == game.controls_flow_container,
-		"progression entries live in the merged toolbar row")
+		"modes and settings live in the merged toolbar row")
+	var settings_texts := []
+	var stack := [game.settings_panel]
+	while not stack.empty():
+		var node = stack.pop_back()
+		for child in node.get_children():
+			stack.push_back(child)
+			if child is Button:
+				settings_texts.append(str(child.text))
+	check(settings_texts.has("📊 数据统计") and settings_texts.has("🏆 成就图鉴"),
+		"stats and achievements entries live in the settings panel")
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
 	# board_view: board built and the refresh pipeline is idempotent
@@ -156,7 +166,7 @@ func _init() -> void:
 	# The wrapper is container-assigned (EXPAND_FILL takes all remaining
 	# height after the header); assert the REALIZED frame, not the min.
 	var wrapper_ratio = float(game.board_wrapper.rect_size.y) / vp_height
-	check(wrapper_ratio >= 0.88, "portrait board realizes >=88%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	check(wrapper_ratio >= 0.90, "portrait board realizes >=90%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
 	check(game.stat_values["total_score"]["title"] != null and not game.stat_values["total_score"]["title"].visible,
 		"portrait stat cards drop their titles (value-only pills)")
 	check(float(game.board_wrapper.rect_min_size.y) <= float(game.BOARD_MIN_HEIGHT) + 0.5, "portrait wrapper carries no oversized hand-set minimum")

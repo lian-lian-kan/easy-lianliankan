@@ -240,8 +240,6 @@ var modes_panel  # 玩法模式面板
 var modes_content  # 玩法模式面板行容器
 var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法模式入口按钮
-var stats_button  # 数据统计入口按钮
-var achievements_button  # 成就入口按钮
 
 # ═══ 生命周期与全局 ═══
 
@@ -752,6 +750,14 @@ func _on_mute_toggled(muted):
 func _on_achievements_pressed():
 	UI_PANELS.reopen_achievements(self)
 	UI_PANELS.open_modal(self, achievements_panel)
+
+func _on_settings_stats_entry():
+	UI_PANELS.close_modal(self, settings_panel)
+	_on_stats_pressed()
+
+func _on_settings_achievements_entry():
+	UI_PANELS.close_modal(self, settings_panel)
+	_on_achievements_pressed()
 
 func _on_achievements_close():
 	UI_PANELS.close_modal(self, achievements_panel)

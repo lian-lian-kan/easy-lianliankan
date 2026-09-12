@@ -247,10 +247,6 @@ static func _build_controls_flow(game):
 	game.modes_button.connect("pressed", game, "_on_modes_pressed")
 	game.controls_flow_container.add_child(game.modes_button)
 
-	game.stats_button = game._create_control_button("📊 数据")
-	game.stats_button.connect("pressed", game, "_on_stats_pressed")
-	game.controls_flow_container.add_child(game.stats_button)
-
 	game.level_select_label = Label.new()
 	game.level_select_label.text = "关卡："
 	game.level_select_label.add_font_override("font", game.game_font)
@@ -276,10 +272,6 @@ static func _build_controls_flow(game):
 	game.settings_button = game._create_control_button("⚙️ 设置")
 	game.settings_button.connect("pressed", game, "_on_settings_pressed")
 	game.controls_flow_container.add_child(game.settings_button)
-
-	game.achievements_button = game._create_control_button("🏆 成就")
-	game.achievements_button.connect("pressed", game, "_on_achievements_pressed")
-	game.controls_flow_container.add_child(game.achievements_button)
 
 
 # Shared rounded white style for both OptionButtons (was one local in the

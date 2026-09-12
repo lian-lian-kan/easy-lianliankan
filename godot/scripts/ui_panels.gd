@@ -124,6 +124,24 @@ static func _settings_panel(game):
 	mute_row.toggle.connect("toggled", game, "_on_mute_toggled")
 	content.add_child(mute_row.container)
 
+	# Feature entries: the board-first toolbar has no room for these two,
+	# so they live here — nothing is ever out of reach.
+	var stats_entry = Button.new()
+	stats_entry.text = "📊 数据统计"
+	stats_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stats_entry.rect_min_size = Vector2(0, 40)
+	stats_entry.add_font_override("font", game.game_font)
+	stats_entry.connect("pressed", game, "_on_settings_stats_entry")
+	content.add_child(stats_entry)
+
+	var achievements_entry = Button.new()
+	achievements_entry.text = "🏆 成就图鉴"
+	achievements_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	achievements_entry.rect_min_size = Vector2(0, 40)
+	achievements_entry.add_font_override("font", game.game_font)
+	achievements_entry.connect("pressed", game, "_on_settings_achievements_entry")
+	content.add_child(achievements_entry)
+
 	var spacer = Control.new()
 	spacer.rect_min_size = Vector2(0, 8)
 	content.add_child(spacer)

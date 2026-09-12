@@ -908,3 +908,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 预算：header 98→64px，wrapper ≈ 844-64-4-20 = 756 = **89.6%**。panels_probe ratio 断言 0.78→0.88 + 新增合并行结构断言（modes/settings 按钮父容器=controls_flow）。
 - Validation: 本地零引擎测试，shell_audit 六项全过，全量验证由 CI 远端执行。
 - CG 实测更正（4ad2ac8 上线值）：首版预算偏差被 panels_probe 布局转储抓出——工具栏实为 9 键（漏数 🏆 成就）换行 2×34px、卡片行 47px（value_holder 硬编码 88×24+标题行）。终版：卡片去标题改数值药丸（22px，holder 60×22）、工具栏 9 键 44×26 两行行距 2（56px）、achievements_button 成员化、底部预留 10px。**实测 wrapper 746/844 = 88.4%**（断言 ≥88%），末行瓷砖 720 < 导航顶 790（70px 余量）。探针新范式：布局断言前 yield 两帧量容器重排后的真实尺寸；DBG 转储可留探针内做回归取证。
+
+## 2026-09-12 (布局 Round CH：冲线 90%——📊/🏆 入口迁入设置面板)
+- 背景：用户拍板前按推荐方案实施（88.4% 的剩余物理底线 = 工具栏 9 键两行；用户未选择，采用功能零损失方案）。
+- 变更：①工具栏瘦身为 7 键（提示/自动消/洗牌/暂停/重开/🎮玩法/⚙️设置），竖屏 44×26 单行 12px；②📊 数据统计 / 🏆 成就图鉴 两入口迁入 ⚙️ 设置面板（先关设置再打开目标，复用 _on_stats_pressed/_on_achievements_pressed，零新路径）；③stats_button/achievements_button 成员删除，新增 _on_settings_stats_entry/_on_settings_achievements_entry 薄壳。
+- 预算：header 22+2+26 = 50px → wrapper ≈ 780/844 = 92.4%。panels_probe ratio 断言 0.88→**0.90**（用户原话值）+ 设置面板两入口存在性断言（遍历 Button 文本）。
+- Validation: 本地零引擎测试，shell_audit 六项全过，字体子集无新增字符（1037 不变），全量验证由 CI 远端执行。

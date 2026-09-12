@@ -105,15 +105,13 @@ static func update_layout(game):
 	for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.jump_level_button, game.clear_progress_button, game.modes_button]:
 		if button:
 			button.rect_min_size = control_min
-	# Portrait: nine taps (five play controls + modes/stats/settings/
-	# achievements) wrap to two tight 44x26 lines with 12px glyphs.
+	# Portrait: seven taps (five play controls + modes/settings) fit ONE
+	# 44x26 line with 12px glyphs — 📊/🏆 live in the settings panel.
 	if is_mobile and is_portrait:
-		for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.modes_button, game.stats_button, game.settings_button, game.achievements_button]:
+		for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.modes_button, game.settings_button]:
 			if button:
 				button.rect_min_size = Vector2(44, 26)
 				button.add_font_override("font", game._font_at_size(12))
-		if game.controls_flow_container:
-			game.controls_flow_container.add_constant_override("v_separation", 2)
 
 	if game.controls_flow_container:
 		game.controls_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
