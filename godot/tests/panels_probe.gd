@@ -157,6 +157,8 @@ func _init() -> void:
 	# height after the header); assert the REALIZED frame, not the min.
 	var wrapper_ratio = float(game.board_wrapper.rect_size.y) / vp_height
 	check(wrapper_ratio >= 0.88, "portrait board realizes >=88%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	check(game.stat_values["total_score"]["title"] != null and not game.stat_values["total_score"]["title"].visible,
+		"portrait stat cards drop their titles (value-only pills)")
 	check(float(game.board_wrapper.rect_min_size.y) <= float(game.BOARD_MIN_HEIGHT) + 0.5, "portrait wrapper carries no oversized hand-set minimum")
 	check(game.subtitle_label != null && !game.subtitle_label.visible, "portrait hides the subtitle line")
 	check(game.status_chip_label != null && !game.status_chip_label.visible, "portrait hides the status badge")

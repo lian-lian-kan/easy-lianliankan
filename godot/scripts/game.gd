@@ -241,6 +241,7 @@ var modes_content  # 玩法模式面板行容器
 var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法模式入口按钮
 var stats_button  # 数据统计入口按钮
+var achievements_button  # 成就入口按钮
 
 # ═══ 生命周期与全局 ═══
 

@@ -35,7 +35,7 @@ static func update_layout(game):
 	var nav_strip = 40 if is_mobile else 64
 	# Portrait gives the board the strip too: the centered grid keeps the
 	# last tile row clear of the nav, so only a thin cushion is reserved.
-	var board_bottom_reserve = 20 if (is_mobile and is_portrait) else nav_strip
+	var board_bottom_reserve = 10 if (is_mobile and is_portrait) else nav_strip
 	# Keep the floating message banner parked just above the navigation bar.
 	if game.message_label:
 		game.message_label.margin_bottom = -(nav_strip + 4)
@@ -77,7 +77,7 @@ static func update_layout(game):
 		game.stats_flow_container.add_constant_override("h_separation", 4 if is_mobile else 6)
 		game.stats_flow_container.add_constant_override("v_separation", 6 if is_mobile else 6)
 
-	var stat_card_size = Vector2(60, 34) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
+	var stat_card_size = Vector2(60, 24) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
 	var stat_value_size = 14 if is_mobile and is_portrait else (20 if is_mobile else 22)
 	var stat_title_size = 10 if is_mobile else 11
 	for key in game.stat_values.keys():
@@ -85,6 +85,15 @@ static func update_layout(game):
 		var title_small = game.stat_values[key]["title"]
 		var value_label = game.stat_values[key]["value"]
 		card.rect_min_size = stat_card_size
+		# Portrait cards are value-only pills: the title row yields to the
+		# board (the four survivors — 总分/剩余/倒计时/连击 — read clearly
+		# from context), and the clipped value holder shrinks to match.
+		title_small.visible = not (is_mobile and is_portrait)
+		var value_holder = value_label.get_parent()
+		if is_mobile and is_portrait:
+			value_holder.rect_min_size = Vector2(60, stat_value_size + 8)
+		else:
+			value_holder.rect_min_size = Vector2(88, 24)
 		title_small.rect_min_size = Vector2(0, stat_title_size + 4)
 		value_label.rect_min_size = Vector2(0, stat_value_size + 6)
 
@@ -96,13 +105,15 @@ static func update_layout(game):
 	for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.jump_level_button, game.clear_progress_button, game.modes_button]:
 		if button:
 			button.rect_min_size = control_min
-	# Portrait: the single merged toolbar row fits eight 44x28 taps (with
-	# 12px glyphs) exactly on the 390px canvas.
+	# Portrait: nine taps (five play controls + modes/stats/settings/
+	# achievements) wrap to two tight 44x26 lines with 12px glyphs.
 	if is_mobile and is_portrait:
-		for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.modes_button, game.stats_button, game.settings_button]:
+		for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.modes_button, game.stats_button, game.settings_button, game.achievements_button]:
 			if button:
-				button.rect_min_size = Vector2(44, 28)
+				button.rect_min_size = Vector2(44, 26)
 				button.add_font_override("font", game._font_at_size(12))
+		if game.controls_flow_container:
+			game.controls_flow_container.add_constant_override("v_separation", 2)
 
 	if game.controls_flow_container:
 		game.controls_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)

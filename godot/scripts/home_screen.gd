@@ -277,9 +277,9 @@ static func _build_controls_flow(game):
 	game.settings_button.connect("pressed", game, "_on_settings_pressed")
 	game.controls_flow_container.add_child(game.settings_button)
 
-	var achievements_button = game._create_control_button("🏆 成就")
-	achievements_button.connect("pressed", game, "_on_achievements_pressed")
-	game.controls_flow_container.add_child(achievements_button)
+	game.achievements_button = game._create_control_button("🏆 成就")
+	game.achievements_button.connect("pressed", game, "_on_achievements_pressed")
+	game.controls_flow_container.add_child(game.achievements_button)
 
 
 # Shared rounded white style for both OptionButtons (was one local in the
