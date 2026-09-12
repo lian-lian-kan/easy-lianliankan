@@ -4,7 +4,7 @@
 
 | 模块 | 职责 | 测试 |
 |---|---|---|
-| `scripts/game.gd` | 场景编排层：`_ready` 启动、状态常量与成员、薄壳委托（约 1650 行） | 13 个无头测试覆盖玩法行为 |
+| `scripts/game.gd` | 场景编排层：`_ready` 启动、状态常量与成员、薄壳委托（约 1080 行 / 232 函数，仅 4 个 >6 行胶水函数，余为 1 行委托壳） | 13 个无头测试覆盖玩法行为 |
 | `scripts/board_engine.gd` | 纯棋盘算法：路径 BFS、生成、重排、重力压实、迷雾环、计数与时间格式化 | `board_engine_test.gd` 全分支（含机制网格） |
 | `scripts/board_mechanics.gd` | 机制状态域：五机制的消除伤害（冰甲两段/锁链解锁/叠层顶出）、重力压实触发、迷雾层数、可选性判定 | `panels_probe.gd`（机制行为断言）+ `frost/variants/mechanics_probe.gd` |
 | `scripts/board_view.gd` | 棋盘视觉：全量刷新、格子样式/尺寸、图标映射、出生/洗牌动画 | `panels_probe.gd`（视觉断言） |
@@ -14,10 +14,10 @@
 | `scripts/game_config.gd` | 配置装载：JSON 覆盖 + 代码内默认回退（关卡表/调参/图标集/模式配置） | `panels_probe.gd`（重载断言） |
 | `scripts/progress_store.gd` | 进度存取：加载/保存/补丁式更新（special 会话过滤战役字段） | `panels_probe.gd`（持久化断言） |
 | `scripts/progression.gd` | 进度/成就/纪录的纯存档模型（apply_update/normalize/比较） | `progression_test.gd` |
-| `scripts/special_modes_data.gd` | 玩法数据表：17 个模式默认配置/标签/开场文案/结算表（纯 const） | `special_modes_test.gd` + `mode_meta_test.gd` |
+| `scripts/special_modes_data.gd` | 玩法数据表：18 个模式默认配置/标签/开场文案/结算表/副标题纪录表（纯 const） | `special_modes_test.gd` + `mode_meta_test.gd` |
 | `scripts/special_modes.gd` | 特殊玩法配置/生成器/解锁/纪录键 + 模式标签/开场文案/面板行数据 | `special_modes_test.gd` + `mode_meta_test.gd` |
 | `scripts/campaign_levels.gd` | 战役关卡数据表（深拷贝访问器） | `campaign_levels_test.gd`（数据不变量） |
-| `scripts/powerups.gd` | 道具域：载荷规则、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
+| `scripts/powerups.gd` | 道具域：载荷规则（战役按关递进 + 特殊会话 SPECIAL_LOADOUT 三表）、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
 | `scripts/stats_hud.gd` | 统计 HUD：卡片构建/文本/道具槽显示/告警脉冲 + 标签工厂 | `stat_probe.gd` + `panels_probe.gd` |
 | `scripts/memory_flip.gd` | 翻翻乐：全暗牌翻配对状态机（翻错盖回）+ 卡面渲染 | `flip_probe.gd` |
 | `scripts/tile_match.gd` | 三消槽位玩法「叠叠消」：堆叠生成/遮挡判定/入槽三消状态机 + 牌堆与槽位渲染 | `tray_probe.gd` |
@@ -47,7 +47,9 @@
 
 ## 已知债务
 
-- game.gd 约 990 行编排层：`_ready` 启动胶水、成员声明与委托薄壳；ui_hud 662 行（构建/刷新/浮层/控件）。进一步归并收益边际递减，按需处理。
+- game.gd 约 1080 行编排层：`_ready` 启动胶水、成员声明与委托薄壳。函数级拆分已收敛（CI 轮确认仅 4 个 >6 行协调胶水：flip/tray 输入分发、成就浮层关闭），进一步归并收益边际递减，按需处理。
+- 玩法分发已表驱动化（CI 轮）：副标题查 `SUBTITLE_RECORDS` + `mode_label()`，道具装载查 `SPECIAL_LOADOUT` 三表，特殊会话判定走 `game._is_special_session()`。剩余 `special_mode == "xxx"` 比较均为模式特定行为分支（机制/结算/判负），属正常分发而非债务。
+- **新增玩法清单**（mode_meta_test 增长守卫会拦截漏配）：① `special_modes_data.DEFAULT_CONFIGS` 加行（mode_id/name/description/unlock_level 等齐全）；② 标签/开场文案进 MODE_LABELS(_EXTRA)/INTRO_TEXTS(_EXTRA)；③ 有最佳分概念的玩法在 SUBTITLE_RECORDS 加行，否则 panels_probe 需确认回落文案；④ 道具特供在 powerups.SPECIAL_LOADOUT_EXTRA 加行（OVERRIDE 仅限整体削减型如 hell）；⑤ 纪录玩法在 RECORD_MODES 加行 + progression schema；⑥ modes_panel_rows 面板行与统计页行。
 - 未接线 manager（签到/商店等）已删除；如需启用从 git 历史恢复（b72e1c3 之前）。
 - 双人联机与关卡编辑器需对战/编辑基建，另立项。
 - `docs/code_review.md` 为审查主报告，P 项随整改滚动更新。
