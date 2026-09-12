@@ -1,6 +1,6 @@
 extends Reference
 
-const DATA = preload("res://scripts/special_modes_data.gd")
+const DATA = preload("res://scripts/modes/special_modes_data.gd")
 
 # Forwarding aliases: existing code and tests read the tables through
 # special_modes.gd, so the data module stays swappable.

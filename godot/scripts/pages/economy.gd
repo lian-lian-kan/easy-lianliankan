@@ -4,9 +4,9 @@ extends Reference
 # and the collect-challenge progress counter. Pure meta-economy; page
 # scaffolding comes from page_ui.gd, navigation stays in page_router.gd.
 
-const PAGE_UI = preload("res://scripts/page_ui.gd")
-const MISSIONS = preload("res://scripts/missions.gd")
-const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
+const PAGE_UI = preload("res://scripts/pages/page_ui.gd")
+const MISSIONS = preload("res://scripts/session/missions.gd")
+const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 
 const SIGNIN_REWARDS = [5, 10, 15, 20, 25, 35, 50]
 const SET_PRICE = 30

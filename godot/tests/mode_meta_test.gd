@@ -2,9 +2,9 @@ extends SceneTree
 
 # Mode display metadata tests: labels, intro texts, and the record table.
 
-const SM = preload("res://scripts/special_modes.gd")
-const DATA = preload("res://scripts/special_modes_data.gd")
-const PROGRESSION = preload("res://scripts/progression.gd")
+const SM = preload("res://scripts/modes/special_modes.gd")
+const DATA = preload("res://scripts/modes/special_modes_data.gd")
+const PROGRESSION = preload("res://scripts/session/progression.gd")
 
 var failures := 0
 
@@ -180,7 +180,7 @@ func _init() -> void:
 			push_error("subtitle record key mismatch for " + str(mode_id))
 	check(sub_ok, "subtitle records cover every mode without bespoke copy")
 
-	var POWERUPS = load("res://scripts/powerups.gd")
+	var POWERUPS = load("res://scripts/session/powerups.gd")
 	var grant_keys := {}
 	for key in POWERUPS.SPECIAL_LOADOUT_BASE:
 		grant_keys[key] = true
@@ -199,7 +199,7 @@ func _init() -> void:
 	check(loadout_ok, "loadout extras target real modes and overrides only tweak known grant keys")
 
 	# --- voice line pools: every event keyed pool carries existing clips ---
-	var VOICE = load("res://scripts/voice_lines.gd")
+	var VOICE = load("res://scripts/content/voice_lines.gd")
 	check(VOICE.POOLS.has("clear") && VOICE.POOLS.has("fail") && VOICE.POOLS.has("milestone")
 		&& VOICE.POOLS.has("signin") && VOICE.POOLS.has("achievement"),
 		"voice pools cover the five events")

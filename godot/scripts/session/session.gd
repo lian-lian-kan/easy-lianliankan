@@ -1,9 +1,9 @@
 extends Reference
 
-const PAGE_ROUTER = preload("res://scripts/page_router.gd")
-const TILE_MATCH = preload("res://scripts/tile_match.gd")
-const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
-const ECONOMY = preload("res://scripts/economy.gd")
+const PAGE_ROUTER = preload("res://scripts/pages/page_router.gd")
+const TILE_MATCH = preload("res://scripts/modes/tile_match.gd")
+const MEMORY_FLIP = preload("res://scripts/modes/memory_flip.gd")
+const ECONOMY = preload("res://scripts/pages/economy.gd")
 
 # Campaign session lifecycle: level reset, post-move resolution (win/lose/
 # reshuffle/gravity), the clock, pause/resume, revival and achievements.

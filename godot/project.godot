@@ -12,7 +12,7 @@ _global_script_classes=[ {
 "base": "Control",
 "class": "PathOverlay",
 "language": "GDScript",
-"path": "res://scripts/path_overlay.gd"
+"path": "res://scripts/board/path_overlay.gd"
 } ]
 _global_script_class_icons={
 "PathOverlay": ""

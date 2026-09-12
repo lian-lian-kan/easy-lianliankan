@@ -30,8 +30,8 @@ func _count_chained(game) -> int:
 
 func _init() -> void:
 	print("== mechanics_probe")
-	var modes = load("res://scripts/special_modes.gd")
-	var progression = load("res://scripts/progression.gd")
+	var modes = load("res://scripts/modes/special_modes.gd")
+	var progression = load("res://scripts/session/progression.gd")
 	var scene = load("res://scenes/Main.tscn")
 	if scene == null:
 		push_error("FAIL - cannot load Main.tscn")

@@ -2,7 +2,7 @@ extends SceneTree
 
 # Full-coverage unit tests for scripts/board_engine.gd (pure static module).
 
-const ENGINE = preload("res://scripts/board_engine.gd")
+const ENGINE = preload("res://scripts/board/board_engine.gd")
 
 var failures := 0
 

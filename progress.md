@@ -921,3 +921,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 守卫：mode_meta_test 新增两条增长不变量——每个无专属文案的 config 模式必须有 SUBTITLE_RECORDS 行（键名须符合 `<mode>_best_score` 且不得引用未知模式）；LOADOUT EXTRA 只能指向真实模式、OVERRIDE 只能改已知发放键。今后加玩法漏配副标题/道具直接 CI 红。
 - 审计：shell_audit 六项全过；副标题逐字等价（11 分支标签/键与 mode_label+SUBTITLE_RECORDS 产出全等，python 静态对照）；道具装载等价（18 模式 × 8 键新旧全等模拟）；game.gd 净 +3 行（谓词薄壳），ui_hud 32 行净减。
 - Validation: 本地零引擎测试（既定约束），全量验证由 CI 远端执行。
+
+## 2026-09-12 (架构 Round CJ：六域目录重组 + 规模门禁棘轮 + 扩展性契约)
+- 动机：用户定向「后续功能和代码量扩 5~10 倍，质量要撑得住」。摸底：函数/文件/玩法分发已收敛，规模化阻力=36 个脚本全扁平（5~10 倍后不可导航）、质量约束全靠惯例无门禁。
+- 变更：①scripts/ 六域目录重组——board(4)/modes(6)/session(8)/ui(7)/pages(3)/content(2)，game.gd（编排根）与 audio_manager.gd（autoload）留根；30 文件 git mv 保留历史，72 处 preload 引用、project.godot、Main.tscn、architecture.md 28 处路径同步；②顺手删孤儿 TestMain.tscn（引用早已不存在的 test_game.gd，无任何运行方）；③shell_audit 文件发现改递归 glob，第 5 项 preload 正则支持嵌套路径；④新增第 6 项规模门禁：新函数 >45 行 ERROR（>35 警告）、非 game.gd 文件 >800 行 ERROR（>650 警告）；**棘轮机制**——19 个存量超标函数登记 FUNC_LEN_RATCHET（只许变小不许变大，拆掉即删条目，新条目禁止），金丝雀自测确认新函数红线生效；⑤docs/scaling.md 扩展性契约——目录归属判定问题、依赖规则（模块禁互 preload，game.gd 唯一 preload 中枢成文）、增长剧本、未来硬瓶颈诚实清单（game.gd 1500 行阈值触发域状态对象方案、Godot 4 迁移决策等）。
+- **修正上轮错误结论**：CI 轮摸底的正则漏匹配 `static func`，只量了 game.gd——「全仓最大函数 34 行」不实。真实状况：19 个函数超 45 行（最大 hud_layout.update_layout 154、progression.apply_update 117、session._reset_level_session 110），另有 15 个 35~45 行警告级。已全部入棘轮表，作为后续重构轮的存量清单。
+- Validation: shell_audit 六项全过（第 5 项可解析全部嵌套 preload，证明 72 处路径替换自洽）；金丝雀（临时 50 行函数）确认门禁捕获并恢复 clean；本地零引擎测试，全量验证由 CI 远端执行。

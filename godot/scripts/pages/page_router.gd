@@ -5,9 +5,9 @@ extends Reference
 # lifecycle (ui_panels.open_modal). Journey-map and collection pages are
 # built here; economy pages (sign-in / shop) live in economy.gd.
 
-const UI_PANELS = preload("res://scripts/ui_panels.gd")
-const PAGE_UI = preload("res://scripts/page_ui.gd")
-const ECONOMY = preload("res://scripts/economy.gd")
+const UI_PANELS = preload("res://scripts/ui/ui_panels.gd")
+const PAGE_UI = preload("res://scripts/pages/page_ui.gd")
+const ECONOMY = preload("res://scripts/pages/economy.gd")
 
 const PAGE_LEVEL_MAP = "level_map"
 const PAGE_COLLECTION = "collection"

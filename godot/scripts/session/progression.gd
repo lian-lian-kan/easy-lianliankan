@@ -2,7 +2,7 @@ extends Reference
 
 const SAVE_VERSION = 1
 
-const SPECIAL_MODES = preload("res://scripts/special_modes.gd")
+const SPECIAL_MODES = preload("res://scripts/modes/special_modes.gd")
 
 # Achievement definitions
 const ACHIEVEMENTS = [

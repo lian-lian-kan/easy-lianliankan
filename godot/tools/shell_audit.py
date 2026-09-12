@@ -14,6 +14,9 @@ Checks, in order:
   5. Cross-module calls       — every `ALIAS.fn(...)` / `game.ALIAS.fn(...)`
      call resolves to a function in the preloaded target script (the class of
      breakage behind the tile_match.new_round startup crash).
+  6. Scale gates              — function/file length ceilings so quality does
+     not erode as the codebase grows (game.gd exempt from the file gate:
+     it is the documented thin-shell composition root).
 
 Exit code 0 when clean, 1 when any ERROR-level finding exists.
 Run:  python3 tools/shell_audit.py
@@ -24,8 +27,41 @@ import re
 import sys
 
 ROOT = "."
-SCRIPTS = sorted(glob.glob("scripts/*.gd"))
+# Scripts live in domain subdirs (board/modes/session/ui/pages/content);
+# game.gd and the audio_manager autoload stay at the scripts/ root.
+SCRIPTS = sorted(glob.glob("scripts/**/*.gd", recursive=True))
 ALL_FILES = SCRIPTS + sorted(glob.glob("tests/*.gd")) + sorted(glob.glob("scenes/*.tscn"))
+
+FUNC_LEN_WARN = 35
+FUNC_LEN_MAX = 45
+FILE_LEN_WARN = 650
+FILE_LEN_MAX = 800
+FILE_LEN_EXEMPT = {"scripts/game.gd"}
+# Ratchet: legacy offenders registered with their current span at gate
+# introduction (2026-09-12). They may shrink freely; any growth, and any NEW
+# function over FUNC_LEN_MAX, is an ERROR. Treat entries as refactor rounds
+# land and delete the line when the function is finally split.
+FUNC_LEN_RATCHET = {
+    "scripts/board/board_engine.gd::find_path": 60,
+    "scripts/board/board_view.gd::_refresh_board_visuals": 70,
+    "scripts/modes/tile_match.gd::build_view": 67,
+    "scripts/pages/page_router.gd::_build_stats": 50,
+    "scripts/session/game_input.gd::_on_tile_pressed": 82,
+    "scripts/session/game_input.gd::_on_memory_tile_pressed": 59,
+    "scripts/session/game_input.gd::_unhandled_input": 62,
+    "scripts/session/hud_timers.gd::_build_timers": 47,
+    "scripts/session/powerups.gd::_use_power_up": 52,
+    "scripts/session/progression.gd::normalize_progress": 79,
+    "scripts/session/progression.gd::apply_update": 117,
+    "scripts/session/session.gd::_reset_level_session": 110,
+    "scripts/session/session.gd::_settle_campaign_clear": 51,
+    "scripts/ui/home_screen.gd::_build_controls_flow": 51,
+    "scripts/ui/home_screen.gd::_build_board_area": 49,
+    "scripts/ui/hud_layout.gd::update_layout": 154,
+    "scripts/ui/ui_panels.gd::_onboarding_panel": 51,
+    "scripts/ui/ui_panels.gd::_settings_panel": 63,
+    "scripts/ui/ui_panels.gd::_pause_panel": 59,
+}
 
 errors = []
 warnings = []
@@ -152,8 +188,8 @@ def main():
     for path in all_gd:
         src = read(path)
         # Round A: file-scoped aliases (`ALIAS.fn(`), declared in this file.
-        for m in re.finditer(r'(?m)^const (\w+) = preload\("res://(scripts|tests)/([\w.]+)"\)', src):
-            alias, target = m.group(1), f"{m.group(2)}/{m.group(3)}"
+        for m in re.finditer(r'(?m)^const (\w+) = preload\("res://((?:scripts|tests)/[\w./]+)"\)', src):
+            alias, target = m.group(1), m.group(2)
             if target not in module_funcs:
                 continue
             for call in re.finditer(r"\b" + alias + r"\.(\w+)\s*\(", src):
@@ -181,6 +217,59 @@ def main():
         report("ERROR", f"dangling cross-module call: {item}")
     if not dangling:
         print("  ok  every cross-module call resolves")
+
+    # --- 6) scale gates: length ceilings so growth cannot erode quality ---
+    print("== 6. scale gates (function/file length)")
+    gate_bad = 0
+
+    def check_span(path, label, start, body):
+        ratcheted = FUNC_LEN_RATCHET.get(f"{path}::{label}")
+        if ratcheted is not None:
+            if body > ratcheted:
+                report("ERROR", f"{path}:{start} {label} spans {body} lines (ratchet {ratcheted}; split it, never grow it)")
+                return 1
+            if body < ratcheted:
+                print(f"  ok-shrunk  {label} in {path} now {body} lines (ratchet {ratcheted}) — lower the entry")
+            return 0
+        if body > FUNC_LEN_MAX:
+            report("ERROR", f"{path}:{start} {label} spans {body} lines (max {FUNC_LEN_MAX})")
+            return 1
+        if body > FUNC_LEN_WARN:
+            warnings.append(f"{path}:{start} {label} spans {body} lines")
+            print(f"  WARN  {label} in {path} spans {body} lines")
+        return 0
+
+    for path in SCRIPTS:
+        src = read(path)
+        lines = src.split("\n")
+        if len(lines) > FILE_LEN_MAX and path not in FILE_LEN_EXEMPT:
+            report("ERROR", f"{path} is {len(lines)} lines (max {FILE_LEN_MAX})")
+            gate_bad += 1
+        elif len(lines) > FILE_LEN_WARN and path not in FILE_LEN_EXEMPT:
+            warnings.append(f"{path} is {len(lines)} lines (warn at {FILE_LEN_WARN})")
+            print(f"  WARN  {path} is {len(lines)} lines")
+        cur = None
+        cur_start = 0
+        cur_indent = 0
+        body = 0
+        for i, ln in enumerate(lines):
+            m = re.match(r"^(\s*)(?:static )?func\s+\w+\(", ln)
+            if m:
+                if cur is not None:
+                    gate_bad += check_span(path, cur, cur_start, body)
+                cur, cur_start, cur_indent, body = ln.strip().split("(")[0].split()[-1], i + 1, len(m.group(1)), 0
+            elif cur is not None:
+                if ln.strip() and not ln.strip().startswith("#"):
+                    indent = len(ln) - len(ln.lstrip())
+                    if indent <= cur_indent:
+                        gate_bad += check_span(path, cur, cur_start, body)
+                        cur = None
+                    else:
+                        body += 1
+        if cur is not None:
+            gate_bad += check_span(path, cur, cur_start, body)
+    if gate_bad == 0:
+        print(f"  ok  all functions <={FUNC_LEN_WARN} lines and files <={FILE_LEN_WARN} lines")
 
     finish()
 

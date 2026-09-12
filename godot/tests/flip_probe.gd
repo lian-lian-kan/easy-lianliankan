@@ -15,7 +15,7 @@ func check(value: bool, message: String) -> void:
 
 func _init() -> void:
 	print("== flip_probe")
-	var MF = load("res://scripts/memory_flip.gd")
+	var MF = load("res://scripts/modes/memory_flip.gd")
 
 	var game = {
 		"flip_state": {},

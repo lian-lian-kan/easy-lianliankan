@@ -1,8 +1,8 @@
 extends Reference
 
-const PAGE_ROUTER = preload("res://scripts/page_router.gd")
-const HOME_SCREEN = preload("res://scripts/home_screen.gd")
-const ECONOMY = preload("res://scripts/economy.gd")
+const PAGE_ROUTER = preload("res://scripts/pages/page_router.gd")
+const HOME_SCREEN = preload("res://scripts/ui/home_screen.gd")
+const ECONOMY = preload("res://scripts/pages/economy.gd")
 
 # Main screen construction, extracted from gd so the 300+ line HUD/board
 # layout lives beside the dialog factories in ui_panels.gd. Every call takes

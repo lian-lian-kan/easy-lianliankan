@@ -45,7 +45,7 @@ func _find_unfrozen_cell(board, armor):
 
 func _init() -> void:
 	print("== frost_probe")
-	var modes = load("res://scripts/special_modes.gd")
+	var modes = load("res://scripts/modes/special_modes.gd")
 	var scene = load("res://scenes/Main.tscn")
 	if scene == null:
 		push_error("FAIL - cannot load Main.tscn")

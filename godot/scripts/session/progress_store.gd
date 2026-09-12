@@ -1,6 +1,6 @@
 extends Reference
 
-const MISSIONS = preload("res://scripts/missions.gd")
+const MISSIONS = preload("res://scripts/session/missions.gd")
 
 # Progression persistence: load/save/patch of the progression state file.
 # Special sessions never persist campaign progress fields.

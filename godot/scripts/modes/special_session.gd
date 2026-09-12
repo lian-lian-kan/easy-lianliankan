@@ -5,10 +5,10 @@ extends Reference
 # failure paths. Campaign session flow stays in session.gd. Functions the
 # modes share with the campaign (clock, combos, revival) remain there.
 
-const ECONOMY = preload("res://scripts/economy.gd")
-const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
-const TILE_MATCH = preload("res://scripts/tile_match.gd")
-const MEMORY_FLIP = preload("res://scripts/memory_flip.gd")
+const ECONOMY = preload("res://scripts/pages/economy.gd")
+const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
+const TILE_MATCH = preload("res://scripts/modes/tile_match.gd")
+const MEMORY_FLIP = preload("res://scripts/modes/memory_flip.gd")
 
 
 # Shared tail of the per-mode win settlements: record, celebration, banner.

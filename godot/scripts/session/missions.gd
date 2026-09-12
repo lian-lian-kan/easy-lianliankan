@@ -5,7 +5,7 @@ extends Reference
 # blossoms. The rolling week logic lives here so progression.gd stays a pure
 # store — it only persists the whole weekly_missions dictionary verbatim.
 
-const SPECIAL_MODES_SCRIPT = preload("res://scripts/special_modes.gd")
+const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 
 # use_max=true means progress keeps the highest value seen (combo peaks);
 # otherwise amounts accumulate additively.

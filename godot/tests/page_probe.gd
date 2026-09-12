@@ -209,7 +209,7 @@ func _init() -> void:
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
 	# --- tray tools: undo refunds the pickup, shuffle rerolls the pile ---
-	var TM = load("res://scripts/tile_match.gd")
+	var TM = load("res://scripts/modes/tile_match.gd")
 	game.SPECIAL_SESSION._start_special_mode(game, "tray")
 	var picked = -1
 	for i in range(game.tray_state["tiles"].size()):

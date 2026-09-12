@@ -8,9 +8,9 @@ extends Reference
 # a contiguous block of the original function, in the original order, so
 # add_child ordering (z-order and layout) is unchanged.
 
-const PAGE_ROUTER = preload("res://scripts/page_router.gd")
-const ECONOMY = preload("res://scripts/economy.gd")
-const PATH_OVERLAY_SCRIPT = preload("res://scripts/path_overlay.gd")
+const PAGE_ROUTER = preload("res://scripts/pages/page_router.gd")
+const ECONOMY = preload("res://scripts/pages/economy.gd")
+const PATH_OVERLAY_SCRIPT = preload("res://scripts/board/path_overlay.gd")
 
 static func build_main_ui(game):
 	_build_root(game)

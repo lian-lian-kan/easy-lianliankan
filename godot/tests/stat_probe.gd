@@ -3,7 +3,7 @@ extends SceneTree
 # Stat HUD tests: card sizes must stay constant when value text changes
 # (no layout jitter), plus direct coverage of scripts/stats_hud.gd.
 
-const STATS_HUD = preload("res://scripts/stats_hud.gd")
+const STATS_HUD = preload("res://scripts/ui/stats_hud.gd")
 
 var failures := 0
 

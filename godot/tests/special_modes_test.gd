@@ -1,7 +1,7 @@
 extends SceneTree
 
-const SPECIAL_MODES = preload("res://scripts/special_modes.gd")
-const PROGRESSION = preload("res://scripts/progression.gd")
+const SPECIAL_MODES = preload("res://scripts/modes/special_modes.gd")
+const PROGRESSION = preload("res://scripts/session/progression.gd")
 
 var checks = 0
 

@@ -6,7 +6,7 @@ extends Reference
 # game node's grids; session flow stays in session.gd. Extracted from
 # game.gd.
 
-const BOARD_ENGINE = preload("res://scripts/board_engine.gd")
+const BOARD_ENGINE = preload("res://scripts/board/board_engine.gd")
 
 # --- Playability and fog geometry ---
 

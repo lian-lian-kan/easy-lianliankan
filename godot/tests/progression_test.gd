@@ -8,7 +8,7 @@ func _assert_equal(actual, expected, message: String) -> bool:
 	return false
 
 func _init() -> void:
-	var progression = load("res://scripts/progression.gd")
+	var progression = load("res://scripts/session/progression.gd")
 	if progression == null:
 		push_error("missing progression.gd")
 		quit(1)

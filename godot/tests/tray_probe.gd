@@ -14,7 +14,7 @@ func check(value: bool, message: String) -> void:
 
 func _init() -> void:
 	print("== tray_probe")
-	var TM = load("res://scripts/tile_match.gd")
+	var TM = load("res://scripts/modes/tile_match.gd")
 	var cfg = {"layers": 4, "layer_rows": 5, "layer_cols": 6, "kinds": 10, "tray_capacity": 7}
 
 	# --- generation legality ---

@@ -2,7 +2,7 @@ extends SceneTree
 
 # Campaign level data invariants: ids, board dims, texture kinds, modes, curves.
 
-const CL = preload("res://scripts/campaign_levels.gd")
+const CL = preload("res://scripts/modes/campaign_levels.gd")
 
 var failures := 0
 
