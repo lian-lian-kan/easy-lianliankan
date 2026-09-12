@@ -907,3 +907,4 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 变更：①progression 行整行并入 controls 工具栏（home_screen 删 _build_progression_flow，8 个 add_child 改挂 controls_flow；game.gd 删 progression_flow_container 成员；hud_layout 删其布局块）——竖屏隐藏下拉/跳转/清除后恰余 8 键；②竖屏按钮 58×28→44×28 + 字号 12（8×44+7×4=380 ≤ 390 恰好单行）；③卡片 64×36→60×34（数值字号 16→14）；④root/header 间距 4/3→2/2；⑤底部 nav 预留 40→20（棋盘居中留白吸收导航重叠，末行不遮 guard 仍在：6 列关卡末行底 ≈765 < nav 顶 804）。
 - 预算：header 98→64px，wrapper ≈ 844-64-4-20 = 756 = **89.6%**。panels_probe ratio 断言 0.78→0.88 + 新增合并行结构断言（modes/settings 按钮父容器=controls_flow）。
 - Validation: 本地零引擎测试，shell_audit 六项全过，全量验证由 CI 远端执行。
+- CG 实测更正（4ad2ac8 上线值）：首版预算偏差被 panels_probe 布局转储抓出——工具栏实为 9 键（漏数 🏆 成就）换行 2×34px、卡片行 47px（value_holder 硬编码 88×24+标题行）。终版：卡片去标题改数值药丸（22px，holder 60×22）、工具栏 9 键 44×26 两行行距 2（56px）、achievements_button 成员化、底部预留 10px。**实测 wrapper 746/844 = 88.4%**（断言 ≥88%），末行瓷砖 720 < 导航顶 790（70px 余量）。探针新范式：布局断言前 yield 两帧量容器重排后的真实尺寸；DBG 转储可留探针内做回归取证。
