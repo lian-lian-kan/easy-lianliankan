@@ -150,11 +150,10 @@ func _init() -> void:
 	print("DBG viewport=", game.get_viewport_rect().size)
 	print("DBG margin bottom=", game.margin_container.get_constant_override("margin_bottom"))
 	print("DBG root sep=", game.root_vbox.get_constant_override("separation"))
-	print("DBG header_panel=", game.header_panel.rect_size if game.header_panel else null)
-	if game.header_panel:
-		for child in game.header_box.get_children():
-			if child.visible:
-				print("DBG header child ", child.get_class(), " ", child.name, " h=", child.rect_size.y, " min=", child.rect_min_size)
+	print("DBG header_box=", game.header_box.rect_size)
+	for child in game.header_box.get_children():
+		if child.visible:
+			print("DBG header child ", child.get_class(), " h=", child.rect_size.y, " min=", child.rect_min_size)
 	print("DBG wrapper=", game.board_wrapper.rect_size, " collect_row visible=", game.collect_row.visible if game.collect_row else "?")
 	for n in ["stage_panel_label", "revive_button", "husband_button", "combo_burst_label"]:
 		var nn = game.get(n)
