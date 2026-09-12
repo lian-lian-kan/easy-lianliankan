@@ -148,17 +148,11 @@ func _init() -> void:
 	var vp_height = float(game.get_viewport_rect().size.y)
 	# Layout dump: where does the non-board height actually go?
 	print("DBG viewport=", game.get_viewport_rect().size)
-	print("DBG margin bottom=", game.margin_container.get_constant_override("margin_bottom"))
-	print("DBG root sep=", game.root_vbox.get_constant_override("separation"))
 	print("DBG header_box=", game.header_box.rect_size)
 	for child in game.header_box.get_children():
 		if child.visible:
 			print("DBG header child ", child.get_class(), " h=", child.rect_size.y, " min=", child.rect_min_size)
-	print("DBG wrapper=", game.board_wrapper.rect_size, " collect_row visible=", game.collect_row.visible if game.collect_row else "?")
-	for n in ["stage_panel_label", "revive_button", "husband_button", "combo_burst_label"]:
-		var nn = game.get(n)
-		if nn != null and nn.visible:
-			print("DBG root visible extra: ", n, " h=", nn.rect_size.y)
+	print("DBG wrapper=", game.board_wrapper.rect_size)
 	# The wrapper is container-assigned (EXPAND_FILL takes all remaining
 	# height after the header); assert the REALIZED frame, not the min.
 	var wrapper_ratio = float(game.board_wrapper.rect_size.y) / vp_height
