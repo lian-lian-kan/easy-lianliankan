@@ -18,7 +18,6 @@ static func build_main_ui(game):
 	_build_header_progress(game)
 	_build_power_ups(game)
 	_build_controls_flow(game)
-	_build_progression_flow(game)
 	_build_message_banner(game)
 	_build_board_area(game)
 	_build_floating_overlays(game)
@@ -205,7 +204,10 @@ static func _build_power_ups(game):
 	game.combo_progress_bar.add_stylebox_override("fill", combo_fill)
 	game.header_box.add_child(game.combo_progress_bar)
 
-# Tool row: icon-set dropdown and the five play controls.
+# Toolbar row: icon-set dropdown, the five play controls and every
+# progression entry (modes / stats / level select / jump / clear / settings).
+# One merged row keeps the portrait header to a stat line + a toolbar line,
+# so the board owns ~90% of the screen height.
 
 static func _build_controls_flow(game):
 	game.controls_flow_container = HFlowContainer.new()
@@ -241,29 +243,19 @@ static func _build_controls_flow(game):
 	game.reset_button = game._create_control_button("重开")
 	game.reset_button.connect("pressed", game, "_on_reset_pressed")
 	game.controls_flow_container.add_child(game.reset_button)
-
-# Progression row: modes / stats / level select / jump / clear / settings.
-
-static func _build_progression_flow(game):
-	game.progression_flow_container = HFlowContainer.new()
-	game.progression_flow_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	game.progression_flow_container.add_constant_override("h_separation", 8)
-	game.progression_flow_container.add_constant_override("v_separation", 8)
-	game.header_box.add_child(game.progression_flow_container)
-
 	game.modes_button = game._create_control_button("🎮 玩法")
 	game.modes_button.connect("pressed", game, "_on_modes_pressed")
-	game.progression_flow_container.add_child(game.modes_button)
+	game.controls_flow_container.add_child(game.modes_button)
 
 	game.stats_button = game._create_control_button("📊 数据")
 	game.stats_button.connect("pressed", game, "_on_stats_pressed")
-	game.progression_flow_container.add_child(game.stats_button)
+	game.controls_flow_container.add_child(game.stats_button)
 
 	game.level_select_label = Label.new()
 	game.level_select_label.text = "关卡："
 	game.level_select_label.add_font_override("font", game.game_font)
 	game.level_select_label.add_color_override("font_color", Color("8f6b80"))
-	game.progression_flow_container.add_child(game.level_select_label)
+	game.controls_flow_container.add_child(game.level_select_label)
 
 	game.level_select_option = OptionButton.new()
 	game.level_select_option.add_font_override("font", game.game_font)
@@ -271,23 +263,24 @@ static func _build_progression_flow(game):
 	game.level_select_option.connect("item_selected", game, "_on_level_select_changed")
 	game.level_select_option.add_stylebox_override("normal", _dropdown_style())
 	game.level_select_option.add_color_override("font_color", Color("8f6b80"))
-	game.progression_flow_container.add_child(game.level_select_option)
+	game.controls_flow_container.add_child(game.level_select_option)
 
 	game.jump_level_button = game._create_control_button("跳转关卡")
 	game.jump_level_button.connect("pressed", game, "_on_jump_level_pressed")
-	game.progression_flow_container.add_child(game.jump_level_button)
+	game.controls_flow_container.add_child(game.jump_level_button)
 
 	game.clear_progress_button = game._create_control_button("清除进度")
 	game.clear_progress_button.connect("pressed", game, "_on_clear_progress_pressed")
-	game.progression_flow_container.add_child(game.clear_progress_button)
+	game.controls_flow_container.add_child(game.clear_progress_button)
 
 	game.settings_button = game._create_control_button("⚙️ 设置")
 	game.settings_button.connect("pressed", game, "_on_settings_pressed")
-	game.progression_flow_container.add_child(game.settings_button)
+	game.controls_flow_container.add_child(game.settings_button)
 
 	var achievements_button = game._create_control_button("🏆 成就")
 	achievements_button.connect("pressed", game, "_on_achievements_pressed")
-	game.progression_flow_container.add_child(achievements_button)
+	game.controls_flow_container.add_child(achievements_button)
+
 
 # Shared rounded white style for both OptionButtons (was one local in the
 # original function, now a factory so each control gets its own copy).

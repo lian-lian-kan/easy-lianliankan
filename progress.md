@@ -901,3 +901,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 测试：mode_meta 16→18 configs、13→15 record、label 17→19 + 语音池不变量（5 事件覆盖/路径合法/15 个 clip 文件存在）；startup_probe 补 fever/perfect 启动断言 + perfect 三失误判负路径；panels_probe 模式卡 16→18；字体子集重跑（1007→1037 字符）。shell_audit 六项全过。
 - Validation: 本地零引擎测试，全量验证由 CI 远端执行。
 - 修复（同轮带出）：cheers.gd 自 CR 轮潜伏 bug——TIERS 用字符串键 min/lines，代码却以 TIER_MIN_KEY/TIER_LINES_KEY(0/1) 整型索引，每次查档必抛脚本错误，夸赞爆字从未真正显示（里程碑🌸正常）。改为字符串键直取；main 的 CI 日志可证该错误早于本轮存在（power_ups_probe 窗口）。mode_meta_test 面板行断言 16→18 行 + 样例字典补 fever/perfect 最佳分键 + endless 行索引 15→17。
+
+## 2026-09-12 (布局 Round CG：棋盘占比 90%——工具栏并单行 + 底部预留瘦身)
+- 背景：用户期望棋盘占屏幕 ~90%（此前竖屏 wrapper ≈83%）。竖屏已是 EXPAND_FILL 容器分权（CP 轮），天花板=header 两行按钮 + nav 预留。
+- 变更：①progression 行整行并入 controls 工具栏（home_screen 删 _build_progression_flow，8 个 add_child 改挂 controls_flow；game.gd 删 progression_flow_container 成员；hud_layout 删其布局块）——竖屏隐藏下拉/跳转/清除后恰余 8 键；②竖屏按钮 58×28→44×28 + 字号 12（8×44+7×4=380 ≤ 390 恰好单行）；③卡片 64×36→60×34（数值字号 16→14）；④root/header 间距 4/3→2/2；⑤底部 nav 预留 40→20（棋盘居中留白吸收导航重叠，末行不遮 guard 仍在：6 列关卡末行底 ≈765 < nav 顶 804）。
+- 预算：header 98→64px，wrapper ≈ 844-64-4-20 = 756 = **89.6%**。panels_probe ratio 断言 0.78→0.88 + 新增合并行结构断言（modes/settings 按钮父容器=controls_flow）。
+- Validation: 本地零引擎测试，shell_audit 六项全过，全量验证由 CI 远端执行。

@@ -188,7 +188,6 @@ var settings_button  # 设置按钮
 var stat_values = {}
 var stats_flow_container
 var controls_flow_container
-var progression_flow_container
 var root_vbox
 var header_box
 var level_progress_caption_label

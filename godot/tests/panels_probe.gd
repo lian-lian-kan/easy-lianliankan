@@ -27,7 +27,10 @@ func _init() -> void:
 	check(game.message_label != null and game.title_label != null, "message and title labels built")
 	check(game.status_chip_label != null and game.combo_burst_label != null and game.stage_panel_label != null, "status/combo/stage labels built")
 	check(game.stats_flow_container is HFlowContainer, "stats row is an HFlowContainer")
-	check(game.controls_flow_container != null and game.progression_flow_container != null, "controls and progression rows built")
+	check(game.controls_flow_container != null, "toolbar row built")
+	check(game.modes_button != null and game.modes_button.get_parent() == game.controls_flow_container
+		and game.settings_button != null and game.settings_button.get_parent() == game.controls_flow_container,
+		"progression entries live in the merged toolbar row")
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
 	# board_view: board built and the refresh pipeline is idempotent
@@ -142,7 +145,7 @@ func _init() -> void:
 	# The wrapper is container-assigned (EXPAND_FILL takes all remaining
 	# height after the header); assert the REALIZED frame, not the min.
 	var wrapper_ratio = float(game.board_wrapper.rect_size.y) / vp_height
-	check(wrapper_ratio >= 0.78, "portrait board realizes >=78%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	check(wrapper_ratio >= 0.88, "portrait board realizes >=88%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
 	check(float(game.board_wrapper.rect_min_size.y) <= float(game.BOARD_MIN_HEIGHT) + 0.5, "portrait wrapper carries no oversized hand-set minimum")
 	check(game.subtitle_label != null && !game.subtitle_label.visible, "portrait hides the subtitle line")
 	check(game.status_chip_label != null && !game.status_chip_label.visible, "portrait hides the status badge")
