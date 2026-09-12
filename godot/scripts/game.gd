@@ -374,6 +374,9 @@ func _on_revive_pressed():
 
 # ═══ 特殊模式会话（special_session） ═══
 
+func _is_special_session():
+	return special_mode != ""
+
 func _is_memory_mode():
 	return special_mode == "memory"
 

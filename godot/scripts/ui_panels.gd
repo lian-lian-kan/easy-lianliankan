@@ -588,14 +588,14 @@ static func refresh_pause_panel(game):
 	var content = margin.get_child(0)
 	var level_info = content.get_child(1) as Label
 	var level = game._current_level()
-	if game.special_mode != "":
+	if game._is_special_session():
 		level_info.text = str(level.get("name", "特殊模式")) + " · " + game._mode_label(game.special_mode)
 	else:
 		var level_id = int(level.get("id", game.level_index + 1))
 		var level_name = str(level.get("name", "关卡"))
 		level_info.text = "第" + str(level_id) + "关 - " + level_name
 	if game.pause_exit_button:
-		game.pause_exit_button.visible = game.special_mode != ""
+		game.pause_exit_button.visible = game._is_special_session()
 	game.pause_panel.visible = true
 
 
@@ -607,7 +607,7 @@ static func hide_pause_panel(game):
 
 static func restart_current_level(game):
 	hide_pause_panel(game)
-	if game.special_mode != "":
+	if game._is_special_session():
 		game._start_special_mode(game.special_mode)
 		game._show_message("重新开始挑战", 1.0)
 		return

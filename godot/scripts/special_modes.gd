@@ -10,6 +10,7 @@ const INTRO_TEXTS = DATA.INTRO_TEXTS
 const MODE_LABELS_EXTRA = DATA.MODE_LABELS_EXTRA
 const INTRO_TEXTS_EXTRA = DATA.INTRO_TEXTS_EXTRA
 const RECORD_MODES = DATA.RECORD_MODES
+const SUBTITLE_RECORDS = DATA.SUBTITLE_RECORDS
 
 # Pure logic for the special game modes (daily challenge / time attack /
 # endless). Kept free of scene-tree dependencies so it can run headless in
@@ -250,6 +251,11 @@ static func mode_label(mode: String) -> String:
 	if MODE_LABELS_EXTRA.has(mode):
 		return str(MODE_LABELS_EXTRA[mode])
 	return str(MODE_LABELS.get(mode, '未知'))
+
+# Empty when the mode's subtitle falls to ui_hud's bespoke branches
+# (daily/endless/moves/perfect) or the campaign line (tray/collect/flip).
+static func subtitle_record_key(mode: String) -> String:
+	return str(SUBTITLE_RECORDS.get(mode, ""))
 
 static func intro_text(mode_id: String) -> String:
 	if INTRO_TEXTS_EXTRA.has(mode_id):

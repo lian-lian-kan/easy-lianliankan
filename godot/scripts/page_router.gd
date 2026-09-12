@@ -136,7 +136,7 @@ static func _build_level_map(game):
 static func _level_node(game, level_index):
 	var level: Dictionary = game.campaign_levels[level_index]
 	var unlocked = game._is_level_unlocked(level_index)
-	var is_current = level_index == int(game.level_index) and game.special_mode == ""
+	var is_current = level_index == int(game.level_index) and not game._is_special_session()
 	var star_map: Dictionary = game.progression_state.get("level_stars", {})
 	var stars = int(star_map.get(str(level_index), 0))
 	var star_mark = ""

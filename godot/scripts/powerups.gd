@@ -3,6 +3,19 @@ extends Reference
 # Power-up domain: loadout rules per level/mode, the arm/use/spend flow,
 # and the click-targeted executions. Statics take the live game node.
 
+# Friendly fixed loadout for special sessions: base grants for everyone,
+# per-mode extras, and per-mode overrides (hell strips back to basics).
+# New modes need no code here — just a row in SPECIAL_LOADOUT_EXTRA.
+const SPECIAL_LOADOUT_BASE = {"time_freeze": 2, "reshuffle": 2, "auto_match": 1, "bomb": 1, "rainbow": 1}
+const SPECIAL_LOADOUT_EXTRA = {
+	"memory": {"magnifier": 1},
+	"time_attack": {"time_sand": 1},
+	"frost": {"warm_patch": 3},
+}
+const SPECIAL_LOADOUT_OVERRIDE = {
+	"hell": {"time_freeze": 1, "reshuffle": 1, "auto_match": 0, "magnifier": 0, "time_sand": 0, "bomb": 0, "rainbow": 0, "warm_patch": 0},
+}
+
 static func _init_power_ups(game, level):
 	# Reset power-ups
 	game.power_ups = {"time_freeze": 0, "auto_match": 0, "reshuffle": 0, "magnifier": 0, "time_sand": 0, "bomb": 0, "rainbow": 0, "warm_patch": 0}
@@ -38,25 +51,13 @@ static func _init_power_ups(game, level):
 		game.power_ups["reshuffle"] += 1
 
 	# Special sessions get a friendly fixed loadout.
-	if game.special_mode != "":
-		game.power_ups["time_freeze"] = 2
-		game.power_ups["reshuffle"] = 2
-		game.power_ups["auto_match"] = 1
-		game.power_ups["magnifier"] = 1 if game.special_mode == "memory" else 0
-		game.power_ups["time_sand"] = 1 if game.special_mode == "time_attack" else 0
-		game.power_ups["bomb"] = 1
-		game.power_ups["rainbow"] = 1
-		game.power_ups["warm_patch"] = 3 if game.special_mode == "frost" else 0
-	if game.special_mode == "hell":
-		# 地狱: strip back to the bare basics.
-		game.power_ups["time_freeze"] = 1
-		game.power_ups["reshuffle"] = 1
-		game.power_ups["auto_match"] = 0
-		game.power_ups["magnifier"] = 0
-		game.power_ups["time_sand"] = 0
-		game.power_ups["bomb"] = 0
-		game.power_ups["rainbow"] = 0
-		game.power_ups["warm_patch"] = 0
+	if game._is_special_session():
+		for key in SPECIAL_LOADOUT_BASE:
+			game.power_ups[key] = SPECIAL_LOADOUT_BASE[key]
+		for key in SPECIAL_LOADOUT_EXTRA.get(game.special_mode, {}):
+			game.power_ups[key] = SPECIAL_LOADOUT_EXTRA[game.special_mode][key]
+		for key in SPECIAL_LOADOUT_OVERRIDE.get(game.special_mode, {}):
+			game.power_ups[key] = SPECIAL_LOADOUT_OVERRIDE[game.special_mode][key]
 
 static func _use_power_up(game, power_up_type):
 	# Re-press cancels an armed click-targeted power-up and refunds the

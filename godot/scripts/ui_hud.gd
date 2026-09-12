@@ -37,7 +37,7 @@ static func refresh_ui(game):
 	game.kinds_chip_label.text = "图案种类：" + str(level.get("kinds", 0))
 
 	game.level_progress_bar.value = (float(game.level_index + 1) / float(max(1, game.campaign_levels.size()))) * 100.0
-	if game.special_mode != "":
+	if game._is_special_session():
 		game.level_progress_bar.value = 100.0
 
 	game._set_stat_text("total_score", str(game.total_score))
@@ -63,7 +63,9 @@ static func refresh_ui(game):
 	# Update power-ups display
 	game._update_power_ups_display()
 
-# Subtitle line: special-mode variant per mode, campaign line otherwise.
+# Subtitle line: bespoke copy for modes with dynamic context, table-driven
+# "<label> · 最佳N分" for plain record modes (SUBTITLE_RECORDS), campaign
+# line otherwise.
 
 static func _subtitle_text(game, level_id, level_name, unlocked_level_count):
 	if game.special_mode == "daily":
@@ -80,32 +82,14 @@ static func _subtitle_text(game, level_id, level_name, unlocked_level_count):
 		return "无尽模式 · 第%d轮 · 最佳第%d轮 · 最高%d分" % [
 			game.endless_round, int(endless_best.get("round", 0)), int(endless_best.get("score", 0))
 		]
-	elif game.special_mode == "time_attack":
-		return "限时挑战 · 最佳%d分" % int(game.progression_state.get("time_attack_best_score", 0))
-	elif game.special_mode == "memory":
-		return "盲盒模式 · 最佳%d分" % int(game.progression_state.get("memory_best_score", 0))
-	elif game.special_mode == "frost":
-		return "冰雪挑战 · 最佳%d分" % int(game.progression_state.get("frost_best_score", 0))
-	elif game.special_mode == "zen":
-		return "休闲模式 · 最佳%d分" % int(game.progression_state.get("zen_best_score", 0))
-	elif game.special_mode == "hell":
-		return "地狱模式 · 最佳%d分" % int(game.progression_state.get("hell_best_score", 0))
 	elif game.special_mode == "moves":
 		return "步数挑战 · 最佳%d分 · 剩余%d步" % [int(game.progression_state.get("moves_best_score", 0)), game.moves_left]
-	elif game.special_mode == "race":
-		return "竞速对战 · 最佳%d分" % int(game.progression_state.get("race_best_score", 0))
-	elif game.special_mode == "stack":
-		return "叠层模式 · 最佳%d分" % int(game.progression_state.get("stack_best_score", 0))
-	elif game.special_mode == "gravity":
-		return "重力模式 · 最佳%d分" % int(game.progression_state.get("gravity_best_score", 0))
-	elif game.special_mode == "fog":
-		return "迷雾模式 · 最佳%d分" % int(game.progression_state.get("fog_best_score", 0))
-	elif game.special_mode == "chain":
-		return "锁链模式 · 最佳%d分" % int(game.progression_state.get("chain_best_score", 0))
-	elif game.special_mode == "fever":
-		return "狂热模式 · 最佳%d分" % int(game.progression_state.get("fever_best_score", 0))
 	elif game.special_mode == "perfect":
 		return "完美模式 · 最佳%d分 · 失误%d/%d" % [int(game.progression_state.get("perfect_best_score", 0)), game.perfect_misses, int(game.special_level.get("miss_limit", 3))]
+	else:
+		var record_key = game.SPECIAL_MODES_SCRIPT.subtitle_record_key(game.special_mode)
+		if record_key != "":
+			return game.SPECIAL_MODES_SCRIPT.mode_label(game.special_mode) + " · 最佳" + str(int(game.progression_state.get(record_key, 0))) + "分"
 	return "第" + str(level_id) + "/" + str(game.campaign_levels.size()) + "关 · " + level_name + " · 已解锁" + str(unlocked_level_count) + "/" + str(game.campaign_levels.size())
 
 # Status chip text + tinted pill style for the current stage status.

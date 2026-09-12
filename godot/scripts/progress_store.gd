@@ -30,7 +30,7 @@ static func _save_progress_state(game):
 static func _patch_progress_state(game, patch):
 	# Special sessions only persist their own records, never campaign progress
 	# or the campaign best-score/combo candidates.
-	if game.special_mode != "":
+	if game._is_special_session():
 		var filtered = patch.duplicate()
 		filtered.erase("score_candidate")
 		filtered.erase("combo_candidate")

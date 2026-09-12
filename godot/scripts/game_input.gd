@@ -342,7 +342,7 @@ static func _on_shuffle_pressed(game):
 	game._refresh_board_visuals()
 
 static func _on_reset_pressed(game):
-	if game.special_mode != "":
+	if game._is_special_session():
 		game._start_special_mode(game.special_mode)
 		return
 	if game.stage_status == game.STATUS_COMPLETED:

@@ -267,4 +267,21 @@ const RECORD_MODES = {
 	"perfect": {"label": "完美零失误", "patch_key": "perfect_result", "best_key": "perfect_best_score", "achievements": ["perfect_first"]},
 }
 
+# 主屏副标题「<标签> · 最佳N分」模式段的最佳分字段；标签统一取 mode_label()。
+# daily/endless/moves/perfect 的副标题含动态上下文，由 ui_hud 专属分支渲染；
+# tray/collect/flip 无最佳分概念，回落战役行文案。
+const SUBTITLE_RECORDS = {
+	"time_attack": "time_attack_best_score",
+	"memory": "memory_best_score",
+	"frost": "frost_best_score",
+	"zen": "zen_best_score",
+	"hell": "hell_best_score",
+	"race": "race_best_score",
+	"stack": "stack_best_score",
+	"gravity": "gravity_best_score",
+	"fog": "fog_best_score",
+	"chain": "chain_best_score",
+	"fever": "fever_best_score",
+}
+
 # 结算后按模式语境补发的条件成就。

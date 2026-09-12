@@ -914,3 +914,10 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 变更：①工具栏瘦身为 7 键（提示/自动消/洗牌/暂停/重开/🎮玩法/⚙️设置），竖屏 44×26 单行 12px；②📊 数据统计 / 🏆 成就图鉴 两入口迁入 ⚙️ 设置面板（先关设置再打开目标，复用 _on_stats_pressed/_on_achievements_pressed，零新路径）；③stats_button/achievements_button 成员删除，新增 _on_settings_stats_entry/_on_settings_achievements_entry 薄壳。
 - 预算：header 22+2+26 = 50px → wrapper ≈ 780/844 = 92.4%。panels_probe ratio 断言 0.88→**0.90**（用户原话值）+ 设置面板两入口存在性断言（遍历 Button 文本）。
 - Validation: 本地零引擎测试，shell_audit 六项全过，字体子集无新增字符（1037 不变），全量验证由 CI 远端执行。
+
+## 2026-09-12 (重构 Round CI：玩法分发收敛表驱动——副标题表/道具装载表/特殊会话谓词)
+- 动机：用户目标「结构重构提升质量，为项目做大做准备」。摸底发现 game.gd 函数层已收敛（1074 行中仅 4 个 >6 行胶水函数），真正的增长阻力是 62 处散落 13 个脚本的 `special_mode == "xxx"` 字符串比较——每加一个玩法要满仓找分支。
+- 变更：①新增 `game._is_special_session()` 谓词薄壳，收敛 10 处 `special_mode != ""` / `== ""` 裸比较（ui_hud/ui_panels×3/progress_store/page_router/game_input/session×2/powerups）；game.gd 内部 2 处本地直读保留；②副标题 15 分支 elif 链改表驱动——special_modes_data 新增 SUBTITLE_RECORDS（11 个纯纪录模式 → `<mode>_best_score` 字段），标签复用 mode_label()，daily/endless/moves/perfect 专属文案与 tray/collect/flip 战役回落留 ui_hud；③特殊会话道具装载 ternary 改 SPECIAL_LOADOUT 三表（BASE 全员/EXTRA 按模式/OVERRIDE 覆盖如 hell），新玩法加行即用。
+- 守卫：mode_meta_test 新增两条增长不变量——每个无专属文案的 config 模式必须有 SUBTITLE_RECORDS 行（键名须符合 `<mode>_best_score` 且不得引用未知模式）；LOADOUT EXTRA 只能指向真实模式、OVERRIDE 只能改已知发放键。今后加玩法漏配副标题/道具直接 CI 红。
+- 审计：shell_audit 六项全过；副标题逐字等价（11 分支标签/键与 mode_label+SUBTITLE_RECORDS 产出全等，python 静态对照）；道具装载等价（18 模式 × 8 键新旧全等模拟）；game.gd 净 +3 行（谓词薄壳），ui_hud 32 行净减。
+- Validation: 本地零引擎测试（既定约束），全量验证由 CI 远端执行。

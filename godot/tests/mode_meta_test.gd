@@ -160,6 +160,44 @@ func _init() -> void:
 	var flip_total = int(DATA.DEFAULT_CONFIGS["flip"]["pairs"])
 	check(flip_total % 2 == 0, "flip pairs count is even")
 
+	# --- growth guards: a newly added mode must register its subtitle record
+	# and power-up loadout rows, otherwise the main screen silently falls back
+	# to campaign copy / default grants (the scattered-branch era lost ways) ---
+	var bespoke_subtitle = {"daily": true, "endless": true, "moves": true, "perfect": true, "tray": true, "collect": true, "flip": true}
+	var sub_ok = true
+	for mode_id in DATA.DEFAULT_CONFIGS:
+		if bespoke_subtitle.has(mode_id):
+			continue
+		if not DATA.SUBTITLE_RECORDS.has(mode_id):
+			sub_ok = false
+			push_error("subtitle record missing for " + str(mode_id))
+	for mode_id in DATA.SUBTITLE_RECORDS:
+		if not DATA.DEFAULT_CONFIGS.has(mode_id):
+			sub_ok = false
+			push_error("subtitle record references unknown mode " + str(mode_id))
+		elif str(DATA.SUBTITLE_RECORDS[mode_id]) != str(mode_id) + "_best_score":
+			sub_ok = false
+			push_error("subtitle record key mismatch for " + str(mode_id))
+	check(sub_ok, "subtitle records cover every mode without bespoke copy")
+
+	var POWERUPS = load("res://scripts/powerups.gd")
+	var grant_keys := {}
+	for key in POWERUPS.SPECIAL_LOADOUT_BASE:
+		grant_keys[key] = true
+	var loadout_ok = true
+	for mode_id in POWERUPS.SPECIAL_LOADOUT_EXTRA:
+		if not DATA.DEFAULT_CONFIGS.has(mode_id):
+			loadout_ok = false
+			push_error("loadout extra references unknown mode " + str(mode_id))
+		for key in POWERUPS.SPECIAL_LOADOUT_EXTRA[mode_id]:
+			grant_keys[key] = true
+	for mode_id in POWERUPS.SPECIAL_LOADOUT_OVERRIDE:
+		for key in POWERUPS.SPECIAL_LOADOUT_OVERRIDE[mode_id]:
+			if not grant_keys.has(key):
+				loadout_ok = false
+				push_error("override %s tweaks unknown grant key %s" % [str(mode_id), str(key)])
+	check(loadout_ok, "loadout extras target real modes and overrides only tweak known grant keys")
+
 	# --- voice line pools: every event keyed pool carries existing clips ---
 	var VOICE = load("res://scripts/voice_lines.gd")
 	check(VOICE.POOLS.has("clear") && VOICE.POOLS.has("fail") && VOICE.POOLS.has("milestone")

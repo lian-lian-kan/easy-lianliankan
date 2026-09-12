@@ -189,7 +189,7 @@ static func _resolve_after_board_changed(game):
 		game._refresh_board_visuals()
 	# Special sessions resolve only when the board is actually cleared;
 	# partial eliminations still need the deadlock reshuffle check.
-	if game.special_mode != "":
+	if game._is_special_session():
 		if game._remaining_tiles_count() == 0:
 			game._resolve_special_clear()
 		elif game._find_any_hint(game.board).empty():
@@ -330,7 +330,7 @@ static func _apply_combo_gain(game, base_score):
 static func _on_time_up(game):
 	if game.stage_status != game.STATUS_PLAYING:
 		return
-	if game.special_mode != "":
+	if game._is_special_session():
 		# Special sessions have no revival: _revive resolves campaign fields.
 		_fail_stage(game, "挑战失败！得分 " + str(game.total_score) + "\n点击「重开」再战，或「暂停」后返回关卡")
 		return
