@@ -45,6 +45,9 @@ func _init() -> void:
 
 	for mode_id in modes:
 		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
+		# Daily settlement rewrites progression from the stored save, so the
+		# unlock index must be re-raised before every entry attempt.
+		game.progression_state["highest_unlocked_level_index"] = 17
 		game.SPECIAL_SESSION._start_special_mode(game, mode_id)
 		if game.special_mode != mode_id:
 			var dbg_cfg = game.game_mode_configs.get(mode_id, {})
