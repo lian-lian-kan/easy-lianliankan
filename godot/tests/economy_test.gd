@@ -77,7 +77,7 @@ func _init() -> void:
 	game = FakeGame.new()
 	ECONOMY.collect_level_icons(game)
 	check(game.patches.size() == 1, "a fresh icon set pays a collection reward")
-	check(int(game.patches[0]["coins_delta"]) == 12, "two fresh icons pay 6 blossoms each")
+	check(int(game.patches[0]["coins_delta"]) == 4, "two fresh icons pay 2 blossoms each")
 	check(game.progression_state["collected"] == ["fruit:0", "fruit:1", "fruit:2"], "paid icons are recorded")
 	ECONOMY.collect_level_icons(game)
 	check(game.patches.size() == 1, "replaying the same set pays nothing")
