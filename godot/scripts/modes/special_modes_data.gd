@@ -259,7 +259,6 @@ const DEFAULT_CONFIGS = {
 		"kinds": 8,
 		"time_limit": 150
 	}
-	}
 }
 
 const MODE_LABELS = {
