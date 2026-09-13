@@ -59,7 +59,7 @@ func _init() -> void:
 
 	# --- RECORD_MODES: keys consistent with progression, achievements defined.
 	var defined_ids = {}
-	for a in PROGRESSION.ACHIEVEMENTS:
+	for a in PROGRESSION.get_all_achievements():
 		defined_ids[a["id"]] = true
 	check(SM.RECORD_MODES.size() == 23, "record table covers 23 modes")
 	var table_ok = true

@@ -118,7 +118,7 @@ func _init() -> void:
 	check(int(st["moves_best_score"]) == 500 and int(st["race_best_score"]) == 700 \
 			and int(st["zen_best_score"]) == 300 and int(st["hell_best_score"]) == 900, "four new records persist via apply_update")
 	var ids = []
-	for a in progression.ACHIEVEMENTS:
+	for a in progression.get_all_achievements():
 		ids.append(a["id"])
 	check("zen_first" in ids and "hell_first" in ids and "moves_first" in ids \
 			and "moves_saver" in ids and "race_first" in ids, "five new achievements defined")

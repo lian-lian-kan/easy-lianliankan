@@ -169,7 +169,7 @@ func _init() -> void:
 	check(int(st["stack_best_score"]) == 100 and int(st["gravity_best_score"]) == 200 \
 			and int(st["fog_best_score"]) == 300 and int(st["chain_best_score"]) == 400, "four mechanic records persist")
 	var ids = []
-	for a in progression.ACHIEVEMENTS:
+	for a in progression.get_all_achievements():
 		ids.append(a["id"])
 	check("stack_first" in ids and "gravity_first" in ids and "fog_first" in ids and "chain_first" in ids, "four mechanic achievements defined")
 
