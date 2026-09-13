@@ -965,3 +965,13 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 全链接线：configs 2 条（解锁 17 关）/labels/intro/RECORD(23)/SUBTITLES(19)/面板 26 行/分类表 +👥双人组（race 从竞速组移入）/统计页 2 行/成就 sum10_first+duel_first/progression 四处/计数同步（26 configs/23 record/27 label/26 行/卡 26+6 分组头=32/锁 24/endless rows[25]/解锁上限断言 17）/字体子集 1114 字符。
 - 工程注记：字体全量 full/ 是 gitignored，新 worktree 需从主工作区 godot/fonts/full/ 拷贝（subset 脚本有自举防护会 FAIL 提示）；worktree 主工作区备份体已按此复用。分支 CI 一轮全绿（本地 audit+计数预验到位后首跑即绿成常态）。
 - Validation: shell_audit 七项全过；数据表 python 计数全对；分支 CI build 绿 → fast-forward 合并 main → 生产部署 CI 绿。
+
+## 2026-09-13 (后端上线：Python+PGSQL 服务端存档——本地存档零改动、同步可选启用)
+- 架构：backend/（FastAPI + psycopg2 + PostgreSQL）——GET/PUT /api/v1/progress/{player_id} + /healthz；player_progress 表（player_id PK / state JSONB / updated_at BIGINT），启动 ensure_schema 幂等建表；state >256KB 拒 413。
+- 身份：免登录——客户端首次生成 32 位 hex player_id 存 user://sync_meta.json，id 即凭证；多设备同 id 共进度，updated_at 时间戳后者胜。
+- 冲突策略：PUT 带 client unix-ms updated_at，SQL ON CONFLICT ... WHERE updated_at <= EXCLUDED 决定是否落库（陈旧写返回 saved:false 不覆盖，同毫秒幂等重推放行——首版 < 语义被 CI 抓出）；客户端启动拉取一次，服务器严格更新才采纳并 _start_level 跳到对应战役进度；推送 5s 节流；任何失败静默降级纯本地（游戏可玩性不受影响）。
+- 前端：scripts/session/server_sync.gd（api_base 默认空 = 全 no-op，Web 经 ?api= 查询参数启用，固定部署可写死 DEFAULT_API_BASE）；progress_store._save_progress_state 尾部挂 game._sync_push()；boot 尾部 call_deferred("_boot_sync")；pull/push 各一个常驻 HTTPRequest 节点（connect 带 kind 绑定参走 game 薄壳回调）。
+- CI：新增独立 .github/workflows/backend.yml（pg:16 service + pytest，仅 backend/** 变更触发）——API 全链测试（roundtrip/陈旧拒绝/幂等/校验）真库跑通；游戏 deploy.yml 的 headless 测试不受影响（无 api_base 时同步零活动）。
+- 工程注记：dispatch 必须在 push 完成后再发（时序竞态会测到旧 SHA，浪费一轮 CI）；GDScript 新函数漏写本地 audit 抓不到未声明标识符，CI 编译兜底（_now_ms 漏写即此）。
+- 部署说明：backend/docker-compose.yml（api+pg）一键起；线上必须 HTTPS（游戏页 https 混合内容拦截），文档 docs/backend.md + backend/README.md。
+- Validation: backend pytest 绿（CI 真库）；游戏分支 CI build 绿；合并 main 后 push 触发生产部署绿。
