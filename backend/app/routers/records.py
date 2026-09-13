@@ -1,7 +1,7 @@
 """Mode registry + per-user mode records + leaderboards."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..core.guards import current_user
+from ..dependencies import current_user
 from ..models.schemas import RecordPutRequest
 from ..services import leaderboard_service, records_service
 

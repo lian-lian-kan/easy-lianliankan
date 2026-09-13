@@ -1,7 +1,7 @@
 """Cloud save routes."""
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..core.guards import current_user, rate_limit
+from ..dependencies import current_user, rate_limit
 from ..models.schemas import ProgressPutRequest, ProgressPutResponse
 from ..services import progress_service, user_service
 from ..services.progress_service import StateTooLarge, StaleTimestamp

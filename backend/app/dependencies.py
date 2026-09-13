@@ -1,29 +1,35 @@
-"""Shared FastAPI dependencies: auth, rate limiting, request id."""
+"""Shared FastAPI dependencies: auth, rate limiting, request id.
+
+Application-level (not core/): they bind HTTP concerns (headers, 401/429) to
+repositories and the rate limiter, so core stays framework-light.
+"""
 import uuid
 
 from fastapi import HTTPException, Request
 
-from . import ratelimit, security
+from .core import ratelimit
+from .repositories import users_repo
+
+
+def _bearer_token(request: Request) -> str:
+    header = request.headers.get("Authorization", "")
+    if not header.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="missing bearer token")
+    return header[7:].strip()
 
 
 def current_user(request: Request) -> str:
     """Dependency: bearer token -> user_id (401 when absent/unknown/expired)."""
-    header = request.headers.get("Authorization", "")
-    if not header.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="missing bearer token")
-    token = header[7:].strip()
-    row = security.find_active_user_by_token(token)
+    token = _bearer_token(request)
+    row = users_repo.find_active_user_by_token(token)
     if row is None:
         raise HTTPException(status_code=401, detail="invalid or expired token")
     return str(row["user_id"])
 
 
 def current_token(request: Request) -> str:
-    header = request.headers.get("Authorization", "")
-    if not header.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="missing bearer token")
-    token = header[7:].strip()
-    if security.find_active_user_by_token(token) is None:
+    token = _bearer_token(request)
+    if users_repo.find_active_user_by_token(token) is None:
         raise HTTPException(status_code=401, detail="invalid or expired token")
     return token
 

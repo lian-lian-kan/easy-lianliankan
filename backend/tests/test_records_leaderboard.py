@@ -1,5 +1,7 @@
 """Mode registry, per-mode records merge, leaderboards."""
 
+from app.core import db
+
 from tests.conftest import auth, register
 
 
@@ -40,6 +42,8 @@ def test_unknown_mode_rejected(client):
 
 
 def test_leaderboard_ranks(client):
+    # rerunnable: prior runs of this suite must not shift the exact ranks
+    db.execute("DELETE FROM mode_records WHERE mode_id = 'hell'")
     alice, bob = register(client, "alice"), register(client, "bob")
     auth(client, alice)
     client.put("/api/v1/records/hell", json={"best_score": 500, "play": True, "win": True})

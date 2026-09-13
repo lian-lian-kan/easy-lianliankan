@@ -1,7 +1,7 @@
 """Account + auth routes."""
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..core.guards import current_user, rate_limit
+from ..dependencies import current_user, rate_limit
 from ..models.schemas import RegisterRequest, RenameRequest, TokenResponse
 from ..services import user_service
 

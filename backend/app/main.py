@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .core import config, db, migrations, redis_client
-from .core.guards import new_request_id
+from .dependencies import new_request_id
 from .routers import auth, engagement, progress, records, users
 from .core.mode_seed import MODES
 from .services import records_service

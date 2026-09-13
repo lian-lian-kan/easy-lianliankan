@@ -1,7 +1,7 @@
 """Achievements, weekly missions, wallet, sign-ins."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..core.guards import current_user, rate_limit
+from ..dependencies import current_user, rate_limit
 from ..models.schemas import MissionPutRequest, SigninRequest, WalletEntryRequest
 from ..services import engagement_service
 

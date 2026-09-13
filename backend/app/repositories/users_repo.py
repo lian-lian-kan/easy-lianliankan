@@ -41,12 +41,6 @@ def find_active_user_by_token(token: str):
     )
 
 
-def find_user_by_token(token: str):
-    return db.query_one(
-        "SELECT user_id FROM auth_tokens WHERE token_hash = %s",
-        (security.hash_token(token),),
-    )
-
 
 def delete_token(token: str) -> None:
     db.execute("DELETE FROM auth_tokens WHERE token_hash = %s", (security.hash_token(token),))
