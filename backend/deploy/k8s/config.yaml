@@ -1,13 +1,19 @@
 # Connection settings for the shared cluster services (namespace: database).
-# Hostnames only — cluster DNS resolves these from any pod; never bake IPs.
+# Canonical: in-cluster service hostnames (cluster DNS) — see config.py.
+#
+# TEMPORARY (2026-09-13): cluster-wide pod->Service path is broken (kube-proxy
+# iptables; pods cannot reach ClusterIPs nor kube-dns — same outage that took
+# Harbor down). Until cluster DNS/kube-proxy is repaired, connect through the
+# NodePort on the healthy node (local-server-001). REVERT to hostnames after:
+#   postgres.database.svc.cluster.local:5432 / redis.database.svc.cluster.local:6379
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: backend-config
   namespace: lianliankan
 data:
-  DATABASE_URL: "postgresql://root:nopasswd@postgres.database.svc.cluster.local:5432/lianlian"
-  REDIS_URL: "redis://redis.database.svc.cluster.local:6379/0"
+  DATABASE_URL: "postgresql://root:nopasswd@192.168.1.83:30432/lianlian"
+  REDIS_URL: "redis://192.168.1.83:30379/0"
   REDIS_ENABLED: "1"
   TOKEN_TTL_DAYS: "90"
   MAX_STATE_BYTES: "262144"
