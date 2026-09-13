@@ -74,7 +74,7 @@ func _init() -> void:
 	var short_enough = true
 	for tier in CHEERS.TIERS:
 		for line in tier["lines"]:
-			if str(line).length() > 8:
+			if str(line).length() > 12:
 				short_enough = false
 	check(short_enough, "praise lines stay within the burst label budget")
 

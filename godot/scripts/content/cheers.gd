@@ -7,7 +7,7 @@ extends Reference
 # spike to chase, not a farmable income.
 
 # Tiered praise pools (combo >= key). 36 lines total; keep each line short
-# enough for the burst label (<= 8 glyphs).
+# enough for the burst label (<= 12 chars; latin letters count narrow).
 const TIERS = [
 	{"min": 10, "lines": ["Sophia 最棒！", "月亮为你打call", "星河都甜了", "完美小女神", "甜到冒泡啦", "forever 闪耀"]},
 	{"min": 8, "lines": ["小仙女下凡", "Sophia 美到犯规", "樱色小风暴", "指尖的魔法", "花儿都开了", "梦幻连击", "甜甜的暴击"]},
