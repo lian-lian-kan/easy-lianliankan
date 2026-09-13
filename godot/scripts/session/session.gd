@@ -27,7 +27,7 @@ static func _reset_level_session(game, level, reset_total = false):
 		return
 	_reset_board_session(game, level)
 	_reset_session_counters(game, level)
-	_reset_session_meta(game)
+	_reset_session_meta(game, level)
 	_reset_session_ui(game, reset_total)
 
 
@@ -123,7 +123,7 @@ static func _reset_session_counters(game, level):
 
 
 # Achievement tracking, power-ups and memory-mode state.
-static func _reset_session_meta(game):
+static func _reset_session_meta(game, level):
 	# Reset achievement tracking
 	game.combo_milestones_hit = []
 	game.perfect_misses = 0
