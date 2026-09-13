@@ -42,6 +42,11 @@ class StubTimer:
 
 class FakeGame extends Reference:
 	const PROGRESSION_SCRIPT = preload("res://scripts/session/progression.gd")
+	const STATUS_PLAYING = "playing"
+	const STATUS_PAUSED = "paused"
+	const STATUS_CLEARED = "cleared"
+	const STATUS_FAILED = "failed"
+	const STATUS_COMPLETED = "completed"
 	var audio = StubAudio.new()
 	var VOICE_LINES = StubVoice.new()
 	var stage_status = "playing"
