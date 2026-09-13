@@ -47,6 +47,7 @@ func _init() -> void:
 	check(SM.mode_label("nope") == "未知", "unknown mode falls back to 未知")
 	check(SM.mode_label("tray") == "叠叠消", "tray label registered")
 
+	print("  section: labels done")
 	var intros = ["daily", "time_attack", "endless", "frost", "zen", "hell", "moves", "race", "tray", "collect", "flip", "fever", "perfect"]
 	var intros_ok = true
 	for mode in intros:
@@ -57,9 +58,12 @@ func _init() -> void:
 	check(intros_ok, "intro_text covers every listed special mode")
 	check(SM.intro_text("nope") == "特殊模式开始", "unknown mode falls back to the default intro")
 
+	print("  section: intros done")
 	# --- RECORD_MODES: keys consistent with progression, achievements defined.
+	print("  section: record table loop start")
 	var defined_ids = {}
 	for a in PROGRESSION.get_all_achievements():
+		print("  section: id ", a["id"])
 		defined_ids[a["id"]] = true
 	check(SM.RECORD_MODES.size() == 23, "record table covers 23 modes")
 	var table_ok = true
@@ -211,10 +215,12 @@ func _init() -> void:
 	check(loadout_ok, "loadout extras target real modes and overrides only tweak known grant keys")
 
 	# --- voice line pools: every event keyed pool carries existing clips ---
+	print("  section: voice preload")
 	var VOICE = load("res://scripts/content/voice_lines.gd")
 	check(VOICE.POOLS.has("clear") && VOICE.POOLS.has("fail") && VOICE.POOLS.has("milestone")
 		&& VOICE.POOLS.has("signin") && VOICE.POOLS.has("achievement"),
 		"voice pools cover the five events")
+	print("  section: voice files check")
 	check(VOICE.pools_valid(), "voice pool paths all point at assets/voice ogg clips")
 	var clips_ok = true
 	for key in VOICE.POOLS:
