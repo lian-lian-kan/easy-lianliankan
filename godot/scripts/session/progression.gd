@@ -31,7 +31,7 @@ const ACHIEVEMENTS = [
 	{"id": "stack_first", "name": "叠层达人", "desc": "完成一局叠层模式"},
 	{"id": "gravity_first", "name": "引力达人", "desc": "完成一局重力模式"},
 	{"id": "fog_first", "name": "拨云见日", "desc": "完成一局迷雾模式"},
-	{"id": "chain_first", "name": "斩断锁链", "desc": "完成一局锁链模式"}
+	{"id": "chain_first", "name": "斩断锁链", "desc": "完成一局锁链模式"},
 	{"id": "rock_first", "name": "搬山道人", "desc": "完成一局障碍模式"},
 	{"id": "defuse_first", "name": "拆弹专家", "desc": "完成一局拆弹行动"}
 ]
