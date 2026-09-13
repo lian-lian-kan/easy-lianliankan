@@ -142,6 +142,8 @@ var duel_current = 0
 var pull_http = null
 var push_http = null
 var sync_last_push_ms = -100000
+var cloud_connected = false
+var sync_retry_timer = null
 var _fog_layers = 0       # fog: current outer-ring count
 
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
@@ -272,6 +274,7 @@ func _ready():
 	print("[Game] boot: starting level ", start_level_index)
 	_start_level(start_level_index, true)
 	set_process(true)
+	_build_sync_retry_timer()
 	call_deferred("_boot_sync")
 	call_deferred("_show_onboarding_if_needed")
 	call_deferred("_start_bgm")
@@ -1121,6 +1124,31 @@ func _boot_sync():
 
 func _sync_push():
 	SERVER_SYNC.push(self)
+
+# Cloud save connection state: quiet banner + retry heartbeat until reachable.
+func _build_sync_retry_timer():
+	sync_retry_timer = Timer.new()
+	sync_retry_timer.wait_time = 8.0
+	sync_retry_timer.one_shot = true
+	sync_retry_timer.connect("timeout", self, "_boot_sync")
+	add_child(sync_retry_timer)
+
+func _schedule_sync_retry():
+	if sync_retry_timer != null and not sync_retry_timer.is_stopped():
+		return
+	sync_retry_timer.start()
+
+func _cancel_sync_retry():
+	if sync_retry_timer != null:
+		sync_retry_timer.stop()
+
+func _on_cloud_connected():
+	_show_message("☁️ 云端存档已连接", 1.2)
+
+func _on_cloud_miss():
+	if DEFAULT_API_BASE == "" and OS.get_environment("LIANLIAN_API_BASE") == "":
+		return
+	_show_message("☁️ 正在连接云端存档…", 1.0)
 
 # Server sync is best-effort: every failure path keeps the local save intact.
 func _on_sync_request_completed(_result, code, _headers, body, kind):

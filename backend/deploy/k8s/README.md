@@ -42,11 +42,16 @@ kubectl -n lianliankan run curl --rm -it --image=curlimages/curl -- \
 # 期望 {"ok":true,"db":true,"redis":true}
 ```
 
-## 游戏侧接入
+## 游戏侧接入（产品为云端版，游戏始终同步）
 
-- 集群外：给 Service 挂 NodePort 或经 Ingress 暴露，游戏 URL 加
-  `?api=https://<对外地址>`；
-- 集群内：直接 `http://lianliankan-backend.lianliankan.svc.cluster.local`。
+1. 暴露 API：`kubectl apply -f deploy/k8s/exposure.yaml`——推荐 Cloudflare Tunnel
+   （把 `REPLACE_WITH_TUNNEL_TOKEN` 换成 `cloudflared tunnel create lianliankan`
+   的 token，再 `cloudflared tunnel route dns lianliankan api.<你的域名>`）；
+   NodePort 30800 仅作同 LAN 测试（HTTPS 游戏页会拦 HTTP API）。
+2. 把游戏端 `godot/scripts/session/server_sync.gd` 的 `DEFAULT_API_BASE`
+   填成 `https://api.<你的域名>`（唯一一行改动）。
+3. 游戏即云端版：启动自动注册/拉档，存档实时推送；断网时横幅提示并自动重连，
+   本地文件只作缓存，服务器为唯一事实源。
 
 ## 扩缩容
 

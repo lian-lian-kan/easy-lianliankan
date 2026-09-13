@@ -17,6 +17,8 @@ concurrency:
 env:
   GODOT_VERSION: 3.6.2
   GODOT_RELEASE: stable
+  # Cloud save is real-network only; CI/headless runs must stay offline.
+  LIANLIAN_SYNC: "0"
 
 jobs:
   build:

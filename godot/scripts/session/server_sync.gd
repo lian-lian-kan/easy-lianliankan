@@ -1,40 +1,39 @@
 extends Reference
 
-# Server-side progress sync (opt-in). The game stays fully playable offline:
-# without an API base URL every call is a no-op. Web builds enable it with the
-# `?api=https://host` query parameter; fixed deploys can set DEFAULT_API_BASE.
+# Cloud save — the game is cloud-first: on every boot it registers (first run
+# only), pulls the server save and adopts it when strictly newer, and pushes
+# after every local save (throttled). The local file is a cache; the server is
+# the source of truth. A network miss never blocks play: the boot handshake
+# retries on a timer until the cloud is reachable, and a quiet banner tracks
+# the connection state.
 #
-# Account flow: on first sync the client registers against the backend and
-# stores the returned user_id + bearer token beside the local save; the token
-# is the credential, the server only keeps its SHA-256. Pushes carry the local
-# progression blob with a client unix-ms timestamp; the server refuses stale
-# timestamps so a newer save is never clobbered by an older device. On boot we
-# pull once and adopt the server copy only when strictly newer.
-#
-# Request chaining: boot → register (first run only) → pull; saves → push.
+# API endpoint: DEFAULT_API_BASE below is the single production constant.
+# Local/dev overrides: env LIANLIAN_API_BASE; CI/headless tests: env
+# LIANLIAN_SYNC=0 disables syncing entirely (no network in test runs).
 
 const SYNC_META_PATH = "user://sync_meta.json"
 const PUSH_THROTTLE_MS = 5000
+const RETRY_SECONDS = 8.0
+
+# 生产 API 根地址（HTTPS）。上线时把 DEFAULT_API_BASE 填成集群暴露的地址即可。
 const DEFAULT_API_BASE = ""
 
 # Boot: register (first run only), then pull the server copy once.
 static func boot_sync(game):
-	var base = api_base()
-	if base == "":
+	if not enabled():
 		return
 	var meta = _meta(game)
 	if str(meta.get("token", "")) == "":
-		_request(game, "register", base + "/api/v1/users/register", HTTPClient.METHOD_POST, "{\"nickname\":\"\"}")
+		_request(game, "register", base_url() + "/api/v1/users/register", HTTPClient.METHOD_POST, "{\"nickname\":\"\"}")
 		return
-	_pull(game, base, meta)
+	_pull(game, meta)
 
-static func _pull(game, base, meta):
-	_request(game, "pull", base + "/api/v1/progress", HTTPClient.METHOD_GET, "")
+static func _pull(game, meta):
+	_request(game, "pull", base_url() + "/api/v1/progress", HTTPClient.METHOD_GET, "")
 
 # Push the local progression blob (throttled); called after every local save.
 static func push(game):
-	var base = api_base()
-	if base == "":
+	if not enabled():
 		return
 	var now = OS.get_ticks_msec()
 	if now - int(game.sync_last_push_ms) < PUSH_THROTTLE_MS:
@@ -47,7 +46,7 @@ static func push(game):
 	meta["pending_stamp"] = stamp
 	_write_meta(game, meta)
 	var body = to_json({"state": game.progression_state, "updated_at": stamp})
-	_request(game, "push", base + "/api/v1/progress", HTTPClient.METHOD_PUT, body)
+	_request(game, "push", base_url() + "/api/v1/progress", HTTPClient.METHOD_PUT, body)
 
 # Completion dispatch (HTTPRequest signals need Object targets, so the game
 # shell forwards here with the lane kind).
@@ -62,25 +61,27 @@ static func on_completed(game, kind, code, body_text):
 
 static func _on_register(game, code, body_text):
 	if code != 201:
-		print("[Sync] register failed: ", code)
-		return
+		return _cloud_miss(game, "register", code)
 	var payload = parse_json(body_text)
 	if payload == null or not payload.has("token"):
-		return
+		return _cloud_miss(game, "register", -1)
 	var meta = _meta(game)
 	meta["user_id"] = str(payload["user_id"])
 	meta["token"] = str(payload["token"])
 	_write_meta(game, meta)
-	_pull(game, api_base(), meta)
+	_pull(game, meta)
 
 static func _on_pull(game, code, body_text):
-	if code != 200:
-		if code != 404:
-			print("[Sync] pull failed: ", code)
+	if code == 404:
+		# First contact with an empty cloud account: local cache is the seed.
+		_cloud_ok(game)
 		return
+	if code != 200:
+		return _cloud_miss(game, "pull", code)
 	var payload = parse_json(body_text)
 	if payload == null or not payload.has("state"):
-		return
+		return _cloud_miss(game, "pull", -1)
+	_cloud_ok(game)
 	var server_stamp = int(payload.get("updated_at", 0))
 	var meta = _meta(game)
 	if server_stamp <= int(meta.get("synced_at", 0)):
@@ -95,8 +96,7 @@ static func _on_pull(game, code, body_text):
 
 static func _on_push(game, code, body_text):
 	if code != 200:
-		print("[Sync] push failed: ", code)
-		return
+		return _cloud_miss(game, "push", code)
 	var payload = parse_json(body_text)
 	if payload == null:
 		return
@@ -108,13 +108,27 @@ static func _on_push(game, code, body_text):
 	meta.erase("pending_stamp")
 	_write_meta(game, meta)
 
-static func api_base() -> String:
-	if DEFAULT_API_BASE != "":
-		return DEFAULT_API_BASE
-	if OS.get_name() == "HTML5":
-		var value = JavaScript.eval("new URLSearchParams(window.location.search).get('api') || ''", true)
-		return str(value)
-	return ""
+# Connection state: one banner change per transition, retry timer on a miss.
+static func _cloud_ok(game):
+	if not game.cloud_connected:
+		game.cloud_connected = true
+		game._on_cloud_connected()
+	game._cancel_sync_retry()
+
+static func _cloud_miss(game, lane, code):
+	game.cloud_connected = false
+	game._on_cloud_miss()
+	game._schedule_sync_retry()
+	print("[Sync] %s failed: %d — retry in %ss" % [lane, code, int(RETRY_SECONDS)])
+
+static func enabled() -> bool:
+	return OS.get_environment("LIANLIAN_SYNC") != "0"
+
+static func base_url() -> String:
+	var from_env = OS.get_environment("LIANLIAN_API_BASE")
+	if from_env != "":
+		return from_env
+	return DEFAULT_API_BASE
 
 # A single shared HTTPRequest (requests are serialized by boot flow and the
 # throttle); re-used for register/pull/push lanes.
