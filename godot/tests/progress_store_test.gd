@@ -62,9 +62,10 @@ func _init() -> void:
 	# --- special session patch that filters down to nothing is a no-op
 	game = StoreGame.new()
 	game.special_session = true
-	var before = game.progression_state.duplicate(true)
+	var before = game.progression_state
 	STORE._patch_progress_state(game, {"score_candidate": 1, "current_level_index": 1})
-	check(game.progression_state == before, "fully filtered patch leaves the state untouched")
+	# Godot 3 dictionaries compare by reference with ==; use content hashes.
+	check(game.progression_state.hash() == before.hash(), "fully filtered patch leaves the state untouched")
 	check(game.sync_pushes == 0, "fully filtered patch never saves")
 	check(game.repopulates == 0, "fully filtered patch never repopulates")
 
