@@ -37,11 +37,11 @@ func _init() -> void:
 	var rush_late = LOADOUT.resolve(6, "rush", false, "")
 	check(int(rush_late["time_freeze"]) == 3, "rush extras stack on the unlocked ladder count")
 
-	# --- special sessions replace the ladder with the fixed loadout
-	var special = LOADOUT.resolve(12, "classic", true, "daily")
+	# --- special sessions apply the fixed base loadout on top of the ladder
+	var special = LOADOUT.resolve(12, "classic", true, "endless")
 	check(int(special["time_freeze"]) == 2 and int(special["reshuffle"]) == 2 and int(special["auto_match"]) == 1, "special sessions grant the friendly base loadout")
-	check(int(special["bomb"]) == 0 and int(special["rainbow"]) == 0, "the daily override strips click-targeted tools and ignores the ladder")
-	check(int(special["magnifier"]) == 1, "tools outside the override tables keep their ladder grants")
+	check(int(special["bomb"]) == 1 and int(special["rainbow"]) == 1, "click-targeted tools keep their ladder grants when not overridden")
+	check(int(special["magnifier"]) == 1 and int(special["time_sand"]) == 1, "tools without extra/override entries keep their ladder grants")
 
 	var frost = LOADOUT.resolve(1, "classic", true, "frost")
 	check(int(frost["warm_patch"]) == 3, "frost sessions grant three warm patches")
