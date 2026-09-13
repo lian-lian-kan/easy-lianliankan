@@ -33,7 +33,7 @@ const ACHIEVEMENTS = [
 	{"id": "fog_first", "name": "拨云见日", "desc": "完成一局迷雾模式"},
 	{"id": "chain_first", "name": "斩断锁链", "desc": "完成一局锁链模式"},
 	{"id": "rock_first", "name": "搬山道人", "desc": "完成一局障碍模式"},
-	{"id": "defuse_first", "name": "拆弹专家", "desc": "完成一局拆弹行动"}
+	{"id": "defuse_first", "name": "拆弹专家", "desc": "完成一局拆弹行动"},
 	{"id": "target_first", "name": "指哪打哪", "desc": "完成一局指定连消"},
 	{"id": "shift_first", "name": "善变女神", "desc": "完成一局变脸模式"}
 ]
