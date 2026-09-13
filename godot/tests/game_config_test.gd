@@ -19,6 +19,10 @@ class FakeGame:
 	const TUNING_PATH = "res://data/tuning.json"
 	const ICON_SETS_PATH = "res://data/icon_sets.json"
 	const GAME_MODES_PATH = "res://data/game_modes.json"
+	var campaign_levels = []
+	var tuning = {}
+	var icon_sets = []
+	var game_mode_configs = {}
 	func _load_json_file(path):
 		return CONFIG._load_json_file(self, path)
 	func _default_campaign_levels():
