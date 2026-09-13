@@ -19,7 +19,7 @@ class StoreGame:
 	const PROGRESS_SAVE_PATH = "user://unit_progress_store.json"
 	const PROGRESSION_SCRIPT = preload("res://scripts/session/progression.gd")
 	var campaign_levels = [0, 1, 2]
-	var level_select_option = null
+	var level_select_option = Object.new()  # non-null: the repopulate gate checks it
 	var special_session = false
 	var sync_pushes = 0
 	var repopulates = 0
@@ -63,7 +63,7 @@ func _init() -> void:
 	game = StoreGame.new()
 	var before = game.progression_state.duplicate(true)
 	STORE._patch_progress_state(game, {"score_candidate": 1, "current_level_index": 1})
-	check(game.progression_state == before and game.sync_pushes == 0, "fully filtered special patches change nothing")
+	check(game.progression_state == before and game.sync_pushes == 0 and game.repopulates == 0, "fully filtered special patches change nothing")
 
 	# --- no-change short circuit: same state must not save again
 	game = StoreGame.new()
