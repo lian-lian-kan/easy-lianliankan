@@ -61,10 +61,9 @@ func _init() -> void:
 
 	# --- special session patch that filters down to nothing is a no-op
 	game = StoreGame.new()
+	game.special_session = true
 	var before = game.progression_state.duplicate(true)
 	STORE._patch_progress_state(game, {"score_candidate": 1, "current_level_index": 1})
-	if game.progression_state != before:
-		print("  [diag] state changed to: ", to_json(game.progression_state))
 	check(game.progression_state == before, "fully filtered patch leaves the state untouched")
 	check(game.sync_pushes == 0, "fully filtered patch never saves")
 	check(game.repopulates == 0, "fully filtered patch never repopulates")
