@@ -81,7 +81,7 @@ def put_progress(player_id: str, state: dict, updated_at: int) -> dict:
                     ON CONFLICT (player_id) DO UPDATE
                         SET state = EXCLUDED.state,
                             updated_at = EXCLUDED.updated_at
-                        WHERE player_progress.updated_at < EXCLUDED.updated_at
+                        WHERE player_progress.updated_at <= EXCLUDED.updated_at
                     RETURNING updated_at
                     """,
                     (player_id, json.dumps(state), updated_at),
