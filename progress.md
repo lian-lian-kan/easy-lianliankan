@@ -1035,3 +1035,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **新测试文件 9 个**：board_pathfinder / achievements / missions（FakeGame 驱动周任务全语义）/ tile_match（叠叠消纯状态机）/ memory_flip / progress_store（特殊会话过滤/coins_100 挂钩/短路）/ server_sync（云同步握手/采纳/节流/横幅）/ economy（图鉴收集/关卡奖励）/ content_sanity（分层牌堆/语音池不变量）。CI 无头测试清单 16→27 项。
 - **GDScript3 测试坑新记**：字典 == 是引用比较（用 hash() 比内容）；Object.new() 非法；web release 模板不打印脚本运行时错误（强类型签名收错类型=静默拒调）。
 - **线上复核**：全部重构合并后 prod 体检（真 Chrome 开线上页）register 201 + pull 404，云存档全链路持续正常。
+- 续（同轮后段）：新增 session_fail_test（超时失败/复活守卫/付费复活时钟恢复）、game_config_test、session_combo_test（连击链接/过期/封顶/fever 退时）、session_settle_test（时间奖励/星级分档/终关回绕）、powerup_loadout_test；无头测试文件数达 30。
+- 抽取 powerup_loadout 时曾凭印象臆造 extra/override 两表数据，被 power_ups_probe 当场抓出——已从 git 历史恢复真实表，教训（先读原表再改写）已入记忆。
+- 低耦合收尾：AudioManager autoload 编译期依赖全量解除（9 文件 38 处改经 game.audio），-s 无头模式从"部分测试静默跳过"变为全量真实执行；CI 增设测试文件 quit() 静态门禁防挂死；mode_meta 道具表校验改指新模块。
+- Validation: deploy build 绿（30 文件全跑全绿）+ backend pytest 100% 双覆盖绿 + prod e2e（真开线上页 register 201 / pull 404）绿。
