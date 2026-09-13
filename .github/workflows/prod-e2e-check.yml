@@ -5,6 +5,10 @@ name: Production E2E check (manual)
 # console + all network traffic. Never runs automatically.
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "prod = boot the live site and assert API traffic; diag = export + serve locally"
+        default: "prod"
 
 permissions:
   contents: read
@@ -19,8 +23,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        if: inputs.mode == 'diag'
 
       - name: Install Godot (headless + Web templates)
+        if: inputs.mode == 'diag'
         run: |
           set -euo pipefail
           BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}"
@@ -35,6 +41,7 @@ jobs:
           unzip -q -o -j /tmp/templates.tpz "templates/webassembly_release.zip" -d "$TPL"
 
       - name: Instrument sync boot path with debug prints
+        if: inputs.mode == 'diag'
         run: |
           set -euo pipefail
           python3 - <<'PYEOF'
@@ -59,6 +66,7 @@ jobs:
           grep -n "SyncDiag" godot/scripts/session/server_sync.gd
 
       - name: Export web build
+        if: inputs.mode == 'diag'
         run: |
           set -euo pipefail
           mkdir -p /tmp/export
@@ -66,6 +74,7 @@ jobs:
           ls -la /tmp/export
 
       - name: Serve locally and boot in headless Chrome (capture all traffic)
+        if: inputs.mode == 'diag'
         run: |
           set -euo pipefail
           pip install playwright==1.49.0
@@ -111,3 +120,50 @@ jobs:
               print(line[:300])
           PYEOF
           python /tmp/diag.py
+      - name: Boot the LIVE game and assert cloud handshake
+        if: inputs.mode == 'prod'
+        run: |
+          set -euo pipefail
+          pip install playwright==1.49.0
+          cat > /tmp/prod_e2e.py <<'PYEOF'
+          import json, sys
+          from playwright.sync_api import sync_playwright
+
+          GAME_URL = "https://lian-lian-kan.github.io/easy-lianliankan/"
+          API_HOST = "lianliankan.zhaixingren.cn"
+          api_hits, console_lines = [], []
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(
+                  channel="chrome",
+                  args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+              )
+              page = browser.new_page()
+              page.on("console", lambda m: console_lines.append(m.text))
+              page.on("pageerror", lambda e: console_lines.append("PAGEERROR " + str(e)))
+              def on_resp(resp):
+                  if API_HOST in resp.url:
+                      body = ""
+                      try:
+                          body = resp.text()[:160]
+                      except Exception:
+                          pass
+                      api_hits.append((resp.status, resp.url, body))
+              page.on("response", on_resp)
+              page.on("requestfailed", lambda r: api_hits.append((0, r.url, str(r.failure))) if API_HOST in r.url else None)
+              page.goto(GAME_URL, wait_until="domcontentloaded", timeout=30000)
+              page.wait_for_timeout(75000)
+              browser.close()
+
+          print("=== API traffic (%d) ===" % len(api_hits))
+          for h in api_hits:
+              print(json.dumps(h, default=str)[:300])
+          print("=== console [Sync] lines ===")
+          for line in console_lines:
+              if "[Sync]" in line or "PAGEERROR" in line:
+                  print(line[:250])
+          ok = any(h[0] in (200, 201, 404) for h in api_hits)
+          print("=== E2E %s ===" % ("OK: live page reached the cloud API" if ok else "FAILED"))
+          sys.exit(0 if ok else 1)
+          PYEOF
+          python /tmp/prod_e2e.py
