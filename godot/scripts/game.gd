@@ -261,7 +261,7 @@ var modes_button  # 玩法模式入口按钮
 
 func _ready():
 	print("[Game] boot: ready")
-	audio = get_node("AudioManager")
+	audio = get_node("/root/AudioManager")
 	randomize()
 	cheer_decks = {}
 	combo_milestones_hit = []
