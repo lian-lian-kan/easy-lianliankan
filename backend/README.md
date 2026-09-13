@@ -85,6 +85,22 @@ ssh local-server-001 'kubectl set image -n lianliankan deploy/lianliankan-backen
 NodePort 直连 PG/Redis，**集群 DNS 修复后把 config.yaml 改回集群内主机名**。
 kube-proxy NodePort 不绑 127.0.0.1，隧道转发目标必须写节点 IP。
 
+## 本地测试 + 覆盖率（秒级反馈，不用等 CI）
+
+CI 要求行+分支双 100% 覆盖（--cov-fail-under=100），本地用一次性容器跑同一标准：
+
+```bash
+docker run -d --name llk-pg -e POSTGRES_USER=lianlian -e POSTGRES_PASSWORD=lianlian -e POSTGRES_DB=lianlian -p 15432:5432 postgres:16-alpine
+docker run -d --name llk-redis -p 16379:6379 redis:7-alpine
+export DATABASE_URL=postgresql://lianlian:lianlian@localhost:15432/lianlian REDIS_URL=redis://localhost:16379/0
+# 覆盖率以全新库为准（迁移首跑行也计入覆盖），先清 schema 再跑：
+docker exec llk-pg psql -U lianlian -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+python -m pytest tests -q --cov=app --cov-branch --cov-fail-under=100
+```
+
+注意：排行榜等有累积语义的用例已写成可重复执行；若复用旧库跑出顺序类失败，先清 schema。
+pip 依赖：requirements.txt 全量 + pytest-cov。
+
 ## 本地起服务 / 测试
 
 ```bash
