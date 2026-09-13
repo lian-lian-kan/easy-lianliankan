@@ -43,6 +43,8 @@ class FakeGame extends Node:
 		scheduled += 1
 	func _cancel_sync_retry():
 		cancelled += 1
+	func _on_sync_request_completed(_result, code, _headers, body, kind):
+		SERVER_SYNC.on_completed(self, kind, code, body.get_string_from_utf8())
 
 func _forward(game, kind, code, body):
 	game._on_sync_request_completed(0, code, null, body.to_utf8(), kind)

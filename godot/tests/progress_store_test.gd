@@ -19,7 +19,7 @@ class StoreGame:
 	const PROGRESS_SAVE_PATH = "user://unit_progress_store.json"
 	const PROGRESSION_SCRIPT = preload("res://scripts/session/progression.gd")
 	var campaign_levels = [0, 1, 2]
-	var level_select_option = Object.new()  # non-null: the repopulate gate checks it
+	var level_select_option = Reference.new()  # non-null: the repopulate gate checks it
 	var special_session = false
 	var sync_pushes = 0
 	var repopulates = 0
