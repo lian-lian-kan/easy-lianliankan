@@ -161,7 +161,6 @@ static func _http(game):
 	if game.pull_http == null:
 		var req = HTTPRequest.new()
 		req.timeout = 8.0
-		req.use_utf8 = true
 		game.add_child(req)
 		req.connect("request_completed", game, "_on_sync_request_completed")
 		game.pull_http = req
