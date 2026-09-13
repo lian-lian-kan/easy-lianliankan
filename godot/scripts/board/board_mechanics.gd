@@ -132,7 +132,7 @@ static func apply_match_damage(game, a, b):
 	damage_tile(game, b, cracked, removed)
 	break_chains_around(game, removed)
 	if cracked.size() > 0:
-		AudioManager.play_shuffle()
+		game.audio.play_shuffle()
 		game._show_message("❄️ 冰层碎裂！再消一次", 1.0)
 	return cracked
 

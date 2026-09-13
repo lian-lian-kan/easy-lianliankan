@@ -141,6 +141,7 @@ var defense_countdown = 0
 var duel_scores = [0, 0]
 var duel_current = 0
 var pull_http = null
+var audio = null  # AudioManager autoload, cached at ready
 var web_bridge = null
 var push_http = null
 var sync_last_push_ms = -100000
@@ -260,6 +261,7 @@ var modes_button  # 玩法模式入口按钮
 
 func _ready():
 	print("[Game] boot: ready")
+	audio = get_node("AudioManager")
 	randomize()
 	cheer_decks = {}
 	combo_milestones_hit = []
@@ -297,7 +299,7 @@ func _notification(what):
 	# _mount_modal_panel), so dynamic content never knocks them off-center.
 
 func _start_bgm():
-	AudioManager.start_bgm()
+	audio.start_bgm()
 
 # ═══ 输入路由（game_input） ═══
 
@@ -782,10 +784,10 @@ func _on_settings_close():
 	UI_PANELS.close_modal(self, settings_panel)
 
 func _on_master_volume_changed(value):
-	AudioManager.set_master_volume(value)
+	audio.set_master_volume(value)
 
 func _on_music_toggled(enabled):
-	AudioManager.set_music_enabled(enabled)
+	audio.set_music_enabled(enabled)
 
 func _on_effects_toggled(enabled):
 	return UI_PANELS._on_effects_toggled(self, enabled)
@@ -797,7 +799,7 @@ func _register_perfect_miss():
 	return SESSION._register_perfect_miss(self)
 
 func _on_mute_toggled(muted):
-	AudioManager.set_muted(muted)
+	audio.set_muted(muted)
 
 func _on_achievements_pressed():
 	UI_PANELS.reopen_achievements(self)

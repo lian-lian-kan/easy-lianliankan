@@ -58,7 +58,7 @@ static func play(game, key: String):
 	var path = draw(game, key)
 	if path == "":
 		return
-	AudioManager.play_voice_path(path)
+	game.audio.play_voice_path(path)
 
 
 # Data-level invariant for tests: every pool is non-empty and every clip

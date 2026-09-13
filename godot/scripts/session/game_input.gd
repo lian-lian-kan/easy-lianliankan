@@ -90,7 +90,7 @@ static func _handle_selection_toggles(game, point) -> bool:
 		game.selected = point
 		game.hint_tiles.clear()
 		game.error_tiles.clear()
-		AudioManager.play_select()
+		game.audio.play_select()
 		game._animate_select(point)
 		game._refresh_board_visuals()
 		return true
@@ -105,7 +105,7 @@ static func _handle_selection_toggles(game, point) -> bool:
 static func _reject_pair(game, previous, point, message, duration):
 	game.selected = point
 	game.hint_tiles.clear()
-	AudioManager.play_error()
+	game.audio.play_error()
 	game._register_perfect_miss()
 	game._flash_error_tiles([previous, point])
 	game._animate_select(point)
@@ -125,7 +125,7 @@ static func _execute_pair_match(game, path, previous, point):
 	game.hint_tiles.clear()
 	game.error_tiles.clear()
 
-	AudioManager.play_eliminate_combo(game.combo)
+	game.audio.play_eliminate_combo(game.combo)
 
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
 	game._show_path(path, "eliminate", int(game.tuning.get("path_preview_ms", 420)))
@@ -142,7 +142,7 @@ static func _execute_pair_match(game, path, previous, point):
 	_refresh_target_pair(game)
 	# Slide: every match rotates one occupied row right by one cell.
 	if game._is_slide_mode() and game.BOARD_ENGINE.slide_random_row(game.board):
-		AudioManager.play_shuffle()
+		game.audio.play_shuffle()
 		game._show_message("🧲 滑移！整行移动了一位", 0.8)
 	# Defense: each cleared pair pushes the monster one step back.
 	if game._is_defense_mode():
@@ -179,7 +179,7 @@ static func _handle_memory_toggles(game, point, r, c) -> bool:
 		game.memory_revealed[game._memory_key(point)] = true
 		game.hint_tiles.clear()
 		game.error_tiles.clear()
-		AudioManager.play_select()
+		game.audio.play_select()
 		game._animate_select(point)
 		game._refresh_board_visuals()
 		return true
@@ -195,7 +195,7 @@ static func _reject_memory_pair(game, previous, point):
 	game.memory_revealed[game._memory_key(previous)] = true
 	game.memory_revealed[game._memory_key(point)] = true
 	game.hint_tiles.clear()
-	AudioManager.play_error()
+	game.audio.play_error()
 	game._flash_error_tiles([previous, point])
 	game._show_message("不一样，记住位置", 0.8)
 	game._memory_schedule_hide([previous, point], float(game.special_level.get("memory_face_up", 1.0)))
@@ -207,7 +207,7 @@ static func _memory_path_blocked(game, previous, point):
 	game.selected = point
 	game.memory_revealed[game._memory_key(point)] = true
 	game.hint_tiles.clear()
-	AudioManager.play_error()
+	game.audio.play_error()
 	game._flash_error_tiles([previous, point])
 	game._show_message("路径不通：最多只能拐2次弯", 0.9)
 	game._refresh_board_visuals()
@@ -222,7 +222,7 @@ static func _execute_memory_match(game, path, previous, point):
 	game.memory_revealed.erase(game._memory_key(a))
 	game.memory_revealed.erase(game._memory_key(b))
 
-	AudioManager.play_eliminate_combo(game.combo)
+	game.audio.play_eliminate_combo(game.combo)
 	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
 	game._show_path(path, "eliminate", int(game.tuning.get("path_preview_ms", 420)))
 	game._play_eliminate_effects([a, b])
@@ -304,7 +304,7 @@ static func _on_hint_pressed(game):
 		return
 
 	game.level_hints_used += 1
-	AudioManager.play_hint()
+	game.audio.play_hint()
 
 	var hint = game._find_any_hint(game.board)
 	if hint.empty():
@@ -370,7 +370,7 @@ static func _on_shuffle_pressed(game):
 	if game.stage_status != game.STATUS_PLAYING:
 		return
 
-	AudioManager.play_shuffle()
+	game.audio.play_shuffle()
 
 	game._animate_shuffle_wave()
 	game._reshuffle_board(game.board)

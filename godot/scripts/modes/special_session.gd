@@ -22,7 +22,7 @@ static func _finish_special_win(game, message):
 		var verdict = "平局，握手言和～" if s1 == s2 else ("🏆 玩家1 获胜！" if s1 > s2 else "🏆 玩家2 获胜！")
 		message = "%s %d:%d %s" % [verdict, s1, s2, message]
 	game.stage_status = game.STATUS_CLEARED
-	AudioManager.play_win()
+	game.audio.play_win()
 	game.VOICE_LINES.play(game, "clear")
 	game._record_special_completion()
 	game._play_stage_clear_celebration(false)
@@ -96,7 +96,7 @@ static func _resolve_special_clear(game):
 	if game.race_timer:
 		game.race_timer.stop()
 	game.stage_panel_label.visible = false
-	AudioManager.play_win()
+	game.audio.play_win()
 
 	if game.special_mode == "endless":
 		game._patch_progress_state({"endless_result": {"round": game.endless_round, "score": game.total_score}})
@@ -226,7 +226,7 @@ static func _on_flip_back_timeout(game):
 
 static func _fail_tray_full(game):
 	game.stage_status = game.STATUS_FAILED
-	AudioManager.play_shuffle()
+	game.audio.play_shuffle()
 	game._show_message("槽位满了！再试一次", 1.8)
 	game._refresh_ui()
 

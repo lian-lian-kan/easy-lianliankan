@@ -41,7 +41,7 @@ static func _use_power_up(game, power_up_type):
 
 	game.power_ups[power_up_type] -= 1
 	game._refresh_ui()
-	AudioManager.play_button_click()
+	game.audio.play_button_click()
 
 # Re-pressing an armed type disarms it; rainbow also drops the selection.
 static func _recall_armed(game, power_up_type) -> bool:
@@ -151,7 +151,7 @@ static func _execute_warm_patch(game, point):
 	game.frost_pending = false
 	game.frost_uses += 1
 	game.board_armor[point.x][point.y] = 0
-	AudioManager.play_hint()
+	game.audio.play_hint()
 	game._play_eliminate_effects([point])
 	game._show_message("🔥 冰融化了！", 1.1)
 	game._refresh_ui()
@@ -181,7 +181,7 @@ static func _execute_bomb(game, point):
 	game.error_tiles.clear()
 	game.moves += 1
 
-	AudioManager.play_shuffle()
+	game.audio.play_shuffle()
 	game._show_path(game._board_edge_path(point, partner), "eliminate", int(game.tuning.get("path_preview_ms", 420)))
 	game._play_eliminate_effects([point, partner])
 	game._show_message("💥 轰！", 0.8)
@@ -216,7 +216,7 @@ static func _execute_rainbow_click(game, point):
 	if game.selected.x < 0:
 		game.selected = point
 		game.hint_tiles.clear()
-		AudioManager.play_select()
+		game.audio.play_select()
 		game._animate_select(point)
 		game._refresh_board_visuals()
 		return
@@ -233,7 +233,7 @@ static func _execute_rainbow_click(game, point):
 	game.error_tiles.clear()
 	game.moves += 1
 
-	AudioManager.play_eliminate_combo(game.combo)
+	game.audio.play_eliminate_combo(game.combo)
 	game._show_path(game._board_edge_path(a, b), "eliminate", int(game.tuning.get("path_preview_ms", 420)))
 	game._play_eliminate_effects([a, b])
 	game._show_message("🌈 彩虹消除 +✨", 0.9)

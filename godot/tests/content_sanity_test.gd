@@ -19,6 +19,10 @@ class StubVoice:
 	func play(_game, _key):
 		pass
 
+class StubAudio:
+	func play_voice_path(_path):
+		pass
+
 class FakeGame:
 	var cheer_decks = {}
 	var combo_milestones_hit = []
@@ -26,6 +30,7 @@ class FakeGame:
 	var progression_state = {}
 	var patches = []
 	var messages = []
+	var audio = StubAudio.new()
 	var ECONOMY = null
 	var VOICE_LINES = StubVoice.new()
 	func _patch_progress_state(patch):

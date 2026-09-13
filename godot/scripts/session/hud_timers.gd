@@ -52,7 +52,7 @@ static func _on_second_tick(game):
 		if game.shift_countdown == 0:
 			game.shift_countdown = int(game._current_level().get("shift_interval", 8))
 			if game.BOARD_ENGINE.swap_random_faces(game.board):
-				AudioManager.play_shuffle()
+				game.audio.play_shuffle()
 				game._show_message("🔄 变脸！图案换位置了", 0.9)
 				game._refresh_board_visuals()
 	# Defense: the monster creeps closer every step interval; reaching the
@@ -62,7 +62,7 @@ static func _on_second_tick(game):
 		if game.defense_countdown == 0:
 			game.defense_countdown = int(game._current_level().get("defense_step", 12))
 			game.defense_distance -= 1
-			AudioManager.play_select()
+			game.audio.play_select()
 			if game.defense_distance <= 0:
 				game.SESSION._fail_stage(game, "🧟 怪物冲到了面前，防线失守！\n点击「重开」再战")
 			else:
@@ -82,7 +82,7 @@ static func _on_race_tick(game):
 		return
 	game.race_elapsed = 0
 	game.race_ai_pairs = min(game.race_total_pairs, game.race_ai_pairs + 1)
-	AudioManager.play_select()
+	game.audio.play_select()
 	game._refresh_ui()
 	if game.race_ai_pairs >= game.race_total_pairs:
 		game._fail_race_lost()

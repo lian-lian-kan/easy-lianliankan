@@ -122,27 +122,27 @@ static func _settings_panel(game):
 # Volume + four toggles, every row wired to its settings callback.
 static func _settings_audio_rows(game, content):
 	# Master volume
-	var master_row = _create_volume_row(game, "主音量", AudioManager.master_volume)
+	var master_row = _create_volume_row(game, "主音量", game.audio.master_volume)
 	master_row.slider.connect("value_changed", game, "_on_master_volume_changed")
 	content.add_child(master_row.container)
 
 	# Effects enabled
-	var effects_row = _create_toggle_row(game, "音效", AudioManager.effects_enabled)
+	var effects_row = _create_toggle_row(game, "音效", game.audio.effects_enabled)
 	effects_row.toggle.connect("toggled", game, "_on_effects_toggled")
 	content.add_child(effects_row.container)
 
 	# Voice lines enabled
-	var voice_row = _create_toggle_row(game, "语音", AudioManager.voice_enabled)
+	var voice_row = _create_toggle_row(game, "语音", game.audio.voice_enabled)
 	voice_row.toggle.connect("toggled", game, "_on_voice_toggled")
 	content.add_child(voice_row.container)
 
 	# Music enabled
-	var music_row = _create_toggle_row(game, "背景音乐", AudioManager.music_enabled)
+	var music_row = _create_toggle_row(game, "背景音乐", game.audio.music_enabled)
 	music_row.toggle.connect("toggled", game, "_on_music_toggled")
 	content.add_child(music_row.container)
 
 	# Mute all
-	var mute_row = _create_toggle_row(game, "静音", AudioManager.muted)
+	var mute_row = _create_toggle_row(game, "静音", game.audio.muted)
 	mute_row.toggle.connect("toggled", game, "_on_mute_toggled")
 	content.add_child(mute_row.container)
 
@@ -496,11 +496,11 @@ static func _on_icon_set_selected(game, index):
 
 
 static func _on_effects_toggled(game, enabled):
-	AudioManager.set_effects_enabled(enabled)
+	game.audio.set_effects_enabled(enabled)
 
 
 static func _on_voice_toggled(game, enabled):
-	AudioManager.set_voice_enabled(enabled)
+	game.audio.set_voice_enabled(enabled)
 
 
 static func _update_modal_panel_sizes(game, viewport_size, is_portrait):

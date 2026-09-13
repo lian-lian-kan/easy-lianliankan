@@ -228,7 +228,7 @@ static func _register_perfect_miss(game):
 
 static func _fail_stage(game, panel_text):
 	game.stage_status = game.STATUS_FAILED
-	AudioManager.play_fail()
+	game.audio.play_fail()
 	game.VOICE_LINES.play(game, "fail")
 	game._reset_combo()
 	game.selected = Vector2(-1, -1)
@@ -336,7 +336,7 @@ static func _finish_final_clear(game, reward):
 	game.stage_status = game.STATUS_COMPLETED
 	game.stage_panel_label.text = "全部通关！Sophia 太棒啦 " + "  ⭐".repeat(reward["stars"]) + "\n点击「再来一轮」"
 	game.stage_panel_label.visible = true
-	AudioManager.play_win()
+	game.audio.play_win()
 	game._show_message("全通关！时间奖励 +" + str(reward["time_bonus"]), 2.5)
 	game._play_stage_clear_celebration(true)
 
@@ -347,7 +347,7 @@ static func _finish_intermediate_clear(game, reward):
 	game.pending_level_index = game.level_index + 1
 	game.stage_panel_label.text = "过关啦～准备进入下一关  " + "⭐".repeat(reward["stars"])
 	game.stage_panel_label.visible = true
-	AudioManager.play_win()
+	game.audio.play_win()
 	game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关过关啦！奖励 +" + str(reward["time_bonus"]) + " · 🌸+" + str(reward["coin_reward"]), 1.2)
 	game._play_stage_clear_celebration(false)
 	game.level_advance_timer.stop()
@@ -431,7 +431,7 @@ static func call_husband(game):
 		return
 	game.husband_called = true
 	game.time_left = min(999, game.time_left + 15)
-	AudioManager.play_hint()
+	game.audio.play_hint()
 	var hint = game._find_any_hint(game.board)
 	if hint.empty():
 		game._reshuffle_board(game.board)
