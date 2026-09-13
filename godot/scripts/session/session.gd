@@ -309,10 +309,10 @@ static func _settle_campaign_rewards(game):
 # Campaign finished: completed status + full celebration.
 static func _finish_final_clear(game, reward):
 	game.stage_status = game.STATUS_COMPLETED
-	game.stage_panel_label.text = "全部通关！Sophia 太棒啦 " + "  ⭐".repeat(stars) + "\n点击「再来一轮」"
+	game.stage_panel_label.text = "全部通关！Sophia 太棒啦 " + "  ⭐".repeat(reward["stars"]) + "\n点击「再来一轮」"
 	game.stage_panel_label.visible = true
 	AudioManager.play_win()
-	game._show_message("全通关！时间奖励 +" + str(time_bonus), 2.5)
+	game._show_message("全通关！时间奖励 +" + str(reward["time_bonus"]), 2.5)
 	game._play_stage_clear_celebration(true)
 
 
@@ -320,10 +320,10 @@ static func _finish_final_clear(game, reward):
 static func _finish_intermediate_clear(game, reward):
 	game.stage_status = game.STATUS_CLEARED
 	game.pending_level_index = game.level_index + 1
-	game.stage_panel_label.text = "过关啦～准备进入下一关  " + "⭐".repeat(stars)
+	game.stage_panel_label.text = "过关啦～准备进入下一关  " + "⭐".repeat(reward["stars"])
 	game.stage_panel_label.visible = true
 	AudioManager.play_win()
-	game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关过关啦！奖励 +" + str(time_bonus) + " · 🌸+" + str(coin_reward), 1.2)
+	game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关过关啦！奖励 +" + str(reward["time_bonus"]) + " · 🌸+" + str(reward["coin_reward"]), 1.2)
 	game._play_stage_clear_celebration(false)
 	game.level_advance_timer.stop()
 	game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
