@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lianliankan-backend
+  namespace: lianliankan
+  labels:
+    app: lianliankan-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lianliankan-backend
+  template:
+    metadata:
+      labels:
+        app: lianliankan-backend
+    spec:
+      containers:
+        - name: api
+          image: lianliankan-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

@@ -1,0 +1,13 @@
+# Connection settings for the shared cluster services (namespace: database).
+# Hostnames only — cluster DNS resolves these from any pod; never bake IPs.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: lianliankan
+data:
+  DATABASE_URL: "postgresql://root:nopasswd@postgres.database.svc.cluster.local:5432/lianlian"
+  REDIS_URL: "redis://redis.database.svc.cluster.local:6379/0"
+  REDIS_ENABLED: "1"
+  TOKEN_TTL_DAYS: "90"
+  MAX_STATE_BYTES: "262144"

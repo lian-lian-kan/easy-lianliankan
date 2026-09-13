@@ -10,7 +10,10 @@ from app.main import app
 
 @pytest.fixture(autouse=True)
 def _fresh_rate_limiter():
-    from app.core import ratelimit
+    from app.core import ratelimit, redis_client
+    client = redis_client.get_client()
+    if client is not None:
+        client.flushdb()  # test-only: dedicated CI/local redis, buckets must not leak across tests
     ratelimit.reset()
     yield
 

@@ -38,6 +38,15 @@ backend/
 成就解锁、周任务进度、樱花币流水与签到。均走 Bearer token，幂等合并语义与客户端
 本地策略一致（max/累加/每日一行）。
 
+## 集群接入（K8S，2026-09-14 起）
+
+- 生产 PG/Redis 跑在 K8S 集群 `database` namespace（集群信息见 local-server-001:~/k8s-service.txt）：
+  - PG：`postgres.database.svc.cluster.local:5432`（库 `lianlian` 已建）
+  - Redis：`redis.database.svc.cluster.local:6379`
+- **连接一律用集群主机名，禁 IP**；集群外才用 `local-server-002` 的 NodePort（PG 30432 / Redis 30379）。
+- 后端自身按 `backend/deploy/k8s/` 清单部署进集群（namespace `lianliankan`，2 副本，探活 /healthz）。
+- 限流的滑动窗口存 Redis（ZSET），多副本共享；Redis 挂了自动降级内存窗口，API 不中断。
+
 ## 部署（参考）
 
 ```bash

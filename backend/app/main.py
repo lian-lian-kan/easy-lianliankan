@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from .core import db, migrations
+from .core import db, migrations, redis_client
 from .core.guards import new_request_id
 from .routers import auth, engagement, progress, records, users
 from .core.mode_seed import MODES
@@ -39,7 +39,7 @@ def healthz():
     db_ok = db.ping()
     if not db_ok:
         return JSONResponse(status_code=503, content={"ok": False, "db": False})
-    return {"ok": True, "db": True}
+    return {"ok": True, "db": True, "redis": redis_client.ping()}
 
 
 @app.exception_handler(HTTPException)

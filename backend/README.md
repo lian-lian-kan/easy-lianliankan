@@ -67,7 +67,7 @@ python -m pytest tests -q            # SKIP_PG_TESTS=1 跳过 DB 用例
 ## 健壮性设计
 
 - **事务**：`db.transaction()` 上下文（thread-local 连接）——注册/令牌轮换/钱包余额读回等多写操作原子化。
-- **限流**：公共端点滑动窗口（注册 10/分、进度 PUT 60/分、钱包 30/分、签到 10/分，按 IP），纯逻辑类可离线单测；多实例部署时把 store 换 Redis 即可（`allow()` 签名不变）。
+- **限流**：公共端点滑动窗口（注册 10/分、进度 PUT 60/分、钱包 30/分、签到 10/分，按 IP）。**Redis ZSET 共享窗口为主存储**（多副本全局限流天然生效），Redis 不可用自动降级进程内存窗口；窗口行为可离线单测。
 - **入参硬边界**：pydantic 模型层拦（时间戳上限 2100 年、日期格式、数值范围）；服务层再拦未来时间戳（>5 分钟偏移直接 400，防写死后续存档）。
 - **错误封装**：统一 `{"error": {"code", "detail"}}` 信封，未捕获异常 500 不泄栈；每个响应带 `X-Request-Id`（可透传上游），结构化请求日志（rid/method/path/status/耗时 ms）。
 - **健康检查**：`/healthz` 真探数据库（SELECT 1），挂库返回 503 供负载均衡摘除。
@@ -77,7 +77,13 @@ python -m pytest tests -q            # SKIP_PG_TESTS=1 跳过 DB 用例
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://lianlian:lianlian@localhost:5432/lianlian` | PG 连接串 |
+| `DATABASE_URL` | 集群内 `postgres.database.svc.cluster.local:5432/lianlian` | PG 连接串（主机名，勿用 IP） |
+| `REDIS_URL` | 集群内 `redis.database.svc.cluster.local:6379/0` | Redis 连接串 |
+| `REDIS_ENABLED` | `1` | 关掉则限流降级为进程内存窗口 |
 | `MAX_STATE_BYTES` | `262144` | 单份存档体积上限 |
 | `PG_POOL_MIN` / `PG_POOL_MAX` | 1 / 8 | 连接池 |
 | `TOKEN_TTL_DAYS` | `90` | 令牌有效期 |
+
+默认值即 K8S 集群内主机名（`database` namespace，来源：local-server-001:~/k8s-service.txt）；
+集群外跑本地开发时用 env 覆盖为 `local-server-002:30432` / `local-server-002:30379`。
+`/healthz` 返回 `{"ok":true,"db":true,"redis":bool}`——PG 挂返回 503，Redis 挂仅降级限流不影响可用性。

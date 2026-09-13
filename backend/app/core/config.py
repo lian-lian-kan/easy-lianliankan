@@ -1,9 +1,33 @@
-"""Environment-driven configuration."""
+"""Environment-driven configuration.
+
+Defaults point at the K8S cluster's in-cluster service hostnames (never IPs):
+postgres/redis live in the `database` namespace — see local-server-001:~/k8s-service.txt.
+Outside the cluster, override via env with the node hostname + NodePort, e.g.
+DATABASE_URL=postgresql://root:nopasswd@local-server-002:30432/lianlian
+REDIS_URL=redis://local-server-002:30379/0
+"""
 import os
+
+# In-cluster service hostnames (cluster DNS), namespace: database
+PG_HOST = "postgres.database.svc.cluster.local"
+PG_PORT = 5432
+REDIS_HOST = "redis.database.svc.cluster.local"
+REDIS_PORT = 6379
 
 
 def database_url() -> str:
-    return os.environ.get("DATABASE_URL", "postgresql://lianlian:lianlian@localhost:5432/lianlian")
+    return os.environ.get(
+        "DATABASE_URL",
+        f"postgresql://root:nopasswd@{PG_HOST}:{PG_PORT}/lianlian",
+    )
+
+
+def redis_url() -> str:
+    return os.environ.get("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
+
+
+def redis_enabled() -> bool:
+    return os.environ.get("REDIS_ENABLED", "1") == "1"
 
 
 def max_state_bytes() -> int:
