@@ -124,6 +124,10 @@ static func _cloud_miss(game, lane, code):
 static func enabled() -> bool:
 	return OS.get_environment("LIANLIAN_SYNC") != "0"
 
+# True when a production endpoint is configured (constant or env override).
+static func has_endpoint() -> bool:
+	return base_url() != ""
+
 static func base_url() -> String:
 	var from_env = OS.get_environment("LIANLIAN_API_BASE")
 	if from_env != "":

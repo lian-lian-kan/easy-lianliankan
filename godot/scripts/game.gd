@@ -1146,7 +1146,7 @@ func _on_cloud_connected():
 	_show_message("☁️ 云端存档已连接", 1.2)
 
 func _on_cloud_miss():
-	if DEFAULT_API_BASE == "" and OS.get_environment("LIANLIAN_API_BASE") == "":
+	if not SERVER_SYNC.has_endpoint():
 		return
 	_show_message("☁️ 正在连接云端存档…", 1.0)
 
