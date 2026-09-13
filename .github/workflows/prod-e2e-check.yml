@@ -1,30 +1,89 @@
 name: Production E2E check (manual)
 
-# Boots the LIVE production game in headless Chrome (same binary/flags as the
-# CI smoke that has proven the game boots), captures console + all network
-# traffic for ~90s, and asserts the cloud-save handshake reached the API.
+# Diagnose the cloud-save handshake of the exported web build inside CI:
+# export the same tree deploy.yml ships, boot it in headless Chrome, capture
+# console + all network traffic. Never runs automatically.
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  GODOT_VERSION: 3.6.2
+  GODOT_RELEASE: stable
+
 jobs:
-  boot-prod:
+  boot-diag:
     runs-on: ubuntu-latest
     steps:
-      - name: Boot the live game and capture network
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot (headless + Web templates)
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}"
+          mkdir -p ~/godot-bin
+          curl -fsSL -o /tmp/godot.zip "${BASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux_headless.64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot-bin
+          mv ~/godot-bin/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux_headless.64 ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+          curl -fsSL -o /tmp/templates.tpz "${BASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
+          TPL="$HOME/.local/share/godot/templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "$TPL"
+          unzip -q -o -j /tmp/templates.tpz "templates/webassembly_release.zip" -d "$TPL"
+
+      - name: Instrument sync boot path with debug prints
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          from pathlib import Path
+          p = Path("godot/scripts/session/server_sync.gd")
+          src = p.read_text()
+          src = src.replace(
+              "static func boot_sync(game):\n\tif not enabled():\n\t\treturn",
+              "static func boot_sync(game):\n\tprint(\"[SyncDiag] boot_sync entered, enabled=\", enabled(), \" base=\", base_url())\n\tif not enabled():\n\t\treturn",
+          )
+          src = src.replace(
+              "\tstatic func _request" if False else "static func _request(game, kind, url, method, body):\n\tvar req = _http(game)",
+              "static func _request(game, kind, url, method, body):\n\tprint(\"[SyncDiag] request lane=\", kind, \" url=\", url)\n\tvar req = _http(game)",
+          )
+          src = src.replace(
+              "\treturn req.request(url, headers, false, method, body)",
+              "\tvar r = req.request(url, headers, false, method, body)\n\tprint(\"[SyncDiag] request() returned \", r)\n\treturn r",
+          )
+          p.write_text(src)
+          print(src[:0])
+          PYEOF
+          grep -n "SyncDiag" godot/scripts/session/server_sync.gd
+
+      - name: Export web build
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/export
+          timeout 600 ~/godot-bin/godot --no-window --path godot --export "Web" /tmp/export/index.html
+          ls -la /tmp/export
+
+      - name: Serve locally and boot in headless Chrome (capture all traffic)
         run: |
           set -euo pipefail
           pip install playwright==1.49.0
-          cat > /tmp/e2e.py <<'PYEOF'
-          import json, sys
+          cat > /tmp/diag.py <<'PYEOF'
+          import json, sys, threading, functools
+          from http.server import HTTPServer, SimpleHTTPRequestHandler
           from playwright.sync_api import sync_playwright
 
-          GAME_URL = "https://lian-lian-kan.github.io/easy-lianliankan/"
-          API_HOST = "lianliankan.zhaixingren.cn"
-          api_hits, console_lines, all_reqs = [], [], []
+          class Handler(SimpleHTTPRequestHandler):
+              def __init__(self, *a, **kw):
+                  super().__init__(*a, directory="/tmp/export", **kw)
+              def log_message(self, fmt, *args):
+                  print("[server]", fmt % args)
 
+          httpd = HTTPServer(("127.0.0.1", 8099), Handler)
+          threading.Thread(target=httpd.serve_forever, daemon=True).start()
+
+          console_lines, all_reqs = [], []
           with sync_playwright() as p:
               browser = p.chromium.launch(
                   channel="chrome",
@@ -33,36 +92,22 @@ jobs:
               page = browser.new_page()
               page.on("console", lambda m: console_lines.append(m.text))
               page.on("pageerror", lambda e: console_lines.append("PAGEERROR " + str(e)))
-              page.on("request", lambda r: (all_reqs.append((r.method, r.url, None)),
-                                            api_hits.append(("REQ", r.method, r.url)) if API_HOST in r.url else None))
+              page.on("request", lambda r: all_reqs.append(("REQ", r.method, r.url)))
               def on_resp(resp):
-                  all_reqs.append((str(resp.status), resp.url, None))
-                  if API_HOST in resp.url:
-                      try:
-                          body = resp.text()[:200]
-                      except Exception:
-                          body = ""
-                      api_hits.append(("RESP", resp.status, resp.url, body))
+                  if "127.0.0.1:8099" not in resp.url or "/api/" in resp.url:
+                      all_reqs.append((str(resp.status), resp.url, None))
               page.on("response", on_resp)
-              page.on("requestfailed", lambda r: (all_reqs.append(("FAIL", r.method, r.url, str(r.failure))),
-                                                  api_hits.append(("FAIL", r.method, r.url, str(r.failure))) if API_HOST in r.url else None))
-              page.goto(GAME_URL, wait_until="domcontentloaded", timeout=30000)
-              page.wait_for_timeout(90000)
-              state = page.evaluate("(() => ({url: location.href, canvases: document.querySelectorAll('canvas').length, pck: performance.getEntriesByType('resource').some(e => e.name.includes('.pck'))}))()")
+              page.on("requestfailed", lambda r: all_reqs.append(("FAIL", r.method, r.url, str(r.failure))))
+              page.goto("http://127.0.0.1:8099/index.html", wait_until="domcontentloaded", timeout=30000)
+              page.wait_for_timeout(60000)
               browser.close()
 
-          print("=== final page state ===", json.dumps(state))
-          print("=== all requests (%d, first 30) ===" % len(all_reqs))
-          for h in all_reqs[:30]:
-              print(str(h)[:220])
-          print("=== API traffic (%d) ===" % len(api_hits))
-          for h in api_hits:
-              print(json.dumps(h, default=str)[:400])
-          print("=== console (%d, last 60) ===" % len(console_lines))
-          for line in console_lines[-60:]:
+          print("=== non-static traffic (%d) ===" % len([h for h in all_reqs if "/api/" in str(h)]))
+          for h in all_reqs:
+              if "/api/" in str(h):
+                  print(json.dumps(h, default=str)[:400])
+          print("=== console (%d) ===" % len(console_lines))
+          for line in console_lines:
               print(line[:300])
-          ok = any(h[0] == "RESP" and h[2].startswith("https://" + API_HOST) and h[1] in (200, 201, 404) for h in api_hits)
-          print("=== E2E %s ===" % ("OK: production page reached the cloud API" if ok else "FAILED: no successful API exchange"))
-          sys.exit(0 if ok else 1)
           PYEOF
-          python /tmp/e2e.py
+          python /tmp/diag.py
