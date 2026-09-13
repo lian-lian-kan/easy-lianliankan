@@ -19,6 +19,7 @@ class FakeGame:
 	const TUNING_PATH = "res://data/tuning.json"
 	const ICON_SETS_PATH = "res://data/icon_sets.json"
 	const GAME_MODES_PATH = "res://data/game_modes.json"
+	const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 	var campaign_levels = []
 	var tuning = {}
 	var icon_sets = []
