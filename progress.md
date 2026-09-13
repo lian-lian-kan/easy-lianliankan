@@ -993,3 +993,12 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 测试：+test_robustness.py（限流窗口行为/门禁自检）；+限流 429、未来时间戳 400、错误信封与 X-Request-Id 用例；conftest 加 autouse 限流重置（同进程计数器防套件互扰）。
 - CI 教训：services 重构后路由遗留旧签名调用（list_signins 缺 limit），本地 audit/compile 抓不到运行时 TypeError——这类只能真库 pytest 抓（已抓到）。
 - Validation: backend pytest 真库全绿（含门禁自检）；游戏 CI build 绿；合并 main 生产部署绿。
+
+## 2026-09-14 (后端上集群：Redis ZSET 限流 + K8S 接入 + 主机名优先)
+- 集群实测：SSH local-server-001，集群信息在 ~/k8s-service.txt——database namespace 里 postgres-0 (PG 15.15) / redis-0 (7.4.6)；集群内主机名 postgres.database.svc.cluster.local:5432 / redis.database.svc.cluster.local:6379，集群外 local-server-002 NodePort 30432/30379；kubectl exec 实测连通，已建 lianlian 库（表由后端启动迁移自动建）。
+- Redis 接入：core/redis_client.py 懒加载共享连接（1s 超时，失败只 warn 一次）；限流改可插拔 store——RedisStore（ZSET 滑动窗口，多副本共享全局限流）为主，Redis 禁用/不可达自动降级进程内存窗口，API 永不因限流器失败；healthz 增加 redis 位（PG 挂 503，Redis 挂只降级不 5xx）。
+- 主机名优先：config 默认值全部指向集群内 svc 主机名（DATABASE_URL/REDIS_URL），env 可覆盖为集群外 NodePort；严禁 IP。
+- K8S 部署物：backend/deploy/k8s/（namespace lianliankan / configmap / deployment 2 副本+readiness+liveness / ClusterIP service）+ README（构建 docker save/load 导入 worker、部署、验证 curl healthz、游戏侧 ?api= 接入）。
+- CI：backend workflow 加 redis:7 service（健康检查门起），REDIS_URL 指向 service——20 用例真库真 Redis 全绿（含跨实例共享窗口测试）；conftest autouse fixture 测试间 flushdb（专用测试 Redis，防桶跨用例泄漏）；YAML 校验抓到 workflow 重复 services 键（合并为单块双服务）。
+- 工程注记：compose 加 redis 服务；限流测试与生产计数器隔离靠 autouse reset+flush，否则同桶串扰会假红。
+- Validation: backend pytest（PG+Redis 双 service）全绿；游戏 CI build 绿；合并 main 生产部署绿。
