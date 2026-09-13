@@ -984,3 +984,12 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 前端：server_sync.gd 升级 register→token→Bearer 流程（首次同步自动注册，token 存 sync_meta.json），单 HTTPRequest 串行 register/pull/push 三 lane；游戏 CI 不受影响（无 api 全 no-op）。
 - CI 教训（复训）：①conftest 的 pytestmark 不传播到测试模块——skip 逻辑要放 fixture；②conftest 辅助函数不自动进测试模块命名空间，需显式 import；③`from app import db` 导入的是 app.db 子模块而非 app.core.db（重构后路径引用要全量 grep）；④psycopg2.pool 需要 `import psycopg2.pool` 显式导入。
 - Validation: backend pytest 真库全绿；游戏分支 CI build 绿；合并 main 生产部署绿。
+
+## 2026-09-13 (后端强化轮：仓储层 + 事务 + 健壮性 + 质量门禁)
+- 分层补齐：services 里全部 SQL 下沉到 repositories/（users/progress/records/engagement/leaderboard 五个仓储），services 回归纯业务规则（合并语义/校验/事务边界）——新端点照 routers→services→repositories 三层加，SQL 换库只动仓储。
+- 事务：core/db.py 加 thread-local transaction() 上下文（嵌套平展复用外连接），注册（建号+发令牌）、令牌轮换（吊旧+发新）、钱包（流水+余额读回）多写原子化；_run 按 owned 连接决定是否中途 commit。
+- 健壮性：①滑动窗口限流（core/ratelimit 纯逻辑类，clock 可注入；注册 10/分、进度 PUT 60/分、钱包 30/分、签到 10/分，按 IP；多实例换 Redis 只动 store）②入参硬边界双层拦（pydantic：updated_at ≤2100 年/day 格式/数值范围；service：未来时间戳 >5min 400，防写死后续存档）③全局异常 → {"error":{code,detail}} 信封不泄栈 ④每个响应 X-Request-Id + 结构化请求日志（rid/method/path/status/ms）⑤healthz 真探库（SELECT 1，挂库 503）。
+- 质量门禁：tools/backend_audit.py（函数 >45 行 ERROR/>35 WARN 与游戏侧红线一致；print/裸 except/通配导入禁用；金丝雀自测确认能抓超长函数）接入 backend CI 硬门禁，存量清零。首跑即抓到 main.py 尾部 SEED_MODES 计入函数长度——顺势抽出 core/mode_seed.py。
+- 测试：+test_robustness.py（限流窗口行为/门禁自检）；+限流 429、未来时间戳 400、错误信封与 X-Request-Id 用例；conftest 加 autouse 限流重置（同进程计数器防套件互扰）。
+- CI 教训：services 重构后路由遗留旧签名调用（list_signins 缺 limit），本地 audit/compile 抓不到运行时 TypeError——这类只能真库 pytest 抓（已抓到）。
+- Validation: backend pytest 真库全绿（含门禁自检）；游戏 CI build 绿；合并 main 生产部署绿。
