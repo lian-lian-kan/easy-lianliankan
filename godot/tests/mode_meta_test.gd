@@ -57,7 +57,7 @@ func _init() -> void:
 	var defined_ids = {}
 	for a in PROGRESSION.ACHIEVEMENTS:
 		defined_ids[a["id"]] = true
-	check(SM.RECORD_MODES.size() == 17, "record table covers 19 modes")
+	check(SM.RECORD_MODES.size() == 19, "record table covers 19 modes")
 	var table_ok = true
 	var ach_ok = true
 	for mode in SM.RECORD_MODES:
@@ -135,7 +135,7 @@ func _init() -> void:
 	# --- special_modes_data invariants: the whole campaign's unlock curve
 	# and per-mode payloads must stay inside legal bounds (BQ found unlock
 	# levels beyond the campaign once already) ---
-	check(DATA.DEFAULT_CONFIGS.size() == 20, "data module carries 22 mode configs")
+	check(DATA.DEFAULT_CONFIGS.size() == 22, "data module carries 22 mode configs")
 	var inv_ok = true
 	var unlock_too_high = ""
 	for mode_id in DATA.DEFAULT_CONFIGS:
