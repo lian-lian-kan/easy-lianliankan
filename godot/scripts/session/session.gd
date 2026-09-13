@@ -20,109 +20,152 @@ static func _reset_level_session(game, level, reset_total = false):
 		game.flip_layer.visible = false
 	if game.board_grid:
 		game.board_grid.visible = true
-	if game.special_mode == "collect":
-		game.collect_targets = {}
-		game.collect_progress = {}
-		for target in game.special_level.get("targets", []):
-			game.collect_targets[int(target)] = int(game.special_level.get("target_pairs", 3))
-			game.collect_progress[int(target)] = 0
-		ECONOMY.update_collect_labels(game)
-	if game.special_mode == "flip":
-		_reset_special_board_state(game, int(level.get("time_limit", 180)))
-		if game.flip_layer:
-			game.flip_layer.visible = true
-			game.board_grid.visible = false
-		MEMORY_FLIP.new_round(game)
-		if game.second_timer:
-			game.second_timer.stop()
-			game.second_timer.start()
+	_reset_collect_targets(game)
+	if _reset_flip_session(game, level):
 		return
-	if game.special_mode == "tray":
-		_reset_special_board_state(game, int(level.get("time_limit", 240)))
-		if game.tray_layer:
-			game.tray_layer.visible = true
-			game.board_grid.visible = false
-		game.tray_state = TILE_MATCH.generate(level)
-		TILE_MATCH.build_view(game)
-		if game.second_timer:
-			game.second_timer.stop()
-			game.second_timer.start()
+	if _reset_tray_session(game, level):
 		return
-	if game.tray_layer:
-		TILE_MATCH.clear_view(game)
-		game.tray_layer.visible = false
+	_reset_board_session(game, level)
+	_reset_session_counters(game, level)
+	_reset_session_meta(game)
+	_reset_session_ui(game, reset_total)
+
+
+# Collect targets init (no early return: the general board reset follows).
+static func _reset_collect_targets(game):
+if game.special_mode == "collect":
+	game.collect_targets = {}
+	game.collect_progress = {}
+	for target in game.special_level.get("targets", []):
+		game.collect_targets[int(target)] = int(game.special_level.get("target_pairs", 3))
+		game.collect_progress[int(target)] = 0
+	ECONOMY.update_collect_labels(game)
+
+
+static func _reset_flip_session(game, level) -> bool:
+	if game.special_mode != "flip":
+		return false
+if game.special_mode == "flip":
+	_reset_special_board_state(game, int(level.get("time_limit", 180)))
 	if game.flip_layer:
-		MEMORY_FLIP.clear_view(game)
-		game.flip_layer.visible = false
-	if game.board_grid:
-		game.board_grid.visible = true
-	game.board = game._create_playable_board(level)
-	game.board_armor = game._build_frost_armor(game.board, level)
-	game.board_lower = []
-	game.board_chain = []
-	game._fog_layers = 0
-	if game._is_stack_mode():
-		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
-	if game._is_chain_mode():
-		game._build_chain_locks(float(level.get("chain_ratio", 0.22)))
-	game.frost_pending = false
-	game.frost_uses = 0
-	game.bomb_pending = false
-	game.rainbow_pending = false
-	game.selected = Vector2(-1, -1)
-	game.hint_tiles.clear()
-	game.error_tiles.clear()
-	game.path_overlay.clear_path()
+		game.flip_layer.visible = true
+		game.board_grid.visible = false
+	MEMORY_FLIP.new_round(game)
+	if game.second_timer:
+		game.second_timer.stop()
+		game.second_timer.start()
+	return
+	return true
 
-	for child in game.effect_layer.get_children():
-		child.queue_free()
 
-	game.moves = 0
-	game.level_score = 0
-	game.time_left = int(level.get("time_limit", 90))
-	game.moves_left = int(level.get("move_budget", 0))
-	game.race_ai_pairs = 0
-	game.race_elapsed = 0
-	game.race_total_pairs = int(game._remaining_tiles_count() / 2)
-	if game.race_timer:
-		if game.special_mode == "race":
-			game.race_timer.start()
-		else:
-			game.race_timer.stop()
-	game.stage_status = game.STATUS_PLAYING
+static func _reset_tray_session(game, level) -> bool:
+	if game.special_mode != "tray":
+		return false
+if game.special_mode == "tray":
+	_reset_special_board_state(game, int(level.get("time_limit", 240)))
+	if game.tray_layer:
+		game.tray_layer.visible = true
+		game.board_grid.visible = false
+	game.tray_state = TILE_MATCH.generate(level)
+	TILE_MATCH.build_view(game)
+	if game.second_timer:
+		game.second_timer.stop()
+		game.second_timer.start()
+	return
+	return true
 
-	# Reset achievement tracking
-	game.combo_milestones_hit = []
-	game.perfect_misses = 0
-	game.husband_called = false
-	game.level_start_time = OS.get_ticks_msec()
-	game.level_hints_used = 0
-	game.level_auto_used = 0
 
-	# Initialize power-ups based on level
-	game._init_power_ups(level)
-	game.time_frozen = false
+# Fresh board + mechanism layers for the campaign board.
+static func _reset_board_session(game, level):
+if game.tray_layer:
+	TILE_MATCH.clear_view(game)
+	game.tray_layer.visible = false
+if game.flip_layer:
+	MEMORY_FLIP.clear_view(game)
+	game.flip_layer.visible = false
+if game.board_grid:
+	game.board_grid.visible = true
+game.board = game._create_playable_board(level)
+game.board_armor = game._build_frost_armor(game.board, level)
+game.board_lower = []
+game.board_chain = []
+game._fog_layers = 0
+if game._is_stack_mode():
+	game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
+if game._is_chain_mode():
+	game._build_chain_locks(float(level.get("chain_ratio", 0.22)))
+game.frost_pending = false
+game.frost_uses = 0
+game.bomb_pending = false
+game.rainbow_pending = false
+game.selected = Vector2(-1, -1)
+game.hint_tiles.clear()
+game.error_tiles.clear()
+game.path_overlay.clear_path()
 
-	# Reset memory-mode state
-	game.memory_previewing = false
-	game.memory_lock = false
-	game.memory_revealed.clear()
-	game.memory_pending_hide.clear()
-	if game.memory_hide_timer:
-		game.memory_hide_timer.stop()
-	if game.memory_preview_timer:
-		game.memory_preview_timer.stop()
+for child in game.effect_layer.get_children():
+	child.queue_free()
 
-	if reset_total:
-		game.total_score = 0
 
-	game._reset_combo()
-	game._hide_message()
-	game.pending_level_index = -1
-	game.stage_panel_label.visible = false
 
-	game._render_board()
-	game._sync_level_select_selection()
+# Session counters: moves/score/clock and the race bookkeeping.
+static func _reset_session_counters(game, level):
+game.moves = 0
+game.level_score = 0
+game.time_left = int(level.get("time_limit", 90))
+game.moves_left = int(level.get("move_budget", 0))
+game.race_ai_pairs = 0
+game.race_elapsed = 0
+game.race_total_pairs = int(game._remaining_tiles_count() / 2)
+if game.race_timer:
+	if game.special_mode == "race":
+		game.race_timer.start()
+	else:
+		game.race_timer.stop()
+game.stage_status = game.STATUS_PLAYING
+
+
+
+# Achievement tracking, power-ups and memory-mode state.
+static func _reset_session_meta(game):
+# Reset achievement tracking
+game.combo_milestones_hit = []
+game.perfect_misses = 0
+game.husband_called = false
+game.level_start_time = OS.get_ticks_msec()
+game.level_hints_used = 0
+game.level_auto_used = 0
+
+# Initialize power-ups based on level
+game._init_power_ups(level)
+game.time_frozen = false
+
+# Reset memory-mode state
+game.memory_previewing = false
+game.memory_lock = false
+game.memory_revealed.clear()
+game.memory_pending_hide.clear()
+if game.memory_hide_timer:
+	game.memory_hide_timer.stop()
+if game.memory_preview_timer:
+	game.memory_preview_timer.stop()
+
+
+
+# Final UI sync of the level reset.
+static func _reset_session_ui(game, reset_total):
+if reset_total:
+	game.total_score = 0
+
+game._reset_combo()
+game._hide_message()
+game.pending_level_index = -1
+game.stage_panel_label.visible = false
+
+game._render_board()
+game._sync_level_select_selection()
+
+
 	game._refresh_ui()
 	game._refresh_board_visuals()
 	if game._is_memory_mode():
@@ -221,6 +264,24 @@ static func _resolve_after_board_changed(game):
 # final and intermediate levels.
 static func _settle_campaign_clear(game):
 	game._mission_level_cleared()
+	var reward = _settle_campaign_rewards(game)
+	game._reset_combo()
+	game.second_timer.stop()
+	game.stage_panel_label.visible = false
+	if reward["is_final"]:
+		_finish_final_clear(game, reward)
+	else:
+		_finish_intermediate_clear(game, reward)
+	game._show_combo_burst(game.CHEERS.clear_cheer(game))
+	game.VOICE_LINES.play(game, "clear")
+	game._refresh_ui()
+	game._refresh_board_visuals()
+	game._check_achievements_on_clear()
+
+
+# Time bonus, coin reward, star rating and the progression push; returns
+# the settlement context for the two presentation paths.
+static func _settle_campaign_rewards(game):
 	var time_bonus_multiplier = float(game._current_level().get("time_bonus_multiplier", 2.0))
 	var time_bonus = int(round(float(game.time_left) * time_bonus_multiplier))
 	game.total_score += time_bonus
@@ -246,35 +307,31 @@ static func _settle_campaign_clear(game):
 		progress_patch["current_level_index"] = game.level_index + 1
 		progress_patch["highest_unlocked_level_index"] = game.level_index + 1
 	game._patch_progress_state(progress_patch)
+	return {"time_bonus": time_bonus, "coin_reward": coin_reward, "stars": stars, "is_final": is_final}
 
-	game._reset_combo()
-	game.second_timer.stop()
-	game.stage_panel_label.visible = false
 
-	if is_final:
-		game.stage_status = game.STATUS_COMPLETED
-		game.stage_panel_label.text = "全部通关！Sophia 太棒啦 " + "  ⭐".repeat(stars) + "\n点击「再来一轮」"
-		game.stage_panel_label.visible = true
-		AudioManager.play_win()
-		game._show_message("全通关！时间奖励 +" + str(time_bonus), 2.5)
-		game._play_stage_clear_celebration(true)
-	else:
-		game.stage_status = game.STATUS_CLEARED
-		game.pending_level_index = game.level_index + 1
-		game.stage_panel_label.text = "过关啦～准备进入下一关  " + "⭐".repeat(stars)
-		game.stage_panel_label.visible = true
-		AudioManager.play_win()
-		game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关过关啦！奖励 +" + str(time_bonus) + " · 🌸+" + str(coin_reward), 1.2)
-		game._play_stage_clear_celebration(false)
-		game.level_advance_timer.stop()
-		game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
-		game.level_advance_timer.start()
+# Campaign finished: completed status + full celebration.
+static func _finish_final_clear(game, reward):
+	game.stage_status = game.STATUS_COMPLETED
+	game.stage_panel_label.text = "全部通关！Sophia 太棒啦 " + "  ⭐".repeat(stars) + "\n点击「再来一轮」"
+	game.stage_panel_label.visible = true
+	AudioManager.play_win()
+	game._show_message("全通关！时间奖励 +" + str(time_bonus), 2.5)
+	game._play_stage_clear_celebration(true)
 
-	game._show_combo_burst(game.CHEERS.clear_cheer(game))
-	game.VOICE_LINES.play(game, "clear")
-	game._refresh_ui()
-	game._refresh_board_visuals()
-	game._check_achievements_on_clear()
+
+# Intermediate clear: advance pending index and schedule the next level.
+static func _finish_intermediate_clear(game, reward):
+	game.stage_status = game.STATUS_CLEARED
+	game.pending_level_index = game.level_index + 1
+	game.stage_panel_label.text = "过关啦～准备进入下一关  " + "⭐".repeat(stars)
+	game.stage_panel_label.visible = true
+	AudioManager.play_win()
+	game._show_message("第" + str(game._current_level().get("id", game.level_index + 1)) + "关过关啦！奖励 +" + str(time_bonus) + " · 🌸+" + str(coin_reward), 1.2)
+	game._play_stage_clear_celebration(false)
+	game.level_advance_timer.stop()
+	game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
+	game.level_advance_timer.start()
 
 static func _apply_combo_gain(game, base_score):
 	var now_ms = OS.get_ticks_msec()

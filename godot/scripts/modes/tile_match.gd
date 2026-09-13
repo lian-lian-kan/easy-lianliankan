@@ -158,6 +158,12 @@ static func build_view(game):
 	if state.empty():
 		return
 
+	_build_tray_pile(game, state)
+	_build_tray_slots(game, state)
+	_build_tray_tools(game, state)
+
+# Face-down pile: every not-yet-removed tile as a pressable button.
+static func _build_tray_pile(game, state):
 	var pile = Control.new()
 	pile.rect_position = Vector2(20, 10)
 	game.tray_layer.add_child(pile)
@@ -177,6 +183,8 @@ static func build_view(game):
 		tile_button.connect("pressed", game, "_on_tray_tile_pressed", [i])
 		pile.add_child(tile_button)
 
+# Seven-slot tray row with the tiles currently held.
+static func _build_tray_slots(game, state):
 	var tray_row = HBoxContainer.new()
 	tray_row.rect_position = Vector2(20, 250)
 	tray_row.add_constant_override("separation", 6)
@@ -199,6 +207,8 @@ static func build_view(game):
 		slot_panel.add_child(glyph)
 		tray_row.add_child(slot_panel)
 
+# Undo / shuffle tool row.
+static func _build_tray_tools(game, state):
 	var tools = HBoxContainer.new()
 	tools.rect_position = Vector2(20, 306)
 	tools.add_constant_override("separation", 10)
@@ -219,7 +229,6 @@ static func build_view(game):
 	shuffle_button.add_color_override("font_color", Color("ffffff"))
 	shuffle_button.connect("pressed", game, "_on_tray_shuffle_pressed")
 	tools.add_child(shuffle_button)
-
 static func _pattern_glyph(game, pattern) -> String:
 	var icons: Array = game.icon_sets[game.icon_set_index].get("icons", [])
 	if pattern < icons.size():

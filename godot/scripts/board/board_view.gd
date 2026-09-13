@@ -13,81 +13,100 @@ static func _refresh_board_visuals(game):
 
 	for r in range(rows):
 		for c in range(cols):
-			var value = int(game.board[r][c])
 			var button = game.cell_buttons[r][c]
-
-			if value == 0:
+			if int(game.board[r][c]) == 0:
 				button.text = ""
 				button.disabled = true
 				game._apply_cleared_tile_style(button)
 				continue
+			_refresh_tile(game, button, r, c, playing)
 
-			var face_down = game._is_memory_mode() and not game.memory_previewing 				and not game.memory_revealed.has(game._memory_key(Vector2(r, c))) 				and not (game.selected.x == r and game.selected.y == c)
-			var bg = game._color_for(value)
-			var border = Color("ffffff")
-			if face_down:
-				button.text = "❓"
-				bg = Color("ffc2d4")
-				border = Color("f09ebb")
-			else:
-				button.text = game._icon_for(value)
-			button.disabled = not playing
+# One living tile: base style, mechanism state flags, then the overlay chain.
+static func _refresh_tile(game, button, r, c, playing):
+	var value = int(game.board[r][c])
+	var base = _tile_base_style(game, button, r, c, value, playing)
+	var bg = base["bg"]
+	var border = base["border"]
+	var frozen = base["frozen"]
+	var fx = _tile_effect_style(game, button, r, c, bg, border, frozen,
+		base["fogged"], base["chained"], base["stacked"])
+	bg = fx[0]
+	border = fx[1]
+	var has_effect = fx[2]
+	if base["is_selected"]:
+		border = Color("ff8fab")
+		has_effect = true
 
-			var is_selected = (game.selected.x == r and game.selected.y == c)
-			var frozen = game._is_frost_mode() and r < game.board_armor.size() \
-					and c < game.board_armor[r].size() and int(game.board_armor[r][c]) > 0
-			var fogged = game._is_fogged(Vector2(r, c))
-			var chained = game._is_chain_mode() and r < game.board_chain.size() \
-					and c < game.board_chain[r].size() and int(game.board_chain[r][c]) > 0
-			var stacked = game._is_stack_mode() and r < game.board_lower.size() \
-					and c < game.board_lower[r].size() and int(game.board_lower[r][c]) > 0
-			if frozen:
-				# Ice sheet: cool white-blue face with a frost border.
-				bg = bg.linear_interpolate(Color("e7f5ff"), 0.72)
-				border = Color("a5d8ff")
-			var has_effect = false
+	game._apply_tile_style(button, bg, border, has_effect or base["is_selected"])
+	# Cool tint sells the frost at a glance, even on tiny tiles.
+	button.modulate = Color(0.86, 0.95, 1.1) if frozen else Color(1, 1, 1)
 
-			if game._contains_coord(game.error_tiles, Vector2(r, c)):
-				bg = Color("ffe3e3")
-				border = Color("ff8787")
-				has_effect = true
-			elif game._contains_coord(game.hint_tiles, Vector2(r, c)):
-				bg = Color("d0ebff")
-				border = Color("3b82f6")
-				has_effect = true
-			elif frozen:
-				has_effect = true
-			elif fogged:
-				# Fog hides the icon entirely until the rings recede.
-				button.text = "❓"
-				bg = Color("e9ecef")
-				border = Color("adb5bd")
-			elif chained:
-				border = Color("868e96")
-				bg = bg.linear_interpolate(Color("e9ecef"), 0.35)
-				has_effect = true
-			elif stacked:
-				border = Color("9775fa")
-				has_effect = true
-			elif game.bomb_pending:
-				# Armed bomb: warm glow on every tile invites the pick.
-				bg = bg.linear_interpolate(Color("fff3bf"), 0.45)
-				border = Color("ffd43b")
-				has_effect = true
-			elif game.rainbow_pending:
-				# Armed rainbow: violet shimmer while choosing two tiles.
-				bg = bg.linear_interpolate(Color("f3d9fa"), 0.4)
-				border = Color("da77f2")
-				has_effect = true
+# Base face: memory face-down, icon text, disabled state, mechanism flags.
+static func _tile_base_style(game, button, r, c, value, playing) -> Dictionary:
+	var face_down = game._is_memory_mode() and not game.memory_previewing 				and not game.memory_revealed.has(game._memory_key(Vector2(r, c))) 				and not (game.selected.x == r and game.selected.y == c)
+	var bg = game._color_for(value)
+	var border = Color("ffffff")
+	if face_down:
+		button.text = "❓"
+		bg = Color("ffc2d4")
+		border = Color("f09ebb")
+	else:
+		button.text = game._icon_for(value)
+	button.disabled = not playing
 
-			if is_selected:
-				border = Color("ff8fab")
-				has_effect = true
+	var is_selected = (game.selected.x == r and game.selected.y == c)
+	var frozen = game._is_frost_mode() and r < game.board_armor.size() \
+			and c < game.board_armor[r].size() and int(game.board_armor[r][c]) > 0
+	var fogged = game._is_fogged(Vector2(r, c))
+	var chained = game._is_chain_mode() and r < game.board_chain.size() \
+			and c < game.board_chain[r].size() and int(game.board_chain[r][c]) > 0
+	var stacked = game._is_stack_mode() and r < game.board_lower.size() \
+			and c < game.board_lower[r].size() and int(game.board_lower[r][c]) > 0
+	if frozen:
+		# Ice sheet: cool white-blue face with a frost border.
+		bg = bg.linear_interpolate(Color("e7f5ff"), 0.72)
+		border = Color("a5d8ff")
+	return {"bg": bg, "border": border, "is_selected": is_selected,
+		"frozen": frozen, "fogged": fogged, "chained": chained, "stacked": stacked}
 
-			game._apply_tile_style(button, bg, border, has_effect or is_selected)
-			# Cool tint sells the frost at a glance, even on tiny tiles.
-			button.modulate = Color(0.86, 0.95, 1.1) if frozen else Color(1, 1, 1)
+# Overlay chain: error/hint flashes, mechanism looks, armed power-up glows.
+# Returns [bg, border, has_effect].
+static func _tile_effect_style(game, button, r, c, bg, border, frozen, fogged, chained, stacked) -> Array:
+	var has_effect = false
 
+	if game._contains_coord(game.error_tiles, Vector2(r, c)):
+		bg = Color("ffe3e3")
+		border = Color("ff8787")
+		has_effect = true
+	elif game._contains_coord(game.hint_tiles, Vector2(r, c)):
+		bg = Color("d0ebff")
+		border = Color("3b82f6")
+		has_effect = true
+	elif frozen:
+		has_effect = true
+	elif fogged:
+		# Fog hides the icon entirely until the rings recede.
+		button.text = "❓"
+		bg = Color("e9ecef")
+		border = Color("adb5bd")
+	elif chained:
+		border = Color("868e96")
+		bg = bg.linear_interpolate(Color("e9ecef"), 0.35)
+		has_effect = true
+	elif stacked:
+		border = Color("9775fa")
+		has_effect = true
+	elif game.bomb_pending:
+		# Armed bomb: warm glow on every tile invites the pick.
+		bg = bg.linear_interpolate(Color("fff3bf"), 0.45)
+		border = Color("ffd43b")
+		has_effect = true
+	elif game.rainbow_pending:
+		# Armed rainbow: violet shimmer while choosing two tiles.
+		bg = bg.linear_interpolate(Color("f3d9fa"), 0.4)
+		border = Color("da77f2")
+		has_effect = true
+	return [bg, border, has_effect]
 static func _update_tile_sizes(game):
 	if game.board.empty() or game.cell_buttons.empty():
 		return

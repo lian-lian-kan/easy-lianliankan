@@ -4,39 +4,65 @@ extends Reference
 # keyboard shortcut router. Statics take the live game node.
 
 static func _on_tile_pressed(game, button):
-	if game.stage_status != game.STATUS_PLAYING:
-		return
-	if button == null:
+	if not _tile_press_valid(game, button):
 		return
 	var r = int(button.get_meta("row"))
 	var c = int(button.get_meta("col"))
-	if game.board[r][c] == 0:
-		return
-
 	var point = Vector2(r, c)
+	if _dispatch_armed_power_up(game, point):
+		return
+	if game._is_memory_mode():
+		game._on_memory_tile_pressed(point, r, c)
+		return
+	if _handle_selection_toggles(game, point):
+		return
+	game.moves += 1
+	var previous = game.selected
+	var selected_value = int(game.board[previous.x][previous.y])
+	var target_value = int(game.board[point.x][point.y])
+	if selected_value != target_value:
+		_reject_pair(game, previous, point, "请先选择相同图案", 0.7)
+		return
+	var path = game._find_path(game.board, previous, point)
+	if path.empty():
+		_reject_pair(game, previous, point, "路径不通：最多只能拐2次弯", 0.9)
+		return
+	_execute_pair_match(game, path, previous, point)
 
+# Gate every tile click: playing state, real tile, and mechanism playability.
+static func _tile_press_valid(game, button) -> bool:
+	if game.stage_status != game.STATUS_PLAYING:
+		return false
+	if button == null:
+		return false
+	var r = int(button.get_meta("row"))
+	var c = int(button.get_meta("col"))
+	if game.board[r][c] == 0:
+		return false
+	var point = Vector2(r, c)
 	if not game._is_coord_playable(point):
 		if game._is_fogged(point):
 			game._show_message("迷雾遮住了这块，先消除里面的方块", 1.0)
 		else:
 			game._show_message("⛓️ 先消除它旁边的方块来解锁", 1.0)
-		return
+		return false
+	return true
 
-	# Armed click-targeted power-ups take over the next board click.
+# Armed click-targeted power-ups take over the next board click.
+static func _dispatch_armed_power_up(game, point) -> bool:
 	if game.frost_pending:
 		game._execute_warm_patch(point)
-		return
+		return true
 	if game.bomb_pending:
 		game._execute_bomb(point)
-		return
+		return true
 	if game.rainbow_pending:
 		game._execute_rainbow_click(point)
-		return
+		return true
+	return false
 
-	if game._is_memory_mode():
-		game._on_memory_tile_pressed(point, r, c)
-		return
-
+# First select and re-click deselect; true when the click was consumed here.
+static func _handle_selection_toggles(game, point) -> bool:
 	if game.selected.x < 0:
 		game.selected = point
 		game.hint_tiles.clear()
@@ -44,44 +70,28 @@ static func _on_tile_pressed(game, button):
 		AudioManager.play_select()
 		game._animate_select(point)
 		game._refresh_board_visuals()
-		return
-
+		return true
 	if game.selected == point:
 		game.selected = Vector2(-1, -1)
 		game._refresh_board_visuals()
-		return
+		return true
+	return false
 
-	game.moves += 1
-	var previous = game.selected
+# Shared mismatch path: pattern differs or no connectable path. Moves the
+# selection to the new tile and shows why.
+static func _reject_pair(game, previous, point, message, duration):
+	game.selected = point
+	game.hint_tiles.clear()
+	AudioManager.play_error()
+	game._register_perfect_miss()
+	game._flash_error_tiles([previous, point])
+	game._animate_select(point)
+	game._show_message(message, duration)
+	game._refresh_ui()
+	game._refresh_board_visuals()
 
-	var selected_value = int(game.board[previous.x][previous.y])
-	var target_value = int(game.board[point.x][point.y])
-
-	if selected_value != target_value:
-		game.selected = point
-		game.hint_tiles.clear()
-		AudioManager.play_error()
-		game._register_perfect_miss()
-		game._flash_error_tiles([previous, point])
-		game._animate_select(point)
-		game._show_message("请先选择相同图案", 0.7)
-		game._refresh_ui()
-		game._refresh_board_visuals()
-		return
-
-	var path = game._find_path(game.board, previous, point)
-	if path.empty():
-		game.selected = point
-		game.hint_tiles.clear()
-		AudioManager.play_error()
-		game._register_perfect_miss()
-		game._flash_error_tiles([previous, point])
-		game._animate_select(point)
-		game._show_message("路径不通：最多只能拐2次弯", 0.9)
-		game._refresh_ui()
-		game._refresh_board_visuals()
-		return
-
+# A real match: score, path preview, effects, damage and post-board resolve.
+static func _execute_pair_match(game, path, previous, point):
 	var a = previous
 	var b = point
 	game.selected = Vector2(-1, -1)
@@ -102,10 +112,26 @@ static func _on_tile_pressed(game, button):
 	game._refresh_ui()
 	game._refresh_board_visuals()
 	game._resolve_after_board_changed()
-
 static func _on_memory_tile_pressed(game, point, r, c):
 	if game.memory_previewing or game.memory_lock:
 		return
+	if _handle_memory_toggles(game, point, r, c):
+		return
+	game.moves += 1
+	var previous = game.selected
+	var selected_value = int(game.board[previous.x][previous.y])
+	var target_value = int(game.board[r][c])
+	if selected_value != target_value:
+		_reject_memory_pair(game, previous, point)
+		return
+	var path = game._find_path(game.board, previous, point)
+	if path.empty():
+		_memory_path_blocked(game, previous, point)
+		return
+	_execute_memory_match(game, path, previous, point)
+
+# First select and re-click deselect in memory mode (face-up tracking).
+static func _handle_memory_toggles(game, point, r, c) -> bool:
 	if game.selected.x < 0:
 		game.selected = point
 		game.memory_revealed[game._memory_key(point)] = true
@@ -114,42 +140,38 @@ static func _on_memory_tile_pressed(game, point, r, c):
 		AudioManager.play_select()
 		game._animate_select(point)
 		game._refresh_board_visuals()
-		return
+		return true
 	if game.selected == point:
 		game.selected = Vector2(-1, -1)
 		game._refresh_board_visuals()
-		return
+		return true
+	return false
 
-	game.moves += 1
-	var previous = game.selected
-	var selected_value = int(game.board[previous.x][previous.y])
-	var target_value = int(game.board[r][c])
+# Pattern mismatch: reveal both faces briefly so the player learns positions.
+static func _reject_memory_pair(game, previous, point):
+	game.selected = Vector2(-1, -1)
+	game.memory_revealed[game._memory_key(previous)] = true
+	game.memory_revealed[game._memory_key(point)] = true
+	game.hint_tiles.clear()
+	AudioManager.play_error()
+	game._flash_error_tiles([previous, point])
+	game._show_message("不一样，记住位置", 0.8)
+	game._memory_schedule_hide([previous, point], float(game.special_level.get("memory_face_up", 1.0)))
+	game._refresh_ui()
+	game._refresh_board_visuals()
 
-	if selected_value != target_value:
-		# Reveal both briefly so the player learns the positions, then hide.
-		game.selected = Vector2(-1, -1)
-		game.memory_revealed[game._memory_key(previous)] = true
-		game.memory_revealed[game._memory_key(point)] = true
-		game.hint_tiles.clear()
-		AudioManager.play_error()
-		game._flash_error_tiles([previous, point])
-		game._show_message("不一样，记住位置", 0.8)
-		game._memory_schedule_hide([previous, point], float(game.special_level.get("memory_face_up", 1.0)))
-		game._refresh_ui()
-		game._refresh_board_visuals()
-		return
+# No connectable path: keep the clicked tile selected in memory mode.
+static func _memory_path_blocked(game, previous, point):
+	game.selected = point
+	game.memory_revealed[game._memory_key(point)] = true
+	game.hint_tiles.clear()
+	AudioManager.play_error()
+	game._flash_error_tiles([previous, point])
+	game._show_message("路径不通：最多只能拐2次弯", 0.9)
+	game._refresh_board_visuals()
 
-	var path = game._find_path(game.board, previous, point)
-	if path.empty():
-		game.selected = point
-		game.memory_revealed[game._memory_key(point)] = true
-		game.hint_tiles.clear()
-		AudioManager.play_error()
-		game._flash_error_tiles([previous, point])
-		game._show_message("路径不通：最多只能拐2次弯", 0.9)
-		game._refresh_board_visuals()
-		return
-
+# A real memory match: score, effects, damage and post-board resolve.
+static func _execute_memory_match(game, path, previous, point):
 	var a = previous
 	var b = point
 	game.selected = Vector2(-1, -1)
@@ -171,72 +193,49 @@ static func _on_memory_tile_pressed(game, point, r, c):
 	game._refresh_ui()
 	game._refresh_board_visuals()
 	game._resolve_after_board_changed()
+# Keyboard map: scancode -> action spec. "playing" gates on STATUS_PLAYING,
+# "arg" passes one argument; anything else is called bare. Escape (fullscreen
+# exit) keeps its own branch because it only consumes when fullscreen is on.
+const KEY_ACTIONS = {
+	KEY_P: {"method": "_on_pause_pressed"},
+	KEY_H: {"method": "_on_hint_pressed", "playing": true},
+	KEY_A: {"method": "_on_auto_pressed", "playing": true},
+	KEY_S: {"method": "_on_shuffle_pressed", "playing": true},
+	KEY_R: {"method": "_on_reset_pressed"},
+	KEY_BRACKETLEFT: {"method": "_cycle_level_selection", "arg": -1},
+	KEY_BRACKETRIGHT: {"method": "_cycle_level_selection", "arg": 1},
+	KEY_ENTER: {"method": "_on_jump_level_pressed"},
+	KEY_KP_ENTER: {"method": "_on_jump_level_pressed"},
+	KEY_F: {"method": "_toggle_fullscreen_mode"},
+	KEY_1: {"method": "_use_power_up", "arg": "time_freeze"},
+	KEY_2: {"method": "_use_power_up", "arg": "auto_match"},
+	KEY_3: {"method": "_use_power_up", "arg": "reshuffle"},
+	KEY_4: {"method": "_use_power_up", "arg": "magnifier"},
+	KEY_5: {"method": "_use_power_up", "arg": "time_sand"},
+	KEY_6: {"method": "_use_power_up", "arg": "bomb"},
+	KEY_7: {"method": "_use_power_up", "arg": "rainbow"},
+	KEY_8: {"method": "_use_power_up", "arg": "warm_patch"},
+}
 
 static func _unhandled_input(game, event):
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key_event := event as InputEventKey
-		match key_event.scancode:
-			KEY_P:
-				game._on_pause_pressed()
+		if key_event.scancode == KEY_ESCAPE:
+			if OS.window_fullscreen:
+				OS.window_fullscreen = false
+				game._show_message("已退出全屏", 0.8)
 				game.accept_event()
-			KEY_H:
-				if game.stage_status == game.STATUS_PLAYING:
-					game._on_hint_pressed()
-					game.accept_event()
-			KEY_A:
-				if game.stage_status == game.STATUS_PLAYING:
-					game._on_auto_pressed()
-					game.accept_event()
-			KEY_S:
-				if game.stage_status == game.STATUS_PLAYING:
-					game._on_shuffle_pressed()
-					game.accept_event()
-			KEY_R:
-				game._on_reset_pressed()
-				game.accept_event()
-			KEY_BRACKETLEFT:
-				game._cycle_level_selection(-1)
-				game.accept_event()
-			KEY_BRACKETRIGHT:
-				game._cycle_level_selection(1)
-				game.accept_event()
-			KEY_ENTER, KEY_KP_ENTER:
-				game._on_jump_level_pressed()
-				game.accept_event()
-			KEY_F:
-				game._toggle_fullscreen_mode()
-				game.accept_event()
-			KEY_1:
-				game._use_power_up("time_freeze")
-				game.accept_event()
-			KEY_2:
-				game._use_power_up("auto_match")
-				game.accept_event()
-			KEY_3:
-				game._use_power_up("reshuffle")
-				game.accept_event()
-			KEY_4:
-				game._use_power_up("magnifier")
-				game.accept_event()
-			KEY_5:
-				game._use_power_up("time_sand")
-				game.accept_event()
-			KEY_6:
-				game._use_power_up("bomb")
-				game.accept_event()
-			KEY_7:
-				game._use_power_up("rainbow")
-				game.accept_event()
-			KEY_8:
-				game._use_power_up("warm_patch")
-				game.accept_event()
-			KEY_ESCAPE:
-				if OS.window_fullscreen:
-					OS.window_fullscreen = false
-					game._show_message("已退出全屏", 0.8)
-					game.accept_event()
-
-
+			return
+		var action = KEY_ACTIONS.get(key_event.scancode)
+		if action == null:
+			return
+		if action.get("playing", false) and game.stage_status != game.STATUS_PLAYING:
+			return
+		if action.has("arg"):
+			game.call(action["method"], action["arg"])
+		else:
+			game.call(action["method"])
+		game.accept_event()
 # Reveal a hint pair: face-up in memory mode, highlight tiles, draw the
 # hint path and refresh. Shared by the hint button and the husband rescue.
 # Returns false when the hint is empty (callers decide reshuffle etc).

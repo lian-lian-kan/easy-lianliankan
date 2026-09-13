@@ -173,7 +173,23 @@ static func find_path(board_state, a, b):
 	var queue = []
 	var head = 0
 	var parent = {}
+	_init_path_frontier(padded, start, target, visited, queue, parent)
 
+	while head < queue.size():
+		var cur: Dictionary = queue[head]
+		head += 1
+
+		if int(cur["r"]) == target.x and int(cur["c"]) == target.y:
+			return _finish_path(cur, parent, start)
+
+		_expand_path_node(padded, visited, queue, parent, cur, target, p_rows, p_cols)
+
+	return []
+
+# Seed the BFS queue with the start node's four immediate neighbours.
+static func _init_path_frontier(padded, start, target, visited, queue, parent):
+	var p_rows = padded.size()
+	var p_cols = padded[0].size()
 	for d in range(4):
 		var np = start + DIRS[d]
 		if np.x < 0 or np.x >= p_rows or np.y < 0 or np.y >= p_cols:
@@ -185,40 +201,37 @@ static func find_path(board_state, a, b):
 		queue.append(node)
 		parent[node_key(np.x, np.y, d, 0)] = node_key(start.x, start.y, -1, 0)
 
-	while head < queue.size():
-		var cur: Dictionary = queue[head]
-		head += 1
+# Reconstruct, compress and unpad the winning route.
+static func _finish_path(cur, parent, start) -> Array:
+	var path_padded = reconstruct_path(cur, parent, start)
+	var compressed = compress_path(path_padded)
 
-		if int(cur["r"]) == target.x and int(cur["c"]) == target.y:
-			var path_padded = reconstruct_path(cur, parent, start)
-			var compressed = compress_path(path_padded)
+	var unpadded = []
+	for p in compressed:
+		unpadded.append(Vector2(p.x - 1, p.y - 1))
+	return unpadded
 
-			var unpadded = []
-			for p in compressed:
-				unpadded.append(Vector2(p.x - 1, p.y - 1))
-			return unpadded
+# Visit one node's neighbours (turn budget 2, turn-minimal memoization).
+static func _expand_path_node(padded, visited, queue, parent, cur, target, p_rows, p_cols):
+	for nd in range(4):
+		var nr = int(cur["r"]) + DIRS[nd].x
+		var nc = int(cur["c"]) + DIRS[nd].y
+		if nr < 0 or nr >= p_rows or nc < 0 or nc >= p_cols:
+			continue
+		if int(padded[nr][nc]) != 0 and not (nr == target.x and nc == target.y):
+			continue
 
-		for nd in range(4):
-			var nr = int(cur["r"]) + DIRS[nd].x
-			var nc = int(cur["c"]) + DIRS[nd].y
-			if nr < 0 or nr >= p_rows or nc < 0 or nc >= p_cols:
-				continue
-			if int(padded[nr][nc]) != 0 and not (nr == target.x and nc == target.y):
-				continue
+		var turns = int(cur["turns"])
+		var nturns = turns + (0 if int(cur["dir"]) == nd else 1)
+		if nturns > 2:
+			continue
+		if int(visited[nr][nc][nd]) <= nturns:
+			continue
 
-			var turns = int(cur["turns"])
-			var nturns = turns + (0 if int(cur["dir"]) == nd else 1)
-			if nturns > 2:
-				continue
-			if int(visited[nr][nc][nd]) <= nturns:
-				continue
-
-			visited[nr][nc][nd] = nturns
-			var next_node = {"r": nr, "c": nc, "dir": nd, "turns": nturns}
-			queue.append(next_node)
-			parent[node_key(nr, nc, nd, nturns)] = node_key(int(cur["r"]), int(cur["c"]), int(cur["dir"]), turns)
-
-	return []
+		visited[nr][nc][nd] = nturns
+		var next_node = {"r": nr, "c": nc, "dir": nd, "turns": nturns}
+		queue.append(next_node)
+		parent[node_key(nr, nc, nd, nturns)] = node_key(int(cur["r"]), int(cur["c"]), int(cur["dir"]), turns)
 
 static func find_any_hint(board_state, filter_obj = null, filter_method = ""):
 	var rows = board_state.size()
