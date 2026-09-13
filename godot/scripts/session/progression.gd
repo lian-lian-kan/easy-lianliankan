@@ -108,6 +108,8 @@ static func normalize_progress(raw, level_count: int) :
 
 # Meta-economy: coins / collection / themes / sign-in.
 static func _normalize_meta_economy(raw, normalized):
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
 	# Load meta-economy state (coins / collection / themes / sign-in)
 	normalized["coins"] = max(0, int(raw.get("coins", 0)))
 	var raw_collected = raw.get("collected", [])
@@ -126,6 +128,8 @@ static func _normalize_meta_economy(raw, normalized):
 
 # Rolling-week missions blob (missions.gd owns its semantics).
 static func _normalize_missions(raw, normalized):
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
 	var raw_missions = raw.get("weekly_missions", {})
 	if typeof(raw_missions) == TYPE_DICTIONARY:
 		var mission_progress = raw_missions.get("progress", {})
@@ -139,6 +143,8 @@ static func _normalize_missions(raw, normalized):
 
 # Per-level best times and stars.
 static func _normalize_level_history(raw, normalized):
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
 	# Load level best times
 	var raw_best_times = raw.get("level_best_times", {})
 	if typeof(raw_best_times) == TYPE_DICTIONARY:
@@ -150,6 +156,8 @@ static func _normalize_level_history(raw, normalized):
 
 # Special mode records: nested daily/endless plus flat best scores.
 static func _normalize_special_records(raw, normalized):
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
 	# Load special mode records
 	var raw_daily = raw.get("daily_challenge", {})
 	if typeof(raw_daily) == TYPE_DICTIONARY:
