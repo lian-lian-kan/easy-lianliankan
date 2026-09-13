@@ -3,6 +3,8 @@ extends Reference
 # Power-up domain: loadout rules per level/mode, the arm/use/spend flow,
 # and the click-targeted executions. Statics take the live game node.
 
+const LOADOUT = preload("res://scripts/session/powerup_loadout.gd")
+
 # Friendly fixed loadout for special sessions: base grants for everyone,
 # per-mode extras, and per-mode overrides (hell strips back to basics).
 # New modes need no code here — just a row in powerup_loadout.gd's
@@ -18,7 +20,6 @@ static func _init_power_ups(game, level):
 
 # Re-press cancels an armed click-targeted power-up and refunds the
 # charge: nothing is spent until the bomb/rainbow/patch actually lands.
-const LOADOUT = preload("res://scripts/session/powerup_loadout.gd")
 const RECALL_MESSAGES = {"bomb": "已收回炸弹", "rainbow": "已收回彩虹", "warm_patch": "已收回暖宝宝"}
 const ARMED_FLAG_BY_TYPE = {"bomb": "bomb_pending", "rainbow": "rainbow_pending", "warm_patch": "frost_pending"}
 
