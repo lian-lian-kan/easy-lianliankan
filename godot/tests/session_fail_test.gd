@@ -22,6 +22,10 @@ class StubAudio:
 	func play_voice_path(_p):
 		pass
 
+class StubVoice:
+	func play(_game, _key):
+		pass
+
 class StubButton:
 	var visible = false
 
@@ -39,6 +43,7 @@ class StubTimer:
 class FakeGame extends Reference:
 	const PROGRESSION_SCRIPT = preload("res://scripts/session/progression.gd")
 	var audio = StubAudio.new()
+	var VOICE_LINES = StubVoice.new()
 	var stage_status = "playing"
 	var second_timer = StubTimer.new()
 	var stage_panel_label = StubLabel.new()
