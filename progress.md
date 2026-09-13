@@ -1025,3 +1025,13 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 修复：`godot/scripts/session/web_http_bridge.gd`——web 平台经 JavaScript fetch() 发请求、`JavaScript.create_callback` 回调回 GDScript 转发 `_on_sync_request_completed`；原生平台保留 HTTPRequest。参数一律无类型 + 方法枚举显式映射字符串；`[Sync]` 前缀日志进浏览器控制台（每次会话约 4 行，运营排障用）。
 - 经验沉淀：平台特性 3.6 实测 `get_name()=HTML5 / has_feature("HTML5")=True / has_feature("Web")=False`；GitHub.io 页面验证不能用 ZCode IAB（rAF 冻结无 SAB），必须 CI 内真 Chrome；SW 预缓存使回访浏览器首刷仍旧包。
 - 验证（prod-e2e-check.yml mode=prod，真开 https://lian-lian-kan.github.io 线上页）：register→201 拿到 user_id+token，pull→404（新账号空档正确语义），后端日志同窗口收到对应请求——**云端存档全链路（浏览器→traefik→隧道→家庭 K8S→PG）正式在线**。
+
+## 2026-09-14 (代码质量攻坚：后端 100% 覆盖门禁 + 高内聚抽取 + 测试夹生的假绿清零)
+- 用户定向：持续提升代码质量（高内聚低耦合/大文件拆分/逻辑重构），每次重构单元测试补到 100% 且全绿，持续到 09:00。
+- **后端 100% 覆盖**：pytest-cov 入场，基线 92%；本地 docker PG16+Redis7（15432/16379）秒级反馈。补测 core 全部降级路径（ping 失败/事务嵌套平铺/回滚/as_dict 遗留格式/redis 禁用-不可达-warn-once/限流 Redis→内存降级/迁移跳过非 .sql 与已应用版本/500 信封/healthz 503/请求头透传）达 **100% 且 --cov-fail-under=100 入 CI 硬门禁**（39 用例）。
+- **分层归位**：core/security 只剩 mint/hash 纯原语（issue/revoke/find 三处 SQL 与 users_repo 重复且为死代码，删除）；guards 迁 app/dependencies.py（HTTP 关注点绑定 repositories，core 回归框架无关）；discover：users_repo.find_user_by_token 死代码删除。
+- **游戏内聚抽取**（薄壳保调用方稳定，shell_audit 门禁过）：board_engine 547→377 + 新 board_pathfinder 208（转弯 BFS/提示/配对规则）；progression 507→461 + 新 achievements 87（目录+访问器）。
+- **测试抓出的真 bug**：①find_any_hint 调 find_path 漏传 match_mode——sum10 不同数字组合永远无提示（与消除规则不一致）；②server_sync._http 给 HTTPRequest 赋不存在的 use_utf8（原生/无头路径首触即崩）；③_request 的 get_status() 守卫同因非法（3.6 无此方法）；④path_overlay 透传测试自早期重构起假绿（断言文本留在旧文件 + quit(1) 被末尾 quit(0) 覆盖）——改为全脚本扫描。
+- **新测试文件 9 个**：board_pathfinder / achievements / missions（FakeGame 驱动周任务全语义）/ tile_match（叠叠消纯状态机）/ memory_flip / progress_store（特殊会话过滤/coins_100 挂钩/短路）/ server_sync（云同步握手/采纳/节流/横幅）/ economy（图鉴收集/关卡奖励）/ content_sanity（分层牌堆/语音池不变量）。CI 无头测试清单 16→27 项。
+- **GDScript3 测试坑新记**：字典 == 是引用比较（用 hash() 比内容）；Object.new() 非法；web release 模板不打印脚本运行时错误（强类型签名收错类型=静默拒调）。
+- **线上复核**：全部重构合并后 prod 体检（真 Chrome 开线上页）register 201 + pull 404，云存档全链路持续正常。
