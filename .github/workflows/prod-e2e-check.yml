@@ -43,7 +43,7 @@ jobs:
           src = p.read_text()
           src = src.replace(
               "static func boot_sync(game):\n\tif not enabled():\n\t\treturn",
-              "static func boot_sync(game):\n\tprint(\"[SyncDiag] boot_sync entered, enabled=\", enabled(), \" base=\", base_url())\n\tif not enabled():\n\t\treturn",
+              "static func boot_sync(game):\n\tprint(\"[SyncDiag] boot_sync entered, enabled=\", enabled(), \" base=\", base_url(), \" os=\", OS.get_name(), \" html5=\", OS.has_feature(\"HTML5\"), \" web=\", OS.has_feature(\"Web\"))\n\tif not enabled():\n\t\treturn",
           )
           src = src.replace(
               "\tstatic func _request" if False else "static func _request(game, kind, url, method, body):\n\tvar req = _http(game)",

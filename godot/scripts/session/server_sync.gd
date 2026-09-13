@@ -122,6 +122,12 @@ static func _cloud_miss(game, lane, code):
 	game._schedule_sync_retry()
 	print("[Sync] %s failed: %d — retry in %ss" % [lane, code, int(RETRY_SECONDS)])
 
+# Godot 3.6 renamed the platform HTML5 -> Web; cover every tag/name variant.
+static func _on_web() -> bool:
+	return OS.has_feature("HTML5") or OS.has_feature("Web") or OS.has_feature("web") \
+		or OS.get_name() == "HTML5" or OS.get_name() == "Web"
+
+
 static func enabled() -> bool:
 	return OS.get_environment("LIANLIAN_SYNC") != "0"
 
@@ -140,7 +146,7 @@ static func base_url() -> String:
 static func _request(game, kind, url, method, body):
 	var meta = _meta(game)
 	var token = str(meta.get("token", ""))
-	if OS.has_feature("HTML5"):
+	if _on_web():
 		return game._get_web_bridge().request(kind, url, method, body, token)
 	var req = _http(game)
 	if req.get_status() == HTTPRequest.STATUS_REQUESTING:
