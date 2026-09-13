@@ -1,10 +1,8 @@
 name: Production E2E check (manual)
 
-# Boots the LIVE production game in headless Chrome and lets its cloud-save
-# handshake fire against the real backend. Never runs automatically; after a
-# run, verify on the backend side:
-#   kubectl logs -n lianliankan deploy/lianliankan-backend --since=10m
-#   -> POST /api/v1/users/register + GET /api/v1/progress from this boot.
+# Boots the LIVE production game in headless Chromium (Playwright), captures
+# console + network for ~75s, and asserts the cloud-save handshake actually
+# reached https://lianliankan.zhaixingren.cn. Never runs automatically.
 on:
   workflow_dispatch:
 
@@ -15,15 +13,52 @@ jobs:
   boot-prod:
     runs-on: ubuntu-latest
     steps:
-      - name: Boot the live game in headless Chrome
+      - name: Set up Playwright
         run: |
           set -euo pipefail
-          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser || command -v chromium)"
-          echo "browser: $CHROME"
-          # The game registers (first boot) / pulls on boot — requests land on
-          # the public API (https://lianliankan.zhaixingren.cn). Keep the
-          # process alive long enough for the wasm engine to boot and sync.
-          timeout 90 "$CHROME" --headless --no-sandbox --disable-dev-shm-usage \
-            --disable-gpu "https://lian-lian-kan.github.io/easy-lianliankan/" \
-            >/dev/null 2>&1 || true
-          echo "90s boot window finished; correlate backend logs with this run's timestamp."
+          pip install playwright==1.49.0
+          python -m playwright install chromium
+          python -m playwright install-deps chromium
+
+      - name: Boot the live game and capture network
+        run: |
+          set -euo pipefail
+          cat > /tmp/e2e.py <<'PYEOF'
+          import json, sys, time
+          from playwright.sync_api import sync_playwright
+
+          GAME_URL = "https://lian-lian-kan.github.io/easy-lianliankan/"
+          API_HOST = "lianliankan.zhaixingren.cn"
+          api_hits, console_lines = [], []
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(args=["--no-sandbox"])
+              page = browser.new_page()
+              page.on("console", lambda m: console_lines.append(m.text))
+              page.on("request", lambda r: api_hits.append(("REQ", r.method, r.url)) if API_HOST in r.url else None)
+              def on_resp(resp):
+                  if API_HOST in resp.url:
+                      body = ""
+                      try:
+                          body = resp.text()[:200]
+                      except Exception:
+                          pass
+                      api_hits.append(("RESP", resp.status, resp.url, body))
+              page.on("response", on_resp)
+              page.on("requestfailed", lambda r: api_hits.append(("FAIL", r.method, r.url, r.failure)) if API_HOST in r.url else None)
+              page.on("pageerror", lambda e: console_lines.append("PAGEERROR " + str(e)))
+              page.goto(GAME_URL, wait_until="domcontentloaded", timeout=30000)
+              page.wait_for_timeout(75000)  # engine boot (wasm ~20MB) + sync handshake + retries
+              browser.close()
+
+          print("=== API traffic (%d) ===" % len(api_hits))
+          for h in api_hits:
+              print(json.dumps(h, default=str)[:400])
+          print("=== console (last 60) ===")
+          for line in console_lines[-60:]:
+              print(line[:300])
+          ok = any(h[0] == "RESP" and h[2].startswith("https://" + API_HOST) and h[1] in (200, 201, 404) for h in api_hits)
+          print("=== E2E %s ===" % ("OK: production page reached the cloud API" if ok else "FAILED: no successful API exchange"))
+          sys.exit(0 if ok else 1)
+          PYEOF
+          python /tmp/e2e.py
