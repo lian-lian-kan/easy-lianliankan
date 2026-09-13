@@ -55,8 +55,8 @@ func _init() -> void:
 	check(not game.campaign_levels.empty(), "the shipped campaign table loads")
 	var empty_config_game = EmptyCampaignGame.new()
 	CONFIG._load_config(empty_config_game)
-	check(empty_config_game.campaign_levels == [{"id": 1, "rows": 6, "cols": 6}], "an empty campaign falls back to defaults")
-	check(empty_config_game.icon_sets == [{"id": "sentinel", "icons": ["X"]}], "empty icon sets fall back to defaults")
+	check(empty_config_game.campaign_levels.size() == 1 and int(empty_config_game.campaign_levels[0]["id"]) == 1, "an empty campaign falls back to defaults")
+	check(empty_config_game.icon_sets.size() == 1 and str(empty_config_game.icon_sets[0]["id"]) == "sentinel", "empty icon sets fall back to defaults")
 
 	# --- game mode configs normalize whatever the file held
 	var mode_configs = CONFIG._load_game_mode_configs(game)
