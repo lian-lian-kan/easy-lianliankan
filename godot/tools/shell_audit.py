@@ -42,25 +42,9 @@ FILE_LEN_EXEMPT = {"scripts/game.gd"}
 # function over FUNC_LEN_MAX, is an ERROR. Treat entries as refactor rounds
 # land and delete the line when the function is finally split.
 FUNC_LEN_RATCHET = {
-    "scripts/board/board_engine.gd::find_path": 60,
-    "scripts/board/board_view.gd::_refresh_board_visuals": 70,
-    "scripts/modes/tile_match.gd::build_view": 67,
-    "scripts/pages/page_router.gd::_build_stats": 50,
-    "scripts/session/game_input.gd::_on_tile_pressed": 82,
-    "scripts/session/game_input.gd::_on_memory_tile_pressed": 59,
-    "scripts/session/game_input.gd::_unhandled_input": 62,
-    "scripts/session/hud_timers.gd::_build_timers": 47,
-    "scripts/session/powerups.gd::_use_power_up": 52,
-    "scripts/session/progression.gd::normalize_progress": 79,
-    "scripts/session/progression.gd::apply_update": 117,
-    "scripts/session/session.gd::_reset_level_session": 110,
-    "scripts/session/session.gd::_settle_campaign_clear": 51,
-    "scripts/ui/home_screen.gd::_build_controls_flow": 51,
-    "scripts/ui/home_screen.gd::_build_board_area": 49,
-    "scripts/ui/hud_layout.gd::update_layout": 154,
-    "scripts/ui/ui_panels.gd::_onboarding_panel": 51,
-    "scripts/ui/ui_panels.gd::_settings_panel": 63,
-    "scripts/ui/ui_panels.gd::_pause_panel": 59,
+	# 2026-09-12 棘轮清偿完成：19 个存量超标函数全部拆至 45 行内，表已清空。
+	# 新的超标函数直接触发 ERROR（新函数上限 45 行）；若未来门禁再拦到存量，
+	# 按需在此登记当前行数（只许变小，拆掉即删条目）。
 }
 
 errors = []

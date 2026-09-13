@@ -224,6 +224,15 @@ static func _build_controls_flow(game):
 	game.icon_set_option.add_color_override("font_color", Color("8f6b80"))
 	game.controls_flow_container.add_child(game.icon_set_option)
 
+	_build_play_buttons(game)
+	_build_level_pickers(game)
+
+	game.settings_button = game._create_control_button("⚙️ 设置")
+	game.settings_button.connect("pressed", game, "_on_settings_pressed")
+	game.controls_flow_container.add_child(game.settings_button)
+
+# 提示/自动消/洗牌/暂停/重开/玩法 六个对局按钮。
+static func _build_play_buttons(game):
 	game.hint_button = game._create_control_button("提示")
 	game.hint_button.connect("pressed", game, "_on_hint_pressed")
 	game.controls_flow_container.add_child(game.hint_button)
@@ -247,6 +256,8 @@ static func _build_controls_flow(game):
 	game.modes_button.connect("pressed", game, "_on_modes_pressed")
 	game.controls_flow_container.add_child(game.modes_button)
 
+# 关卡跳转簇：label + 下拉 + 跳转/清除按钮。
+static func _build_level_pickers(game):
 	game.level_select_label = Label.new()
 	game.level_select_label.text = "关卡："
 	game.level_select_label.add_font_override("font", game.game_font)
@@ -268,10 +279,6 @@ static func _build_controls_flow(game):
 	game.clear_progress_button = game._create_control_button("清除进度")
 	game.clear_progress_button.connect("pressed", game, "_on_clear_progress_pressed")
 	game.controls_flow_container.add_child(game.clear_progress_button)
-
-	game.settings_button = game._create_control_button("⚙️ 设置")
-	game.settings_button.connect("pressed", game, "_on_settings_pressed")
-	game.controls_flow_container.add_child(game.settings_button)
 
 
 # Shared rounded white style for both OptionButtons (was one local in the
@@ -323,6 +330,22 @@ static func _build_board_area(game):
 	# Let the board absorb ALL remaining height instead of overflowing the canvas.
 	game.board_wrapper.size_flags_stretch_ratio = 1.0
 
+	_build_board_panel(game)
+	game.collect_row = ECONOMY.build_collect_row(game)
+	game.root_vbox.add_child(game.collect_row)
+
+	game.tray_layer = Control.new()
+	game.tray_layer.visible = false
+	game.board_wrapper.add_child(game.tray_layer)
+	game.flip_layer = Control.new()
+	game.flip_layer.visible = false
+	game.board_wrapper.add_child(game.flip_layer)
+
+	_build_board_grid(game)
+	_build_board_overlays(game)
+
+# 圆角粉边面板 + 内层容器 + 居中容器。
+static func _build_board_panel(game):
 	var board_panel = PanelContainer.new()
 	board_panel.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	# Apply game board style
@@ -347,16 +370,8 @@ static func _build_board_area(game):
 	game.board_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	board_inner.add_child(game.board_center)
 
-	game.collect_row = ECONOMY.build_collect_row(game)
-	game.root_vbox.add_child(game.collect_row)
-
-	game.tray_layer = Control.new()
-	game.tray_layer.visible = false
-	game.board_wrapper.add_child(game.tray_layer)
-	game.flip_layer = Control.new()
-	game.flip_layer.visible = false
-	game.board_wrapper.add_child(game.flip_layer)
-
+# 6 列格子矩阵。
+static func _build_board_grid(game):
 	game.board_grid = GridContainer.new()
 	game.board_grid.columns = 6
 	game.board_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -365,15 +380,17 @@ static func _build_board_area(game):
 	game.board_grid.add_constant_override("v_separation", 10)
 	game.board_center.add_child(game.board_grid)
 
+# 连线与特效两个覆盖层。
+static func _build_board_overlays(game):
 	game.path_overlay = game.PATH_OVERLAY_SCRIPT.new()
 	game.path_overlay.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	game.path_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board_inner.add_child(game.path_overlay)
+	game.board_center.get_parent().add_child(game.path_overlay)
 
 	game.effect_layer = Control.new()
 	game.effect_layer.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	game.effect_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board_inner.add_child(game.effect_layer)
+	game.board_center.get_parent().add_child(game.effect_layer)
 
 # Floating combat text and rescue buttons anchored over the board.
 

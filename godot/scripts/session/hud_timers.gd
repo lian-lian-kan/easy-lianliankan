@@ -5,64 +5,31 @@ extends Reference
 # freeze thaw, memory preview/hide, race AI). Extracted from ui_hud.gd
 # so the main-screen module stays build/refresh/layout only.
 
+# Timer inventory: member name -> spec. Default wait 1.0 / auto-repeat
+# unless overridden; order matches the original build order.
+const TIMER_SPECS = {
+	"second_timer": {"wait": 1.0, "repeats": true, "callback": "_on_second_tick"},
+	"message_timer": {"callback": "_on_message_timeout"},
+	"error_timer": {"callback": "_on_error_timeout"},
+	"combo_reset_timer": {"callback": "_on_combo_reset_timeout"},
+	"level_highlight_timer": {"callback": "_on_level_highlight_timeout"},
+	"level_advance_timer": {"callback": "_on_level_advance_timeout"},
+	"time_freeze_timer": {"callback": "_on_time_freeze_timeout"},
+	"memory_preview_timer": {"callback": "_on_memory_preview_timeout"},
+	"memory_hide_timer": {"callback": "_on_memory_hide_timeout"},
+	"flip_back_timer": {"wait": 0.7, "callback": "_on_flip_back_timeout"},
+	"race_timer": {"wait": 1.0, "repeats": true, "callback": "_on_race_tick"},
+}
+
 static func _build_timers(game):
-	game.second_timer = Timer.new()
-	game.second_timer.wait_time = 1.0
-	game.second_timer.one_shot = false
-	game.second_timer.connect("timeout", game, "_on_second_tick")
-	game.add_child(game.second_timer)
-
-	game.message_timer = Timer.new()
-	game.message_timer.one_shot = true
-	game.message_timer.connect("timeout", game, "_on_message_timeout")
-	game.add_child(game.message_timer)
-
-	game.error_timer = Timer.new()
-	game.error_timer.one_shot = true
-	game.error_timer.connect("timeout", game, "_on_error_timeout")
-	game.add_child(game.error_timer)
-
-	game.combo_reset_timer = Timer.new()
-	game.combo_reset_timer.one_shot = true
-	game.combo_reset_timer.connect("timeout", game, "_on_combo_reset_timeout")
-	game.add_child(game.combo_reset_timer)
-
-	game.level_highlight_timer = Timer.new()
-	game.level_highlight_timer.one_shot = true
-	game.level_highlight_timer.connect("timeout", game, "_on_level_highlight_timeout")
-	game.add_child(game.level_highlight_timer)
-
-	game.level_advance_timer = Timer.new()
-	game.level_advance_timer.one_shot = true
-	game.level_advance_timer.connect("timeout", game, "_on_level_advance_timeout")
-	game.add_child(game.level_advance_timer)
-
-	game.time_freeze_timer = Timer.new()
-	game.time_freeze_timer.one_shot = true
-	game.time_freeze_timer.connect("timeout", game, "_on_time_freeze_timeout")
-	game.add_child(game.time_freeze_timer)
-
-	game.memory_preview_timer = Timer.new()
-	game.memory_preview_timer.one_shot = true
-	game.memory_preview_timer.connect("timeout", game, "_on_memory_preview_timeout")
-	game.add_child(game.memory_preview_timer)
-
-	game.memory_hide_timer = Timer.new()
-	game.memory_hide_timer.one_shot = true
-	game.memory_hide_timer.connect("timeout", game, "_on_memory_hide_timeout")
-	game.add_child(game.memory_hide_timer)
-
-	game.flip_back_timer = Timer.new()
-	game.flip_back_timer.one_shot = true
-	game.flip_back_timer.wait_time = 0.7
-	game.flip_back_timer.connect("timeout", game, "_on_flip_back_timeout")
-	game.add_child(game.flip_back_timer)
-
-	game.race_timer = Timer.new()
-	game.race_timer.wait_time = 1.0
-	game.race_timer.one_shot = false
-	game.race_timer.connect("timeout", game, "_on_race_tick")
-	game.add_child(game.race_timer)
+	for timer_name in TIMER_SPECS:
+		var spec = TIMER_SPECS[timer_name]
+		var timer = Timer.new()
+		timer.wait_time = float(spec.get("wait", 1.0))
+		timer.one_shot = not bool(spec.get("repeats", false))
+		timer.connect("timeout", game, spec["callback"])
+		game.add_child(timer)
+		game.set(timer_name, timer)
 
 static func _on_second_tick(game):
 	if game.stage_status != game.STATUS_PLAYING:

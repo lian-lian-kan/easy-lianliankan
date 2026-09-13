@@ -220,7 +220,13 @@ static func _build_stats(game):
 	PAGE_UI.page_frame(game, page_content, "📊 数据", "你的连连看足迹")
 	var box = PAGE_UI.scroll_area(game, page_content)
 
-	var rows := [
+	var rows = _stats_rows(game, collected, total_icons)
+	for row_data in rows:
+		_stats_row_panel(game, box, row_data)
+
+# 统计页 21 行数据（全部读现有 progression 字段）。
+static func _stats_rows(game, collected, total_icons) -> Array:
+	return [
 		["🏆 最佳总分", str(int(game.progression_state.get("best_total_score", 0)))],
 		["🔥 最佳连击", "x" + str(int(game.progression_state.get("best_combo", 0)))],
 		["🌸 樱花币", str(int(game.progression_state.get("coins", 0)))],
@@ -245,26 +251,28 @@ static func _build_stats(game):
 		["🎯 收集挑战最佳", str(int(game.progression_state.get("collect_best_score", 0)))],
 		["🃏 翻翻乐最佳", str(int(game.progression_state.get("flip_best_score", 0)))],
 	]
-	for row_data in rows:
-		var row_panel = PanelContainer.new()
-		var row_style = StyleBoxFlat.new()
-		row_style.bg_color = Color("ffffff")
-		row_style.set_corner_radius_all(10)
-		row_panel.add_stylebox_override("panel", row_style)
-		var hbox = HBoxContainer.new()
-		var name_label = Label.new()
-		name_label.text = row_data[0]
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.add_font_override("font", game._font_at_size(14))
-		name_label.add_color_override("font_color", Color("8f6b80"))
-		hbox.add_child(name_label)
-		var value_label = Label.new()
-		value_label.text = row_data[1]
-		value_label.add_font_override("font", game._font_at_size(14))
-		value_label.add_color_override("font_color", Color("d6336c"))
-		hbox.add_child(value_label)
-		row_panel.add_child(hbox)
-		box.add_child(row_panel)
+
+# 单行白卡：名称居左、数值居右。
+static func _stats_row_panel(game, box, row_data):
+	var row_panel = PanelContainer.new()
+	var row_style = StyleBoxFlat.new()
+	row_style.bg_color = Color("ffffff")
+	row_style.set_corner_radius_all(10)
+	row_panel.add_stylebox_override("panel", row_style)
+	var hbox = HBoxContainer.new()
+	var name_label = Label.new()
+	name_label.text = row_data[0]
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_font_override("font", game._font_at_size(14))
+	name_label.add_color_override("font_color", Color("8f6b80"))
+	hbox.add_child(name_label)
+	var value_label = Label.new()
+	value_label.text = row_data[1]
+	value_label.add_font_override("font", game._font_at_size(14))
+	value_label.add_color_override("font_color", Color("d6336c"))
+	hbox.add_child(value_label)
+	row_panel.add_child(hbox)
+	box.add_child(row_panel)
 
 static func _total_icons(game):
 	var total = 0

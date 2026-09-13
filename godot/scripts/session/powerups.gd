@@ -59,30 +59,13 @@ static func _init_power_ups(game, level):
 		for key in SPECIAL_LOADOUT_OVERRIDE.get(game.special_mode, {}):
 			game.power_ups[key] = SPECIAL_LOADOUT_OVERRIDE[game.special_mode][key]
 
+# Re-press cancels an armed click-targeted power-up and refunds the
+# charge: nothing is spent until the bomb/rainbow/patch actually lands.
+const RECALL_MESSAGES = {"bomb": "已收回炸弹", "rainbow": "已收回彩虹", "warm_patch": "已收回暖宝宝"}
+const ARMED_FLAG_BY_TYPE = {"bomb": "bomb_pending", "rainbow": "rainbow_pending", "warm_patch": "frost_pending"}
+
 static func _use_power_up(game, power_up_type):
-	# Re-press cancels an armed click-targeted power-up and refunds the
-	# charge: nothing is spent until the bomb/rainbow/patch actually lands.
-	if power_up_type == "bomb" and game.bomb_pending:
-		game.bomb_pending = false
-		game.power_ups["bomb"] += 1
-		game._show_message("已收回炸弹", 0.8)
-		game._refresh_ui()
-		game._refresh_board_visuals()
-		return
-	if power_up_type == "rainbow" and game.rainbow_pending:
-		game.rainbow_pending = false
-		game.selected = Vector2(-1, -1)
-		game.power_ups["rainbow"] += 1
-		game._show_message("已收回彩虹", 0.8)
-		game._refresh_ui()
-		game._refresh_board_visuals()
-		return
-	if power_up_type == "warm_patch" and game.frost_pending:
-		game.frost_pending = false
-		game.power_ups["warm_patch"] += 1
-		game._show_message("已收回暖宝宝", 0.8)
-		game._refresh_ui()
-		game._refresh_board_visuals()
+	if _recall_armed(game, power_up_type):
 		return
 	if game.power_ups.get(power_up_type, 0) <= 0:
 		return
@@ -95,27 +78,25 @@ static func _use_power_up(game, power_up_type):
 		game._show_message("暖宝宝只有冰雪模式用得上", 1.0)
 		return
 
-	match power_up_type:
-		"time_freeze":
-			game._activate_time_freeze()
-		"auto_match":
-			game._activate_auto_match()
-		"reshuffle":
-			game._activate_reshuffle()
-		"magnifier":
-			game._activate_magnifier()
-		"time_sand":
-			game._activate_time_sand()
-		"bomb":
-			game._activate_bomb()
-		"rainbow":
-			game._activate_rainbow()
-		"warm_patch":
-			game._activate_warm_patch()
+	game.call("_activate_" + power_up_type)
 
 	game.power_ups[power_up_type] -= 1
 	game._refresh_ui()
 	AudioManager.play_button_click()
+
+# Re-pressing an armed type disarms it; rainbow also drops the selection.
+static func _recall_armed(game, power_up_type) -> bool:
+	var armed_flag = ARMED_FLAG_BY_TYPE.get(power_up_type)
+	if armed_flag == null or not game.get(armed_flag):
+		return false
+	game.set(armed_flag, false)
+	if power_up_type == "rainbow":
+		game.selected = Vector2(-1, -1)
+	game.power_ups[power_up_type] += 1
+	game._show_message(RECALL_MESSAGES[power_up_type], 0.8)
+	game._refresh_ui()
+	game._refresh_board_visuals()
+	return true
 
 static func _activate_time_freeze(game):
 	game.time_frozen = true
