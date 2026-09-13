@@ -1,8 +1,8 @@
 name: Production E2E check (manual)
 
-# Boots the LIVE production game in headless Chromium (Playwright), captures
-# console + network for ~75s, and asserts the cloud-save handshake actually
-# reached https://lianliankan.zhaixingren.cn. Never runs automatically.
+# Boots the LIVE production game in headless Chrome (same binary/flags as the
+# CI smoke that has proven the game boots), captures console + all network
+# traffic for ~90s, and asserts the cloud-save handshake reached the API.
 on:
   workflow_dispatch:
 
@@ -13,48 +13,52 @@ jobs:
   boot-prod:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Playwright
-        run: |
-          set -euo pipefail
-          pip install playwright==1.49.0
-          python -m playwright install chromium
-          python -m playwright install-deps chromium
-
       - name: Boot the live game and capture network
         run: |
           set -euo pipefail
+          pip install playwright==1.49.0
           cat > /tmp/e2e.py <<'PYEOF'
-          import json, sys, time
+          import json, sys
           from playwright.sync_api import sync_playwright
 
           GAME_URL = "https://lian-lian-kan.github.io/easy-lianliankan/"
           API_HOST = "lianliankan.zhaixingren.cn"
-          api_hits, console_lines = [], []
+          api_hits, console_lines, all_reqs = [], [], []
 
           with sync_playwright() as p:
-              browser = p.chromium.launch(args=["--no-sandbox"])
+              browser = p.chromium.launch(
+                  channel="chrome",
+                  args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+              )
               page = browser.new_page()
               page.on("console", lambda m: console_lines.append(m.text))
-              page.on("request", lambda r: api_hits.append(("REQ", r.method, r.url)) if API_HOST in r.url else None)
+              page.on("pageerror", lambda e: console_lines.append("PAGEERROR " + str(e)))
+              page.on("request", lambda r: (all_reqs.append((r.method, r.url, None)),
+                                            api_hits.append(("REQ", r.method, r.url)) if API_HOST in r.url else None))
               def on_resp(resp):
+                  all_reqs.append((str(resp.status), resp.url, None))
                   if API_HOST in resp.url:
-                      body = ""
                       try:
                           body = resp.text()[:200]
                       except Exception:
-                          pass
+                          body = ""
                       api_hits.append(("RESP", resp.status, resp.url, body))
               page.on("response", on_resp)
-              page.on("requestfailed", lambda r: api_hits.append(("FAIL", r.method, r.url, r.failure)) if API_HOST in r.url else None)
-              page.on("pageerror", lambda e: console_lines.append("PAGEERROR " + str(e)))
+              page.on("requestfailed", lambda r: (all_reqs.append(("FAIL", r.method, r.url, str(r.failure))),
+                                                  api_hits.append(("FAIL", r.method, r.url, str(r.failure))) if API_HOST in r.url else None))
               page.goto(GAME_URL, wait_until="domcontentloaded", timeout=30000)
-              page.wait_for_timeout(75000)  # engine boot (wasm ~20MB) + sync handshake + retries
+              page.wait_for_timeout(90000)
+              state = page.evaluate("(() => ({url: location.href, canvases: document.querySelectorAll('canvas').length, pck: performance.getEntriesByType('resource').some(e => e.name.includes('.pck'))}))()")
               browser.close()
 
+          print("=== final page state ===", json.dumps(state))
+          print("=== all requests (%d, first 30) ===" % len(all_reqs))
+          for h in all_reqs[:30]:
+              print(str(h)[:220])
           print("=== API traffic (%d) ===" % len(api_hits))
           for h in api_hits:
               print(json.dumps(h, default=str)[:400])
-          print("=== console (last 60) ===")
+          print("=== console (%d, last 60) ===" % len(console_lines))
           for line in console_lines[-60:]:
               print(line[:300])
           ok = any(h[0] == "RESP" and h[2].startswith("https://" + API_HOST) and h[1] in (200, 201, 404) for h in api_hits)
