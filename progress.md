@@ -949,3 +949,11 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - shift 变脸模式：每 shift_interval 秒（默认 8s）BOARD_ENGINE.swap_random_faces 随机交换两个异值图案位（多重集不变 → 对子奇偶与可解性天然保持），消息+洗牌音效提示。
 - 全链接线：configs 2 条（classic_style 透传 target_bonus/shift_interval）/labels/intro/RECORD(19)/SUBTITLES/面板 22 行/统计页/成就 target_first+shift_first/progression 四处/startup_probe 分支/计数同步（22 configs/19 record/23 label/22 行/卡 22 锁 20/endless rows[21]）/字体子集 1076→1088。
 - Validation: shell_audit 七项全过，全量验证由 CI 远端执行。
+
+## 2026-09-13 (玩法 Round CN：滑移模式 slide + 守卫模式 defense——23→25 种 + 玩法面板分类分组)
+- slide 滑移模式：board_engine.slide_random_row——每消一对，随机选一含牌 ≥2 的整行循环右移一格（循环移位保值多重集 → 对子奇偶天然保持）；play_shuffle 音效 + 提示文案。
+- defense 守卫模式（宠物连连看大战僵尸式）：defense_distance/defense_countdown 双计数——每 defense_step 秒（默认 12s）怪物逼近一步，每消一对击退一步（上限 defense_start=5）；距离归 0 → _fail_stage 防线失守。经典式关卡透传 defense_start/defense_step。
+- 全链接线：configs 2 条（解锁 16 关）/labels/intro/RECORD(21)/SUBTITLES(17 键)/面板 24 行/统计页 2 行/成就 slide_first+defense_first/progression 四处/startup_probe 分支（defense 验证距离与步进计数）/计数同步（24 configs/21 record/25 label/24 行/卡 24+5 分组头/锁 22/endless rows[23]）/解锁上限断言 15→16/字体子集 1088→1100。
+- 入口编排：modes 面板分类分组——special_modes.MODE_CATEGORIES 数据表（🏁 竞速限时 5 / 🧠 记忆翻牌 3 / ⚙️ 机制挑战 11 / 🌙 休闲自定 4 / ∞ 无尽 1），refresh_modes_rows 按类插标题行；新玩法入组只改表。
+- 工程注记：special_session 经典式 elif 长链收敛为 CLASSIC_STYLE_MODES 常量表（shell_audit 45 行红线被 _start_special_mode 触发后根修）；startup_probe 每模式入场前重抬解锁索引（daily 结算会从存档回写 progression，17→14 导致 16 关解锁的新模式进不了会话）；**panels_probe/page_probe 的 `var stack` 同作用域重声明 parse error 是既有的——两个探针自引入起在 CI 从未真正跑过（parse 失败但退出码被容忍），本次修复重名后复活，随即暴露 4 条陈年失效断言并逐条对齐现行为（签到"明天见"文案/狂热两场退时 8s/欢呼牌堆先重置再抽/丈夫救援二次调用幂等 time_left==8）**。遗留风险提示：其它探针若也有同款静默 parse 失败，同样手法可查（CI 日志 grep "already defined"）。
+- Validation: shell_audit 七项全过；数据表本地 python 计数（24/21/17/括号平衡）全对；分支 CI build 绿后 fast-forward 合并 main，生产部署 CI 绿。
