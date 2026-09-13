@@ -20,6 +20,8 @@ class FakeGame:
 	var collect_progress = {}
 	var icon_sets = [{"id": "fruit", "icons": ["A", "B", "C"]}]
 	var icon_set_index = 0
+	var collect_labels = []
+	var coin_label = null
 	var progression_state = {"collected": ["fruit:0"]}
 	var cleared = 0
 	var patches = []
@@ -50,7 +52,7 @@ func _init() -> void:
 	# --- level-clear reward formula
 	check(ECONOMY.level_clear_reward({"id": 1}) == 10, "level 1 pays 8+2")
 	check(ECONOMY.level_clear_reward({"id": 5}) == 18, "level 5 pays 8+10")
-	check(ECONOMY.level_clear_reward({}) == 8, "missing id defaults to 8")
+	check(ECONOMY.level_clear_reward({}) == 10, "missing id counts as level 1")
 
 	# --- collection keys are set-scoped
 	check(ECONOMY.collection_key("fruit", 3) == "fruit:3", "collection key is set:index")

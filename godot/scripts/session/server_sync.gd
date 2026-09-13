@@ -150,8 +150,6 @@ static func _request(game, kind, url, method, body):
 	if _on_web():
 		return game._get_web_bridge().request(kind, url, method, body, token)
 	var req = _http(game)
-	if req.get_status() == HTTPRequest.STATUS_REQUESTING:
-		return false
 	var headers = ["Content-Type: application/json"]
 	if token != "":
 		headers.append("Authorization: Bearer " + token)
