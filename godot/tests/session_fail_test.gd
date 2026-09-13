@@ -112,9 +112,11 @@ func _init() -> void:
 	game = FakeGame.new()
 	game.stage_status = "failed"
 	game.revive_cost = 30
+	game.progression_state = {"coins": 10}
 	game.revive_button.visible = true
 	SESSION._revive(game)
 	check(game.stage_status == "failed", "reviving without coins keeps the stage failed")
+	check(game.revive_button.visible == false, "an unaffordable revive hides the button")
 
 	# --- paid revive: coins deducted, clock restored, back to playing
 	game = FakeGame.new()
