@@ -975,3 +975,12 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 工程注记：dispatch 必须在 push 完成后再发（时序竞态会测到旧 SHA，浪费一轮 CI）；GDScript 新函数漏写本地 audit 抓不到未声明标识符，CI 编译兜底（_now_ms 漏写即此）。
 - 部署说明：backend/docker-compose.yml（api+pg）一键起；线上必须 HTTPS（游戏页 https 混合内容拦截），文档 docs/backend.md + backend/README.md。
 - Validation: backend pytest 绿（CI 真库）；游戏分支 CI build 绿；合并 main 后 push 触发生产部署绿。
+
+## 2026-09-13 (后端完整版：分层架构 + 9 表迁移 + token 用户系统 + 玩法域数据)
+- 分层：backend/app/ 重构为 routers(HTTP) → services(业务规则) → core(config/db/migrations/security)，models/schemas.py 收 pydantic 模型；旧单文件 store.py/schema.sql 拆除。
+- 表（db/migrations 5 个域迁移，启动按版本号自动应用，schema_migrations 登记）：users / auth_tokens（只存 SHA-256，TTL 90d，refresh 轮换）/ progress_snapshots（JSONB 整包 + 陈旧写拒绝）/ modes（26 玩法注册表，从游戏数据表提取真实 unlock_level 启动 seed，unlock 数据勿手猜）/ mode_records（每用户×玩法 最佳分 max 合并+plays/wins 累加，排行榜数据源）/ achievements（幂等解锁）/ missions_progress（week_key 滚动周，进度 max+claimed 位）/ economy_ledger（追加式流水，余额=SUM）/ signin_log（每日一行幂等）。
+- API：register→Bearer token 全线认证（fastapi Depends current_credentials/current_user_id 两段依赖）；records 上报即排行榜（RANK() 窗口函数出自己名次）；wallet 流水；missions 上报/查询；signin 幂等。
+- 测试：conftest + 按路由域拆 4 个测试文件 13 用例（注册/令牌轮换吊销/进度 roundtrip 陈旧拒绝体积门禁/纪录 max 合并/排行榜名次/成就幂等/周任务合并/钱包流水/签到幂等），CI pg:16 service 真库跑。
+- 前端：server_sync.gd 升级 register→token→Bearer 流程（首次同步自动注册，token 存 sync_meta.json），单 HTTPRequest 串行 register/pull/push 三 lane；游戏 CI 不受影响（无 api 全 no-op）。
+- CI 教训（复训）：①conftest 的 pytestmark 不传播到测试模块——skip 逻辑要放 fixture；②conftest 辅助函数不自动进测试模块命名空间，需显式 import；③`from app import db` 导入的是 app.db 子模块而非 app.core.db（重构后路径引用要全量 grep）；④psycopg2.pool 需要 `import psycopg2.pool` 显式导入。
+- Validation: backend pytest 真库全绿；游戏分支 CI build 绿；合并 main 生产部署绿。
