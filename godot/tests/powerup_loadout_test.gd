@@ -44,10 +44,11 @@ func _init() -> void:
 	check(int(special["magnifier"]) == 1, "tools outside the override tables keep their ladder grants")
 
 	var frost = LOADOUT.resolve(1, "classic", true, "frost")
-	check(int(frost["warm_patch"]) == 1, "frost sessions add the warm patch extra")
+	check(int(frost["warm_patch"]) == 3, "frost sessions grant three warm patches")
 
 	var hell = LOADOUT.resolve(12, "classic", true, "hell")
-	check(int(hell["time_freeze"]) == 1, "the hell override strips back to a single freeze")
+	check(int(hell["time_freeze"]) == 1 and int(hell["auto_match"]) == 0 and int(hell["magnifier"]) == 0, "the hell override strips back to freeze and reshuffle")
+	check(int(hell["bomb"]) == 0 and int(hell["rainbow"]) == 0 and int(hell["time_sand"]) == 0 and int(hell["warm_patch"]) == 0, "hell zeroes every late-game tool")
 
 	if failures == 0:
 		print("powerup_loadout_test: ALL PASSED")

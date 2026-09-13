@@ -23,13 +23,12 @@ const MODE_EXTRA = {"rush": {"time_freeze": 1}, "endurance": {"reshuffle": 1}}
 # then explicit overrides (assignment order preserved).
 const SPECIAL_LOADOUT_BASE = {"time_freeze": 2, "reshuffle": 2, "auto_match": 1, "bomb": 1, "rainbow": 1}
 const SPECIAL_LOADOUT_EXTRA = {
-	"frost": {"warm_patch": 1},
-	"moves": {"magnifier": 1},
-	"stack": {"time_sand": 1},
+	"memory": {"magnifier": 1},
+	"time_attack": {"time_sand": 1},
+	"frost": {"warm_patch": 3},
 }
 const SPECIAL_LOADOUT_OVERRIDE = {
-	"daily": {"bomb": 0, "rainbow": 0},
-	"hell": {"time_freeze": 1},
+	"hell": {"time_freeze": 1, "reshuffle": 1, "auto_match": 0, "magnifier": 0, "time_sand": 0, "bomb": 0, "rainbow": 0, "warm_patch": 0},
 }
 
 
