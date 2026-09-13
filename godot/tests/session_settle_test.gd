@@ -72,7 +72,8 @@ func _init() -> void:
 	game = FakeGame.new()
 	game.level = {"id": 1, "time_limit": 0}
 	reward = SESSION._settle_campaign_rewards(game)
-	check(int(reward["stars"]) == 1 and int(reward["time_bonus"]) == 0, "clockless levels skip the time bonus and keep 1 star")
+	check(int(reward["stars"]) == 1, "clockless levels keep 1 star")
+	check(int(reward["time_bonus"]) == 80, "clockless levels still apply the multiplier to the remaining clock value")
 
 	# --- final clear: wrap the cursor, unlock everything
 	game = FakeGame.new()
