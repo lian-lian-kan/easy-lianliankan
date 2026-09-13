@@ -255,6 +255,22 @@ def main():
     if gate_bad == 0:
         print(f"  ok  all functions <={FUNC_LEN_WARN} lines and files <={FILE_LEN_WARN} lines")
 
+    # --- 7) top-level hygiene: statements outside any function/class body ---
+    # (a botched extraction leaves dedented statement soup that only CI's
+    # parser would otherwise catch)
+    print("== 7. top-level hygiene")
+    ok_starters = ("extends", "const ", "static func ", "func ", "var ",
+                   "signal ", "class ", "class_name", "tool", "@", "]", "}")
+    soup = 0
+    for path in SCRIPTS:
+        for line_no, ln in enumerate(read(path).split("\n"), 1):
+            if ln and not ln.startswith(("\t", " ", "#")) and ln.strip():
+                if not ln.startswith(ok_starters):
+                    report("ERROR", f"{path}:{line_no} statement outside a body: {ln.strip()[:60]}")
+                    soup += 1
+    if soup == 0:
+        print("  ok  no stray top-level statements")
+
     finish()
 
 

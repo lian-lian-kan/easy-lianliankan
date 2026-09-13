@@ -33,19 +33,18 @@ static func _reset_level_session(game, level, reset_total = false):
 
 # Collect targets init (no early return: the general board reset follows).
 static func _reset_collect_targets(game):
-if game.special_mode == "collect":
-	game.collect_targets = {}
-	game.collect_progress = {}
-	for target in game.special_level.get("targets", []):
-		game.collect_targets[int(target)] = int(game.special_level.get("target_pairs", 3))
-		game.collect_progress[int(target)] = 0
-	ECONOMY.update_collect_labels(game)
+	if game.special_mode == "collect":
+		game.collect_targets = {}
+		game.collect_progress = {}
+		for target in game.special_level.get("targets", []):
+			game.collect_targets[int(target)] = int(game.special_level.get("target_pairs", 3))
+			game.collect_progress[int(target)] = 0
+		ECONOMY.update_collect_labels(game)
 
 
 static func _reset_flip_session(game, level) -> bool:
 	if game.special_mode != "flip":
 		return false
-if game.special_mode == "flip":
 	_reset_special_board_state(game, int(level.get("time_limit", 180)))
 	if game.flip_layer:
 		game.flip_layer.visible = true
@@ -61,7 +60,6 @@ if game.special_mode == "flip":
 static func _reset_tray_session(game, level) -> bool:
 	if game.special_mode != "tray":
 		return false
-if game.special_mode == "tray":
 	_reset_special_board_state(game, int(level.get("time_limit", 240)))
 	if game.tray_layer:
 		game.tray_layer.visible = true
@@ -77,93 +75,93 @@ if game.special_mode == "tray":
 
 # Fresh board + mechanism layers for the campaign board.
 static func _reset_board_session(game, level):
-if game.tray_layer:
-	TILE_MATCH.clear_view(game)
-	game.tray_layer.visible = false
-if game.flip_layer:
-	MEMORY_FLIP.clear_view(game)
-	game.flip_layer.visible = false
-if game.board_grid:
-	game.board_grid.visible = true
-game.board = game._create_playable_board(level)
-game.board_armor = game._build_frost_armor(game.board, level)
-game.board_lower = []
-game.board_chain = []
-game._fog_layers = 0
-if game._is_stack_mode():
-	game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
-if game._is_chain_mode():
-	game._build_chain_locks(float(level.get("chain_ratio", 0.22)))
-game.frost_pending = false
-game.frost_uses = 0
-game.bomb_pending = false
-game.rainbow_pending = false
-game.selected = Vector2(-1, -1)
-game.hint_tiles.clear()
-game.error_tiles.clear()
-game.path_overlay.clear_path()
+	if game.tray_layer:
+		TILE_MATCH.clear_view(game)
+		game.tray_layer.visible = false
+	if game.flip_layer:
+		MEMORY_FLIP.clear_view(game)
+		game.flip_layer.visible = false
+	if game.board_grid:
+		game.board_grid.visible = true
+	game.board = game._create_playable_board(level)
+	game.board_armor = game._build_frost_armor(game.board, level)
+	game.board_lower = []
+	game.board_chain = []
+	game._fog_layers = 0
+	if game._is_stack_mode():
+		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
+	if game._is_chain_mode():
+		game._build_chain_locks(float(level.get("chain_ratio", 0.22)))
+	game.frost_pending = false
+	game.frost_uses = 0
+	game.bomb_pending = false
+	game.rainbow_pending = false
+	game.selected = Vector2(-1, -1)
+	game.hint_tiles.clear()
+	game.error_tiles.clear()
+	game.path_overlay.clear_path()
 
-for child in game.effect_layer.get_children():
-	child.queue_free()
+	for child in game.effect_layer.get_children():
+		child.queue_free()
 
 
 
 # Session counters: moves/score/clock and the race bookkeeping.
 static func _reset_session_counters(game, level):
-game.moves = 0
-game.level_score = 0
-game.time_left = int(level.get("time_limit", 90))
-game.moves_left = int(level.get("move_budget", 0))
-game.race_ai_pairs = 0
-game.race_elapsed = 0
-game.race_total_pairs = int(game._remaining_tiles_count() / 2)
-if game.race_timer:
-	if game.special_mode == "race":
-		game.race_timer.start()
-	else:
-		game.race_timer.stop()
-game.stage_status = game.STATUS_PLAYING
+	game.moves = 0
+	game.level_score = 0
+	game.time_left = int(level.get("time_limit", 90))
+	game.moves_left = int(level.get("move_budget", 0))
+	game.race_ai_pairs = 0
+	game.race_elapsed = 0
+	game.race_total_pairs = int(game._remaining_tiles_count() / 2)
+	if game.race_timer:
+		if game.special_mode == "race":
+			game.race_timer.start()
+		else:
+			game.race_timer.stop()
+	game.stage_status = game.STATUS_PLAYING
 
 
 
 # Achievement tracking, power-ups and memory-mode state.
 static func _reset_session_meta(game):
-# Reset achievement tracking
-game.combo_milestones_hit = []
-game.perfect_misses = 0
-game.husband_called = false
-game.level_start_time = OS.get_ticks_msec()
-game.level_hints_used = 0
-game.level_auto_used = 0
+	# Reset achievement tracking
+	game.combo_milestones_hit = []
+	game.perfect_misses = 0
+	game.husband_called = false
+	game.level_start_time = OS.get_ticks_msec()
+	game.level_hints_used = 0
+	game.level_auto_used = 0
 
-# Initialize power-ups based on level
-game._init_power_ups(level)
-game.time_frozen = false
+	# Initialize power-ups based on level
+	game._init_power_ups(level)
+	game.time_frozen = false
 
-# Reset memory-mode state
-game.memory_previewing = false
-game.memory_lock = false
-game.memory_revealed.clear()
-game.memory_pending_hide.clear()
-if game.memory_hide_timer:
-	game.memory_hide_timer.stop()
-if game.memory_preview_timer:
-	game.memory_preview_timer.stop()
+	# Reset memory-mode state
+	game.memory_previewing = false
+	game.memory_lock = false
+	game.memory_revealed.clear()
+	game.memory_pending_hide.clear()
+	if game.memory_hide_timer:
+		game.memory_hide_timer.stop()
+	if game.memory_preview_timer:
+		game.memory_preview_timer.stop()
 
 
 
 # Final UI sync of the level reset.
 static func _reset_session_ui(game, reset_total):
-if reset_total:
-	game.total_score = 0
+	if reset_total:
+		game.total_score = 0
 
-game._reset_combo()
-game._hide_message()
-game.pending_level_index = -1
-game.stage_panel_label.visible = false
+	game._reset_combo()
+	game._hide_message()
+	game.pending_level_index = -1
+	game.stage_panel_label.visible = false
 
-game._render_board()
-game._sync_level_select_selection()
+	game._render_board()
+	game._sync_level_select_selection()
 
 
 	game._refresh_ui()

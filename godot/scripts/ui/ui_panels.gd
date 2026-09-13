@@ -331,42 +331,42 @@ static func _pause_panel(game):
 
 
 # 继续重开返回三键 + 特殊会话的退出键（默认隐藏）。
-# Resume button
-var resume_button = Button.new()
-resume_button.text = "▶️ 继续游戏 (P)"
-resume_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-resume_button.rect_min_size = Vector2(0, 44)
-resume_button.add_font_override("font", game.game_font)
-resume_button.connect("pressed", game, "_resume_stage")
-content.add_child(resume_button)
+static func _pause_buttons(game, content):
+	var resume_button = Button.new()
+	resume_button.text = "▶️ 继续游戏 (P)"
+	resume_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	resume_button.rect_min_size = Vector2(0, 44)
+	resume_button.add_font_override("font", game.game_font)
+	resume_button.connect("pressed", game, "_resume_stage")
+	content.add_child(resume_button)
 
-# Restart button
-var restart_button = Button.new()
-restart_button.text = "🔄 重新开始"
-restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-restart_button.rect_min_size = Vector2(0, 44)
-restart_button.add_font_override("font", game.game_font)
-restart_button.connect("pressed", game, "_on_restart_current_level")
-content.add_child(restart_button)
+	# Restart button
+	var restart_button = Button.new()
+	restart_button.text = "🔄 重新开始"
+	restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	restart_button.rect_min_size = Vector2(0, 44)
+	restart_button.add_font_override("font", game.game_font)
+	restart_button.connect("pressed", game, "_on_restart_current_level")
+	content.add_child(restart_button)
 
-# Back to level 1 button
-var back_button = Button.new()
-back_button.text = "🏠 返回第1关"
-back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-back_button.rect_min_size = Vector2(0, 44)
-back_button.add_font_override("font", game.game_font)
-back_button.connect("pressed", game, "_on_back_to_first_level")
-content.add_child(back_button)
+	# Back to level 1 button
+	var back_button = Button.new()
+	back_button.text = "🏠 返回第1关"
+	back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	back_button.rect_min_size = Vector2(0, 44)
+	back_button.add_font_override("font", game.game_font)
+	back_button.connect("pressed", game, "_on_back_to_first_level")
+	content.add_child(back_button)
 
-# Exit special session button (daily / time attack / endless)
-game.pause_exit_button = Button.new()
-game.pause_exit_button.text = "🚪 返回关卡模式"
-game.pause_exit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-game.pause_exit_button.rect_min_size = Vector2(0, 44)
-game.pause_exit_button.add_font_override("font", game.game_font)
-game.pause_exit_button.connect("pressed", game, "_on_exit_special_pressed")
-game.pause_exit_button.visible = false
-content.add_child(game.pause_exit_button)
+	# Exit special session button (daily / time attack / endless)
+	game.pause_exit_button = Button.new()
+	game.pause_exit_button.text = "🚪 返回关卡模式"
+	game.pause_exit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	game.pause_exit_button.rect_min_size = Vector2(0, 44)
+	game.pause_exit_button.add_font_override("font", game.game_font)
+	game.pause_exit_button.connect("pressed", game, "_on_exit_special_pressed")
+	game.pause_exit_button.visible = false
+	content.add_child(game.pause_exit_button)
 
 
 static func _modes_panel(game):

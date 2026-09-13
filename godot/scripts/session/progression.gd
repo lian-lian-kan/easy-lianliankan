@@ -197,12 +197,12 @@ static func apply_update(current_state, level_count: int, patch: Dictionary = {}
 	_apply_meta_economy(next_state, patch)
 	_apply_level_records(next_state, patch)
 	_apply_special_records(next_state, patch)
-# Weekly missions: missions.gd owns the rolling-week logic and hands us
-# a complete, already-consistent dictionary to persist.
-if patch.has("weekly_missions"):
-	var patch_missions = patch["weekly_missions"]
-	if typeof(patch_missions) == TYPE_DICTIONARY and patch_missions.has("week_key"):
-		next_state["weekly_missions"] = patch_missions.duplicate(true)
+	# Weekly missions: missions.gd owns the rolling-week logic and hands us
+	# a complete, already-consistent dictionary to persist.
+	if patch.has("weekly_missions"):
+		var patch_missions = patch["weekly_missions"]
+		if typeof(patch_missions) == TYPE_DICTIONARY and patch_missions.has("week_key"):
+			next_state["weekly_missions"] = patch_missions.duplicate(true)
 	next_state["version"] = SAVE_VERSION
 	return next_state
 
@@ -220,88 +220,85 @@ static func _apply_level_progress(next_state, patch, max_level_index):
 
 # Meta-economy: coin deltas, collection entries, theme unlocks, sign-in.
 static func _apply_meta_economy(next_state, patch):
-# Meta-economy: coin deltas, collection entries, theme unlocks, sign-in.
-if patch.has("coins_delta"):
-	next_state["coins"] = max(0, int(next_state["coins"]) + int(patch["coins_delta"]))
-if patch.has("collect"):
-	var collected_id = str(patch["collect"])
-	if not next_state["collected"].has(collected_id):
-		next_state["collected"].append(collected_id)
-if patch.has("collect_many"):
-	var collected_ids = patch["collect_many"]
-	if typeof(collected_ids) == TYPE_ARRAY:
-		for collected_entry in collected_ids:
-			var collected_key = str(collected_entry)
-			if not next_state["collected"].has(collected_key):
-				next_state["collected"].append(collected_key)
-if patch.has("unlock_set"):
-	var set_id = str(patch["unlock_set"])
-	if not next_state["owned_sets"].has(set_id):
-		next_state["owned_sets"].append(set_id)
-if patch.has("unlock_theme"):
-	var theme_id = str(patch["unlock_theme"])
-	if not next_state["owned_themes"].has(theme_id):
-		next_state["owned_themes"].append(theme_id)
-if patch.has("current_theme"):
-	next_state["current_theme"] = str(patch["current_theme"])
-if patch.has("signin"):
-	var sign_in = patch["signin"]
-	if typeof(sign_in) == TYPE_DICTIONARY and sign_in.has("date") and sign_in.has("yesterday"):
-		var sign_date = str(sign_in["date"])
-		var sign_yesterday = str(sign_in["yesterday"])
-		if str(next_state["last_signin"]) != sign_date:
-			var sign_streak = SPECIAL_MODES.next_daily_streak(
-				str(next_state["last_signin"]), sign_date, sign_yesterday,
-				int(next_state["signin_streak"]))
-			next_state["last_signin"] = sign_date
-			next_state["signin_streak"] = sign_streak
+	# Meta-economy: coin deltas, collection entries, theme unlocks, sign-in.
+	if patch.has("coins_delta"):
+		next_state["coins"] = max(0, int(next_state["coins"]) + int(patch["coins_delta"]))
+	if patch.has("collect"):
+		var collected_id = str(patch["collect"])
+		if not next_state["collected"].has(collected_id):
+			next_state["collected"].append(collected_id)
+	if patch.has("collect_many"):
+		var collected_ids = patch["collect_many"]
+		if typeof(collected_ids) == TYPE_ARRAY:
+			for collected_entry in collected_ids:
+				var collected_key = str(collected_entry)
+				if not next_state["collected"].has(collected_key):
+					next_state["collected"].append(collected_key)
+	if patch.has("unlock_set"):
+		var set_id = str(patch["unlock_set"])
+		if not next_state["owned_sets"].has(set_id):
+			next_state["owned_sets"].append(set_id)
+	if patch.has("unlock_theme"):
+		var theme_id = str(patch["unlock_theme"])
+		if not next_state["owned_themes"].has(theme_id):
+			next_state["owned_themes"].append(theme_id)
+	if patch.has("current_theme"):
+		next_state["current_theme"] = str(patch["current_theme"])
+	if patch.has("signin"):
+		var sign_in = patch["signin"]
+		if typeof(sign_in) == TYPE_DICTIONARY and sign_in.has("date") and sign_in.has("yesterday"):
+			var sign_date = str(sign_in["date"])
+			var sign_yesterday = str(sign_in["yesterday"])
+			if str(next_state["last_signin"]) != sign_date:
+				var sign_streak = SPECIAL_MODES.next_daily_streak(
+					str(next_state["last_signin"]), sign_date, sign_yesterday,
+					int(next_state["signin_streak"]))
+				next_state["last_signin"] = sign_date
+				next_state["signin_streak"] = sign_streak
 
 
 # Per-level best time and star rating.
 static func _apply_level_records(next_state, patch):
-# Update level best times if provided
-if patch.has("level_best_time"):
-	var time_data = patch["level_best_time"]
-	if typeof(time_data) == TYPE_DICTIONARY and time_data.has("level_index") and time_data.has("time"):
-		var level_idx = str(time_data["level_index"])
-		var new_time = float(time_data["time"])
-		var current_best = float(next_state["level_best_times"].get(level_idx, 999999.0))
-		if new_time < current_best:
-			next_state["level_best_times"][level_idx] = new_time
+	# Update level best times if provided
+	if patch.has("level_best_time"):
+		var time_data = patch["level_best_time"]
+		if typeof(time_data) == TYPE_DICTIONARY and time_data.has("level_index") and time_data.has("time"):
+			var level_idx = str(time_data["level_index"])
+			var new_time = float(time_data["time"])
+			var current_best = float(next_state["level_best_times"].get(level_idx, 999999.0))
+			if new_time < current_best:
+				next_state["level_best_times"][level_idx] = new_time
 
-# Star ratings: keep the best rating per level index.
-if patch.has("stars"):
-	var star_data = patch["stars"]
-	if typeof(star_data) == TYPE_DICTIONARY and star_data.has("level_index") and star_data.has("stars"):
-		var star_key = str(star_data["level_index"])
-		var prev_stars = int(next_state["level_stars"].get(star_key, 0))
-		next_state["level_stars"][star_key] = max(prev_stars, max(1, min(3, int(star_data["stars"]))))
+	# Star ratings: keep the best rating per level index.
+	if patch.has("stars"):
+		var star_data = patch["stars"]
+		if typeof(star_data) == TYPE_DICTIONARY and star_data.has("level_index") and star_data.has("stars"):
+			var star_key = str(star_data["level_index"])
+			var prev_stars = int(next_state["level_stars"].get(star_key, 0))
+			next_state["level_stars"][star_key] = max(prev_stars, max(1, min(3, int(star_data["stars"]))))
 
 
 # Special mode records: daily streak bridging, endless rounds, per-mode bests.
 static func _apply_special_records(next_state, patch):
-# Special mode records. A daily result carries the date context so the
-# streak can bridge month/year boundaries correctly.
-if patch.has("daily_result"):
-# Special mode records. A daily result carries the date context so the
-# streak can bridge month/year boundaries correctly.
-if patch.has("daily_result"):
-	var daily = patch["daily_result"]
-	if typeof(daily) == TYPE_DICTIONARY and daily.has("date") and daily.has("yesterday"):
-		var date = str(daily["date"])
-		var yesterday = str(daily["yesterday"])
-		var streak = SPECIAL_MODES.next_daily_streak(
-			str(next_state["daily_challenge"]["last_date"]), date, yesterday,
-			int(next_state["daily_challenge"]["streak"]))
-		next_state["daily_challenge"]["last_date"] = date
-		next_state["daily_challenge"]["streak"] = streak
-		next_state["daily_challenge"]["best_streak"] = max(int(next_state["daily_challenge"]["best_streak"]), streak)
-		next_state["daily_challenge"]["best_score"] = max(int(next_state["daily_challenge"]["best_score"]), max(0, int(daily.get("score", 0))))
-if patch.has("endless_result"):
-	var endless = patch["endless_result"]
-	if typeof(endless) == TYPE_DICTIONARY:
-		next_state["endless_best"]["round"] = max(int(next_state["endless_best"]["round"]), max(0, int(endless.get("round", 0))))
-		next_state["endless_best"]["score"] = max(int(next_state["endless_best"]["score"]), max(0, int(endless.get("score", 0))))
+	# Special mode records. A daily result carries the date context so the
+	# streak can bridge month/year boundaries correctly.
+	if patch.has("daily_result"):
+		var daily = patch["daily_result"]
+		if typeof(daily) == TYPE_DICTIONARY and daily.has("date") and daily.has("yesterday"):
+			var date = str(daily["date"])
+			var yesterday = str(daily["yesterday"])
+			var streak = SPECIAL_MODES.next_daily_streak(
+				str(next_state["daily_challenge"]["last_date"]), date, yesterday,
+				int(next_state["daily_challenge"]["streak"]))
+			next_state["daily_challenge"]["last_date"] = date
+			next_state["daily_challenge"]["streak"] = streak
+			next_state["daily_challenge"]["best_streak"] = max(int(next_state["daily_challenge"]["best_streak"]), streak)
+			next_state["daily_challenge"]["best_score"] = max(int(next_state["daily_challenge"]["best_score"]), max(0, int(daily.get("score", 0))))
+	if patch.has("endless_result"):
+		var endless = patch["endless_result"]
+		if typeof(endless) == TYPE_DICTIONARY:
+			next_state["endless_best"]["round"] = max(int(next_state["endless_best"]["round"]), max(0, int(endless.get("round", 0))))
+			next_state["endless_best"]["score"] = max(int(next_state["endless_best"]["score"]), max(0, int(endless.get("score", 0))))
 	# Per-mode best scores: <mode>_result -> RECORD_MODES[mode].best_key
 	# (mode_meta_test enforces the key convention); time_attack predates
 	# the table so it is spelled out.
