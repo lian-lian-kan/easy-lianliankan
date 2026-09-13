@@ -196,7 +196,7 @@ static func find_any_hint(board_state, filter_obj = null, filter_method = "", ma
 					if filter_obj != null and not filter_obj.call(filter_method, Vector2(r2, c2)):
 						continue
 
-					var path = find_path(board_state, Vector2(r1, c1), Vector2(r2, c2))
+					var path = find_path(board_state, Vector2(r1, c1), Vector2(r2, c2), match_mode)
 					if not path.empty():
 						return {
 							"a": Vector2(r1, c1),
