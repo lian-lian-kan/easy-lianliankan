@@ -1,4 +1,4 @@
-"""Environment-driven configuration for the progress API."""
+"""Environment-driven configuration."""
 import os
 
 
@@ -16,3 +16,7 @@ def pool_min() -> int:
 
 def pool_max() -> int:
     return int(os.environ.get("PG_POOL_MAX", "8"))
+
+
+def token_ttl_days() -> int:
+    return int(os.environ.get("TOKEN_TTL_DAYS", "90"))

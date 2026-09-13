@@ -1,40 +1,50 @@
-# 服务端存档（Server-side Progress）
+# 服务端存档与后端体系（Server-side Progress & Backend）
 
-2026-09-13 起：游戏在本地存档之上增加可选的服务端同步（`backend/`，FastAPI + PostgreSQL）。
+2026-09-13：`backend/` 全量后端（FastAPI + PostgreSQL，分层 routers/services/core，
+迁移化建表）。游戏在本地存档之上叠加云端账号体系与同步；默认纯离线，`?api=` 启用。
 
 ## 玩家视角
 
-- **默认不变**：没有配置后端地址时，游戏 100% 离线，行为与以前完全一致。
-- **启用方式（Web）**：在游戏 URL 后加 `?api=https://你的后端地址`，例如
-  `https://xxx.github.io/easy-lianliankan/?api=https://api.example.com`。
-  部署方可把固定后端写死在 `scripts/session/server_sync.gd` 的 `DEFAULT_API_BASE`。
-- **同步规则**：
-  - 启动时拉取一次：服务器存档**严格更新**（`updated_at` 更大）才覆盖本地，并直接跳到对应的战役进度；
-  - 每次本地存档后推送（5 秒节流）；
-  - 服务器拒绝更旧的写入（防旧设备覆盖新档），任何网络失败都静默降级为纯本地。
-- **账号**：免登录，首次运行自动生成 32 位设备 id。清除浏览器数据 = 新账号。
+- **默认不变**：没有配置后端地址时，游戏 100% 离线。
+- **启用方式（Web）**：URL 加 `?api=https://后端地址`；固定部署可写死
+  `scripts/session/server_sync.gd` 的 `DEFAULT_API_BASE`。
+- **账号**：首次同步自动向后端注册，浏览器保存 `user_id + token`
+  （`user://sync_meta.json`）；改昵称/换设备迁移走后端账号体系。
+- **同步规则**：启动拉取一次，服务器存档严格更新才采纳（并跳到对应战役进度）；
+  每次本地存档后 5 秒节流推送；陈旧写被服务器拒绝；任何失败静默降级纯本地。
 
 ## 架构
 
 ```
-godot (HTTPRequest)
-  ├─ GET  /api/v1/progress/{player_id}   启动拉取
-  └─ PUT  /api/v1/progress/{player_id}   本地存档后推送（节流 5s）
-backend FastAPI ── PostgreSQL (player_progress: player_id PK / state JSONB / updated_at)
+godot (HTTPRequest, Bearer token)
+  ├─ POST /api/v1/users/register     首次注册 → user_id + token
+  ├─ GET  /api/v1/progress           启动拉取
+  └─ PUT  /api/v1/progress           本地存档后推送（节流 5s）
+
+backend/
+  routers → services → core(db/security/migrations)
+  9 张表：users / auth_tokens / progress_snapshots / modes / mode_records /
+         achievements / missions_progress / economy_ledger / signin_log
 ```
 
-- 代码：`backend/app/`（`main.py` 路由、`store.py` 持久化、`config.py` 环境变量）
-- 表结构：`backend/schema.sql`（启动自动创建）
-- 后端测试：`.github/workflows/backend.yml`（pg service + pytest），只在 `backend/**` 变更时触发，不影响游戏 Pages 部署流水线
-- 前端模块：`godot/scripts/session/server_sync.gd`（无 API 地址时全部 no-op，headless 测试零影响）
+- 表设计与迁移：`backend/db/migrations/00*.sql`（启动按版本自动应用，幂等）
+- 后端 CI：`.github/workflows/backend.yml`（pg:16 service + pytest 真库全链测试），
+  仅 `backend/**` 变更触发，不影响游戏 Pages 部署
+- 客户端模块：`godot/scripts/session/server_sync.gd`（无 api 地址时全部 no-op）
+
+## 接下来可接的游戏数据
+
+后端已备好域表，游戏端逐项接入即可：玩法纪录上报（PUT records，排行榜立即可用）、
+成就解锁、周任务进度、樱花币流水与签到。均走 Bearer token，幂等合并语义与客户端
+本地策略一致（max/累加/每日一行）。
 
 ## 部署（参考）
 
 ```bash
 cd backend && docker compose up -d --build
-# 反向代理加 HTTPS（游戏页是 https，混合内容会被浏览器拦截 —— api 必须同为 https）
+# 反向代理加 HTTPS（游戏页是 https，混合内容会被浏览器拦截）
 # 然后游戏入口加 ?api=https://api.example.com
 ```
 
-安全基线：只暴露 `/healthz` 与两个 progress 端点；`player_id` 即凭证（暴力枚举 128-bit 空间不可行）；
-上线前把 compose 里的默认 PG 口令改掉并加 TLS 终端。
+安全基线：令牌只存 SHA-256、90 天过期可轮换；`player_id`/token 枚举不可行；
+上线前改掉 compose 默认 PG 口令并配置 TLS。
