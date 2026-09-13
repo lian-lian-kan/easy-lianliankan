@@ -150,12 +150,12 @@ func _init() -> void:
 			inv_ok = false
 			push_error("missing name/description in %s" % mode_id)
 		var unlock_level = int(cfg.get("unlock_level", 1))
-		if unlock_level < 1 or unlock_level > 15:
+		if unlock_level < 1 or unlock_level > 16:
 			inv_ok = false
 			unlock_too_high = mode_id
 		if int(cfg.get("time_limit", 1)) < 0:
 			inv_ok = false
-	check(inv_ok, "all 22 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
+	check(inv_ok, "all 24 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
 	check(int(DATA.DEFAULT_CONFIGS["fever"]["fever_mode_threshold"]) >= 2, "fever needs combo 2+")
 	check(int(DATA.DEFAULT_CONFIGS["perfect"]["miss_limit"]) >= 1, "perfect carries a miss budget")
 
