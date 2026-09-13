@@ -32,6 +32,10 @@ class StoreGame:
 		sync_pushes += 1
 	func _populate_level_select_options():
 		repopulates += 1
+	func _patch_progress_state(patch):
+		STORE._patch_progress_state(self, patch)
+	func _show_message(_msg, _dur):
+		pass
 
 func _init() -> void:
 	print("== progress_store_test")
