@@ -106,6 +106,15 @@ func _init() -> void:
 	_forward(game, "push", 200, '{"saved":true,"updated_at":4242}')
 	check(int(SERVER_SYNC._meta(game)["synced_at"]) == 4242, "a successful push records the server stamp")
 
+	# --- push conflict: server holds a newer save -> synced_at stays low so
+	# the next boot adopts the server copy
+	game = FakeGame.new()
+	SERVER_SYNC._write_meta(game, {"user_id": "u1", "token": "t1", "synced_at": 100})
+	_forward(game, "push", 200, '{"saved":false,"updated_at":500}')
+	check(int(SERVER_SYNC._meta(game)["synced_at"]) == 100, "a rejected push keeps the local stamp below the server's")
+	_forward(game, "push", 422, "{}")
+	check(game.cloud_connected == false and game.scheduled >= 1, "a hard push failure enters the reconnect loop")
+
 	# --- meta round trip on disk
 	game = FakeGame.new()
 	SERVER_SYNC._write_meta(game, {"user_id": "u9", "token": "t9", "synced_at": 77})
