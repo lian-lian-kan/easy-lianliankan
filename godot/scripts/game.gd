@@ -49,6 +49,7 @@ const PATH_COLOR_HINT = Color("74c0fc")
 const PATH_COLOR_ELIMINATE = Color("ff6f9c")
 const PATH_OVERLAY_SCRIPT = preload("res://scripts/board/path_overlay.gd")
 const PROGRESSION_SCRIPT = preload("res://scripts/session/progression.gd")
+const SERVER_SYNC = preload("res://scripts/session/server_sync.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/modes/campaign_levels.gd")
 const MOBILE_SHORT_SIDE_MAX = 860.0
@@ -138,6 +139,9 @@ var defense_distance = 0
 var defense_countdown = 0
 var duel_scores = [0, 0]
 var duel_current = 0
+var pull_http = null
+var push_http = null
+var sync_last_push_ms = -100000
 var _fog_layers = 0       # fog: current outer-ring count
 
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
@@ -268,6 +272,7 @@ func _ready():
 	print("[Game] boot: starting level ", start_level_index)
 	_start_level(start_level_index, true)
 	set_process(true)
+	call_deferred("_boot_sync")
 	call_deferred("_show_onboarding_if_needed")
 	call_deferred("_start_bgm")
 
@@ -1110,6 +1115,21 @@ func _load_progress_state():
 
 func _save_progress_state():
 	return PROGRESS_STORE._save_progress_state(self)
+
+func _boot_sync():
+	SERVER_SYNC.boot_sync(self)
+
+func _sync_push():
+	SERVER_SYNC.push(self)
+
+# Server sync is best-effort: every failure path keeps the local save intact.
+func _on_sync_request_completed(_result, code, _headers, body, kind):
+	SERVER_SYNC.on_completed(self, kind, _result, code, body.get_string_from_utf8())
+
+# Adopted a newer server save at boot: restart into its campaign position.
+func _on_sync_adopted(level_index):
+	_start_level(max(0, level_index), true)
+	_refresh_ui()
 
 func _patch_progress_state(patch):
 	return PROGRESS_STORE._patch_progress_state(self, patch)

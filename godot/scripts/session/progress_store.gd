@@ -26,6 +26,7 @@ static func _save_progress_state(game):
 	file.store_string(to_json(normalized))
 	file.close()
 	game.progression_state = normalized
+	game._sync_push()
 
 static func _patch_progress_state(game, patch):
 	# Special sessions only persist their own records, never campaign progress
