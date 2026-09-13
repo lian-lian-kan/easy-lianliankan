@@ -11,3 +11,5 @@ data:
   REDIS_ENABLED: "1"
   TOKEN_TTL_DAYS: "90"
   MAX_STATE_BYTES: "262144"
+  # Browser origins allowed to call the API (comma separated).
+  ALLOWED_ORIGINS: "https://lian-lian-kan.github.io"

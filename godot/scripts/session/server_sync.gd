@@ -15,8 +15,9 @@ const SYNC_META_PATH = "user://sync_meta.json"
 const PUSH_THROTTLE_MS = 5000
 const RETRY_SECONDS = 8.0
 
-# 生产 API 根地址（HTTPS）。上线时把 DEFAULT_API_BASE 填成集群暴露的地址即可。
-const DEFAULT_API_BASE = ""
+# 生产 API 根地址（HTTPS）。边缘链路见 backend/deploy/k8s/edge/：
+# 浏览器 -> lianliankan.zhaixingren.cn (traefik) -> ssh 隧道 -> 家庭 K8S NodePort。
+const DEFAULT_API_BASE = "https://lianliankan.zhaixingren.cn"
 
 # Boot: register (first run only), then pull the server copy once.
 static func boot_sync(game):

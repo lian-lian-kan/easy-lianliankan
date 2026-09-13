@@ -1,0 +1,28 @@
+# Root systemd unit on local-server-001 (home K8S worker, 192.168.1.83).
+# Carries the game API from the LAN cluster to the public edge:
+#   aigchub-001 (8.130.35.126):30012  --ssh-->  localhost:30800 (NodePort)
+# Sibling of tunnel-to-cloud.service (same key, own session, no shared state).
+# Edge routing on aigchub-001's k3s: see aigchub001-ingress.yaml in this dir.
+[Unit]
+Description=SSH Tunnel for lianliankan API (aigchub-001:30012 -> local:30800)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Restart=always
+RestartSec=10s
+Environment="AUTOSSH_GATETIME=0"
+Environment="AUTOSSH_PORT=0"
+ExecStart=/usr/bin/autossh -M 0 -N \
+    -o "ServerAliveInterval=30" \
+    -o "ServerAliveCountMax=3" \
+    -o "StrictHostKeyChecking=no" \
+    -o "ExitOnForwardFailure=yes" \
+    -o "GatewayPorts=yes" \
+    -i /root/.ssh/id_rsa_frp \
+    -R 0.0.0.0:30012:localhost:30800 \
+    root@8.130.35.126
+
+[Install]
+WantedBy=multi-user.target

@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /srv
 COPY requirements.txt .
-RUN pip install --no-cache-dir fastapi==0.115.6 uvicorn==0.34.0 psycopg2-binary==2.9.10
+RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY db ./db
 

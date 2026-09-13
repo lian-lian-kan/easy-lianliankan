@@ -10,9 +10,10 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .core import db, migrations, redis_client
+from .core import config, db, migrations, redis_client
 from .core.guards import new_request_id
 from .routers import auth, engagement, progress, records, users
 from .core.mode_seed import MODES
@@ -32,6 +33,16 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="sophia-lianliankan-backend", version="2.1", lifespan=lifespan)
+
+# The H5 page on GitHub Pages calls this API cross-origin; PUT/POST trigger a
+# browser preflight that must be answered here, not by the routers.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.allowed_origins(),
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-Id"],
+    max_age=600,
+)
 
 
 @app.get("/healthz")

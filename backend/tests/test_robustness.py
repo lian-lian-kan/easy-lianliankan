@@ -42,3 +42,30 @@ def test_redis_store_shared_window():
     for _ in range(3):
         assert store_a.allow("t:shared", now=1000.0, limit=3, window_seconds=60)
     assert not store_b.allow("t:shared", now=1001.0, limit=3, window_seconds=60)
+
+
+def test_cors_preflight_answers_game_page():
+    """The H5 page on GitHub Pages must get its PUT preflight answered here."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    client = TestClient(app)  # no context manager: no lifespan, no DB needed
+    resp = client.options("/api/v1/progress", headers={
+        "Origin": "https://lian-lian-kan.github.io",
+        "Access-Control-Request-Method": "PUT",
+        "Access-Control-Request-Headers": "authorization,content-type",
+    })
+    assert resp.status_code in (200, 204)
+    assert resp.headers["access-control-allow-origin"] == "https://lian-lian-kan.github.io"
+    assert "authorization" in resp.headers.get("access-control-allow-headers", "").lower()
+
+
+def test_cors_ignores_unknown_origin():
+    """Origins outside ALLOWED_ORIGINS get no allow-origin header back."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    client = TestClient(app)
+    resp = client.options("/api/v1/progress", headers={
+        "Origin": "https://evil.example.com",
+        "Access-Control-Request-Method": "PUT",
+    })
+    assert "access-control-allow-origin" not in resp.headers

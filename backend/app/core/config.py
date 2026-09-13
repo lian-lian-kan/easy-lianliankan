@@ -44,3 +44,13 @@ def pool_max() -> int:
 
 def token_ttl_days() -> int:
     return int(os.environ.get("TOKEN_TTL_DAYS", "90"))
+
+
+# The game page runs on GitHub Pages; browsers enforce CORS there. Add more
+# origins (comma separated) via env when the page moves to its own domain.
+_DEFAULT_ALLOWED_ORIGINS = "https://lian-lian-kan.github.io"
+
+
+def allowed_origins() -> list:
+    raw = os.environ.get("ALLOWED_ORIGINS", _DEFAULT_ALLOWED_ORIGINS)
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]

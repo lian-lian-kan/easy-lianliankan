@@ -1,0 +1,53 @@
+# Public edge for the game API, applied on aigchub-001 (8.130.35.126) with
+#   sudo k3s kubectl apply -f aigchub001-ingress.yaml
+#
+# Path: browser -> traefik (:443) -> lianliankan-api-edge Service -> Endpoints
+#       172.22.246.76:30012 (the node itself, sshd reverse tunnel) ->
+#       local-server-001:30800 (LAN K8S NodePort) -> lianliankan-backend pods.
+#
+# TLS: wildcard cert *.zhaixingren.cn (acme.sh, renewed into the
+# zhaixingren-cn-tls secret by /root/update-all-certs.sh) — same secret every
+# sibling site in this namespace uses. DNS: *.zhaixingren.cn A -> 8.130.35.126.
+apiVersion: v1
+kind: Service
+metadata:
+  name: lianliankan-api-edge
+  namespace: zhaixingren-prod
+spec:
+  ports:
+    - port: 80
+      targetPort: 30012
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: lianliankan-api-edge
+  namespace: zhaixingren-prod
+subsets:
+  - addresses:
+      - ip: 172.22.246.76 # aigchub-001 itself (VPC IP) — host-bound sshd tunnel
+    ports:
+      - port: 30012
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lianliankan-ingress
+  namespace: zhaixingren-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - lianliankan.zhaixingren.cn
+      secretName: zhaixingren-cn-tls
+  rules:
+    - host: lianliankan.zhaixingren.cn
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lianliankan-api-edge
+                port:
+                  number: 80

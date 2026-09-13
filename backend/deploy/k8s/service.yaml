@@ -4,9 +4,12 @@ metadata:
   name: lianliankan-backend
   namespace: lianliankan
 spec:
-  type: ClusterIP
+  # NodePort 30800 so the frp tunnel on local-server-001 can carry the API out
+  # to the public edge (see edge/ — lianliankan.zhaixingren.cn).
+  type: NodePort
   selector:
     app: lianliankan-backend
   ports:
     - port: 80
       targetPort: 8000
+      nodePort: 30800
