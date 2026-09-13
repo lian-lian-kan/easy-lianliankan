@@ -269,6 +269,8 @@ static func build_classic_style_level(config, mode_id: String):
 		level["defense_start"] = int(config.get("defense_start", 5))
 	if config.has("defense_step"):
 		level["defense_step"] = int(config.get("defense_step", 12))
+	if config.has("sum10"):
+		level["sum10"] = true
 	if config.has("chain_ratio"):
 		level["chain_ratio"] = float(config.get("chain_ratio", 0.22))
 	if config.has("target_bonus"):
@@ -417,6 +419,8 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "shift", "title": "🔄 变脸模式", "detail": "图案偷偷换位置 · 最佳%d分" % int(progression_state.get("shift_best_score", 0))},
 		{"id": "slide", "title": "🧲 滑移模式", "detail": "每消一对整行滑移 · 最佳%d分" % int(progression_state.get("slide_best_score", 0))},
 		{"id": "defense", "title": "🧟 守卫模式", "detail": "消除击退怪物近身即败 · 最佳%d分" % int(progression_state.get("defense_best_score", 0))},
+		{"id": "sum10", "title": "🔟 合十消", "detail": "两数相加为10即可消 · 最佳%d分" % int(progression_state.get("sum10_best_score", 0))},
+		{"id": "duel", "title": "👫 同屏对战", "detail": "轮流消牌分高者胜 · 最佳%d分" % int(progression_state.get("duel_best_score", 0))},
 		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]}
 	]
 
@@ -424,9 +428,10 @@ static func modes_panel_rows(progression_state) -> Array:
 # Entry grouping for the modes panel; every mode id must appear exactly once.
 # Titles are category headers rendered above each group's cards.
 const MODE_CATEGORIES = [
-	{"title": "🏁 竞速限时", "modes": ["daily", "time_attack", "hell", "race", "fever"]},
+	{"title": "🏁 竞速限时", "modes": ["daily", "time_attack", "hell", "fever"]},
 	{"title": "🧠 记忆翻牌", "modes": ["memory", "flip", "tray"]},
-	{"title": "⚙️ 机制挑战", "modes": ["frost", "stack", "gravity", "fog", "chain", "rock", "defuse", "target", "shift", "slide", "defense"]},
+	{"title": "⚙️ 机制挑战", "modes": ["frost", "stack", "gravity", "fog", "chain", "rock", "defuse", "target", "shift", "slide", "defense", "sum10"]},
+	{"title": "👥 双人", "modes": ["race", "duel"]},
 	{"title": "🌙 休闲自定", "modes": ["zen", "moves", "perfect", "collect"]},
 	{"title": "∞ 无尽", "modes": ["endless"]},
 ]

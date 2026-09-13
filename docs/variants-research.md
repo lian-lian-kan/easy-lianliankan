@@ -51,3 +51,12 @@ Onet Connect Classic、Dream Pet Link 1/2、Jolly Jong Connect、连连看4（ll
 - Round 1：rock 障碍 + defuse 拆弹（本提交）
 - Round 2：target 指定连消 + shift 变脸
 - Round 3：slide 滑移 + defense 守卫 + 面板分类分组
+
+## 第二轮调研与可行性结论（2026-09-13，Round CO'）
+
+第二轮联网调研（Onet Connect Plus / Onet Puzzle 各类 gravity modes / Tile Frost-Match / 7k7k 六边形旋转消除 / Hex Puzzle 等）结论：
+
+- **已收编（Round CO'）**：👫 **同屏对战 duel**——双人轮流消除，成功继续、失败换人，清盘分高者胜（欢乐连连看双人模式的离线化：联网对战需服务器基建，同屏轮流保留对战博弈）；🔟 **合十消 sum10**——两张数字牌相加为 10 即可消（1-9/2-8/3-7/4-6/5-5），引擎配对规则经 board_engine.values_match 模式化，提示/寻路/洗牌全链感知。
+- **3D 旋转（Mahjong Dimensions 类）**：不可行——渲染层是 GridContainer 方格按钮矩阵，3D 旋转骰面需要 3D 场景/自定义投影渲染，与 2D 竖屏架构冲突；按用户决策跳过。已有叠层模式（stack）承载「多层棋盘」体验。
+- **六边形棋盘（hex connect）**：2D 可行但需另立项——寻路 BFS 的 visited/方向扩展按 4 方向硬编码（六邻接为 6 方向且转向语义不同），渲染 GridContainer 只支持方格矩阵，powerup 炸弹 3x3/镜像生成等十余处隐含方格假设；改动横跨 board 域全部模块。已记录改造清单：①board_engine 方向表参数化+六邻接 offset-row 邻接函数 ②board_view 自由布局渲染器 ③生成器镜像逻辑六边形化。
+- **玻璃双层牌（frost 变体）**：与既有冰雪模式机制重复，不重复收编。

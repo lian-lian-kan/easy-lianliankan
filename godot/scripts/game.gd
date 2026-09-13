@@ -136,6 +136,8 @@ var target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
 var shift_countdown = 0
 var defense_distance = 0
 var defense_countdown = 0
+var duel_scores = [0, 0]
+var duel_current = 0
 var _fog_layers = 0       # fog: current outer-ring count
 
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
@@ -418,6 +420,12 @@ func _is_slide_mode():
 func _is_defense_mode():
 	return special_mode == "defense"
 
+func _is_duel_mode():
+	return special_mode == "duel"
+
+func _is_sum_mode():
+	return special_mode == "sum10"
+
 # 指定连消：挑一对可连消的高亮格（无解返回 false）。
 func _pick_target_pair():
 	return SESSION._pick_target_pair(self)
@@ -601,7 +609,7 @@ func _animate_shuffle_wave():
 # ═══ 棋盘算法（board_engine） ═══
 
 func _create_playable_board(level):
-	return BOARD_ENGINE.create_playable_board(level, self, "_is_coord_playable")
+	return BOARD_ENGINE.create_playable_board(level, self, "_is_coord_playable", special_mode)
 
 func _contains_coord(list, coord):
 	return BOARD_ENGINE.contains_coord(list, coord)
@@ -622,16 +630,20 @@ func _format_time_seconds(time_seconds):
 	return BOARD_ENGINE.format_time_seconds(time_seconds)
 
 func _find_path(board_state, a, b):
-	return BOARD_ENGINE.find_path(board_state, a, b)
+	return BOARD_ENGINE.find_path(board_state, a, b, special_mode)
+
+# 当前配对规则下两张牌是否可消（经典等值 / 合十相加为 10）。
+func _values_match(a, b):
+	return BOARD_ENGINE.values_match(special_mode, a, b)
 
 func _node_key(r, c, d, t):
 	return BOARD_ENGINE.node_key(r, c, d, t)
 
 func _find_any_hint(board_state):
-	return BOARD_ENGINE.find_any_hint(board_state, self, "_is_coord_playable")
+	return BOARD_ENGINE.find_any_hint(board_state, self, "_is_coord_playable", special_mode)
 
 func _reshuffle_board(board_state):
-	BOARD_ENGINE.reshuffle_board(board_state, self, "_is_coord_playable")
+	BOARD_ENGINE.reshuffle_board(board_state, self, "_is_coord_playable", special_mode)
 
 # ═══ 主屏构建（home_screen） ═══
 

@@ -37,7 +37,9 @@ const ACHIEVEMENTS = [
 	{"id": "target_first", "name": "指哪打哪", "desc": "完成一局指定连消"},
 	{"id": "shift_first", "name": "善变女神", "desc": "完成一局变脸模式"},
 	{"id": "slide_first", "name": "滑移行者", "desc": "完成一局滑移模式"},
-	{"id": "defense_first", "name": "守卫骑士", "desc": "完成一局守卫模式"}
+	{"id": "defense_first", "name": "守卫骑士", "desc": "完成一局守卫模式"},
+	{"id": "sum10_first", "name": "合十高手", "desc": "完成一局合十消"},
+	{"id": "duel_first", "name": "同屏赢家", "desc": "完成一局同屏对战"}
 ]
 
 
@@ -76,6 +78,8 @@ static func default_progress(level_count: int) :
 		"shift_best_score": 0,
 		"slide_best_score": 0,
 		"defense_best_score": 0,
+		"sum10_best_score": 0,
+		"duel_best_score": 0,
 		"coins": 0,
 		"collected": [],
 		"owned_sets": ["fruit"],
@@ -207,6 +211,8 @@ static func _normalize_special_records(raw, normalized):
 	normalized["shift_best_score"] = max(0, int(raw.get("shift_best_score", 0)))
 	normalized["slide_best_score"] = max(0, int(raw.get("slide_best_score", 0)))
 	normalized["defense_best_score"] = max(0, int(raw.get("defense_best_score", 0)))
+	normalized["sum10_best_score"] = max(0, int(raw.get("sum10_best_score", 0)))
+	normalized["duel_best_score"] = max(0, int(raw.get("duel_best_score", 0)))
 
 
 static func apply_update(current_state, level_count: int, patch: Dictionary = {}) :
@@ -368,6 +374,8 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("shift_best_score", 0)) == int(bb.get("shift_best_score", 0)) \
 		and int(aa.get("slide_best_score", 0)) == int(bb.get("slide_best_score", 0)) \
 		and int(aa.get("defense_best_score", 0)) == int(bb.get("defense_best_score", 0)) \
+		and int(aa.get("sum10_best_score", 0)) == int(bb.get("sum10_best_score", 0)) \
+		and int(aa.get("duel_best_score", 0)) == int(bb.get("duel_best_score", 0)) \
 		and bool(aa.get("onboarding_seen", false)) == bool(bb.get("onboarding_seen", false)) \
 		and int(aa.get("coins", 0)) == int(bb.get("coins", 0)) \
 		and _arrays_equal(aa.get("collected", []), bb.get("collected", [])) \

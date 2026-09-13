@@ -281,6 +281,27 @@ const DEFAULT_CONFIGS = {
 		"cols": 8,
 		"kinds": 8,
 		"time_limit": 240
+	},
+	"sum10": {
+		"mode_id": "sum10",
+		"name": "合十消",
+		"description": "两数相加为10即可消除",
+		"unlock_level": 17,
+		"sum10": true,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 5,
+		"time_limit": 180
+	},
+	"duel": {
+		"mode_id": "duel",
+		"name": "同屏对战",
+		"description": "双人轮流消除，分高者胜",
+		"unlock_level": 17,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 240
 	}
 }
 
@@ -315,6 +336,8 @@ const MODE_LABELS_EXTRA = {
 	"shift": "变脸模式",
 	"slide": "滑移模式",
 	"defense": "守卫模式",
+	"sum10": "合十消",
+	"duel": "同屏对战",
 }
 const INTRO_TEXTS_EXTRA = {
 	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
@@ -328,6 +351,8 @@ const INTRO_TEXTS_EXTRA = {
 	"shift": "变脸模式！🔄 图案会偷偷换位置，盯紧了",
 	"slide": "滑移模式！🧲 每消一对整行就滑动一位，位置要重新算",
 	"defense": "守卫模式！🧟 消除击退怪物，它近身就输了",
+	"sum10": "合十消！🔟 两张牌的数字相加为 10 就能消除",
+	"duel": "同屏对战！👫 成功消除继续，失败换对方，分高者胜",
 }
 
 const RECORD_MODES = {
@@ -352,6 +377,8 @@ const RECORD_MODES = {
 	"shift": {"label": "变脸大师", "patch_key": "shift_result", "best_key": "shift_best_score", "achievements": ["shift_first"]},
 	"slide": {"label": "滑移通关", "patch_key": "slide_result", "best_key": "slide_best_score", "achievements": ["slide_first"]},
 	"defense": {"label": "守卫成功", "patch_key": "defense_result", "best_key": "defense_best_score", "achievements": ["defense_first"]},
+	"sum10": {"label": "合十满分", "patch_key": "sum10_result", "best_key": "sum10_best_score", "achievements": ["sum10_first"]},
+	"duel": {"label": "同屏争霸", "patch_key": "duel_result", "best_key": "duel_best_score", "achievements": ["duel_first"]},
 }
 
 # 主屏副标题「<标签> · 最佳N分」模式段的最佳分字段；标签统一取 mode_label()。
@@ -375,6 +402,8 @@ const SUBTITLE_RECORDS = {
 	"shift": "shift_best_score",
 	"slide": "slide_best_score",
 	"defense": "defense_best_score",
+	"sum10": "sum10_best_score",
+	"duel": "duel_best_score",
 }
 
 # 结算后按模式语境补发的条件成就。

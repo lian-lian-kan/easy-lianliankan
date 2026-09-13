@@ -20,8 +20,9 @@ static func _on_tile_pressed(game, button):
 	var previous = game.selected
 	var selected_value = int(game.board[previous.x][previous.y])
 	var target_value = int(game.board[point.x][point.y])
-	if selected_value != target_value:
-		_reject_pair(game, previous, point, "请先选择相同图案", 0.7)
+	if not game._values_match(selected_value, target_value):
+		var hint = "合十消：两张牌的数字相加要等于 10 哦" if game._is_sum_mode() else "请先选择相同图案"
+		_reject_pair(game, previous, point, hint, 0.7)
 		return
 	if game._is_target_mode() and not _is_target_pair(game, previous, point):
 		_reject_pair(game, previous, point, "✨ 先消金光高亮的那一对！", 1.0)
@@ -45,7 +46,7 @@ static func _refresh_target_pair(game) -> void:
 	var ok = tp[0].x >= 0 and tp[1].x >= 0 \
 		and game.board[tp[0].x][tp[0].y] != 0 \
 		and game.board[tp[1].x][tp[1].y] != 0 \
-		and int(game.board[tp[0].x][tp[0].y]) == int(game.board[tp[1].x][tp[1].y])
+		and game._values_match(int(game.board[tp[0].x][tp[0].y]), int(game.board[tp[1].x][tp[1].y]))
 	if not ok:
 		game._pick_target_pair()
 
@@ -109,6 +110,10 @@ static func _reject_pair(game, previous, point, message, duration):
 	game._flash_error_tiles([previous, point])
 	game._animate_select(point)
 	game._show_message(message, duration)
+	# Duel: a failed attempt hands the turn to the other player.
+	if game._is_duel_mode() and game.stage_status == game.STATUS_PLAYING:
+		game.duel_current = 1 - game.duel_current
+		game._show_message("🔁 轮到玩家%d" % (game.duel_current + 1), 0.9)
 	game._refresh_ui()
 	game._refresh_board_visuals()
 
@@ -131,6 +136,9 @@ static func _execute_pair_match(game, path, previous, point):
 	game.BOARD_MECHANICS.defuse_pair(game, a, b)
 	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
+	# Duel: the gain lands on the current player's own scoreboard.
+	if game._is_duel_mode():
+		game.duel_scores[game.duel_current] += int(score_result["gain"])
 	_refresh_target_pair(game)
 	# Slide: every match rotates one occupied row right by one cell.
 	if game._is_slide_mode() and game.BOARD_ENGINE.slide_random_row(game.board):

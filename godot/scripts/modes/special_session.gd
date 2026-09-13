@@ -13,9 +13,14 @@ const MEMORY_FLIP = preload("res://scripts/modes/memory_flip.gd")
 
 # Shared tail of the per-mode win settlements: record, celebration, banner.
 # Modes dealt by build_classic_style_level (one row in DEFAULT_CONFIGS, no bespoke builder).
-const CLASSIC_STYLE_MODES = ["zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "target", "shift", "slide", "defense"]
+const CLASSIC_STYLE_MODES = ["zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "target", "shift", "slide", "defense", "duel", "sum10"]
 
 static func _finish_special_win(game, message):
+	if game._is_duel_mode():
+		var s1 = int(game.duel_scores[0])
+		var s2 = int(game.duel_scores[1])
+		var verdict = "平局，握手言和～" if s1 == s2 else ("🏆 玩家1 获胜！" if s1 > s2 else "🏆 玩家2 获胜！")
+		message = "%s %d:%d %s" % [verdict, s1, s2, message]
 	game.stage_status = game.STATUS_CLEARED
 	AudioManager.play_win()
 	game.VOICE_LINES.play(game, "clear")

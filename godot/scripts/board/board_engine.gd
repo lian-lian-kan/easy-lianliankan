@@ -127,13 +127,38 @@ static func create_board(rows, cols, kinds):
 		created.append(row)
 	return created
 
-static func create_playable_board(level, filter_obj = null, filter_method = ""):
+# Pair rule: equal faces everywhere; sum10 mode also clears digit pairs that
+# add up to 10 (1-9, 2-8, 3-7, 4-6, plus the equal 5-5 pair).
+static func values_match(mode_id, a, b):
+	if mode_id == "sum10":
+		return a == b or a + b == 10
+	return a == b
+
+
+# Sum10 deal: logical types 1..5 (each guaranteed an even count by the classic
+# generator) split evenly into digit faces (v, 10-v); type 5 stays 5 (5+5).
+static func apply_sum10_faces(board_state):
+	var seen = {}
+	for r in range(board_state.size()):
+		for c in range(board_state[0].size()):
+			var v = int(board_state[r][c])
+			if v == 0 or is_rock_value(v):
+				continue
+			var times = int(seen.get(v, 0))
+			seen[v] = times + 1
+			if v == 5:
+				continue
+			if times % 2 == 1:
+				board_state[r][c] = 10 - v
+
+
+static func create_playable_board(level, filter_obj = null, filter_method = "", match_mode := ""):
 	var rows = int(level.get("rows", 8))
 	var cols = int(level.get("cols", 6))
 	var kinds = int(level.get("kinds", 6))
 	var created = create_board(rows, cols, kinds)
-	if find_any_hint(created, filter_obj, filter_method).empty():
-		reshuffle_board(created, filter_obj, filter_method)
+	if find_any_hint(created, filter_obj, filter_method, match_mode).empty():
+		reshuffle_board(created, filter_obj, filter_method, match_mode)
 	return created
 
 static func node_key(r, c, d, t):
@@ -184,7 +209,7 @@ static func compress_path(points):
 
 # BFS over (cell, direction) states with at most 2 turns; the board is padded
 # with an empty border so routes may leave the grid.
-static func find_path(board_state, a, b):
+static func find_path(board_state, a, b, match_mode := ""):
 	if not is_inside(board_state, a) or not is_inside(board_state, b):
 		return []
 	if a == b:
@@ -192,7 +217,7 @@ static func find_path(board_state, a, b):
 
 	var value_a = int(board_state[a.x][a.y])
 	var value_b = int(board_state[b.x][b.y])
-	if value_a == 0 or value_b == 0 or value_a != value_b:
+	if value_a == 0 or value_b == 0 or not values_match(match_mode, value_a, value_b):
 		return []
 
 	var padded = pad_board(board_state)
@@ -272,7 +297,7 @@ static func _expand_path_node(padded, visited, queue, parent, cur, target, p_row
 		queue.append(next_node)
 		parent[node_key(nr, nc, nd, nturns)] = node_key(int(cur["r"]), int(cur["c"]), int(cur["dir"]), turns)
 
-static func find_any_hint(board_state, filter_obj = null, filter_method = ""):
+static func find_any_hint(board_state, filter_obj = null, filter_method = "", match_mode := ""):
 	var rows = board_state.size()
 	var cols = board_state[0].size()
 
@@ -287,7 +312,7 @@ static func find_any_hint(board_state, filter_obj = null, filter_method = ""):
 			for r2 in range(r1, rows):
 				var start_c = c1 + 1 if r2 == r1 else 0
 				for c2 in range(start_c, cols):
-					if int(board_state[r2][c2]) != value:
+					if not values_match(match_mode, int(board_state[r2][c2]), value):
 						continue
 					if filter_obj != null and not filter_obj.call(filter_method, Vector2(r2, c2)):
 						continue
@@ -344,7 +369,7 @@ static func slide_random_row(board_state) -> bool:
 	return true
 
 
-static func reshuffle_board(board_state, filter_obj = null, filter_method = ""):
+static func reshuffle_board(board_state, filter_obj = null, filter_method = "", match_mode := ""):
 	var rows = board_state.size()
 	var cols = board_state[0].size()
 
@@ -366,7 +391,7 @@ static func reshuffle_board(board_state, filter_obj = null, filter_method = ""):
 			var cell = movable[i]
 			board_state[cell.x][cell.y] = tiles[i]
 
-		if not find_any_hint(board_state, filter_obj, filter_method).empty():
+		if not find_any_hint(board_state, filter_obj, filter_method, match_mode).empty():
 			return true
 	return false
 

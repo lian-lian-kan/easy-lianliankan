@@ -41,7 +41,7 @@ func _init() -> void:
 	# mode_id -> [expect_timed(bool), extra check lambda replaced by inline ifs]
 	var modes = ["daily", "time_attack", "endless", "memory", "frost", "zen", "hell",
 		"moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip",
-		"fever", "perfect", "rock", "defuse", "target", "shift", "slide", "defense"]
+		"fever", "perfect", "rock", "defuse", "target", "shift", "slide", "defense", "sum10", "duel"]
 
 	for mode_id in modes:
 		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
@@ -119,6 +119,14 @@ func _init() -> void:
 				check(_board_cells(game) > 0, "defense deals a real board")
 				check(int(game.defense_distance) > 0, "defense arms the monster distance")
 				check(int(game.defense_countdown) > 0, "defense arms its advance interval")
+			"sum10":
+				check(_board_cells(game) > 0, "sum10 deals a real board")
+				check(game.BOARD_ENGINE.values_match("sum10", 3, 7), "sum10 pairs digits summing to 10")
+				check(not game.BOARD_ENGINE.values_match("sum10", 3, 6), "sum10 rejects non-ten sums")
+			"duel":
+				check(_board_cells(game) > 0, "duel deals a real board")
+				check(int(game.duel_scores[0]) == 0 && int(game.duel_scores[1]) == 0, "duel starts with zero scores")
+				check(int(game.duel_current) == 0, "duel starts with player 1")
 			_:
 				check(_board_cells(game) > 0, "%s deals a real board" % mode_id)
 

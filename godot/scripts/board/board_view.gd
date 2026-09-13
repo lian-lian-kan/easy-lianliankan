@@ -60,7 +60,7 @@ static func _tile_base_style(game, button, r, c, value, playing) -> Dictionary:
 		bg = Color("ffc2d4")
 		border = Color("f09ebb")
 	else:
-		button.text = game._icon_for(value)
+		button.text = str(value) if game._is_sum_mode() else game._icon_for(value)
 	button.disabled = not playing
 
 	var is_selected = (game.selected.x == r and game.selected.y == c)

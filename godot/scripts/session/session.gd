@@ -102,6 +102,10 @@ static func _reset_board_session(game, level):
 	game.shift_countdown = int(level.get("shift_interval", 0))
 	game.defense_distance = int(level.get("defense_start", 0))
 	game.defense_countdown = int(level.get("defense_step", 0))
+	game.duel_scores = [0, 0]
+	game.duel_current = 0
+	if game._is_sum_mode():
+		game.BOARD_ENGINE.apply_sum10_faces(game.board)
 	if game._is_target_mode():
 		_pick_target_pair(game)
 	game._fog_layers = 0
