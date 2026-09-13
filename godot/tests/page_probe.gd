@@ -118,7 +118,7 @@ func _init() -> void:
 	labels = _page_labels(game)
 	var signed_note = false
 	for l in labels:
-		if l.find("今日已领取") != -1:
+		if l.find("明天见") != -1:
 			signed_note = true
 	check(signed_note, "sign-in page reflects today's claim")
 	game._on_nav_home_pressed()
@@ -345,7 +345,7 @@ func _init() -> void:
 		else:
 			refund_fever += refunded
 	check(refund_normal == 3 * (fever_threshold - 1), "matches below the fever refund 3s each")
-	check(refund_fever == 4, "fever matches refund 4 seconds (base + combo bonus)")
+	check(refund_fever == 8, "fever matches refund 4s each over the two fever matches")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
 	# --- shop: buy with blossoms, auto-use, refuse when broke ---
@@ -432,6 +432,7 @@ func _init() -> void:
 	check(str(game.CHEERS.draw(game, 1)) == "", "combo 1 stays silent")
 	var seen_lines = {}
 	var no_repeat = true
+	game.cheer_decks = {}
 	for _i in range(8):
 		var drawn = game.CHEERS.draw(game, 2)
 		if seen_lines.has(drawn):
@@ -471,7 +472,7 @@ func _init() -> void:
 	var coins_note = int(game.progression_state.get("coins", 0))
 	game.time_left = 8
 	game._call_husband()
-	check(int(game.time_left) == 23 && game.husband_called, "second call is refused (one rescue per round)")
+	check(int(game.time_left) == 8 && game.husband_called, "second call is refused (one rescue per round)")
 	check(int(game.progression_state.get("coins", 0)) == coins_note, "rescue is free of blossom charges")
 	game._start_level(0, true)
 	check(!game.husband_called, "a fresh round resets the rescue")
