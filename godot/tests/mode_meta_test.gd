@@ -107,7 +107,7 @@ func _init() -> void:
 			details_ok = false
 			push_error("detail mismatch for %s: %s" % [r["id"], r["detail"]])
 	check(details_ok, "special-mode details end with their best score")
-	var endless_row = rows[17]
+	var endless_row = rows[19]
 	check(endless_row["detail"].find("最佳第3轮") != -1 and endless_row["detail"].find("最高456分") != -1, "endless detail shows round and score")
 	var daily_row = rows[0]
 	check(daily_row["detail"].find("今日已完成") == -1, "daily shows not-done without today's date")
