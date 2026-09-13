@@ -1,0 +1,29 @@
+name: Production E2E check (manual)
+
+# Boots the LIVE production game in headless Chrome and lets its cloud-save
+# handshake fire against the real backend. Never runs automatically; after a
+# run, verify on the backend side:
+#   kubectl logs -n lianliankan deploy/lianliankan-backend --since=10m
+#   -> POST /api/v1/users/register + GET /api/v1/progress from this boot.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  boot-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Boot the live game in headless Chrome
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser || command -v chromium)"
+          echo "browser: $CHROME"
+          # The game registers (first boot) / pulls on boot — requests land on
+          # the public API (https://lianliankan.zhaixingren.cn). Keep the
+          # process alive long enough for the wasm engine to boot and sync.
+          timeout 90 "$CHROME" --headless --no-sandbox --disable-dev-shm-usage \
+            --disable-gpu "https://lian-lian-kan.github.io/easy-lianliankan/" \
+            >/dev/null 2>&1 || true
+          echo "90s boot window finished; correlate backend logs with this run's timestamp."
