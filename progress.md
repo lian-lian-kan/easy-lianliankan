@@ -957,3 +957,11 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 入口编排：modes 面板分类分组——special_modes.MODE_CATEGORIES 数据表（🏁 竞速限时 5 / 🧠 记忆翻牌 3 / ⚙️ 机制挑战 11 / 🌙 休闲自定 4 / ∞ 无尽 1），refresh_modes_rows 按类插标题行；新玩法入组只改表。
 - 工程注记：special_session 经典式 elif 长链收敛为 CLASSIC_STYLE_MODES 常量表（shell_audit 45 行红线被 _start_special_mode 触发后根修）；startup_probe 每模式入场前重抬解锁索引（daily 结算会从存档回写 progression，17→14 导致 16 关解锁的新模式进不了会话）；**panels_probe/page_probe 的 `var stack` 同作用域重声明 parse error 是既有的——两个探针自引入起在 CI 从未真正跑过（parse 失败但退出码被容忍），本次修复重名后复活，随即暴露 4 条陈年失效断言并逐条对齐现行为（签到"明天见"文案/狂热两场退时 8s/欢呼牌堆先重置再抽/丈夫救援二次调用幂等 time_left==8）**。遗留风险提示：其它探针若也有同款静默 parse 失败，同样手法可查（CI 日志 grep "already defined"）。
 - Validation: shell_audit 七项全过；数据表本地 python 计数（24/21/17/括号平衡）全对；分支 CI build 绿后 fast-forward 合并 main，生产部署 CI 绿。
+
+## 2026-09-13 (玩法 Round CO'：第二轮联网调研 + 同屏对战 duel + 合十消 sum10——25→27 种)
+- 调研结论（docs/variants-research.md 已归档）：双人联网需服务器基建 → 离线化为同屏轮流对战；3D 旋转与 GridContainer 方格渲染架构冲突不可行（用户决策跳过，叠层 stack 已承载多层体验）；六边形 2D 可行但需寻路方向表参数化+自由布局渲染器（board 域十余处方格假设），列改造清单另立项；玻璃双层牌与冰雪重复不收编。
+- duel 同屏对战：双人轮流，成功消除继续、失败（不成对/路径不通）经 _reject_pair 换人；duel_scores[2]/duel_current 状态，_execute_pair_match 把 score_result.gain 记当前玩家名下；_finish_special_win 结算时按分差宣判（「🏆 玩家1 获胜！/平局」+ 比分）后照常发奖励落纪录。
+- sum10 合十消：配对规则模式化——board_engine.values_match(mode,a,b)（等值 或 相加为10），find_path/find_any_hint/reshuffle_board/create_playable_board 加可选 match_mode 参数由 game 薄壳传 special_mode，游戏内点击校验/金光目标对校验全部走 _values_match；apply_sum10_faces 把经典生成器（类型计数必偶）的 1..5 类型面均分为 (v,10-v) 数字面（5 保持 5+5），牌面直接显示数字（board_view sum 模式分支）；kinds 锁 5。
+- 全链接线：configs 2 条（解锁 17 关）/labels/intro/RECORD(23)/SUBTITLES(19)/面板 26 行/分类表 +👥双人组（race 从竞速组移入）/统计页 2 行/成就 sum10_first+duel_first/progression 四处/计数同步（26 configs/23 record/27 label/26 行/卡 26+6 分组头=32/锁 24/endless rows[25]/解锁上限断言 17）/字体子集 1114 字符。
+- 工程注记：字体全量 full/ 是 gitignored，新 worktree 需从主工作区 godot/fonts/full/ 拷贝（subset 脚本有自举防护会 FAIL 提示）；worktree 主工作区备份体已按此复用。分支 CI 一轮全绿（本地 audit+计数预验到位后首跑即绿成常态）。
+- Validation: shell_audit 七项全过；数据表 python 计数全对；分支 CI build 绿 → fast-forward 合并 main → 生产部署 CI 绿。
