@@ -25,7 +25,8 @@ func _init() -> void:
 		check(definition.has("name") and definition.has("desc"), "achievement %s has name and desc" % definition["id"])
 	check(ids.size() == 34, "achievement ids are unique")
 	check(ids.has("first_clear") and ids.has("sum10_first"), "catalog spans first_clear..sum10_first")
-	check(defs != ACHIEVEMENTS.get_achievement_definitions(), "get_all returns a duplicate safe to mutate")
+	defs.append({"id": "mutated", "name": "x", "desc": "x"})
+	check(ACHIEVEMENTS.get_achievement_definitions().size() == 34, "get_all returns a duplicate safe to mutate")
 
 	# --- state accessors
 	var state = {"achievements": ["first_clear"]}
