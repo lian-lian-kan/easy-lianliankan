@@ -150,3 +150,7 @@ static func _fresh_player_id() -> String:
 
 static func _rand_hex_digit() -> int:
 	return randi() % 16
+
+
+static func _now_ms() -> int:
+	return int(OS.get_unix_time()) * 1000
