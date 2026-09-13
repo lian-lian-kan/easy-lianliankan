@@ -41,7 +41,7 @@ func _init() -> void:
 	# mode_id -> [expect_timed(bool), extra check lambda replaced by inline ifs]
 	var modes = ["daily", "time_attack", "endless", "memory", "frost", "zen", "hell",
 		"moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip",
-		"fever", "perfect", "rock", "defuse", "target", "shift"]
+		"fever", "perfect", "rock", "defuse", "target", "shift", "slide", "defense"]
 
 	for mode_id in modes:
 		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
@@ -110,6 +110,12 @@ func _init() -> void:
 			"shift":
 				check(_board_cells(game) > 0, "shift deals a real board")
 				check(int(game.shift_countdown) > 0, "shift arms its interval")
+			"slide":
+				check(_board_cells(game) > 0, "slide deals a real board")
+			"defense":
+				check(_board_cells(game) > 0, "defense deals a real board")
+				check(int(game.defense_distance) > 0, "defense arms the monster distance")
+				check(int(game.defense_countdown) > 0, "defense arms its advance interval")
 			_:
 				check(_board_cells(game) > 0, "%s deals a real board" % mode_id)
 

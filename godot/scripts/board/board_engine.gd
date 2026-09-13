@@ -321,6 +321,29 @@ static func swap_random_faces(board_state) -> bool:
 	return true
 
 
+# 滑移: pick a row that still holds tiles and rotate it right by one cell.
+# A cyclic rotation keeps every value, so pair parity stays intact.
+static func slide_random_row(board_state) -> bool:
+	var rows = board_state.size()
+	var cols = board_state[0].size()
+	var candidates = []
+	for r in range(rows):
+		var filled = 0
+		for c in range(cols):
+			if int(board_state[r][c]) != 0:
+				filled += 1
+		if filled >= 2:
+			candidates.append(r)
+	if candidates.empty():
+		return false
+	var row = candidates[randi() % candidates.size()]
+	var last = board_state[row][cols - 1]
+	for c in range(cols - 1, 0, -1):
+		board_state[row][c] = board_state[row][c - 1]
+	board_state[row][0] = last
+	return true
+
+
 static func reshuffle_board(board_state, filter_obj = null, filter_method = ""):
 	var rows = board_state.size()
 	var cols = board_state[0].size()

@@ -259,6 +259,28 @@ const DEFAULT_CONFIGS = {
 		"cols": 8,
 		"kinds": 8,
 		"time_limit": 150
+	},
+	"slide": {
+		"mode_id": "slide",
+		"name": "滑移模式",
+		"description": "每消一对，整行滑移一位",
+		"unlock_level": 16,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 180
+	},
+	"defense": {
+		"mode_id": "defense",
+		"name": "守卫模式",
+		"description": "消除击退怪物，别让它近身",
+		"unlock_level": 16,
+		"defense_start": 5,
+		"defense_step": 12,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 240
 	}
 }
 
@@ -291,6 +313,8 @@ const MODE_LABELS_EXTRA = {
 	"defuse": "拆弹行动",
 	"target": "指定连消",
 	"shift": "变脸模式",
+	"slide": "滑移模式",
+	"defense": "守卫模式",
 }
 const INTRO_TEXTS_EXTRA = {
 	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
@@ -302,6 +326,8 @@ const INTRO_TEXTS_EXTRA = {
 	"defuse": "拆弹行动！💣 诅咒方块限时拆除，别让它数到 0",
 	"target": "指定连消！✨ 只能消金光高亮的那一对",
 	"shift": "变脸模式！🔄 图案会偷偷换位置，盯紧了",
+	"slide": "滑移模式！🧲 每消一对整行就滑动一位，位置要重新算",
+	"defense": "守卫模式！🧟 消除击退怪物，它近身就输了",
 }
 
 const RECORD_MODES = {
@@ -324,6 +350,8 @@ const RECORD_MODES = {
 	"defuse": {"label": "拆弹成功", "patch_key": "defuse_result", "best_key": "defuse_best_score", "achievements": ["defuse_first"]},
 	"target": {"label": "指哪打哪", "patch_key": "target_result", "best_key": "target_best_score", "achievements": ["target_first"]},
 	"shift": {"label": "变脸大师", "patch_key": "shift_result", "best_key": "shift_best_score", "achievements": ["shift_first"]},
+	"slide": {"label": "滑移通关", "patch_key": "slide_result", "best_key": "slide_best_score", "achievements": ["slide_first"]},
+	"defense": {"label": "守卫成功", "patch_key": "defense_result", "best_key": "defense_best_score", "achievements": ["defense_first"]},
 }
 
 # 主屏副标题「<标签> · 最佳N分」模式段的最佳分字段；标签统一取 mode_label()。
@@ -345,6 +373,8 @@ const SUBTITLE_RECORDS = {
 	"defuse": "defuse_best_score",
 	"target": "target_best_score",
 	"shift": "shift_best_score",
+	"slide": "slide_best_score",
+	"defense": "defense_best_score",
 }
 
 # 结算后按模式语境补发的条件成就。

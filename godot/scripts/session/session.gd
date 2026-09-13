@@ -100,6 +100,8 @@ static func _reset_board_session(game, level):
 		game.BOARD_MECHANICS.build_bombs(game, level)
 	game.target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
 	game.shift_countdown = int(level.get("shift_interval", 0))
+	game.defense_distance = int(level.get("defense_start", 0))
+	game.defense_countdown = int(level.get("defense_step", 0))
 	if game._is_target_mode():
 		_pick_target_pair(game)
 	game._fog_layers = 0

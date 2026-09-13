@@ -132,6 +132,16 @@ static func _execute_pair_match(game, path, previous, point):
 	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
 	_refresh_target_pair(game)
+	# Slide: every match rotates one occupied row right by one cell.
+	if game._is_slide_mode() and game.BOARD_ENGINE.slide_random_row(game.board):
+		AudioManager.play_shuffle()
+		game._show_message("🧲 滑移！整行移动了一位", 0.8)
+	# Defense: each cleared pair pushes the monster one step back.
+	if game._is_defense_mode():
+		var cap = int(game._current_level().get("defense_start", 5))
+		game.defense_distance = min(cap, game.defense_distance + 1)
+		game.defense_countdown = int(game._current_level().get("defense_step", 12))
+		game._show_message("⚔️ 击退！距离还有 %d 步" % game.defense_distance, 0.8)
 
 	game._refresh_ui()
 	game._refresh_board_visuals()

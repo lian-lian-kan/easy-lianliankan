@@ -12,6 +12,9 @@ const MEMORY_FLIP = preload("res://scripts/modes/memory_flip.gd")
 
 
 # Shared tail of the per-mode win settlements: record, celebration, banner.
+# Modes dealt by build_classic_style_level (one row in DEFAULT_CONFIGS, no bespoke builder).
+const CLASSIC_STYLE_MODES = ["zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "target", "shift", "slide", "defense"]
+
 static func _finish_special_win(game, message):
 	game.stage_status = game.STATUS_CLEARED
 	AudioManager.play_win()
@@ -53,10 +56,7 @@ static func _start_special_mode(game, mode_id):
 	elif mode_id == "defuse":
 		var defuse_level = game.SPECIAL_MODES_SCRIPT.build_defuse_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
 		level = defuse_level
-	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
-				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain" \
-				or mode_id == "fever" or mode_id == "perfect" \
-				or mode_id == "target" or mode_id == "shift":
+	elif mode_id in CLASSIC_STYLE_MODES:
 		level = game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
 	else:
 		level = game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)

@@ -265,6 +265,10 @@ static func build_classic_style_level(config, mode_id: String):
 		level["stack_ratio"] = float(config.get("stack_ratio", 0.25))
 	if config.has("fog_layers"):
 		level["fog_layers"] = int(config.get("fog_layers", 2))
+	if config.has("defense_start"):
+		level["defense_start"] = int(config.get("defense_start", 5))
+	if config.has("defense_step"):
+		level["defense_step"] = int(config.get("defense_step", 12))
 	if config.has("chain_ratio"):
 		level["chain_ratio"] = float(config.get("chain_ratio", 0.22))
 	if config.has("target_bonus"):
@@ -411,5 +415,7 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "defuse", "title": "💣 拆弹行动", "detail": "诅咒方块限时拆除 · 最佳%d分" % int(progression_state.get("defuse_best_score", 0))},
 		{"id": "target", "title": "✨ 指定连消", "detail": "金光指哪消哪 · 最佳%d分" % int(progression_state.get("target_best_score", 0))},
 		{"id": "shift", "title": "🔄 变脸模式", "detail": "图案偷偷换位置 · 最佳%d分" % int(progression_state.get("shift_best_score", 0))},
+		{"id": "slide", "title": "🧲 滑移模式", "detail": "每消一对整行滑移 · 最佳%d分" % int(progression_state.get("slide_best_score", 0))},
+		{"id": "defense", "title": "🧟 守卫模式", "detail": "消除击退怪物近身即败 · 最佳%d分" % int(progression_state.get("defense_best_score", 0))},
 		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]}
 	]

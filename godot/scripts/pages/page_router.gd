@@ -254,6 +254,8 @@ static func _stats_rows(game, collected, total_icons) -> Array:
 		["💣 拆弹最佳", str(int(game.progression_state.get("defuse_best_score", 0)))],
 		["✨ 指定连消最佳", str(int(game.progression_state.get("target_best_score", 0)))],
 		["🔄 变脸最佳", str(int(game.progression_state.get("shift_best_score", 0)))],
+		["🧲 滑移最佳", str(int(game.progression_state.get("slide_best_score", 0)))],
+		["🧟 守卫最佳", str(int(game.progression_state.get("defense_best_score", 0)))],
 	]
 
 # 单行白卡：名称居左、数值居右。

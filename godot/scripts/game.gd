@@ -134,6 +134,8 @@ var board_chain = []      # chain: 1 = chained (unlock via adjacent clears)
 var board_bomb = {}
 var target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
 var shift_countdown = 0
+var defense_distance = 0
+var defense_countdown = 0
 var _fog_layers = 0       # fog: current outer-ring count
 
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
@@ -409,6 +411,12 @@ func _is_target_mode():
 
 func _is_shift_mode():
 	return special_mode == "shift"
+
+func _is_slide_mode():
+	return special_mode == "slide"
+
+func _is_defense_mode():
+	return special_mode == "defense"
 
 # 指定连消：挑一对可连消的高亮格（无解返回 false）。
 func _pick_target_pair():
