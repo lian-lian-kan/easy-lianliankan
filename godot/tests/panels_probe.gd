@@ -230,14 +230,14 @@ func _init() -> void:
 	check(plain_button.has_stylebox_override("normal") && plain_button.has_stylebox_override("hover") && plain_button.has_stylebox_override("pressed") && plain_button.has_stylebox_override("disabled"), "button style overrides all states")
 	game._style_dialog_buttons(game.pause_panel)
 	var dialog_button = null
-	var stack = [game.pause_panel]
-	while stack.size() > 0:
-		var node = stack.pop_back()
+	var stack2 = [game.pause_panel]
+	while stack2.size() > 0:
+		var node = stack2.pop_back()
 		if node is Button:
 			dialog_button = node
 			break
 		for child in node.get_children():
-			stack.append(child)
+			stack2.append(child)
 	check(dialog_button != null && dialog_button.get_color("font_color") == Color("ffffff"), "dialog buttons get the rose white font")
 	plain_button.queue_free()
 

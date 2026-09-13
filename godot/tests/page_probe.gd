@@ -30,13 +30,13 @@ func _count_page_buttons(game):
 
 func _page_labels(game):
 	var labels = []
-	var stack = [game.page_content]
-	while stack.size() > 0:
-		var node = stack.pop_back()
+	var stack2 = [game.page_content]
+	while stack2.size() > 0:
+		var node = stack2.pop_back()
 		if node is Label:
 			labels.append(str(node.text))
 		for child in node.get_children():
-			stack.append(child)
+			stack2.append(child)
 	return labels
 
 func _init() -> void:
@@ -91,13 +91,13 @@ func _init() -> void:
 	var collected_count = int(game.progression_state.get("collected", []).size())
 	check(collected_count > 0, "starting a level collected some patterns (got %d)" % collected_count)
 	var mystery = false
-	var stack = [game.page_content]
-	while stack.size() > 0:
-		var node = stack.pop_back()
+	var stack3 = [game.page_content]
+	while stack3.size() > 0:
+		var node = stack3.pop_back()
 		if node is Label && str(node.text) == "❓":
 			mystery = true
 		for child in node.get_children():
-			stack.append(child)
+			stack3.append(child)
 	check(mystery, "uncollected cells render as mystery")
 	game._on_nav_home_pressed()
 
@@ -166,13 +166,13 @@ func _init() -> void:
 	game._on_nav_pressed("stats")
 	check(game.current_page == "stats" && game.pages_root.visible, "stats page opens as its own page")
 	var stat_labels = []
-	var stack = [game.page_content]
-	while stack.size() > 0:
-		var node = stack.pop_back()
+	var stack4 = [game.page_content]
+	while stack4.size() > 0:
+		var node = stack4.pop_back()
 		if node is Label:
 			stat_labels.append(str(node.text))
 		for child in node.get_children():
-			stack.append(child)
+			stack4.append(child)
 	var all_text = " | ".join(stat_labels)
 	check(all_text.find("最佳总分") != -1 && all_text.find("樱花币") != -1, "stats page shows wallet and best-score rows")
 	check(all_text.find("叠叠消最佳") != -1, "stats page lists the tray best row")
