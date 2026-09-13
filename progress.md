@@ -1019,3 +1019,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 后端补 CORS：CORSMiddleware + `ALLOWED_ORIGINS` env（默认 https://lian-lian-kan.github.io），PUT 预检由中间件应答；Dockerfile 改为装全 requirements.txt（原手工列表漏 redis，镜像限流会静默降级）；新增 CORS 预检/未知源 2 个测试。
 - 端到端验证（全走公网 HTTPS）：healthz {"ok":true,"db":true,"redis":true}；注册→token→PUT/GET 进度回读一致→无 token 401；CORS 预检 allow-origin/allow-headers 正确。
 - 文档：backend/README 增「部署与公网入口」（链路图/发布步骤/故障备忘），docs/backend.md 部署节改为已上线事实；删除过时的 exposure.yaml（Cloudflare 占位方案）。
+
+## 2026-09-14 (续：web 平台云同步修复——JS fetch 桥；线上端到端验证通过)
+- 部署后发现线上页面零同步请求。CI 内 Playwright 全量抓取定位（4 轮诊断收敛）：**Godot 3.6 HTML5 导出里 HTTPRequest.request() 是哑弹**——调用进入不返回、不发 XHR、无任何报错；且 **web release 模板不打印 GDScript 运行时错误**（强类型签名收到 HTTPClient.Method 枚举 int 会整个调用被静默拒绝，函数体一行不执行）。两个坑叠加导致前两轮修复（JS fetch 桥）上线后仍静默。
+- 修复：`godot/scripts/session/web_http_bridge.gd`——web 平台经 JavaScript fetch() 发请求、`JavaScript.create_callback` 回调回 GDScript 转发 `_on_sync_request_completed`；原生平台保留 HTTPRequest。参数一律无类型 + 方法枚举显式映射字符串；`[Sync]` 前缀日志进浏览器控制台（每次会话约 4 行，运营排障用）。
+- 经验沉淀：平台特性 3.6 实测 `get_name()=HTML5 / has_feature("HTML5")=True / has_feature("Web")=False`；GitHub.io 页面验证不能用 ZCode IAB（rAF 冻结无 SAB），必须 CI 内真 Chrome；SW 预缓存使回访浏览器首刷仍旧包。
+- 验证（prod-e2e-check.yml mode=prod，真开 https://lian-lian-kan.github.io 线上页）：register→201 拿到 user_id+token，pull→404（新账号空档正确语义），后端日志同窗口收到对应请求——**云端存档全链路（浏览器→traefik→隧道→家庭 K8S→PG）正式在线**。
