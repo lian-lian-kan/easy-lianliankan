@@ -1002,3 +1002,10 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - CI：backend workflow 加 redis:7 service（健康检查门起），REDIS_URL 指向 service——20 用例真库真 Redis 全绿（含跨实例共享窗口测试）；conftest autouse fixture 测试间 flushdb（专用测试 Redis，防桶跨用例泄漏）；YAML 校验抓到 workflow 重复 services 键（合并为单块双服务）。
 - 工程注记：compose 加 redis 服务；限流测试与生产计数器隔离靠 autouse reset+flush，否则同桶串扰会假红。
 - Validation: backend pytest（PG+Redis 双 service）全绿；游戏 CI build 绿；合并 main 生产部署绿。
+
+## 2026-09-14 (云端版定稿：去掉 ?api= 离线形态——始终同步 + 断线自动重连)
+- 用户定向：产品只有云端，没有离线版本。server_sync 重写——`?api=` 查询参数语义删除；DEFAULT_API_BASE 成为唯一生产端点常量（上线时填集群暴露的 HTTPS 地址，一行改动）；本地开发 env LIANLIAN_API_BASE 覆盖；CI 测试 env LIANLIAN_SYNC=0 整体离网（deploy.yml 顶层 env 设置，headless/浏览器冒烟全隔离）。
+- 云-only 行为：启动握手（注册→拉取）失败自动 8 秒重连（一次性 Timer，连上即停）；横幅状态——「☁️ 正在连接云端存档…」（仅当端点已配置才显示）→「☁️ 云端存档已连接」；服务器仍是唯一事实源（严格更新才采纳），本地文件语义降级为缓存；云端 404（新账号空档）时本地缓存作为种子，下次存档推送上云。
+- 集群暴露调研结论：集群无 ingress controller、无 cert-manager，server-url.txt 只有 LAN 地址——HTTPS 游戏页调 HTTP API 会被浏览器混合内容拦截，所以公有 HTTPS 入口是云端版上线唯一缺口。补 backend/deploy/k8s/exposure.yaml：Cloudflare Tunnel deployment（免 ingress/证书/开端口，token 一填即用）+ NodePort 30800（仅同 LAN 测试用）。端点确定后动作就两步：kubectl apply exposure + 填 DEFAULT_API_BASE。
+- CI 教训：game.gd 裸引用 server_sync 的常量 DEFAULT_API_BASE → parse error 连锁 preload 断裂（跨脚本常量不进作用域，收敛为 has_endpoint() 静态方法）。
+- Validation: 游戏 CI build 绿；backend pytest 绿；合并 main 生产部署绿。
