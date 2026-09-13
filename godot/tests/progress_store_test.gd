@@ -63,7 +63,11 @@ func _init() -> void:
 	game = StoreGame.new()
 	var before = game.progression_state.duplicate(true)
 	STORE._patch_progress_state(game, {"score_candidate": 1, "current_level_index": 1})
-	check(game.progression_state == before and game.sync_pushes == 0 and game.repopulates == 0, "fully filtered special patches change nothing")
+	if game.progression_state != before:
+		print("  [diag] state changed to: ", to_json(game.progression_state))
+	check(game.progression_state == before, "fully filtered patch leaves the state untouched")
+	check(game.sync_pushes == 0, "fully filtered patch never saves")
+	check(game.repopulates == 0, "fully filtered patch never repopulates")
 
 	# --- no-change short circuit: same state must not save again
 	game = StoreGame.new()
