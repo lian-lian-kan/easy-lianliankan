@@ -1,6 +1,8 @@
 """Request/response schemas with hard input bounds (fail fast at the edge)."""
 from pydantic import BaseModel, Field
 
+from ..core import config
+
 DAY_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
 
 
@@ -45,7 +47,8 @@ class MissionPutRequest(BaseModel):
 
 
 class WalletEntryRequest(BaseModel):
-    delta: int = Field(..., description="positive income or negative spend", ge=-1_000_000, le=1_000_000)
+    delta: int = Field(..., description="positive income or negative spend",
+                       ge=-config.max_wallet_delta(), le=config.max_wallet_delta())
     reason: str = Field("", max_length=64)
 
 

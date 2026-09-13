@@ -1,10 +1,9 @@
 """Achievements, weekly missions, wallet ledger and sign-ins — business rules."""
-from ..core import db
+from ..core import config, db
 from ..repositories import engagement_repo
 
 TEXT_ID_MAX = 64
 REASON_MAX = 64
-DELTA_LIMIT = 1_000_000
 
 
 # ── achievements ──
@@ -40,7 +39,7 @@ def wallet_balance(user_id: str) -> int:
 def wallet_append(user_id: str, delta: int, reason: str) -> dict:
     """Append + balance read in one transaction so the returned balance can
     never reflect another concurrent write of the same user."""
-    if abs(delta) > DELTA_LIMIT:
+    if abs(delta) > config.max_wallet_delta():
         raise ValueError("delta out of range")
     with db.transaction():
         engagement_repo.append_ledger(user_id, delta, reason[:REASON_MAX])

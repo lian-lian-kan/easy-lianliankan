@@ -34,6 +34,10 @@ def max_state_bytes() -> int:
     return int(os.environ.get("MAX_STATE_BYTES", "262144"))
 
 
+def max_wallet_delta() -> int:
+    return int(os.environ.get("MAX_WALLET_DELTA", "1000000"))
+
+
 def pool_min() -> int:
     return int(os.environ.get("PG_POOL_MIN", "1"))
 
