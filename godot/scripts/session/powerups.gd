@@ -107,6 +107,9 @@ static func _activate_time_freeze(game):
 		game.time_freeze_timer.start()
 
 static func _activate_auto_match(game):
+	if game._is_target_mode():
+		game._show_message("✨ 指定连消没有自动消，看准金光！", 1.2)
+		return
 	var hint = game._find_any_hint(game.board)
 	if hint.empty():
 		game._show_message("没有可自动消除的对子", 1.0)

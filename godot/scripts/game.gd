@@ -132,6 +132,8 @@ var board_armor = []
 var board_lower = []      # stack: hidden tiles under their covers
 var board_chain = []      # chain: 1 = chained (unlock via adjacent clears)
 var board_bomb = {}
+var target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
+var shift_countdown = 0
 var _fog_layers = 0       # fog: current outer-ring count
 
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
@@ -401,6 +403,16 @@ func _is_rock_mode():
 
 func _is_defuse_mode():
 	return special_mode == "defuse"
+
+func _is_target_mode():
+	return special_mode == "target"
+
+func _is_shift_mode():
+	return special_mode == "shift"
+
+# 指定连消：挑一对可连消的高亮格（无解返回 false）。
+func _pick_target_pair():
+	return SESSION._pick_target_pair(self)
 
 func _memory_key(coord):
 	return SPECIAL_SESSION._memory_key(self, coord)

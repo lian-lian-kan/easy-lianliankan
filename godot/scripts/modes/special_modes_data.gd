@@ -236,7 +236,29 @@ const DEFAULT_CONFIGS = {
 			{"level_range": [1, 5], "bomb_ratio": 0.1, "rows": 10, "cols": 8, "kinds": 8, "time_base": 120},
 			{"level_range": [6, 10], "bomb_ratio": 0.16, "rows": 10, "cols": 8, "kinds": 9, "time_base": 140},
 			{"level_range": [11, 999], "bomb_ratio": 0.22, "rows": 10, "cols": 9, "kinds": 11, "time_base": 160}
-		]
+		],
+	"target": {
+		"mode_id": "target",
+		"name": "指定连消",
+		"description": "金光指哪消哪，顺序不能乱",
+		"unlock_level": 14,
+		"target_bonus": 5,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 150
+	},
+	"shift": {
+		"mode_id": "shift",
+		"name": "变脸模式",
+		"description": "图案周期交换位置，手要快",
+		"unlock_level": 15,
+		"shift_interval": 8,
+		"rows": 10,
+		"cols": 8,
+		"kinds": 8,
+		"time_limit": 150
+	}
 	}
 }
 
@@ -267,6 +289,8 @@ const MODE_LABELS_EXTRA = {
 	"perfect": "完美模式",
 	"rock": "障碍模式",
 	"defuse": "拆弹行动",
+	"target": "指定连消",
+	"shift": "变脸模式",
 }
 const INTRO_TEXTS_EXTRA = {
 	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
@@ -276,6 +300,8 @@ const INTRO_TEXTS_EXTRA = {
 	"perfect": "完美模式！没有时限，但失误 3 次就失败啦",
 	"rock": "障碍模式！🪨 石头牌消不掉，炸弹能炸开它",
 	"defuse": "拆弹行动！💣 诅咒方块限时拆除，别让它数到 0",
+	"target": "指定连消！✨ 只能消金光高亮的那一对",
+	"shift": "变脸模式！🔄 图案会偷偷换位置，盯紧了",
 }
 
 const RECORD_MODES = {
@@ -296,6 +322,8 @@ const RECORD_MODES = {
 	"perfect": {"label": "完美零失误", "patch_key": "perfect_result", "best_key": "perfect_best_score", "achievements": ["perfect_first"]},
 	"rock": {"label": "障碍通关", "patch_key": "rock_result", "best_key": "rock_best_score", "achievements": ["rock_first"]},
 	"defuse": {"label": "拆弹成功", "patch_key": "defuse_result", "best_key": "defuse_best_score", "achievements": ["defuse_first"]},
+	"target": {"label": "指哪打哪", "patch_key": "target_result", "best_key": "target_best_score", "achievements": ["target_first"]},
+	"shift": {"label": "变脸大师", "patch_key": "shift_result", "best_key": "shift_best_score", "achievements": ["shift_first"]},
 }
 
 # 主屏副标题「<标签> · 最佳N分」模式段的最佳分字段；标签统一取 mode_label()。
@@ -315,6 +343,8 @@ const SUBTITLE_RECORDS = {
 	"fever": "fever_best_score",
 	"rock": "rock_best_score",
 	"defuse": "defuse_best_score",
+	"target": "target_best_score",
+	"shift": "shift_best_score",
 }
 
 # 结算后按模式语境补发的条件成就。

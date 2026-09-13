@@ -46,6 +46,15 @@ static func _on_second_tick(game):
 	# Defuse: cursed tiles tick down every second; any 0 blows the run.
 	if game._is_defuse_mode() and not game.board_bomb.empty():
 		game.BOARD_MECHANICS.tick_bombs(game)
+	# Shift: every interval two tiles secretly trade patterns.
+	if game._is_shift_mode() and game.shift_countdown > 0:
+		game.shift_countdown -= 1
+		if game.shift_countdown == 0:
+			game.shift_countdown = int(game._current_level().get("shift_interval", 8))
+			if game.BOARD_ENGINE.swap_random_faces(game.board):
+				AudioManager.play_shuffle()
+				game._show_message("🔄 变脸！图案换位置了", 0.9)
+				game._refresh_board_visuals()
 	game._refresh_ui()
 
 	if game.time_left <= 0:

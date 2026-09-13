@@ -98,6 +98,10 @@ static func _reset_board_session(game, level):
 		game.BOARD_MECHANICS.build_rocks(game, level)
 	if game._is_defuse_mode():
 		game.BOARD_MECHANICS.build_bombs(game, level)
+	game.target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
+	game.shift_countdown = int(level.get("shift_interval", 0))
+	if game._is_target_mode():
+		_pick_target_pair(game)
 	game._fog_layers = 0
 	if game._is_stack_mode():
 		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
@@ -159,6 +163,16 @@ static func _reset_session_meta(game, level):
 	if game.memory_preview_timer:
 		game.memory_preview_timer.stop()
 
+
+
+# 指定连消：从当前盘面挑一对可连消的格子作为金光目标。
+static func _pick_target_pair(game):
+	var hint = game._find_any_hint(game.board)
+	if hint.empty():
+		game.target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
+		return
+	game.target_pair = [hint["a"], hint["b"]]
+	game._refresh_board_visuals()
 
 
 # Final UI sync of the level reset.

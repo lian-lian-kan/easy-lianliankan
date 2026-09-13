@@ -267,6 +267,10 @@ static func build_classic_style_level(config, mode_id: String):
 		level["fog_layers"] = int(config.get("fog_layers", 2))
 	if config.has("chain_ratio"):
 		level["chain_ratio"] = float(config.get("chain_ratio", 0.22))
+	if config.has("target_bonus"):
+		level["target_bonus"] = int(config.get("target_bonus", 5))
+	if config.has("shift_interval"):
+		level["shift_interval"] = int(config.get("shift_interval", 8))
 	return level
 
 
@@ -405,5 +409,7 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "flip", "title": "🃏 翻翻乐", "detail": "记忆翻牌全消 · 最佳%d分" % int(progression_state.get("flip_best_score", 0))},
 		{"id": "rock", "title": "🪨 障碍模式", "detail": "石头牌挡路炸弹开路 · 最佳%d分" % int(progression_state.get("rock_best_score", 0))},
 		{"id": "defuse", "title": "💣 拆弹行动", "detail": "诅咒方块限时拆除 · 最佳%d分" % int(progression_state.get("defuse_best_score", 0))},
+		{"id": "target", "title": "✨ 指定连消", "detail": "金光指哪消哪 · 最佳%d分" % int(progression_state.get("target_best_score", 0))},
+		{"id": "shift", "title": "🔄 变脸模式", "detail": "图案偷偷换位置 · 最佳%d分" % int(progression_state.get("shift_best_score", 0))},
 		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]}
 	]

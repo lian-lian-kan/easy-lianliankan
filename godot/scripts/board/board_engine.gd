@@ -305,6 +305,22 @@ static func find_any_hint(board_state, filter_obj = null, filter_method = ""):
 # Shuffle values among the occupied cells until a playable hint exists.
 # Returns false when the tile count is odd (nothing to do) or no solvable
 # arrangement was found within the attempt budget.
+# 变脸: swap the values of two differently-valued tiles (multiset intact,
+# so pair parity and solvability guarantees are preserved).
+static func swap_random_faces(board_state) -> bool:
+	var rows = board_state.size()
+	var cols = board_state[0].size()
+	var a = Vector2(randi() % rows, randi() % cols)
+	var b = Vector2(randi() % rows, randi() % cols)
+	var va = int(board_state[a.x][a.y])
+	var vb = int(board_state[b.x][b.y])
+	if va == 0 or vb == 0 or va == vb or is_rock_value(va) or is_rock_value(vb):
+		return false
+	board_state[a.x][a.y] = vb
+	board_state[b.x][b.y] = va
+	return true
+
+
 static func reshuffle_board(board_state, filter_obj = null, filter_method = ""):
 	var rows = board_state.size()
 	var cols = board_state[0].size()

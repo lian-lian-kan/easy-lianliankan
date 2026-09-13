@@ -39,6 +39,9 @@ static func _refresh_tile(game, button, r, c, playing):
 	bg = fx[0]
 	border = fx[1]
 	var has_effect = fx[2]
+	if game._is_target_mode() and _is_target_tile(game, r, c):
+		border = Color("ffd43b")
+		has_effect = true
 	if base["is_selected"]:
 		border = Color("ff8fab")
 		has_effect = true
@@ -78,6 +81,11 @@ static func _tile_base_style(game, button, r, c, value, playing) -> Dictionary:
 		border = Color("f06565")
 	return {"bg": bg, "border": border, "is_selected": is_selected,
 		"frozen": frozen, "fogged": fogged, "chained": chained, "stacked": stacked}
+
+# 指定连消：该格是否属于金光目标对。
+static func _is_target_tile(game, r, c) -> bool:
+	var tp = game.target_pair
+	return (tp[0].x == r and tp[0].y == c) or (tp[1].x == r and tp[1].y == c)
 
 # Overlay chain: error/hint flashes, mechanism looks, armed power-up glows.
 # Returns [bg, border, has_effect].

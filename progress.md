@@ -943,3 +943,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 全链接线按 architecture.md 新增玩法清单：configs/labels/intro/RECORD_MODES/SUBTITLE_RECORDS/modes_panel_rows(20 行)/统计页 2 行/成就 rock_first+defuse_first/progression 四处/startup_probe 2 分支/mode_meta 计数 20/17/21/20 行/panels_probe 卡 20 锁 18/字体子集 1037→1076 字符。
 - 工程注记：石头分支初版误写成 -> Dictionary 函数内裸 return（本地裸 return 扫描器抓到后上移 _refresh_tile）；跨模块一律 game.BOARD_MECHANICS 防环；panels/page 探针的历史 `var stack` 重声明 parse 警告为既有非致命。
 - Validation: shell_audit 七项全过；本地裸 return/顶层卫生扫描干净；全量行为验证由 CI 远端执行。
+
+## 2026-09-13 (玩法 Round CM：指定连消 target + 变脸模式 shift——21→23 种)
+- target 指定连消：金光高亮一对（session._pick_target_pair 经 find_any_hint 选出），普通点击非目标对直接拒绝（"先消金光那对"）；消对后自动挑下一个；目标对被道具/变脸破坏时 _refresh_target_pair 兜底重挑；auto_match 在本模式降级为提示文案。✨ 金黄边框高亮。
+- shift 变脸模式：每 shift_interval 秒（默认 8s）BOARD_ENGINE.swap_random_faces 随机交换两个异值图案位（多重集不变 → 对子奇偶与可解性天然保持），消息+洗牌音效提示。
+- 全链接线：configs 2 条（classic_style 透传 target_bonus/shift_interval）/labels/intro/RECORD(19)/SUBTITLES/面板 22 行/统计页/成就 target_first+shift_first/progression 四处/startup_probe 分支/计数同步（22 configs/19 record/23 label/22 行/卡 22 锁 20/endless rows[21]）/字体子集 1076→1088。
+- Validation: shell_audit 七项全过，全量验证由 CI 远端执行。

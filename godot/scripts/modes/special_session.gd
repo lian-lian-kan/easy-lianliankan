@@ -55,7 +55,8 @@ static func _start_special_mode(game, mode_id):
 		level = defuse_level
 	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
 				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain" \
-				or mode_id == "fever" or mode_id == "perfect":
+				or mode_id == "fever" or mode_id == "perfect" \
+				or mode_id == "target" or mode_id == "shift":
 		level = game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
 	else:
 		level = game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)

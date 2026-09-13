@@ -23,11 +23,31 @@ static func _on_tile_pressed(game, button):
 	if selected_value != target_value:
 		_reject_pair(game, previous, point, "请先选择相同图案", 0.7)
 		return
+	if game._is_target_mode() and not _is_target_pair(game, previous, point):
+		_reject_pair(game, previous, point, "✨ 先消金光高亮的那一对！", 1.0)
+		return
 	var path = game._find_path(game.board, previous, point)
 	if path.empty():
 		_reject_pair(game, previous, point, "路径不通：最多只能拐2次弯", 0.9)
 		return
 	_execute_pair_match(game, path, previous, point)
+
+# 指定连消：本次点击的一对是否正是金光目标。
+static func _is_target_pair(game, a, b) -> bool:
+	var tp = game.target_pair
+	return (tp[0] == a and tp[1] == b) or (tp[0] == b and tp[1] == a)
+
+# 消对后：若目标对已被破坏（道具炸掉/变脸换走）则重挑金光目标。
+static func _refresh_target_pair(game) -> void:
+	if not game._is_target_mode():
+		return
+	var tp = game.target_pair
+	var ok = tp[0].x >= 0 and tp[1].x >= 0 \
+		and game.board[tp[0].x][tp[0].y] != 0 \
+		and game.board[tp[1].x][tp[1].y] != 0 \
+		and int(game.board[tp[0].x][tp[0].y]) == int(game.board[tp[1].x][tp[1].y])
+	if not ok:
+		game._pick_target_pair()
 
 # Gate every tile click: playing state, real tile, and mechanism playability.
 static func _tile_press_valid(game, button) -> bool:
@@ -111,6 +131,7 @@ static func _execute_pair_match(game, path, previous, point):
 	game.BOARD_MECHANICS.defuse_pair(game, a, b)
 	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
+	_refresh_target_pair(game)
 
 	game._refresh_ui()
 	game._refresh_board_visuals()
@@ -193,6 +214,7 @@ static func _execute_memory_match(game, path, previous, point):
 	game.BOARD_MECHANICS.defuse_pair(game, a, b)
 	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
+	_refresh_target_pair(game)
 
 	game._refresh_ui()
 	game._refresh_board_visuals()
