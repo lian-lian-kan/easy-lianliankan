@@ -7,14 +7,19 @@
 
 ```
 app/
-  main.py            # 应用装配 + 路由注册 + 26 玩法注册表 seed
-  core/              # config（环境变量）/ db（连接池+查询助手）/ security（token）/ migrations
-  models/schemas.py  # pydantic 请求/响应模型
-  routers/           # users / auth / progress / records(+leaderboard) / engagement
-  services/          # user / progress / records / engagement / leaderboard
+  main.py            # 应用装配：路由注册 / 全局异常封装 / 请求日志(X-Request-Id) / healthz 探库
+  core/              # config（环境变量）/ db（连接池+事务）/ security（token 原语）
+                     # guards（认证/限流依赖）/ migrations / ratelimit（滑动窗口）/ mode_seed
+  models/schemas.py  # pydantic 请求/响应模型（硬边界：时间戳/数值/日期格式）
+  routers/           # users / auth / progress / records(+leaderboard) / engagement（薄 HTTP 层）
+  services/          # 业务规则（合并语义、校验、事务边界）——纯 Python 可单测
+  repositories/      # 全部 SQL（users/progress/records/engagement/leaderboard）
 db/migrations/       # 001 账号+令牌 / 002 进度快照 / 003 玩法+纪录 / 004 钱包+签到 / 005 成就+周任务
+tools/backend_audit.py  # 静态质量门禁（函数 ≤45 行、print/裸 except/通配导入禁用）
 tests/               # pytest（CI 带 pg service 真库跑）
 ```
+
+分层规则：routers 不写业务、services 不写 SQL、repositories 不做决策——新端点照此三层加。
 
 ## 数据表
 
@@ -58,6 +63,15 @@ export DATABASE_URL=postgresql://lianlian:lianlian@localhost:5432/lianlian
 pip install -r requirements.txt
 python -m pytest tests -q            # SKIP_PG_TESTS=1 跳过 DB 用例
 ```
+
+## 健壮性设计
+
+- **事务**：`db.transaction()` 上下文（thread-local 连接）——注册/令牌轮换/钱包余额读回等多写操作原子化。
+- **限流**：公共端点滑动窗口（注册 10/分、进度 PUT 60/分、钱包 30/分、签到 10/分，按 IP），纯逻辑类可离线单测；多实例部署时把 store 换 Redis 即可（`allow()` 签名不变）。
+- **入参硬边界**：pydantic 模型层拦（时间戳上限 2100 年、日期格式、数值范围）；服务层再拦未来时间戳（>5 分钟偏移直接 400，防写死后续存档）。
+- **错误封装**：统一 `{"error": {"code", "detail"}}` 信封，未捕获异常 500 不泄栈；每个响应带 `X-Request-Id`（可透传上游），结构化请求日志（rid/method/path/status/耗时 ms）。
+- **健康检查**：`/healthz` 真探数据库（SELECT 1），挂库返回 503 供负载均衡摘除。
+- **质量门禁**：`tools/backend_audit.py` 在 CI 硬卡（函数长度红线 45 行与游戏侧一致；禁 print/裸 except/通配导入）。
 
 ## 环境变量
 

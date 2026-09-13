@@ -1,5 +1,7 @@
-"""Request/response schemas."""
+"""Request/response schemas with hard input bounds (fail fast at the edge)."""
 from pydantic import BaseModel, Field
+
+DAY_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
 
 
 class RegisterRequest(BaseModel):
@@ -21,7 +23,7 @@ class RenameRequest(BaseModel):
 
 class ProgressPutRequest(BaseModel):
     state: dict = Field(..., description="full progression_state blob")
-    updated_at: int = Field(..., ge=0, description="client unix ms")
+    updated_at: int = Field(..., ge=0, le=4_102_444_800_000, description="client unix ms")
 
 
 class ProgressPutResponse(BaseModel):
@@ -30,23 +32,23 @@ class ProgressPutResponse(BaseModel):
 
 
 class RecordPutRequest(BaseModel):
-    best_score: int = Field(0, ge=0)
+    best_score: int = Field(0, ge=0, le=100_000_000)
     play: bool = True
     win: bool = False
 
 
 class MissionPutRequest(BaseModel):
     mission_id: str = Field(..., min_length=1, max_length=64)
-    week_key: int = Field(..., ge=0)
-    progress: int = Field(0, ge=0)
+    week_key: int = Field(..., ge=0, le=1_000_000_000)
+    progress: int = Field(0, ge=0, le=100_000_000)
     claimed: bool = False
 
 
 class WalletEntryRequest(BaseModel):
-    delta: int = Field(..., description="positive income or negative spend")
+    delta: int = Field(..., description="positive income or negative spend", ge=-1_000_000, le=1_000_000)
     reason: str = Field("", max_length=64)
 
 
 class SigninRequest(BaseModel):
-    day: str = Field(..., description="YYYY-MM-DD")
-    streak: int = Field(1, ge=1)
+    day: str = Field(..., pattern=DAY_PATTERN)
+    streak: int = Field(1, ge=1, le=10_000)

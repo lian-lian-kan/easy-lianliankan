@@ -8,6 +8,13 @@ from fastapi.testclient import TestClient
 from app.core import db
 from app.main import app
 
+@pytest.fixture(autouse=True)
+def _fresh_rate_limiter():
+    from app.core import ratelimit
+    ratelimit.reset()
+    yield
+
+
 @pytest.fixture(scope="session")
 def client():
     if os.environ.get("SKIP_PG_TESTS", "") == "1":

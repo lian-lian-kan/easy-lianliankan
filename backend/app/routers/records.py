@@ -1,7 +1,7 @@
 """Mode registry + per-user mode records + leaderboards."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..core.security import current_user_id
+from ..core.guards import current_user
 from ..models.schemas import RecordPutRequest
 from ..services import leaderboard_service, records_service
 
@@ -14,13 +14,13 @@ def list_modes():
 
 
 @router.get("/records")
-def list_records(user_id: str = Depends(current_user_id)):
+def list_records(user_id: str = Depends(current_user)):
     return {"records": records_service.list_records(user_id)}
 
 
 @router.put("/records/{mode_id}")
 def record_result(mode_id: str, payload: RecordPutRequest,
-                  user_id: str = Depends(current_user_id)):
+                  user_id: str = Depends(current_user)):
     record = records_service.record_result(
         user_id, mode_id, payload.best_score, payload.play, payload.win)
     if record is None:
@@ -30,7 +30,7 @@ def record_result(mode_id: str, payload: RecordPutRequest,
 
 @router.get("/leaderboard/{mode_id}")
 def leaderboard(mode_id: str, limit: int = Query(20, ge=1, le=100),
-                user_id: str = Depends(current_user_id)):
+                user_id: str = Depends(current_user)):
     return {
         "mode_id": mode_id,
         "top": leaderboard_service.top_scores(mode_id, limit),

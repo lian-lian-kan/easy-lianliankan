@@ -1,34 +1,74 @@
 """Sophia's lianliankan backend — app assembly.
 
-Layering: routers (HTTP) -> services (business rules) -> core (db/security).
-Identity: POST /users/register mints a user + bearer token; the DB stores
-only the SHA-256 of tokens. Progress is one JSONB snapshot per user with a
-monotonic client timestamp; stale writes are refused.
+Layering: routers (HTTP) -> services (business rules) -> repositories (SQL)
+-> core (db/transactions/security/migrations/ratelimit). All errors leave as
+a JSON envelope; every response carries an X-Request-Id and requests are
+logged with their id, status and duration.
 """
+import logging
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from .core import db, migrations
+from .core.guards import new_request_id
 from .routers import auth, engagement, progress, records, users
+from .core.mode_seed import MODES
 from .services import records_service
+
+logger = logging.getLogger("lianliankan")
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     db.init_pool()
     migrations.apply_all()
-    records_service.seed_modes(SEED_MODES)
+    records_service.seed_modes(MODES)
     yield
     db.close_pool()
 
 
-app = FastAPI(title="sophia-lianliankan-backend", version="2.0", lifespan=lifespan)
+app = FastAPI(title="sophia-lianliankan-backend", version="2.1", lifespan=lifespan)
 
 
 @app.get("/healthz")
 def healthz():
-    return {"ok": True}
+    db_ok = db.ping()
+    if not db_ok:
+        return JSONResponse(status_code=503, content={"ok": False, "db": False})
+    return {"ok": True, "db": True}
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    request_id = getattr(request.state, "request_id", "-")
+    logger.info('{"rid":"%s","event":"http_error","status":%d,"detail":"%s"}',
+                request_id, exc.status_code, exc.detail)
+    return JSONResponse(status_code=exc.status_code,
+                        content={"error": {"code": exc.status_code, "detail": str(exc.detail)}})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = getattr(request.state, "request_id", "-")
+    logger.exception('{"rid":"%s","event":"unhandled_error"}', request_id)
+    return JSONResponse(status_code=500,
+                        content={"error": {"code": 500, "detail": "internal error"}})
+
+
+@app.middleware("http")
+async def request_context(request: Request, call_next):
+    request.state.request_id = request.headers.get("X-Request-Id") or new_request_id()
+    started = time.monotonic()
+    response = await call_next(request)
+    response.headers["X-Request-Id"] = request.state.request_id
+    logger.info('{"rid":"%s","event":"request","method":"%s","path":"%s","status":%d,"ms":%.1f}',
+                request.state.request_id, request.method, request.url.path,
+                response.status_code, (time.monotonic() - started) * 1000)
+    return response
 
 
 app.include_router(users.router)
@@ -36,34 +76,3 @@ app.include_router(auth.router)
 app.include_router(progress.router)
 app.include_router(records.router)
 app.include_router(engagement.router)
-
-# Mirror of the game's special-mode table (special_modes_data.gd); seed_modes
-# upserts so later game versions can extend it without a migration.
-SEED_MODES = [
-    {"mode_id": "time_attack", "label": "限时挑战", "unlock_level": 5},
-    {"mode_id": "endless", "label": "无尽模式", "unlock_level": 8},
-    {"mode_id": "daily", "label": "每日挑战", "unlock_level": 1},
-    {"mode_id": "memory", "label": "盲盒模式", "unlock_level": 10},
-    {"mode_id": "frost", "label": "冰雪挑战", "unlock_level": 13},
-    {"mode_id": "zen", "label": "休闲模式", "unlock_level": 1},
-    {"mode_id": "hell", "label": "地狱模式", "unlock_level": 12},
-    {"mode_id": "moves", "label": "步数挑战", "unlock_level": 14},
-    {"mode_id": "race", "label": "竞速对战", "unlock_level": 15},
-    {"mode_id": "stack", "label": "叠层模式", "unlock_level": 15},
-    {"mode_id": "gravity", "label": "重力模式", "unlock_level": 15},
-    {"mode_id": "fog", "label": "迷雾模式", "unlock_level": 15},
-    {"mode_id": "chain", "label": "锁链模式", "unlock_level": 15},
-    {"mode_id": "fever", "label": "狂热模式", "unlock_level": 15},
-    {"mode_id": "perfect", "label": "完美模式", "unlock_level": 15},
-    {"mode_id": "tray", "label": "叠叠消", "unlock_level": 13},
-    {"mode_id": "collect", "label": "收集挑战", "unlock_level": 14},
-    {"mode_id": "flip", "label": "翻翻乐", "unlock_level": 15},
-    {"mode_id": "rock", "label": "障碍模式", "unlock_level": 14},
-    {"mode_id": "defuse", "label": "拆弹行动", "unlock_level": 15},
-    {"mode_id": "target", "label": "指定连消", "unlock_level": 14},
-    {"mode_id": "shift", "label": "变脸模式", "unlock_level": 15},
-    {"mode_id": "slide", "label": "滑移模式", "unlock_level": 16},
-    {"mode_id": "defense", "label": "守卫模式", "unlock_level": 16},
-    {"mode_id": "sum10", "label": "合十消", "unlock_level": 17},
-    {"mode_id": "duel", "label": "同屏对战", "unlock_level": 17},
-]

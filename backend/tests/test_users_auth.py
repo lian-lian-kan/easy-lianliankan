@@ -35,3 +35,10 @@ def test_missing_or_bad_token_rejected(client):
     assert client.get("/api/v1/progress").status_code in (401, 403)
     client.headers.update({"Authorization": "Bearer " + "0" * 128})
     assert client.get("/api/v1/progress").status_code == 401
+
+
+def test_register_rate_limited(client):
+    """11th registration from the same IP in a minute is refused."""
+    for _ in range(10):
+        assert client.post("/api/v1/users/register", json={"nickname": "x"}).status_code == 201
+    assert client.post("/api/v1/users/register", json={"nickname": "x"}).status_code == 429

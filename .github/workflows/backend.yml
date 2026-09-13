@@ -36,4 +36,6 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: python -m compileall app
+      - name: Static quality gate
+        run: python tools/backend_audit.py
       - run: python -m pytest tests -q

@@ -31,3 +31,22 @@ def test_state_size_gate(client):
     huge = {"blob": "x" * (300 * 1024)}
     resp = client.put("/api/v1/progress", json={"state": huge, "updated_at": 1})
     assert resp.status_code == 413
+
+
+def test_future_stamp_rejected(client):
+    """A far-future timestamp would brick later saves; refuse at the edge."""
+    user = register(client)
+    auth(client, user)
+    body = {"state": {"a": 1}, "updated_at": 4_000_000_000_000}
+    resp = client.put("/api/v1/progress", json=body)
+    assert resp.status_code == 400
+    assert resp.json()["error"]["code"] == 400
+
+
+def test_error_envelope_shape(client):
+    user = register(client)
+    auth(client, user)
+    resp = client.get("/api/v1/progress")
+    assert resp.status_code == 404
+    assert resp.json()["error"] == {"code": 404, "detail": "no saved progress"}
+    assert resp.headers.get("X-Request-Id")
