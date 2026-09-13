@@ -29,6 +29,14 @@ static func _reset_level_session(game, level, reset_total = false):
 	_reset_session_counters(game, level)
 	_reset_session_meta(game, level)
 	_reset_session_ui(game, reset_total)
+	game._refresh_ui()
+	game._refresh_board_visuals()
+	if game._is_memory_mode():
+		game._play_level_intro_animation(level)
+		game._start_memory_preview()
+	else:
+		game._start_second_timer()
+		game._play_level_intro_animation(level)
 
 
 # Collect targets init (no early return: the general board reset follows).
@@ -162,14 +170,6 @@ static func _reset_session_ui(game, reset_total):
 	game._sync_level_select_selection()
 
 
-	game._refresh_ui()
-	game._refresh_board_visuals()
-	if game._is_memory_mode():
-		game._play_level_intro_animation(level)
-		game._start_memory_preview()
-	else:
-		game._start_second_timer()
-		game._play_level_intro_animation(level)
 
 # Shared wipe for tray/flip sessions: the campaign board is torn down and the
 # round resources (score/time/counters) restart from the level defaults.
