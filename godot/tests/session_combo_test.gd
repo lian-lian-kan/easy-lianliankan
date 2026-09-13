@@ -42,8 +42,11 @@ class FakeGame extends Reference:
 	var bursts = []
 	func _current_level():
 		return level
+	var messages = []
 	func _patch_progress_state(patch):
 		patches.append(patch)
+	func _show_message(msg, _dur):
+		messages.append(msg)
 	func _mission_pair_cleared():
 		pair_hooks += 1
 	func _mission_combo_reached(combo):
@@ -100,9 +103,9 @@ func _init() -> void:
 	result = SESSION._apply_combo_gain(game, 10)  # combo 1: below fever, plain refund
 	check(int(game.time_left) == 63, "time attack refunds 3 seconds per match below fever")
 	result = SESSION._apply_combo_gain(game, 10)  # combo 2: fever ignites
-	print("  [diag] time_left=", game.time_left, " combo=", result["combo"], " gain=", result["gain"])
 	check(int(game.time_left) == 67, "fever adds the combo time bonus (+4 total refund)")
-	check(int(result["gain"]) == 30, "fever doubles the combo-2 gain (20 -> 30)")
+	check(int(result["gain"]) == 40, "fever doubles the combo-2 gain (10*2.0*2.0 = 40)")
+	check(game.messages.size() == 1, "fever ignition announces itself once")
 
 	if failures == 0:
 		print("session_combo_test: ALL PASSED")
