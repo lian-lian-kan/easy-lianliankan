@@ -240,7 +240,7 @@ static func _achievements_panel(game):
 	achievements_list.add_constant_override("separation", 10)
 	content.add_child(achievements_list)
 
-	for achievement in game.PROGRESSION_SCRIPT.ACHIEVEMENTS:
+	for achievement in game.PROGRESSION_SCRIPT.get_achievement_definitions():
 		var item = _create_achievement_item(game, achievement)
 		achievements_list.add_child(item)
 
