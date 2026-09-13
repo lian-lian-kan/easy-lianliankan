@@ -53,7 +53,6 @@ static func _reset_flip_session(game, level) -> bool:
 	if game.second_timer:
 		game.second_timer.stop()
 		game.second_timer.start()
-	return
 	return true
 
 
@@ -69,7 +68,6 @@ static func _reset_tray_session(game, level) -> bool:
 	if game.second_timer:
 		game.second_timer.stop()
 		game.second_timer.start()
-	return
 	return true
 
 
