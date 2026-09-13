@@ -28,6 +28,8 @@ static func update_layout(game):
 
 # responsive board height per viewport class (portrait is container-ruled).
 static func _apply_board_height(game, viewport_size, flags):
+	var is_mobile = flags["is_mobile"]
+	var is_portrait = flags["is_portrait"]
 	# Give board more vertical room on mobile and wide desktop.
 	if is_mobile and not is_portrait:
 		game.board_wrapper.rect_min_size = Vector2(0, max(game.BOARD_MIN_HEIGHT, viewport_size.y * game.BOARD_RATIO_MOBILE_LANDSCAPE))
@@ -44,6 +46,9 @@ static func _apply_board_height(game, viewport_size, flags):
 
 # page margins plus floating banners parked just above the nav bar.
 static func _apply_margins(game, flags):
+	var is_mobile = flags["is_mobile"]
+	var is_portrait = flags["is_portrait"]
+	var is_compact_height = flags["is_compact_height"]
 	# Adjust margins based on screen size
 	var margin_value = 0 if (is_mobile and is_portrait) else (6 if is_compact_height else (8 if is_mobile else 16))
 	# The bottom strip also reserves room for the persistent navigation bar.
@@ -65,6 +70,7 @@ static func _apply_margins(game, flags):
 
 # header visibility that follows the viewport class.
 static func _apply_header_visibility(game, flags):
+	var is_mobile = flags["is_mobile"]
 	# Adjust header font sizes
 	if game.title_label:
 		pass
@@ -82,6 +88,8 @@ static func _apply_header_visibility(game, flags):
 
 # grid/flow separations per viewport class.
 static func _apply_separations(game, flags):
+	var is_mobile = flags["is_mobile"]
+	var is_compact_height = flags["is_compact_height"]
 	# Adjust tile separation based on screen size
 	if is_mobile and is_compact_height:
 		game.board_grid.add_constant_override("h_separation", 3)
@@ -101,6 +109,8 @@ static func _apply_separations(game, flags):
 
 # stat cards: portrait uses value-only pills.
 static func _apply_stat_card_sizes(game, flags):
+	var is_mobile = flags["is_mobile"]
+	var is_portrait = flags["is_portrait"]
 	var stat_card_size = Vector2(60, 24) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
 	var stat_value_size = 14 if is_mobile and is_portrait else (20 if is_mobile else 22)
 	var stat_title_size = 10 if is_mobile else 11
@@ -124,6 +134,9 @@ static func _apply_stat_card_sizes(game, flags):
 
 # control buttons and dropdowns sizing (portrait single 44x26 row).
 static func _apply_control_sizes(game, flags):
+	var is_mobile = flags["is_mobile"]
+	var is_portrait = flags["is_portrait"]
+	var is_compact_height = flags["is_compact_height"]
 	var control_min = Vector2(72, 34) if is_mobile and is_compact_height else (Vector2(76, 36) if is_mobile and is_portrait else (Vector2(80, 36) if is_mobile else Vector2(88, 42)))
 	if game.icon_set_option:
 		game.icon_set_option.rect_min_size = Vector2(108 if is_mobile else 122, control_min.y)
