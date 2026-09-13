@@ -40,7 +40,8 @@ func _init() -> void:
 	# --- special sessions replace the ladder with the fixed loadout
 	var special = LOADOUT.resolve(12, "classic", true, "daily")
 	check(int(special["time_freeze"]) == 2 and int(special["reshuffle"]) == 2 and int(special["auto_match"]) == 1, "special sessions grant the friendly base loadout")
-	check(int(special["bomb"]) == 0 and int(special["rainbow"]) == 0 and int(special["magnifier"]) == 0, "the daily override strips click-targeted tools and ignores the ladder")
+	check(int(special["bomb"]) == 0 and int(special["rainbow"]) == 0, "the daily override strips click-targeted tools and ignores the ladder")
+	check(int(special["magnifier"]) == 1, "tools outside the override tables keep their ladder grants")
 
 	var frost = LOADOUT.resolve(1, "classic", true, "frost")
 	check(int(frost["warm_patch"]) == 1, "frost sessions add the warm patch extra")
