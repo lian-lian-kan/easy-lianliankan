@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: 192.168.1.83:30050/tradermoney/lianliankan-backend:v1
+          image: 192.168.1.83:30050/tradermoney/lianliankan-backend:v2
           # Harbor (192.168.1.83:30050) is the canonical home for this image;
           # while Harbor is down the image is pre-imported into both nodes'
           # containerd (ctr -n k8s.io images import), so keep IfNotPresent.
