@@ -100,6 +100,7 @@ func _init() -> void:
 	result = SESSION._apply_combo_gain(game, 10)  # combo 1: below fever, plain refund
 	check(int(game.time_left) == 63, "time attack refunds 3 seconds per match below fever")
 	result = SESSION._apply_combo_gain(game, 10)  # combo 2: fever ignites
+	print("  [diag] time_left=", game.time_left, " combo=", result["combo"], " gain=", result["gain"])
 	check(int(game.time_left) == 67, "fever adds the combo time bonus (+4 total refund)")
 	check(int(result["gain"]) == 30, "fever doubles the combo-2 gain (20 -> 30)")
 
