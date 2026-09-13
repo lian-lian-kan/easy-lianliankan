@@ -49,7 +49,7 @@ def wallet_append(payload: WalletEntryRequest, user_id: str = Depends(current_us
              dependencies=[Depends(rate_limit("signin", limit=10, window_seconds=60))])
 def signin(payload: SigninRequest, user_id: str = Depends(current_user)):
     first_today = engagement_service.signin(user_id, payload.day, payload.streak)
-    return {"first_today": first_today, "signins": engagement_service.list_signins(user_id)}
+    return {"first_today": first_today, "signins": engagement_service.list_signins(user_id, 14)}
 
 
 @router.get("/signin")
