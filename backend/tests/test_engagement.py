@@ -1,5 +1,7 @@
 """Achievements, weekly missions, wallet ledger, sign-ins."""
 
+from tests.conftest import auth, register
+
 
 def test_achievements_idempotent(client):
     user = register(client)

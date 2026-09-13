@@ -1,5 +1,7 @@
 """Mode registry, per-mode records merge, leaderboards."""
 
+from tests.conftest import auth, register
+
 
 def test_modes_registry_seeded(client):
     modes = client.get("/api/v1/modes").json()["modes"]

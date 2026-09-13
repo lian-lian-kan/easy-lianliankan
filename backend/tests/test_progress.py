@@ -1,5 +1,7 @@
 """Cloud save roundtrip, stale rejection, size gate."""
 
+from tests.conftest import auth, register
+
 
 def test_roundtrip_and_stale_rejection(client):
     user = register(client)

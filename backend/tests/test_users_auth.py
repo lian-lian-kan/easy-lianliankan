@@ -1,5 +1,7 @@
 """Registration, profile, rename, token refresh and auth failures."""
 
+from tests.conftest import auth, register
+
 
 def test_register_and_profile(client):
     user = register(client, "sophia")
