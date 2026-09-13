@@ -1124,7 +1124,7 @@ func _sync_push():
 
 # Server sync is best-effort: every failure path keeps the local save intact.
 func _on_sync_request_completed(_result, code, _headers, body, kind):
-	SERVER_SYNC.on_completed(self, kind, _result, code, body.get_string_from_utf8())
+	SERVER_SYNC.on_completed(self, kind, code, body.get_string_from_utf8())
 
 # Adopted a newer server save at boot: restart into its campaign position.
 func _on_sync_adopted(level_index):

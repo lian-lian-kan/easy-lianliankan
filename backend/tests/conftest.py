@@ -5,17 +5,13 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from app import db
+from app.core import db
 from app.main import app
-
-pytestmark = pytest.mark.skipif(
-    os.environ.get("SKIP_PG_TESTS", "") == "1",
-    reason="needs a PostgreSQL DATABASE_URL",
-)
-
 
 @pytest.fixture(scope="session")
 def client():
+    if os.environ.get("SKIP_PG_TESTS", "") == "1":
+        pytest.skip("needs a PostgreSQL DATABASE_URL")
     db.init_pool()
     from app.core import migrations
     migrations.apply_all()
