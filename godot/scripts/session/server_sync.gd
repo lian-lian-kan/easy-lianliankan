@@ -144,6 +144,7 @@ static func base_url() -> String:
 # A single shared HTTPRequest (requests are serialized by boot flow and the
 # throttle); re-used for register/pull/push lanes.
 static func _request(game, kind, url, method, body):
+	print("[Sync] request lane=", kind, " url=", url)
 	var meta = _meta(game)
 	var token = str(meta.get("token", ""))
 	if _on_web():

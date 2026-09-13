@@ -1127,9 +1127,11 @@ func _boot_sync():
 # Web-only transport (JS fetch bridge) — native HTTPRequest is inert on HTML5.
 func _get_web_bridge():
 	if web_bridge == null:
+		print("[Sync] creating web bridge")
 		web_bridge = WEB_HTTP_BRIDGE.new()
 		web_bridge.game = self
 		add_child(web_bridge)
+		print("[Sync] web bridge ready")
 	return web_bridge
 
 func _sync_push():
