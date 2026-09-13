@@ -41,7 +41,7 @@
 - **低耦合重构**：9 个模块 38 处 `AudioManager.` 编译期 autoload 依赖全部改为经
   `game.audio` 访问——`-s` 无头模式下 autoload 标识符不可解析，是多个测试静默跳过的根因。
 - **新测试文件**：game_config / session_combo（连击增益全语义）/ session_settle（战役结算
-  公式）/ powerup_loadout / content_sanity。无头测试文件数 27→29，且全部真实执行
+  公式）/ powerup_loadout / content_sanity。无头 CI 清单 16→30 项，且全部真实执行
   （新增 quit() 静态门禁防挂死）。
 - **教训**：抽取/改写数据表时必须先读原表内容——powerup_loadout 首版凭印象填了
   extra/override 两张表，被 power_ups_probe 即时抓出（这正是探针存在的意义）。
