@@ -212,6 +212,31 @@ const DEFAULT_CONFIGS = {
 		"cols": 6,
 		"pairs": 12,
 		"time_limit": 180
+	},
+	"rock": {
+		"mode_id": "rock",
+		"name": "障碍模式",
+		"description": "石头牌挡路，炸弹开路或绕行",
+		"unlock_level": 14,
+		"rock_ratio": 0.12,
+		"difficulty_tiers": [
+			{"level_range": [1, 5], "rock_ratio": 0.08, "rows": 10, "cols": 8, "kinds": 8, "time_base": 120},
+			{"level_range": [6, 10], "rock_ratio": 0.14, "rows": 10, "cols": 8, "kinds": 9, "time_base": 140},
+			{"level_range": [11, 999], "rock_ratio": 0.2, "rows": 10, "cols": 9, "kinds": 11, "time_base": 160}
+		]
+	},
+	"defuse": {
+		"mode_id": "defuse",
+		"name": "拆弹行动",
+		"description": "诅咒方块倒计时，先拆为敬",
+		"unlock_level": 15,
+		"bomb_ratio": 0.16,
+		"bomb_seconds": 40,
+		"difficulty_tiers": [
+			{"level_range": [1, 5], "bomb_ratio": 0.1, "rows": 10, "cols": 8, "kinds": 8, "time_base": 120},
+			{"level_range": [6, 10], "bomb_ratio": 0.16, "rows": 10, "cols": 8, "kinds": 9, "time_base": 140},
+			{"level_range": [11, 999], "bomb_ratio": 0.22, "rows": 10, "cols": 9, "kinds": 11, "time_base": 160}
+		]
 	}
 }
 
@@ -240,6 +265,8 @@ const MODE_LABELS_EXTRA = {
 	"flip": "翻翻乐",
 	"fever": "狂热模式",
 	"perfect": "完美模式",
+	"rock": "障碍模式",
+	"defuse": "拆弹行动",
 }
 const INTRO_TEXTS_EXTRA = {
 	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
@@ -247,6 +274,8 @@ const INTRO_TEXTS_EXTRA = {
 	"flip": "翻翻乐！全部盖着，靠记忆翻出配对",
 	"fever": "狂热模式！连击 2 起全程 x1.5 分，消除还返时间",
 	"perfect": "完美模式！没有时限，但失误 3 次就失败啦",
+	"rock": "障碍模式！🪨 石头牌消不掉，炸弹能炸开它",
+	"defuse": "拆弹行动！💣 诅咒方块限时拆除，别让它数到 0",
 }
 
 const RECORD_MODES = {
@@ -265,6 +294,8 @@ const RECORD_MODES = {
 	"memory": {"label": "盲盒挑战", "patch_key": "memory_result", "best_key": "memory_best_score", "achievements": ["memory_first"]},
 	"fever": {"label": "狂热燃尽", "patch_key": "fever_result", "best_key": "fever_best_score", "achievements": ["fever_first"]},
 	"perfect": {"label": "完美零失误", "patch_key": "perfect_result", "best_key": "perfect_best_score", "achievements": ["perfect_first"]},
+	"rock": {"label": "障碍通关", "patch_key": "rock_result", "best_key": "rock_best_score", "achievements": ["rock_first"]},
+	"defuse": {"label": "拆弹成功", "patch_key": "defuse_result", "best_key": "defuse_best_score", "achievements": ["defuse_first"]},
 }
 
 # 主屏副标题「<标签> · 最佳N分」模式段的最佳分字段；标签统一取 mode_label()。
@@ -282,6 +313,8 @@ const SUBTITLE_RECORDS = {
 	"fog": "fog_best_score",
 	"chain": "chain_best_score",
 	"fever": "fever_best_score",
+	"rock": "rock_best_score",
+	"defuse": "defuse_best_score",
 }
 
 # 结算后按模式语境补发的条件成就。

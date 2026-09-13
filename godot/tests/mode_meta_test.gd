@@ -29,13 +29,15 @@ func _init() -> void:
 		"flip": "翻翻乐",
 		"fever": "狂热模式",
 		"perfect": "完美模式",
+		"rock": "障碍模式",
+		"defuse": "拆弹行动",
 	}
 	var all_ok = true
 	for mode in labels:
 		if SM.mode_label(mode) != labels[mode]:
 			all_ok = false
 			push_error("label mismatch: %s -> %s (want %s)" % [mode, SM.mode_label(mode), labels[mode]])
-	check(all_ok, "mode_label covers all 19 modes")
+	check(all_ok, "mode_label covers all 21 modes")
 	check(SM.mode_label("nope") == "未知", "unknown mode falls back to 未知")
 	check(SM.mode_label("tray") == "叠叠消", "tray label registered")
 
@@ -53,7 +55,7 @@ func _init() -> void:
 	var defined_ids = {}
 	for a in PROGRESSION.ACHIEVEMENTS:
 		defined_ids[a["id"]] = true
-	check(SM.RECORD_MODES.size() == 15, "record table covers 15 modes")
+	check(SM.RECORD_MODES.size() == 17, "record table covers 17 modes")
 	var table_ok = true
 	var ach_ok = true
 	for mode in SM.RECORD_MODES:
@@ -74,7 +76,7 @@ func _init() -> void:
 	check(SM.bonus_achievements("race", {}) == [], "race has no conditional bonus")
 
 	# --- modes_panel_rows: 13 ordered rows, best-score formatting, daily done branch.
-	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "tray", "collect", "flip", "endless"]
+	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "tray", "collect", "flip", "rock", "defuse", "endless"]
 	var state := {
 		"daily_challenge": {"streak": 2, "best_score": 88},
 		"time_attack_best_score": 120, "memory_best_score": 34, "frost_best_score": 56,
@@ -83,13 +85,14 @@ func _init() -> void:
 		"tray_best_score": 77,
 		"collect_best_score": 88, "flip_best_score": 99,
 		"fever_best_score": 101, "perfect_best_score": 111,
+		"rock_best_score": 121, "defuse_best_score": 131,
 		"endless_best": {"round": 3, "score": 456},
 	}
 	var rows = SM.modes_panel_rows(state)
 	var got_ids := []
 	for r in rows:
 		got_ids.append(r["id"])
-	check(got_ids == want_ids, "modes_panel_rows returns 18 rows in panel order")
+	check(got_ids == want_ids, "modes_panel_rows returns 20 rows in panel order")
 	var titles_ok := true
 	for r in rows:
 		if r["title"] == "" or r["detail"] == "":
@@ -129,7 +132,7 @@ func _init() -> void:
 	# --- special_modes_data invariants: the whole campaign's unlock curve
 	# and per-mode payloads must stay inside legal bounds (BQ found unlock
 	# levels beyond the campaign once already) ---
-	check(DATA.DEFAULT_CONFIGS.size() == 18, "data module carries 18 mode configs")
+	check(DATA.DEFAULT_CONFIGS.size() == 20, "data module carries 20 mode configs")
 	var inv_ok = true
 	var unlock_too_high = ""
 	for mode_id in DATA.DEFAULT_CONFIGS:
@@ -146,7 +149,7 @@ func _init() -> void:
 			unlock_too_high = mode_id
 		if int(cfg.get("time_limit", 1)) < 0:
 			inv_ok = false
-	check(inv_ok, "all 18 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
+	check(inv_ok, "all 20 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
 	check(int(DATA.DEFAULT_CONFIGS["fever"]["fever_mode_threshold"]) >= 2, "fever needs combo 2+")
 	check(int(DATA.DEFAULT_CONFIGS["perfect"]["miss_limit"]) >= 1, "perfect carries a miss budget")
 

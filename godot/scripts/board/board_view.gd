@@ -14,10 +14,16 @@ static func _refresh_board_visuals(game):
 	for r in range(rows):
 		for c in range(cols):
 			var button = game.cell_buttons[r][c]
-			if int(game.board[r][c]) == 0:
+			var tile_value = int(game.board[r][c])
+			if tile_value == 0:
 				button.text = ""
 				button.disabled = true
 				game._apply_cleared_tile_style(button)
+				continue
+			if game.BOARD_ENGINE.is_rock_value(tile_value):
+				button.text = "🪨"
+				button.disabled = true
+				game._apply_tile_style(button, Color("dee2e6"), Color("adb5bd"), false)
 				continue
 			_refresh_tile(game, button, r, c, playing)
 
@@ -66,6 +72,10 @@ static func _tile_base_style(game, button, r, c, value, playing) -> Dictionary:
 		# Ice sheet: cool white-blue face with a frost border.
 		bg = bg.linear_interpolate(Color("e7f5ff"), 0.72)
 		border = Color("a5d8ff")
+	if game._is_defuse_mode() and game.board_bomb.has(Vector2(r, c)):
+		button.text = game._icon_for(value) + str(int(game.board_bomb[Vector2(r, c)]))
+		bg = bg.linear_interpolate(Color("ffe3e3"), 0.5)
+		border = Color("f06565")
 	return {"bg": bg, "border": border, "is_selected": is_selected,
 		"frozen": frozen, "fogged": fogged, "chained": chained, "stacked": stacked}
 

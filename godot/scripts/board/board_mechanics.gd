@@ -19,13 +19,67 @@ static func is_fogged(game, coord):
 	return cell_ring(game, coord.x, coord.y) < game._fog_layers
 
 # 迷雾/锁链 make a tile unselectable; clicks, hints and auto tools skip it.
+static func is_rock(game, coord):
+	if game.special_mode != "rock" or game.board.size() == 0:
+		return false
+	return BOARD_ENGINE.is_rock_value(game.board[coord.x][coord.y])
+
 static func is_coord_playable(game, coord):
 	if is_fogged(game, coord):
 		return false
 	if game.special_mode == "chain" and coord.x < game.board_chain.size() and coord.y < game.board_chain[coord.x].size() \
 			and int(game.board_chain[coord.x][coord.y]) > 0:
 		return false
+	if is_rock(game, coord):
+		return false
 	return true
+
+# 障碍: mirror-symmetric rock tiles that block paths until bombed.
+static func build_rocks(game, level):
+	var placed = BOARD_ENGINE.build_rock_grid(game.board, float(level.get("rock_ratio", 0.0)))
+	if placed > 0:
+		game._show_message("🪨 石头牌挡路了，用 💣 炸开或绕过去", 1.6)
+
+# 拆弹: cursed tiles carry a countdown; pair them away before one blows.
+static func build_bombs(game, level):
+	var ratio = float(level.get("bomb_ratio", 0.0))
+	if ratio <= 0.0:
+		return
+	var seconds = int(level.get("bomb_seconds", 45))
+	game.board_bomb = {}
+	var rows = game.board.size()
+	var cols = game.board[0].size()
+	var half = int(cols / 2)
+	var target = int(game._remaining_tiles_count() * clamp(ratio, 0.0, 0.4) / 2) * 2
+	var placed = 0
+	var attempts = 0
+	while placed < target and attempts < target * 20 + 50:
+		attempts += 1
+		var r = randi() % rows
+		var c = randi() % (half + (cols % 2))
+		var mc = cols - 1 - c
+		var left_ok = int(game.board[r][c]) != 0 and not game.board_bomb.has(Vector2(r, c))
+		var right_ok = int(game.board[r][mc]) != 0 and not game.board_bomb.has(Vector2(r, mc))
+		if left_ok and right_ok:
+			game.board_bomb[Vector2(r, c)] = seconds
+			game.board_bomb[Vector2(r, mc)] = seconds
+			placed += 2
+	game._show_message("💣 诅咒方块上线！限时拆除，别让任何一个数到 0", 1.8)
+
+static func defuse_pair(game, a, b):
+	if game.special_mode != "defuse":
+		return
+	game.board_bomb.erase(a)
+	game.board_bomb.erase(b)
+
+# Per-second defuse tick: any countdown reaching zero ends the run.
+static func tick_bombs(game):
+	for coord in game.board_bomb.keys():
+		game.board_bomb[coord] = int(game.board_bomb[coord]) - 1
+		if int(game.board_bomb[coord]) <= 0:
+			game.SESSION._fail_stage(game, "💥 有炸弹数到 0，爆炸了！\n点击「重开」再战")
+			return
+	game._refresh_board_visuals()
 
 # --- Building and tearing down the mechanic grids ---
 

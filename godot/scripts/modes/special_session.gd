@@ -47,6 +47,12 @@ static func _start_special_mode(game, mode_id):
 		level = game.SPECIAL_MODES_SCRIPT.build_collect_level(config)
 	elif mode_id == "flip":
 		level = game.SPECIAL_MODES_SCRIPT.build_memory_flip_level(config)
+	elif mode_id == "rock":
+		var rock_level = game.SPECIAL_MODES_SCRIPT.build_rock_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		level = rock_level
+	elif mode_id == "defuse":
+		var defuse_level = game.SPECIAL_MODES_SCRIPT.build_defuse_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		level = defuse_level
 	elif mode_id == "zen" or mode_id == "hell" or mode_id == "moves" or mode_id == "race" \
 				or mode_id == "stack" or mode_id == "gravity" or mode_id == "fog" or mode_id == "chain" \
 				or mode_id == "fever" or mode_id == "perfect":

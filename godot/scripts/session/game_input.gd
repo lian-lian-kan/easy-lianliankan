@@ -41,7 +41,9 @@ static func _tile_press_valid(game, button) -> bool:
 		return false
 	var point = Vector2(r, c)
 	if not game._is_coord_playable(point):
-		if game._is_fogged(point):
+		if game.BOARD_MECHANICS.is_rock(game, point):
+			game._show_message("🪨 石头牌消不掉，用 💣 炸开或绕过去", 1.0)
+		elif game._is_fogged(point):
 			game._show_message("迷雾遮住了这块，先消除里面的方块", 1.0)
 		else:
 			game._show_message("⛓️ 先消除它旁边的方块来解锁", 1.0)
@@ -106,6 +108,7 @@ static func _execute_pair_match(game, path, previous, point):
 
 	var pair_patterns = [int(game.board[a.x][a.y]), int(game.board[b.x][b.y])]
 	game._apply_match_damage(a, b)
+	game.BOARD_MECHANICS.defuse_pair(game, a, b)
 	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
 
@@ -187,6 +190,7 @@ static func _execute_memory_match(game, path, previous, point):
 
 	var pair_patterns = [int(game.board[a.x][a.y]), int(game.board[b.x][b.y])]
 	game._apply_match_damage(a, b)
+	game.BOARD_MECHANICS.defuse_pair(game, a, b)
 	game._on_collect_pair_progress(pair_patterns)
 	game._consume_move()
 

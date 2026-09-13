@@ -32,6 +32,8 @@ const ACHIEVEMENTS = [
 	{"id": "gravity_first", "name": "引力达人", "desc": "完成一局重力模式"},
 	{"id": "fog_first", "name": "拨云见日", "desc": "完成一局迷雾模式"},
 	{"id": "chain_first", "name": "斩断锁链", "desc": "完成一局锁链模式"}
+	{"id": "rock_first", "name": "搬山道人", "desc": "完成一局障碍模式"},
+	{"id": "defuse_first", "name": "拆弹专家", "desc": "完成一局拆弹行动"}
 ]
 
 
@@ -64,6 +66,8 @@ static func default_progress(level_count: int) :
 		"flip_best_score": 0,
 		"fever_best_score": 0,
 		"perfect_best_score": 0,
+		"rock_best_score": 0,
+		"defuse_best_score": 0,
 		"coins": 0,
 		"collected": [],
 		"owned_sets": ["fruit"],
@@ -189,6 +193,8 @@ static func _normalize_special_records(raw, normalized):
 	normalized["flip_best_score"] = max(0, int(raw.get("flip_best_score", 0)))
 	normalized["fever_best_score"] = max(0, int(raw.get("fever_best_score", 0)))
 	normalized["perfect_best_score"] = max(0, int(raw.get("perfect_best_score", 0)))
+	normalized["rock_best_score"] = max(0, int(raw.get("rock_best_score", 0)))
+	normalized["defuse_best_score"] = max(0, int(raw.get("defuse_best_score", 0)))
 
 
 static func apply_update(current_state, level_count: int, patch: Dictionary = {}) :
@@ -344,6 +350,8 @@ static func same_progress(a, b, level_count: int) :
 		and int(aa.get("flip_best_score", 0)) == int(bb.get("flip_best_score", 0)) \
 		and int(aa.get("fever_best_score", 0)) == int(bb.get("fever_best_score", 0)) \
 		and int(aa.get("perfect_best_score", 0)) == int(bb.get("perfect_best_score", 0)) \
+		and int(aa.get("rock_best_score", 0)) == int(bb.get("rock_best_score", 0)) \
+		and int(aa.get("defuse_best_score", 0)) == int(bb.get("defuse_best_score", 0)) \
 		and bool(aa.get("onboarding_seen", false)) == bool(bb.get("onboarding_seen", false)) \
 		and int(aa.get("coins", 0)) == int(bb.get("coins", 0)) \
 		and _arrays_equal(aa.get("collected", []), bb.get("collected", [])) \

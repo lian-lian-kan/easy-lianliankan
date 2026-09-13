@@ -935,3 +935,11 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 工具坑（复训）：`open(path,'w')` 先截断再 write，write(list) 抛错会把文件清空（progression.gd 曾被清空，git checkout 恢复）——批量重构必须 join 后单次写、写前留锚点、失败先看 git status；audit 须在 godot/ 目录下运行。
 - Validation: shell_audit 六项全过（棘轮表清空，零豁免）；全量行为验证由 CI 远端执行。
 - **补丁（CI 首跑红后根修）**：①ui_panels._pause_panel 拆分漏写函数头、按钮体被留在顶层——parse error 连锁打挂 preload 链（CI 抓到，修补 + 本地顶层语句静态扫描全量复检）；②progression.gd/session.gd 的 1-tab 源块被误套反缩进成顶层语句汤（git checkout 注意 HEAD 已含坏版本，须从 fd3ad8d 恢复重拆）；③shell_audit 固化第 7 项「顶层语句卫生」——非缩进且非合法声明的行即 ERROR，此类错误今后本地秒级可拦。
+
+## 2026-09-13 (玩法 Round CL：联网调研 + 障碍模式 rock + 拆弹行动 defuse——19→21 种)
+- 调研：见 docs/variants-research.md（Onet/Dream Pet Link/Jolly Jong/连连看4/欢乐连连看/宠物连连看系列对照），确认 6 个缺口玩法，分三轮集成，双人对战/3D/六边形记为另立项。
+- rock 障碍模式：board_engine 新增 ROCK_VALUE=99 常量体系——count_tiles 排除石头（不进胜利条件）、reshuffle 只重排可动格（石头原位）、镜像对称生成 build_rock_grid；is_coord_playable 排除 + 点击提示；🪨 灰色样式；炸弹半径内石头被炸开（障碍模式核心开路手段）。三档难度（rock_ratio 0.08/0.14/0.2）。
+- defuse 拆弹行动：board_bomb 字典（Vector2 键 → 剩余秒）；镜像成对布诅咒牌；秒心跳 tick（hud_timers._on_second_tick 挂 BOARD_MECHANICS.tick_bombs），任何一颗数到 0 → _fail_stage；消除配对即拆除（_execute_pair_match/_execute_memory_match 双路径挂 defuse_pair）；牌面显示 图案+剩余秒数+红色边。三档（bomb_ratio 0.1/0.16/0.22，40 秒/颗）。
+- 全链接线按 architecture.md 新增玩法清单：configs/labels/intro/RECORD_MODES/SUBTITLE_RECORDS/modes_panel_rows(20 行)/统计页 2 行/成就 rock_first+defuse_first/progression 四处/startup_probe 2 分支/mode_meta 计数 20/17/21/20 行/panels_probe 卡 20 锁 18/字体子集 1037→1076 字符。
+- 工程注记：石头分支初版误写成 -> Dictionary 函数内裸 return（本地裸 return 扫描器抓到后上移 _refresh_tile）；跨模块一律 game.BOARD_MECHANICS 防环；panels/page 探针的历史 `var stack` 重声明 parse 警告为既有非致命。
+- Validation: shell_audit 七项全过；本地裸 return/顶层卫生扫描干净；全量行为验证由 CI 远端执行。

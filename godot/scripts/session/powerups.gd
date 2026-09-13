@@ -231,6 +231,13 @@ static func _execute_bomb(game, point):
 	if game._is_frost_mode():
 		game.board_armor[point.x][point.y] = 0
 		game.board_armor[partner.x][partner.y] = 0
+	# 炸弹顺便炸开相邻的石头牌（障碍模式的核心开路手段）。
+	if game._is_rock_mode():
+		for cell in [point, partner]:
+			for nr in range(max(0, cell.x - 1), min(game.board.size(), cell.x + 2)):
+				for nc in range(max(0, cell.y - 1), min(game.board[0].size(), cell.y + 2)):
+					if game.BOARD_ENGINE.is_rock_value(game.board[nr][nc]):
+						game.board[nr][nc] = 0
 	game._pop_stack_at(point)
 	game._pop_stack_at(partner)
 	game._break_chains_around([point, partner])

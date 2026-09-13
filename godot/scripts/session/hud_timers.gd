@@ -43,6 +43,9 @@ static func _on_second_tick(game):
 		return
 
 	game.time_left = max(0, game.time_left - 1)
+	# Defuse: cursed tiles tick down every second; any 0 blows the run.
+	if game._is_defuse_mode() and not game.board_bomb.empty():
+		game.BOARD_MECHANICS.tick_bombs(game)
 	game._refresh_ui()
 
 	if game.time_left <= 0:

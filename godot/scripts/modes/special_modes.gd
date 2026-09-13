@@ -201,6 +201,44 @@ static func build_frost_level(config, tier: Dictionary):
 		"frost_ratio": clamp(float(tier.get("frost_ratio", 0.3)), 0.0, 0.6)
 	}
 
+# Shared tier picker for tiered modes (rock/defuse reuse the frost shape).
+static func mode_tier(config, progress_level: int, ratio_key: String) -> Dictionary:
+	var tiers = config.get("difficulty_tiers", [])
+	if typeof(tiers) == TYPE_ARRAY:
+		for tier in tiers:
+			if typeof(tier) != TYPE_DICTIONARY or not tier.has("level_range"):
+				continue
+			var range_data = tier["level_range"]
+			if typeof(range_data) != TYPE_ARRAY or range_data.size() < 2:
+				continue
+			if int(progress_level) >= int(range_data[0]) and int(progress_level) <= int(range_data[1]):
+				return tier
+	return {"ratio_key": config.get(ratio_key, 0.0), "rows": config.get("rows", 10), "cols": config.get("cols", 8), "kinds": config.get("kinds", 8), "time_base": config.get("time_base", 120)}
+
+static func build_tiered_level(config, mode_id: String, progress_level: int, ratio_key: String) -> Dictionary:
+	var tier = mode_tier(config, progress_level, ratio_key)
+	var rows = int(tier.get("rows", 10))
+	var cols = int(tier.get("cols", 8))
+	var time_limit = int(tier.get("time_base", 120)) + int(rows * cols * 1.0)
+	return {
+		"id": 1,
+		"name": str(config.get("name", mode_id)),
+		"mode": mode_id,
+		"rows": rows,
+		"cols": cols,
+		"kinds": int(tier.get("kinds", 8)),
+		"time_limit": time_limit,
+		ratio_key: float(tier.get(ratio_key, config.get(ratio_key, 0.0)))
+	}
+
+static func build_rock_level(config, progress_level: int) -> Dictionary:
+	return build_tiered_level(config, "rock", progress_level, "rock_ratio")
+
+static func build_defuse_level(config, progress_level: int) -> Dictionary:
+	var level = build_tiered_level(config, "defuse", progress_level, "bomb_ratio")
+	level["bomb_seconds"] = int(config.get("bomb_seconds", 40))
+	return level
+
 
 # Classic-rules boards with different knobs: zen/hell change board and
 # clock pressure, moves adds a pair budget, race adds the AI interval.
@@ -365,5 +403,7 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "tray", "title": "🀄 叠叠消", "detail": "点牌入槽三张即消 · 最佳%d分" % int(progression_state.get("tray_best_score", 0))},
 		{"id": "collect", "title": "🎯 收集挑战", "detail": "限时集齐目标图案 · 最佳%d分" % int(progression_state.get("collect_best_score", 0))},
 		{"id": "flip", "title": "🃏 翻翻乐", "detail": "记忆翻牌全消 · 最佳%d分" % int(progression_state.get("flip_best_score", 0))},
+		{"id": "rock", "title": "🪨 障碍模式", "detail": "石头牌挡路炸弹开路 · 最佳%d分" % int(progression_state.get("rock_best_score", 0))},
+		{"id": "defuse", "title": "💣 拆弹行动", "detail": "诅咒方块限时拆除 · 最佳%d分" % int(progression_state.get("defuse_best_score", 0))},
 		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]}
 	]

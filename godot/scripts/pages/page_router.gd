@@ -250,6 +250,8 @@ static func _stats_rows(game, collected, total_icons) -> Array:
 		["🀄 叠叠消最佳", str(int(game.progression_state.get("tray_best_score", 0)))],
 		["🎯 收集挑战最佳", str(int(game.progression_state.get("collect_best_score", 0)))],
 		["🃏 翻翻乐最佳", str(int(game.progression_state.get("flip_best_score", 0)))],
+		["🪨 障碍最佳", str(int(game.progression_state.get("rock_best_score", 0)))],
+		["💣 拆弹最佳", str(int(game.progression_state.get("defuse_best_score", 0)))],
 	]
 
 # 单行白卡：名称居左、数值居右。

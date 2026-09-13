@@ -38,13 +38,39 @@ static func pad_board(board_state):
 
 	return padded
 
+# Obstacle tile marker: never matchable, blocks paths, excluded from the
+# win count and from reshuffles (classic rock tiles).
+const ROCK_VALUE = 99
+
+static func is_rock_value(value) -> bool:
+	return int(value) == ROCK_VALUE
+
 static func count_tiles(board_state):
 	var count = 0
 	for row in board_state:
 		for value in row:
-			if int(value) != 0:
+			if int(value) != 0 and not is_rock_value(value):
 				count += 1
 	return count
+
+# Mirror-symmetric rock placement so the board stays fair left/right.
+static func build_rock_grid(board_state, ratio):
+	var rows = board_state.size()
+	var cols = board_state[0].size()
+	var half = int(cols / 2)
+	var target = int(rows * cols * clamp(ratio, 0.0, 0.4))
+	var placed = 0
+	var attempts = 0
+	while placed < target and attempts < target * 20:
+		attempts += 1
+		var r = randi() % rows
+		var c = randi() % (half + (cols % 2))
+		var mc = cols - 1 - c
+		if int(board_state[r][c]) == 0 and int(board_state[r][mc]) == 0:
+			board_state[r][c] = ROCK_VALUE
+			board_state[r][mc] = ROCK_VALUE
+			placed += 2
+	return placed
 
 static func format_time(seconds):
 	var mm = seconds / 60
@@ -271,23 +297,22 @@ static func reshuffle_board(board_state, filter_obj = null, filter_method = ""):
 	var cols = board_state[0].size()
 
 	var tiles = []
+	var movable = []
 	for r in range(rows):
 		for c in range(cols):
 			var value = int(board_state[r][c])
-			if value != 0:
+			if value != 0 and not is_rock_value(value):
 				tiles.append(value)
+				movable.append(Vector2(r, c))
 
 	if tiles.size() % 2 != 0:
 		return false
 
 	for _attempt in range(20):
 		shuffle_array(tiles)
-		var index = 0
-		for r in range(rows):
-			for c in range(cols):
-				if int(board_state[r][c]) != 0:
-					board_state[r][c] = tiles[index]
-					index += 1
+		for i in range(movable.size()):
+			var cell = movable[i]
+			board_state[cell.x][cell.y] = tiles[i]
 
 		if not find_any_hint(board_state, filter_obj, filter_method).empty():
 			return true

@@ -93,6 +93,11 @@ static func _reset_board_session(game, level):
 	game.board_armor = game._build_frost_armor(game.board, level)
 	game.board_lower = []
 	game.board_chain = []
+	game.board_bomb = {}
+	if game._is_rock_mode():
+		game.BOARD_MECHANICS.build_rocks(game, level)
+	if game._is_defuse_mode():
+		game.BOARD_MECHANICS.build_bombs(game, level)
 	game._fog_layers = 0
 	if game._is_stack_mode():
 		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))

@@ -131,6 +131,7 @@ var board_armor = []
 # 叠层/重力/迷雾/锁链: optional board mechanics on classic rules.
 var board_lower = []      # stack: hidden tiles under their covers
 var board_chain = []      # chain: 1 = chained (unlock via adjacent clears)
+var board_bomb = {}
 var _fog_layers = 0       # fog: current outer-ring count
 
 # 步数挑战: remaining pair-removals. 竞速对战: AI opponent progress.
@@ -394,6 +395,12 @@ func _is_fog_mode():
 
 func _is_chain_mode():
 	return special_mode == "chain"
+
+func _is_rock_mode():
+	return special_mode == "rock"
+
+func _is_defuse_mode():
+	return special_mode == "defuse"
 
 func _memory_key(coord):
 	return SPECIAL_SESSION._memory_key(self, coord)
