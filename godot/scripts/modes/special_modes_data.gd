@@ -237,6 +237,7 @@ const DEFAULT_CONFIGS = {
 			{"level_range": [6, 10], "bomb_ratio": 0.16, "rows": 10, "cols": 8, "kinds": 9, "time_base": 140},
 			{"level_range": [11, 999], "bomb_ratio": 0.22, "rows": 10, "cols": 9, "kinds": 11, "time_base": 160}
 		],
+	},
 	"target": {
 		"mode_id": "target",
 		"name": "指定连消",
