@@ -138,13 +138,16 @@ static func base_url() -> String:
 # A single shared HTTPRequest (requests are serialized by boot flow and the
 # throttle); re-used for register/pull/push lanes.
 static func _request(game, kind, url, method, body):
+	var meta = _meta(game)
+	var token = str(meta.get("token", ""))
+	if OS.has_feature("HTML5"):
+		return game._get_web_bridge().request(kind, url, method, body, token)
 	var req = _http(game)
 	if req.get_status() == HTTPRequest.STATUS_REQUESTING:
 		return false
 	var headers = ["Content-Type: application/json"]
-	var meta = _meta(game)
-	if str(meta.get("token", "")) != "":
-		headers.append("Authorization: Bearer " + str(meta["token"]))
+	if token != "":
+		headers.append("Authorization: Bearer " + token)
 	return req.request(url, headers, false, method, body)
 
 static func _http(game):

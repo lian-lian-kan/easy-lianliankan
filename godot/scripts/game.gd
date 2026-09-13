@@ -50,6 +50,7 @@ const PATH_COLOR_ELIMINATE = Color("ff6f9c")
 const PATH_OVERLAY_SCRIPT = preload("res://scripts/board/path_overlay.gd")
 const PROGRESSION_SCRIPT = preload("res://scripts/session/progression.gd")
 const SERVER_SYNC = preload("res://scripts/session/server_sync.gd")
+const WEB_HTTP_BRIDGE = preload("res://scripts/session/web_http_bridge.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/modes/campaign_levels.gd")
 const MOBILE_SHORT_SIDE_MAX = 860.0
@@ -140,6 +141,7 @@ var defense_countdown = 0
 var duel_scores = [0, 0]
 var duel_current = 0
 var pull_http = null
+var web_bridge = null
 var push_http = null
 var sync_last_push_ms = -100000
 var cloud_connected = false
@@ -1121,6 +1123,14 @@ func _save_progress_state():
 
 func _boot_sync():
 	SERVER_SYNC.boot_sync(self)
+
+# Web-only transport (JS fetch bridge) — native HTTPRequest is inert on HTML5.
+func _get_web_bridge():
+	if web_bridge == null:
+		web_bridge = WEB_HTTP_BRIDGE.new()
+		web_bridge.game = self
+		add_child(web_bridge)
+	return web_bridge
 
 func _sync_push():
 	SERVER_SYNC.push(self)
