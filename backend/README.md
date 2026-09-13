@@ -54,6 +54,37 @@ tests/               # pytest（CI 带 pg service 真库跑）
 | GET/POST | `/api/v1/wallet[/entries]` | 钱包余额 + 流水 |
 | GET/POST | `/api/v1/signin` | 签到（幂等）/ 签到记录 |
 
+## 部署与公网入口（已上线）
+
+生产 API：**`https://lianliankan.zhaixingren.cn`**（游戏端常量 `server_sync.gd: DEFAULT_API_BASE`）。
+
+```
+浏览器(H5, GitHub Pages)
+  → traefik :443（aigchub-001 上的 k3s，泛域名证书 *.zhaixingren.cn，acme.sh 自动续期）
+  → Service/Endpoints → 172.22.246.76:30012（同机 sshd 反向隧道）
+  → ssh-tunnel-lianliankan.service（local-server-001 上的 autossh，映射到 192.168.1.83:30800）
+  → 家庭 K8S NodePort 30800 → lianliankan-backend Deployment（2 副本，namespace lianliankan）
+  → PG/Redis（database namespace，连接见 config.yaml）
+```
+
+部署件：`deploy/k8s/`（家庭集群 namespace/config/deployment/service）+
+`deploy/k8s/edge/`（autossh 隧道 unit + aigchub-001 k3s Ingress/Service/Endpoints 清单）。
+
+镜像发布（Harbor 192.168.1.83:30050 为归一地址；Harbor 故障时把镜像
+`docker save` 后在两台节点 `sudo ctr -n k8s.io images import` 直灌 containerd）：
+
+```bash
+rsync -a --exclude tests --exclude tools --exclude deploy backend/ local-server-001:/tmp/lianliankan-backend/
+ssh local-server-001 'cd /tmp/lianliankan-backend && docker build -t 192.168.1.83:30050/tradermoney/lianliankan-backend:vN .'
+# Harbor 可用: docker push；不可用: docker save | 两节点 ctr import
+ssh local-server-001 'kubectl set image -n lianliankan deploy/lianliankan-backend api=192.168.1.83:30050/tradermoney/lianliankan-backend:vN'
+```
+
+2026-09-13 上线时的集群现状备忘：pod→Service（ClusterIP/域名）路径全断（kube-proxy 层，
+同一场故障拖垮 Harbor——core 起不来自动降级）；期间 ConfigMap 临时用 `192.168.1.83:30432/30379`
+NodePort 直连 PG/Redis，**集群 DNS 修复后把 config.yaml 改回集群内主机名**。
+kube-proxy NodePort 不绑 127.0.0.1，隧道转发目标必须写节点 IP。
+
 ## 本地起服务 / 测试
 
 ```bash
@@ -83,6 +114,7 @@ python -m pytest tests -q            # SKIP_PG_TESTS=1 跳过 DB 用例
 | `MAX_STATE_BYTES` | `262144` | 单份存档体积上限 |
 | `PG_POOL_MIN` / `PG_POOL_MAX` | 1 / 8 | 连接池 |
 | `TOKEN_TTL_DAYS` | `90` | 令牌有效期 |
+| `ALLOWED_ORIGINS` | `https://lian-lian-kan.github.io` | CORS 允许的浏览器源（逗号分隔；游戏页搬家时改这里） |
 
 默认值即 K8S 集群内主机名（`database` namespace，来源：local-server-001:~/k8s-service.txt）；
 集群外跑本地开发时用 env 覆盖为 `local-server-002:30432` / `local-server-002:30379`。

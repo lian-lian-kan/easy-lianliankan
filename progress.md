@@ -1009,3 +1009,13 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 集群暴露调研结论：集群无 ingress controller、无 cert-manager，server-url.txt 只有 LAN 地址——HTTPS 游戏页调 HTTP API 会被浏览器混合内容拦截，所以公有 HTTPS 入口是云端版上线唯一缺口。补 backend/deploy/k8s/exposure.yaml：Cloudflare Tunnel deployment（免 ingress/证书/开端口，token 一填即用）+ NodePort 30800（仅同 LAN 测试用）。端点确定后动作就两步：kubectl apply exposure + 填 DEFAULT_API_BASE。
 - CI 教训：game.gd 裸引用 server_sync 的常量 DEFAULT_API_BASE → parse error 连锁 preload 断裂（跨脚本常量不进作用域，收敛为 has_endpoint() 静态方法）。
 - Validation: 游戏 CI build 绿；backend pytest 绿；合并 main 生产部署绿。
+
+## 2026-09-14 (公网入口落地：云端版正式上线 https://lianliankan.zhaixingren.cn)
+- 用户定向「你自己把这些都弄好」——不再等域名/方案拍板，自己把暴露链路、部署、客户端接入、端到端验证一口气做完。
+- 基建摸排：家庭集群（.001/.002 双节点）无 ingress/证书设施；aigchub-001（8.130.35.126 阿里云）上跑着 k3s + traefik(80/443) + acme.sh 泛域名证书（*.zhaixingren.cn / *.aigchub.vip，reloadcmd 同步进 k3s secret）；DNS 已有 *.zhaixingren.cn 泛解析指向该机——**零 DNS 改动、零证书签发**，直接用 lianliankan.zhaixingren.cn。
+- 链路定型：浏览器 → traefik(Ingress, secret zhaixingren-cn-tls) → Service/Endpoints(172.22.246.76:30012) → autossh 反向隧道(ssh-tunnel-lianliankan.service，与既有 tunnel-to-cloud 同 key 同模式，独立 unit 零共享状态) → 家庭集群 NodePort 30800 → backend Deployment(2 副本)。aigchub frps 故意 proxyBindAddr=127.0.0.1（防探测），frp 承载 HTTP 不可行才转 autossh。
+- 集群级故障现场（2026-09-13 实测，影响共享设施非本项目引入）：pod→Service 通路全断（ClusterIP/kube-dns 均不可达，节点侧正常；kube-proxy 层），Harbor core CrashLoop 9 天同根因（解析不了 harbor-redis）。照 2026-07 既有预案临时把 config.yaml 指到 192.168.1.83 的 PG/Redis NodePort（文件内注明 DNS 修复后改回集群主机名）；镜像绕过 Harbor——.001 构建 amd64 后 docker save → 两节点 `ctr -n k8s.io images import` 直灌，deployment 用 IfNotPresent。
+- 两个部署坑：NodePort 不绑 127.0.0.1（隧道转发目标必须写节点 IP，写 localhost 会 connect failed）；namespace 同批 apply 的时序（ns 未传播时后续对象 404，重跑 apply 即可）。
+- 后端补 CORS：CORSMiddleware + `ALLOWED_ORIGINS` env（默认 https://lian-lian-kan.github.io），PUT 预检由中间件应答；Dockerfile 改为装全 requirements.txt（原手工列表漏 redis，镜像限流会静默降级）；新增 CORS 预检/未知源 2 个测试。
+- 端到端验证（全走公网 HTTPS）：healthz {"ok":true,"db":true,"redis":true}；注册→token→PUT/GET 进度回读一致→无 token 401；CORS 预检 allow-origin/allow-headers 正确。
+- 文档：backend/README 增「部署与公网入口」（链路图/发布步骤/故障备忘），docs/backend.md 部署节改为已上线事实；删除过时的 exposure.yaml（Cloudflare 占位方案）。

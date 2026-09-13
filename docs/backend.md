@@ -46,13 +46,11 @@ backend/
 - 后端自身按 `backend/deploy/k8s/` 清单部署进集群（namespace `lianliankan`，2 副本，探活 /healthz）。
 - 限流的滑动窗口存 Redis（ZSET），多副本共享；Redis 挂了自动降级内存窗口，API 不中断。
 
-## 部署（参考）
+## 部署（已上线，2026-09-14）
 
-```bash
-cd backend && docker compose up -d --build
-# 对外 HTTPS 暴露推荐 backend/deploy/k8s/exposure.yaml（Cloudflare Tunnel，
-# 免 ingress/证书设施）；然后把 server_sync.gd 的 DEFAULT_API_BASE 填成该地址
-```
-
-安全基线：令牌只存 SHA-256、90 天过期可轮换；`player_id`/token 枚举不可行；
-上线前改掉 compose 默认 PG 口令并配置 TLS。
+- 生产 API：**`https://lianliankan.zhaixingren.cn`**（`server_sync.gd: DEFAULT_API_BASE`，已填）。
+- 链路与发布步骤见 `backend/README.md` 的「部署与公网入口」；边缘清单在
+  `backend/deploy/k8s/edge/`（autossh 隧道 + aigchub-001 k3s Ingress）。
+- 首日上线备注：集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort
+  连 PG/Redis；集群 DNS 修复后改回集群内主机名（文件内已注明回退条件）。
+- 本地开发仍可 `docker compose up`，env `LIANLIAN_API_BASE` 指到本地地址。
