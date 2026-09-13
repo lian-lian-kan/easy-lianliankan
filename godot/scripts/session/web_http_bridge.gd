@@ -8,15 +8,15 @@ extends Node
 #
 # Instantiated lazily by game._get_web_bridge() (cross-module access only via
 # game members — see docs/scaling.md); `game` is wired at creation time.
+# Params stay untyped: callers pass HTTPClient.Method enums as `method`, and
+# the release web template prints no script errors to the console.
 
 var game = null
 var _js_on_done = null
 
 
 func _ready() -> void:
-	print("[Sync] bridge _ready: callback")
 	_js_on_done = JavaScript.create_callback(self, "_on_response")
-	print("[Sync] bridge _ready: eval")
 	JavaScript.eval(
 		"window.__llkHttp = function(kind, url, method, body, token) {" +
 		"  var opts = {method: method, headers: {}};" +
@@ -26,14 +26,18 @@ func _ready() -> void:
 		"    return r.text().then(function(t) { window.__llkOnDone(kind, r.status, t); });" +
 		"  }).catch(function(e) { window.__llkOnDone(kind, 0, String(e)); });" +
 		"};", true)
-	print("[Sync] bridge _ready: assign")
 	JavaScript.get_interface("window").__llkOnDone = _js_on_done
-	print("[Sync] bridge _ready: done")
 
 
-func request(kind: String, url: String, method: String, body: String, token: String) -> bool:
-	print("[Sync] web fetch ", method, " ", url)
-	JavaScript.get_interface("window").__llkHttp(kind, url, method, body, token)
+func request(kind, url, method, body, token):
+	var method_name = {
+		HTTPClient.METHOD_GET: "GET",
+		HTTPClient.METHOD_POST: "POST",
+		HTTPClient.METHOD_PUT: "PUT",
+		HTTPClient.METHOD_DELETE: "DELETE",
+	}.get(method, "GET")
+	print("[Sync] web fetch ", method_name, " ", url)
+	JavaScript.get_interface("window").__llkHttp(kind, url, method_name, body, token)
 	return true
 
 
