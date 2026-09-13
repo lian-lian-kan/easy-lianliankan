@@ -440,8 +440,8 @@ func _init() -> void:
 	game._build_modes_panel()
 	game._refresh_modes_panel()
 	check(game.modes_panel != null, "modes panel built")
-	check(game.modes_content != null && game.modes_content.get_child_count() == 24,
-		"modes panel has 24 mode cards (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
+	check(game.modes_content != null && game.modes_content.get_child_count() == 29,
+		"modes panel has 24 mode cards + 5 category headers (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
 
 	# modal lifecycle: open pauses the stage clock, close resumes it
 	game.stage_status = game.STATUS_PLAYING
@@ -516,7 +516,7 @@ func _init() -> void:
 	for mode_button in game.modes_content.get_children():
 		if mode_button is Button && mode_button.text.find("关解锁") != -1:
 			late_locked += 1
-	check(late_locked == 0 && game.modes_content.get_child_count() == 24, "rebuilt rows reflect the restored unlock index")
+	check(late_locked == 0 && game.modes_content.get_child_count() == 29, "rebuilt rows reflect the restored unlock index")
 	game._on_modes_close_pressed()
 	check(!game.modes_panel.visible, "closing modes hides the browser")
 

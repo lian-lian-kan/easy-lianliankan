@@ -574,22 +574,36 @@ static func refresh_modes_rows(game):
 		game.modes_content.remove_child(child)
 		child.queue_free()
 
-	var rows = game.SPECIAL_MODES_SCRIPT.modes_panel_rows(game.progression_state)
+	var rows_by_id = {}
+	for row in game.SPECIAL_MODES_SCRIPT.modes_panel_rows(game.progression_state):
+		rows_by_id[row["id"]] = row
 	var unlocked_index = int(game.progression_state.get("highest_unlocked_level_index", 0))
-	for row in rows:
-		var config = game.game_mode_configs.get(row["id"], {})
-		var unlocked = game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
-		var button = Button.new()
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.rect_min_size = Vector2(0, 52)
-		button.add_font_override("font", game.game_font)
-		if unlocked:
-			button.text = row["title"] + "\n" + row["detail"]
-			button.connect("pressed", game, "_on_special_mode_pressed", [row["id"]])
-		else:
-			button.text = row["title"] + "\n" + game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
-		game._style_dialog_buttons(button)
-		game.modes_content.add_child(button)
+	# Entry orchestration: cards render grouped under category headers; a new
+	# mode joins a group by listing its id in MODE_CATEGORIES (panel order
+	# still comes from modes_panel_rows).
+	for category in game.SPECIAL_MODES_SCRIPT.MODE_CATEGORIES:
+		var header = Label.new()
+		header.text = str(category["title"])
+		header.add_font_override("font", game.game_font)
+		header.add_color_override("font_color", Color("9c6b7f"))
+		game.modes_content.add_child(header)
+		for mode_id in category["modes"]:
+			var row = rows_by_id.get(mode_id, null)
+			if row == null:
+				continue
+			var config = game.game_mode_configs.get(row["id"], {})
+			var unlocked = game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
+			var button = Button.new()
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			button.rect_min_size = Vector2(0, 52)
+			button.add_font_override("font", game.game_font)
+			if unlocked:
+				button.text = row["title"] + "\n" + row["detail"]
+				button.connect("pressed", game, "_on_special_mode_pressed", [row["id"]])
+			else:
+				button.text = row["title"] + "\n" + game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
+			game._style_dialog_buttons(button)
+			game.modes_content.add_child(button)
 
 
 static func refresh_pause_panel(game):
