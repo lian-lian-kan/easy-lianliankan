@@ -85,6 +85,7 @@ func _init() -> void:
 
 	# --- paid revive: deducts, restores the clock, returns to playing
 	game = FakeGame.new()
+	game.revive_cost = 30
 	game.time_left = 0
 	game.moves_left = 0
 	drive_revive(game)
