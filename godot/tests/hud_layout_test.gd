@@ -34,6 +34,19 @@ class FakeGame extends Reference:
 	var stats_flow_container = null
 	var subtitle_label = null
 	var title_label = null
+	var desc_label = null
+	var status_chip_label = null
+	var mode_chip_label = null
+	var kinds_chip_label = null
+	var level_progress_bar = null
+	var level_progress_caption_label = null
+	var jump_level_button = null
+	var clear_progress_button = null
+	var icon_set_option = null
+	var level_select_option = null
+	var level_select_label = null
+	var combo_progress_bar = null
+	var power_ups_container = null
 	var power_up_labels = {}
 	var stat_values = {}
 	func get_viewport_rect():
