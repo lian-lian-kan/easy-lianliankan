@@ -84,6 +84,7 @@ func _init() -> void:
 	check(int(game.time_left) == 45 and game.refreshes == 1, "clock drains by the requested seconds")
 	SESSION._consume_time_cost(game, 999)
 	check(int(game.time_left) == 0 and game.time_ups == 1, "draining to zero fires time-up exactly once")
+	game.stage_status = "failed"  # the fired time-up fails the stage in the real flow
 	SESSION._consume_time_cost(game, 10)
 	check(int(game.time_left) == 0 and game.time_ups == 1, "a spent clock refuses further drains")
 
@@ -91,12 +92,13 @@ func _init() -> void:
 	game = FakeGame.new()
 	game.moves_left = 2
 	SESSION._consume_move(game)
-	check(int(game.moves_left) == 1 and game.move_fails == 0, "non-moves modes never consume")
+	check(int(game.moves_left) == 2 and game.move_fails == 0, "non-moves modes never consume")
 	game.special_mode = "moves"
 	SESSION._consume_move(game)
 	check(int(game.moves_left) == 1, "moves mode consumes the budget")
 	SESSION._consume_move(game)
 	check(int(game.moves_left) == 0 and game.move_fails == 1, "exhausting the budget fails the stage once")
+	game.stage_status = "failed"  # the real exhaustion fails the stage
 	SESSION._consume_move(game)
 	check(int(game.moves_left) == 0 and game.move_fails == 1, "an exhausted budget refuses further consumption")
 
