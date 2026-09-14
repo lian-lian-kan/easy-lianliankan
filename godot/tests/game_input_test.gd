@@ -108,6 +108,7 @@ class FakeGame extends Reference:
 	var messages = []
 	var paths_shown = []
 	var damage_calls = []
+	var tile_damages = []
 	var collect_calls = []
 	var flashes = []
 	var selects_animated = []
@@ -219,6 +220,7 @@ class FakeGame extends Reference:
 	func _memory_schedule_hide(_coords, _delay):
 		pass
 	func _damage_tile(coord, cracked, removed):
+		tile_damages.append(coord)
 		cracked.append(coord)
 		removed.append(coord)
 	func _break_chains_around(_removed):
@@ -398,7 +400,7 @@ func _init() -> void:
 	game = FakeGame.new()
 	GAME_INPUT._on_auto_pressed(game)
 	check(game.level_auto_used == 1, "auto is counted")
-	check(game.damage_calls.size() == 1 and game.consumed_moves == 1, "auto damages the hint pair for one move")
+	check(game.tile_damages == [Vector2(0, 0), Vector2(1, 1)] and game.consumed_moves == 1, "auto damages the hint pair for one move")
 	check(game.time_costs == [2], "an auto clear that leaves tiles costs two seconds")
 	game = FakeGame.new()
 	game.remaining = 0
