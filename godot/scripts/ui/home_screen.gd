@@ -147,6 +147,10 @@ static func _build_header_progress(game):
 	game._add_stat_card(game.stats_flow_container, "步数", "moves")
 	game._add_stat_card(game.stats_flow_container, "剩余", "remaining")
 	game._add_stat_card(game.stats_flow_container, "倒计时", "time_left")
+	game._add_stat_card(game.stats_flow_container, "连击", "combo")
+	game._add_stat_card(game.stats_flow_container, "历史高分", "best_total_score")
+	game._add_stat_card(game.stats_flow_container, "历史连击", "best_combo")
+	game._add_stat_card(game.stats_flow_container, "对手", "race")
 
 
 static func _build_level_progress_bar(game):
@@ -173,10 +177,6 @@ static func _build_level_progress_bar(game):
 	progress_fill.set_corner_radius_all(6)
 	game.level_progress_bar.add_stylebox_override("fill", progress_fill)
 	game.header_box.add_child(game.level_progress_bar)
-	game._add_stat_card(game.stats_flow_container, "连击", "combo")
-	game._add_stat_card(game.stats_flow_container, "历史高分", "best_total_score")
-	game._add_stat_card(game.stats_flow_container, "历史连击", "best_combo")
-	game._add_stat_card(game.stats_flow_container, "对手", "race")
 
 # Power-up chips row plus the combo timer bar underneath.
 
