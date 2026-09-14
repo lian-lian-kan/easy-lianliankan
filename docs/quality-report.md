@@ -113,6 +113,12 @@
   间隔节奏与终局判负、六个通用超时回调（含 endless 轮次推进与 null 安全）；ui_fonts_test
   直测字体工厂——按 px 缓存复用、8px 下限钳制、全局主题五控件绑定。CI 清单 40→42 项。
 
+- **Round 12 布局管线直测**：hud_layout_test 扩至 26 项——update_layout 主管线
+  （null 早退/竖屏压缩/桌面恢复/竖-横-竖幂等往返）、_apply_board_height 三分支
+  （竖屏容器主导/横屏比率/桌面比率）、margins（竖屏归零+薄垫、桌面 16+64 导航带）、
+  separations（竖屏 3px 换宽、桌面 10px）、stat 卡三档尺寸与竖屏 value-only pill、
+  compact/restore 全量可见性往返。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。
