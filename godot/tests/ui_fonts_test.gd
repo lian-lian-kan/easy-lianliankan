@@ -15,9 +15,12 @@ func check(value: bool, message: String) -> void:
 	push_error("FAIL - %s" % message)
 
 class FakeGame extends Reference:
+	const UI_FONTS = preload("res://scripts/ui/ui_fonts.gd")
 	var _font_cache = {}
 	var game_font = null
 	var theme = null
+	func _font_at_size(px):
+		return UI_FONTS.font_at_size(self, px)
 
 func _init() -> void:
 	print("== ui_fonts_test")

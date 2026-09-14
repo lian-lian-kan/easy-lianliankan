@@ -39,13 +39,6 @@ class StubAudio:
 	func play_select():
 		events.append("select")
 
-class StubTimer:
-	var wait_time := 1.0
-	var one_shot := false
-	var started := 0
-	func connect(_sig, _obj, _method):
-		pass
-
 class FakeTimerGame extends Node:
 	const STATUS_PLAYING = "playing"
 	const STATUS_CLEARED = "cleared"
