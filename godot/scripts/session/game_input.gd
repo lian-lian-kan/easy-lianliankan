@@ -85,9 +85,12 @@ static func _dispatch_armed_power_up(game, point) -> bool:
 	return false
 
 # First select and re-click deselect; true when the click was consumed here.
-static func _handle_selection_toggles(game, point) -> bool:
+# Memory mode additionally tracks the newly revealed face.
+static func _handle_selection_toggles(game, point, is_memory = false) -> bool:
 	if game.selected.x < 0:
 		game.selected = point
+		if is_memory:
+			game.memory_revealed[game._memory_key(point)] = true
 		game.hint_tiles.clear()
 		game.error_tiles.clear()
 		game.audio.play_select()
@@ -118,9 +121,18 @@ static func _reject_pair(game, previous, point, message, duration):
 	game._refresh_board_visuals()
 
 # A real match: score, path preview, effects, damage and post-board resolve.
+# Campaign and memory matches share one core — the mode gates below are all
+# campaign mechanics (special_mode is a single value, so they stay inert in
+# memory sessions), and the memory entry only adds face-up bookkeeping.
 static func _execute_pair_match(game, path, previous, point):
-	var a = previous
-	var b = point
+	_execute_match_core(game, path, previous, point)
+
+static func _execute_memory_match(game, path, previous, point):
+	game.memory_revealed.erase(game._memory_key(previous))
+	game.memory_revealed.erase(game._memory_key(point))
+	_execute_match_core(game, path, previous, point)
+
+static func _execute_match_core(game, path, a, b):
 	game.selected = Vector2(-1, -1)
 	game.hint_tiles.clear()
 	game.error_tiles.clear()
@@ -154,10 +166,11 @@ static func _execute_pair_match(game, path, previous, point):
 	game._refresh_ui()
 	game._refresh_board_visuals()
 	game._resolve_after_board_changed()
+
 static func _on_memory_tile_pressed(game, point, r, c):
 	if game.memory_previewing or game.memory_lock:
 		return
-	if _handle_memory_toggles(game, point, r, c):
+	if _handle_selection_toggles(game, point, true):
 		return
 	game.moves += 1
 	var previous = game.selected
@@ -171,23 +184,6 @@ static func _on_memory_tile_pressed(game, point, r, c):
 		_memory_path_blocked(game, previous, point)
 		return
 	_execute_memory_match(game, path, previous, point)
-
-# First select and re-click deselect in memory mode (face-up tracking).
-static func _handle_memory_toggles(game, point, r, c) -> bool:
-	if game.selected.x < 0:
-		game.selected = point
-		game.memory_revealed[game._memory_key(point)] = true
-		game.hint_tiles.clear()
-		game.error_tiles.clear()
-		game.audio.play_select()
-		game._animate_select(point)
-		game._refresh_board_visuals()
-		return true
-	if game.selected == point:
-		game.selected = Vector2(-1, -1)
-		game._refresh_board_visuals()
-		return true
-	return false
 
 # Pattern mismatch: reveal both faces briefly so the player learns positions.
 static func _reject_memory_pair(game, previous, point):
@@ -212,31 +208,6 @@ static func _memory_path_blocked(game, previous, point):
 	game._show_message("路径不通：最多只能拐2次弯", 0.9)
 	game._refresh_board_visuals()
 
-# A real memory match: score, effects, damage and post-board resolve.
-static func _execute_memory_match(game, path, previous, point):
-	var a = previous
-	var b = point
-	game.selected = Vector2(-1, -1)
-	game.hint_tiles.clear()
-	game.error_tiles.clear()
-	game.memory_revealed.erase(game._memory_key(a))
-	game.memory_revealed.erase(game._memory_key(b))
-
-	game.audio.play_eliminate_combo(game.combo)
-	var score_result = game._apply_combo_gain(int(game.tuning.get("base_score", 10)))
-	game._show_path(path, "eliminate", int(game.tuning.get("path_preview_ms", 420)))
-	game._play_eliminate_effects([a, b])
-
-	var pair_patterns = [int(game.board[a.x][a.y]), int(game.board[b.x][b.y])]
-	game._apply_match_damage(a, b)
-	game.BOARD_MECHANICS.defuse_pair(game, a, b)
-	game._on_collect_pair_progress(pair_patterns)
-	game._consume_move()
-	_refresh_target_pair(game)
-
-	game._refresh_ui()
-	game._refresh_board_visuals()
-	game._resolve_after_board_changed()
 # Keyboard map: scancode -> action spec. "playing" gates on STATUS_PLAYING,
 # "arg" passes one argument; anything else is called bare. Escape (fullscreen
 # exit) keeps its own branch because it only consumes when fullscreen is on.

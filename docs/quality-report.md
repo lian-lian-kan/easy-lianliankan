@@ -54,6 +54,13 @@
 - **revive 抽取**：session 576→529（+revive 77，老公救援/时钟步数消耗/付费复活守卫独立；
   session_fail_test 经薄壳全量复核 + revive_test 直测）。
 
+- **game_input 去重 + 专属单测**：427→398——普通/记忆两套同构的选择切换合并为一个
+  （is_memory 门控翻开记账）；消除核心抽取 `_execute_match_core`（duel/slide/defense
+  钩子共用，special_mode 单值语义保证记忆会话下必然惰性）。game_input_test 62 项直测：
+  点击门禁/选择切换/拒绝路径（普规/sum10/金光/路径不通/对决换手）/消除核心与三模式钩子/
+  记忆四态（翻开·预览锁·不一致双翻·路径阻塞保持选中）/hint·auto·shuffle·reset·jump·pause/
+  键盘路由（含 playing 门禁与未映射键忽略）。CI 清单 34→35 项。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。
