@@ -21,7 +21,9 @@ _local = threading.local()
 def init_pool():
     global _pool
     if _pool is None:
-        _pool = psycopg2.pool.SimpleConnectionPool(
+        # Threaded variant is mandatory here: sync endpoints run on a shared
+        # thread pool (THREAD_CAPACITY=100), so getconn/putconn race.
+        _pool = psycopg2.pool.ThreadedConnectionPool(
             config.pool_min(),
             config.pool_max(),
             dsn=config.database_url(),

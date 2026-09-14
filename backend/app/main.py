@@ -12,9 +12,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from .core import config, db, migrations, redis_client
+from .core.maintenance import EVENTS_RETENTION_DAYS, prune_events
 from .dependencies import new_request_id
 from .routers import auth, engagement, progress, records, users
 from .core.mode_seed import MODES
@@ -33,11 +35,18 @@ async def lifespan(_app: FastAPI):
     db.init_pool()
     migrations.apply_all()
     records_service.seed_modes(MODES)
+    removed = await anyio.to_thread.run_sync(
+        lambda: prune_events(EVENTS_RETENTION_DAYS))
+    logger.info('{"event":"events_pruned","removed":%d}', removed)
     yield
     db.close_pool()
 
 
 app = FastAPI(title="sophia-lianliankan-backend", version="2.1", lifespan=lifespan)
+
+# Progress blobs are multi-KB JSON and the players are on mobile data:
+# gzip cuts those responses ~5-10x for one pass of CPU per response.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 # The H5 page on GitHub Pages calls this API cross-origin; PUT/POST trigger a
 # browser preflight that must be answered here, not by the routers.

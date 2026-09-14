@@ -1,5 +1,5 @@
 """Achievements, weekly missions, wallet ledger and sign-ins — business rules."""
-from ..core import config, db
+from ..core import config, db, redis_client
 from ..repositories import engagement_repo
 
 TEXT_ID_MAX = 64
@@ -32,8 +32,32 @@ def list_missions(user_id: str, week_key: int) -> list:
 
 # ── wallet ──
 
+BALANCE_TTL_SECONDS = 300
+
+
+def _balance_key(user_id: str) -> str:
+    return f"bal:{user_id}"
+
+
 def wallet_balance(user_id: str) -> int:
-    return engagement_repo.ledger_balance(user_id)
+    """Balance is a SUM over the append-only ledger — cache it so wallet
+    reads never aggregate a growing ledger. Writes invalidate (see append),
+    TTL bounds staleness if an invalidation is ever lost."""
+    client = redis_client.get_client()
+    if client is not None:
+        try:
+            raw = client.get(_balance_key(user_id))
+            if raw is not None:
+                return int(raw)
+        except Exception:
+            pass
+    balance = engagement_repo.ledger_balance(user_id)
+    if client is not None:
+        try:
+            client.setex(_balance_key(user_id), BALANCE_TTL_SECONDS, balance)
+        except Exception:
+            pass
+    return balance
 
 
 def wallet_append(user_id: str, delta: int, reason: str) -> dict:
@@ -44,6 +68,12 @@ def wallet_append(user_id: str, delta: int, reason: str) -> dict:
     with db.transaction():
         engagement_repo.append_ledger(user_id, delta, reason[:REASON_MAX])
         balance = engagement_repo.ledger_balance(user_id)
+    try:
+        client = redis_client.get_client()
+        if client is not None:
+            client.setex(_balance_key(user_id), BALANCE_TTL_SECONDS, balance)
+    except Exception:
+        pass
     return {"balance": balance}
 
 

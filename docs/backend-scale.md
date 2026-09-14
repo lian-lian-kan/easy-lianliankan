@@ -98,6 +98,32 @@ TOTAL         ok=5997 fail=0  rps=94.1  error_rate=0.00%
 墙——脚本被迫串行注册并退避，这是服务器在正确工作；压测实例用
 `REGISTER_RATE_LIMIT=1000` 放宽注册桶，业务桶保持生产值。
 
+## 6.5 数据库存储与查询性能（tools/db_bench.py 实证）
+
+**规模**：5000 用户 / 2500 token / 25,000 mode_records / 195,000 score_events /
+250,000 ledger 行（docker PG16，冷启动灌数后首轮 EXPLAIN ANALYZE）：
+
+```
+token_lookup         0.08 ms   leaderboard_top        0.18 ms
+leaderboard_my_rank  0.12 ms   events_window_top      0.10 ms
+events_last_score    0.14 ms   wallet_balance_sum     0.20 ms
+wallet_entries       0.04 ms                    → 全部索引命中，无大表 Seq Scan
+```
+
+存储与查询治理项（2026-09-15 落地）：
+
+| 项 | 决策 | 理由 |
+| --- | --- | --- |
+| 连接池 | SimpleConnectionPool → **ThreadedConnectionPool** | 100 线程并发 getconn/putconn，Simple 无锁有竞态——正确性修复 |
+| 钱包余额 | `SUM()` 全流水聚合 → **Redis 缓存（TTL 300s，append 以事务内精确值回写）** | 账本只增不减，不缓存则每次读余额线性变慢 |
+| events 存储 | 90 天保留，**进程启动时 prune**（幂等 DELETE，双副本并发安全） | 周期榜只回看 7 天；账本(ledger)是账目记录永不删 |
+| 响应带宽 | GZipMiddleware（≥1KB 才压） | progress blob 多 KB JSON，移动端带宽压缩 5~10x |
+| 索引 | 现状已够（ledger (user_id,entry_id DESC)、events (mode_id,created_at,score) 与 (user_id,mode_id,created_at)） | db_bench 每条热查询 EXPLAIN 实证 |
+
+**防假绿**：db_bench 先校验数据量——残留测试数据（几十个用户）不足以代表目标规模，
+不足即 TRUNCATE 重灌；guard 阈值 BIG_TABLE_ROWS=10000（auth_tokens 在 2500 行时
+planner 选 Seq Scan 是正确决策，表涨到万行级自动切索引，不算失败）。
+
 ## 7. 部署清单
 
 - migration 006（score_events）先于新镜像上线（runner 自带顺序保证）。

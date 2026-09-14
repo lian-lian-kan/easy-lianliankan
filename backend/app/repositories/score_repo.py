@@ -80,5 +80,23 @@ def user_window_rank(user_id: str, mode_id: str, since_ms: int):
     return int(row["rank"]) if row else None
 
 
+def prune_expired(retention_days: int) -> int:
+    """Delete events past the retention window; periodic boards only ever
+    look back days, so 90 days is generous. Idempotent, safe to run from
+    both replicas on startup."""
+    row = db.query_one(
+        """
+        WITH gone AS (
+            DELETE FROM mode_score_events
+            WHERE created_at < now() - (%s * INTERVAL '1 day')
+            RETURNING 1
+        )
+        SELECT COUNT(*) AS removed FROM gone
+        """,
+        (retention_days,),
+    )
+    return int(row["removed"]) if row else 0
+
+
 def now_ms() -> int:
     return int(time.time() * 1000)
