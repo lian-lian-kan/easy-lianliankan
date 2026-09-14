@@ -101,6 +101,12 @@
   全部为逐行原样搬移，add_child 顺序不变，行为等价由 panels_probe/page_probe/startup_probe
   场景探针回归保证。**shell_audit 规模棘轮自 Round CJ 引入以来首次 0 WARN。**
 
+- **Round 10 纯逻辑域补测收官**：hud_layout_test 12 项直测 `_viewport_flags` 屏幕适配
+  判定（手机竖/横屏、平板、桌面、860/460 两个含等号边界、flags 完整性）；content_decks_test
+  20 项直测 cheers/voice_lines 牌堆——cheers 五档 tier 归属与封顶、同档整圈无重复、
+  耗尽重洗、on_combo 门槛/加成文本/里程碑一次支付（combo 12 跨 5/8/12 三里程碑逐笔核对）、
+  语音池数据不变量（非空 res:// ogg）、未知键静默、耗尽重洗。CI 清单 38→40 项。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。
