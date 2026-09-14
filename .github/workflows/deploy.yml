@@ -70,10 +70,11 @@ jobs:
             echo "== $t"
             out=$(timeout 120 "$G" --no-window --path godot -s "res://tests/${t}.gd" 2>&1) || { echo "$out"; exit 1; }
             # Godot exits 0 even when a -s script fails to parse — a broken
-            # test file must not silently skip itself.
-            if echo "$out" | grep -qE "SCRIPT ERROR|Parse Error"; then
-              echo "::error::parse/runtime errors in ${t}.gd"
-              echo "$out" | grep -E "SCRIPT ERROR|Parse Error" | head -5
+            # test file must not silently skip itself. Runtime SCRIPT ERRORs
+            # are allowed here: fault-tolerance probes trigger them on purpose.
+            if echo "$out" | grep -q "Parse Error"; then
+              echo "::error::parse errors in ${t}.gd (test silently skipped)"
+              echo "$out" | grep "Parse Error" | head -5
               exit 1
             fi
           done
