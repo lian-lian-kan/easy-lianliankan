@@ -27,6 +27,7 @@ const BOARD_VIEW = preload("res://scripts/board/board_view.gd")
 const POWERUPS = preload("res://scripts/session/powerups.gd")
 const UI_HUD = preload("res://scripts/ui/ui_hud.gd")
 const UI_FONTS = preload("res://scripts/ui/ui_fonts.gd")
+const UI_STYLE = preload("res://scripts/ui/ui_style.gd")
 const HUD_TIMERS = preload("res://scripts/session/hud_timers.gd")
 const HUD_LAYOUT = preload("res://scripts/ui/hud_layout.gd")
 const PAGE_ROUTER = preload("res://scripts/pages/page_router.gd")
@@ -759,13 +760,13 @@ func _on_icon_set_selected(index):
 	return UI_PANELS._on_icon_set_selected(self, index)
 
 func _apply_glass_style(panel, bg_color, alpha):
-	return UI_PANELS._apply_glass_style(self, panel, bg_color, alpha)
+	return UI_STYLE.apply_glass_style(panel, bg_color, alpha)
 
 func _apply_button_style(button, bg_color, border_color):
-	return UI_PANELS._apply_button_style(self, button, bg_color, border_color)
+	return UI_STYLE.apply_button_style(button, bg_color, border_color)
 
 func _style_dialog_buttons(node):
-	return UI_PANELS._style_dialog_buttons(self, node)
+	return UI_STYLE.style_dialog_buttons(node)
 
 func _show_onboarding_if_needed():
 	if progression_state.get(ONBOARDING_SEEN_KEY, false):
