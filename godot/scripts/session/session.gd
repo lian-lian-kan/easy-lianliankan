@@ -95,25 +95,40 @@ static func _reset_board_session(game, level):
 	game.board_lower = []
 	game.board_chain = []
 	game.board_bomb = {}
-	if game._is_rock_mode():
-		game.BOARD_MECHANICS.build_rocks(game, level)
-	if game._is_defuse_mode():
-		game.BOARD_MECHANICS.build_bombs(game, level)
+	_init_mode_boards(game, level)
 	game.target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
 	game.shift_countdown = int(level.get("shift_interval", 0))
 	game.defense_distance = int(level.get("defense_start", 0))
 	game.defense_countdown = int(level.get("defense_step", 0))
 	game.duel_scores = [0, 0]
 	game.duel_current = 0
-	if game._is_sum_mode():
-		game.BOARD_ENGINE.apply_sum10_faces(game.board)
+	game._fog_layers = 0
 	if game._is_target_mode():
 		_pick_target_pair(game)
-	game._fog_layers = 0
+	_reset_interaction_state(game)
+
+	for child in game.effect_layer.get_children():
+		child.queue_free()
+
+
+# Board-shape mechanics for special sessions: obstacles, face transforms and
+# stacked layers. Modes are mutually exclusive (special_mode is one value),
+# so each block only ever fires for its own session.
+static func _init_mode_boards(game, level):
+	if game._is_rock_mode():
+		game.BOARD_MECHANICS.build_rocks(game, level)
+	if game._is_defuse_mode():
+		game.BOARD_MECHANICS.build_bombs(game, level)
+	if game._is_sum_mode():
+		game.BOARD_ENGINE.apply_sum10_faces(game.board)
 	if game._is_stack_mode():
 		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
 	if game._is_chain_mode():
 		game._build_chain_locks(float(level.get("chain_ratio", 0.22)))
+
+
+# Interaction scratch state: nothing armed, no stale highlights or paths.
+static func _reset_interaction_state(game):
 	game.frost_pending = false
 	game.frost_uses = 0
 	game.bomb_pending = false
@@ -122,9 +137,6 @@ static func _reset_board_session(game, level):
 	game.hint_tiles.clear()
 	game.error_tiles.clear()
 	game.path_overlay.clear_path()
-
-	for child in game.effect_layer.get_children():
-		child.queue_free()
 
 
 
@@ -383,19 +395,9 @@ static func _apply_combo_gain(game, base_score):
 		if game.combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
 			gain = int(round(gain * float(attack_cfg.get("fever_multiplier", 1.5))))
 			game._show_message("🔥 Fever x" + str(game.combo), 0.8)
-		var refund = int(attack_cfg.get("time_bonus_per_match", 3))
-		if game.combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
-			refund += int(attack_cfg.get("combo_time_bonus", 1))
-		game.time_left = min(999, game.time_left + refund)
+		_refund_attack_time(game, attack_cfg)
 
-	game.total_score += gain
-	game.level_score += gain
-	game._patch_progress_state({
-		"score_candidate": game.total_score,
-		"combo_candidate": game.combo
-	})
-	game._mission_pair_cleared()
-	game._mission_combo_reached(game.combo)
+	_register_combo_score(game, gain)
 	var cheer = game._combo_cheer(gain)
 	if cheer != "":
 		game._show_combo_burst(cheer)
@@ -404,6 +406,27 @@ static func _apply_combo_gain(game, base_score):
 		"combo": game.combo,
 		"gain": gain
 	}
+
+
+# Attack modes refund clock per match; hot combos add the bonus refund.
+static func _refund_attack_time(game, attack_cfg):
+	var refund = int(attack_cfg.get("time_bonus_per_match", 3))
+	if game.combo >= int(attack_cfg.get("fever_mode_threshold", 5)):
+		refund += int(attack_cfg.get("combo_time_bonus", 1))
+	game.time_left = min(999, game.time_left + refund)
+
+
+# Book the gain everywhere it matters: session totals, cloud-save candidates,
+# and the weekly-mission counters that watch score and combo.
+static func _register_combo_score(game, gain):
+	game.total_score += gain
+	game.level_score += gain
+	game._patch_progress_state({
+		"score_candidate": game.total_score,
+		"combo_candidate": game.combo
+	})
+	game._mission_pair_cleared()
+	game._mission_combo_reached(game.combo)
 
 
 static func _on_time_up(game):

@@ -36,35 +36,7 @@ static func _start_special_mode(game, mode_id):
 		game._show_message(game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(mode_id, config), 1.8)
 		return
 	# Build the virtual level first; only touch session state once it exists.
-	var level
-	if mode_id == "daily":
-		var today = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
-		seed(game.SPECIAL_MODES_SCRIPT.seed_for_day(today))
-		level = game.SPECIAL_MODES_SCRIPT.build_daily_level(today)
-	elif mode_id == "time_attack":
-		level = game.SPECIAL_MODES_SCRIPT.build_time_attack_level(config)
-	elif mode_id == "memory":
-		var tier = game.SPECIAL_MODES_SCRIPT.memory_tier(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
-		level = game.SPECIAL_MODES_SCRIPT.build_memory_level(config, tier)
-	elif mode_id == "frost":
-		var tier = game.SPECIAL_MODES_SCRIPT.frost_tier(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
-		level = game.SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
-	elif mode_id == "tray":
-		level = game.SPECIAL_MODES_SCRIPT.build_tray_level(config)
-	elif mode_id == "collect":
-		level = game.SPECIAL_MODES_SCRIPT.build_collect_level(config)
-	elif mode_id == "flip":
-		level = game.SPECIAL_MODES_SCRIPT.build_memory_flip_level(config)
-	elif mode_id == "rock":
-		var rock_level = game.SPECIAL_MODES_SCRIPT.build_rock_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
-		level = rock_level
-	elif mode_id == "defuse":
-		var defuse_level = game.SPECIAL_MODES_SCRIPT.build_defuse_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
-		level = defuse_level
-	elif mode_id in CLASSIC_STYLE_MODES:
-		level = game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
-	else:
-		level = game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
+	var level = _build_special_level(game, mode_id, config)
 	game.special_mode = mode_id
 	game.endless_round = 1
 	game.special_level = level
@@ -74,6 +46,36 @@ static func _start_special_mode(game, mode_id):
 		game._show_message("盲盒模式！记住 %d 秒预览，然后凭记忆配对" % int(ceil(float(level.get("memory_preview", 5.0)))), 2.0)
 	else:
 		game._show_message(game.SPECIAL_MODES_SCRIPT.intro_text(mode_id), 1.8)
+
+# One explicit branch per virtual-level builder — signatures differ (tiers,
+# seeds, unlock floors), so a table would hide more than it saves. Unknown
+# modes fall back to endless.
+static func _build_special_level(game, mode_id, config):
+	if mode_id == "daily":
+		var today = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+		seed(game.SPECIAL_MODES_SCRIPT.seed_for_day(today))
+		return game.SPECIAL_MODES_SCRIPT.build_daily_level(today)
+	if mode_id == "time_attack":
+		return game.SPECIAL_MODES_SCRIPT.build_time_attack_level(config)
+	if mode_id == "memory":
+		var tier = game.SPECIAL_MODES_SCRIPT.memory_tier(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		return game.SPECIAL_MODES_SCRIPT.build_memory_level(config, tier)
+	if mode_id == "frost":
+		var tier = game.SPECIAL_MODES_SCRIPT.frost_tier(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+		return game.SPECIAL_MODES_SCRIPT.build_frost_level(config, tier)
+	if mode_id == "tray":
+		return game.SPECIAL_MODES_SCRIPT.build_tray_level(config)
+	if mode_id == "collect":
+		return game.SPECIAL_MODES_SCRIPT.build_collect_level(config)
+	if mode_id == "flip":
+		return game.SPECIAL_MODES_SCRIPT.build_memory_flip_level(config)
+	if mode_id == "rock":
+		return game.SPECIAL_MODES_SCRIPT.build_rock_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+	if mode_id == "defuse":
+		return game.SPECIAL_MODES_SCRIPT.build_defuse_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+	if mode_id in CLASSIC_STYLE_MODES:
+		return game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
+	return game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
 
 static func _exit_special_mode(game):
 	game._start_level(game.level_index, false)

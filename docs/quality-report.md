@@ -76,6 +76,16 @@
   等价（刻意保持不比 level_best_times 的原行为）。progression_test 增加表驱动增长守卫
   （24 键声明数/默认存档齐全/单键变更可被 same_progress 察觉）。
 
+- **Round 7 棘轮清偿三函数**：session `_reset_board_session` 42 行拆出
+  `_init_mode_boards`（棋盘形态机制：rock/defuse/sum/stack/chain，模式互斥保证重排
+  等价）与 `_reset_interaction_state`（武装/高亮/路径草稿态）；session `_apply_combo_gain`
+  39 行拆出 `_refund_attack_time`（限时/狂热返时钟）与 `_register_combo_score`（总分/
+  云存档候选/周任务记账）；special_session `_start_special_mode` 42 行把逐模式
+  虚拟关卡分派抽为 `_build_special_level`（每 builder 签名不同，保持显式分支并注明
+  未知模式回落 endless）。**special_session_test 8 项首个会话域直测**：解锁门拒绝/
+  classic 启动交接/daily 种子路径/memory 层级与专属开场白/rock 障碍/未知模式回落/
+  time_attack 分派产出。CI 清单 36→37 项，WARN 棘轮 15→12。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。
