@@ -47,6 +47,15 @@ class FakeGame extends Reference:
 	var level_select_label = null
 	var combo_progress_bar = null
 	var power_ups_container = null
+	var controls_flow_container = null
+	var hint_button = null
+	var auto_button = null
+	var shuffle_button = null
+	var reset_button = null
+	var pause_button = null
+	var modes_button = null
+	var settings_button = null
+	var jump_level_label = null
 	var power_up_labels = {}
 	var stat_values = {}
 	func get_viewport_rect():
@@ -145,9 +154,9 @@ func _init() -> void:
 		"portrait keeps the essential card")
 	check(phone.board_wrapper.rect_min_size == Vector2(0, 200.0),
 		"portrait board keeps the container-ruled minimum height")
-	check(phone.margin_container.get_constant_override("margin_left") == 0,
+	check(phone.margin_container.get_constant("margin_left") == 0,
 		"portrait margins collapse to zero")
-	check(phone.margin_container.get_constant_override("margin_bottom") == 10,
+	check(phone.margin_container.get_constant("margin_bottom") == 10,
 		"portrait reserves only a thin board cushion above the nav")
 	check(phone.deferred_calls == 1, "tile sizing is deferred once per pass")
 
@@ -161,9 +170,9 @@ func _init() -> void:
 		"desktop shows every stat card")
 	check(desktop_case.board_wrapper.rect_min_size == Vector2(0, 1080.0 * 0.52),
 		"desktop sizes the board from the viewport ratio")
-	check(desktop_case.board_grid.get_constant_override("h_separation") == 10,
+	check(desktop_case.board_grid.get_constant("h_separation") == 10,
 		"desktop separation is roomy")
-	check(desktop_case.margin_container.get_constant_override("margin_left") == 16,
+	check(desktop_case.margin_container.get_constant("margin_left") == 16,
 		"desktop margins are the widest")
 
 	# --- idempotent round-trip: portrait -> desktop -> portrait
