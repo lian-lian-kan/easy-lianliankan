@@ -41,6 +41,7 @@ func _init() -> void:
 
 	# --- style_dialog_buttons: rose palette, recursive through children
 	var dialog = PanelContainer.new()
+	var panel_before = dialog.get_stylebox("panel")
 	var inner = Button.new()
 	var nested = PanelContainer.new()
 	var deep_button = Button.new()
@@ -53,7 +54,7 @@ func _init() -> void:
 	check(deep_button.get_color("font_color") == Color("ffffff"), "nested buttons are styled recursively")
 
 	# --- non-button containers are traversed without being repainted
-	check(dialog.get_stylebox("panel") == null, "containers keep their own styleboxes")
+	check(dialog.get_stylebox("panel") == panel_before, "containers keep their own styleboxes")
 
 	for node in [panel, button, dialog]:
 		node.free()

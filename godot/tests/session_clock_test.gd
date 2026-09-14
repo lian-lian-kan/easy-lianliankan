@@ -36,7 +36,6 @@ class StubTimer:
 class FakeGame extends Reference:
 	const STATUS_PLAYING = "playing"
 	const STATUS_FAILED = "failed"
-	const GAME_INPUT = preload("res://scripts/session/game_input.gd")
 	const CHEERS = preload("res://scripts/content/cheers.gd")
 	var audio = StubAudio.new()
 	var husband_called = false
