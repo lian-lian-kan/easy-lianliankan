@@ -67,6 +67,7 @@ class FakeGame extends Reference:
 	const STATUS_PAUSED = "paused"
 	const STATUS_COMPLETED = "completed"
 	const STATUS_FAILED = "failed"
+	const GAME_INPUT = preload("res://scripts/session/game_input.gd")
 	var audio = StubAudio.new()
 	var BOARD_MECHANICS = StubMechanics.new()
 	var BOARD_ENGINE = StubEngine.new()
@@ -96,6 +97,7 @@ class FakeGame extends Reference:
 	var level_index = 1
 	var level_hints_used = 0
 	var level_auto_used = 0
+	var progression_state = {}
 	var unlocked_levels = [0, 1, 2]
 	var selected_level_option = 1
 	var level_select_option = StubOption.new()
@@ -152,6 +154,16 @@ class FakeGame extends Reference:
 		return int(selected_level_option)
 	func _memory_key(coord):
 		return "%d_%d" % [int(coord.x), int(coord.y)]
+	func _find_any_hint(_board):
+		return hint
+	# Keyboard routes through the game's own thin shells, exactly like the
+	# real composition root — the fakes delegate back into GAME_INPUT.
+	func _on_pause_pressed():
+		GAME_INPUT._on_pause_pressed(self)
+	func _on_hint_pressed():
+		GAME_INPUT._on_hint_pressed(self)
+	func _on_shuffle_pressed():
+		GAME_INPUT._on_shuffle_pressed(self)
 	func _show_message(msg, _dur):
 		messages.append(msg)
 	func _show_path(path, _kind, _ms):
@@ -294,7 +306,7 @@ func _init() -> void:
 	game = FakeGame.new()
 	game.path_blocked = true
 	GAME_INPUT._on_tile_pressed(game, tile_button(0, 0))
-	GAME_INPUT._on_tile_pressed(game, tile_button(0, 1))
+	GAME_INPUT._on_tile_pressed(game, tile_button(1, 1))
 	check(game.messages[0].find("路径不通") != -1, "a blocked path is explained")
 
 	# --- a real match runs the shared core
