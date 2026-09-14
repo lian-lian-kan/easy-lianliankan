@@ -39,8 +39,8 @@ async def _register(client: httpx.AsyncClient, base: str, idx: int,
     async with register_lock:
         nickname = f"load-{idx % 50}-{random.randint(100000, 999999)}"
         for attempt in range(200):
-            r = await client.post(f"{base}/api/v1/users/register",
-                                  json={"nickname": nickname})
+            r = await _send(client, "POST", f"{base}/api/v1/users/register",
+                            json={"nickname": nickname})
             if r.status_code == 429:
                 await asyncio.sleep(min(30, 1 + attempt * 0.5) + random.random())
                 continue

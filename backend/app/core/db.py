@@ -15,11 +15,12 @@ import psycopg2.pool
 from . import config
 
 _pool = None
+_slots = None
 _local = threading.local()
 
 
 def init_pool():
-    global _pool
+    global _pool, _slots
     if _pool is None:
         # Threaded variant is mandatory here: sync endpoints run on a shared
         # thread pool (THREAD_CAPACITY=100), so getconn/putconn race.
@@ -28,13 +29,33 @@ def init_pool():
             config.pool_max(),
             dsn=config.database_url(),
         )
+        # psycopg2 pools raise PoolError the moment maxconn connections are
+        # checked out — with THREAD_CAPACITY above pool_max that turns any
+        # burst into 500s. The semaphore makes excess threads block until a
+        # connection is returned instead, so the pool can never overflow.
+        _slots = threading.BoundedSemaphore(config.pool_max())
 
 
 def close_pool():
-    global _pool
+    global _pool, _slots
     if _pool is not None:
         _pool.closeall()
         _pool = None
+    _slots = None
+
+
+@contextmanager
+def _checkout():
+    """Block for a pool slot, then hand out a connection for the with-block."""
+    _slots.acquire()
+    conn = None
+    try:
+        conn = _pool.getconn()
+        yield conn
+    finally:
+        if conn is not None:
+            _pool.putconn(conn)
+        _slots.release()
 
 
 def ping() -> bool:
@@ -53,39 +74,39 @@ def transaction():
     if getattr(_local, "conn", None) is not None:
         yield _local.conn
         return
-    conn = _pool.getconn()
-    _local.conn = conn
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        _local.conn = None
-        _pool.putconn(conn)
+    with _checkout() as conn:
+        _local.conn = conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            _local.conn = None
 
 
 def _run(sql, params, fetch):
     conn = getattr(_local, "conn", None)
-    owned = conn is None
-    if owned:
-        conn = _pool.getconn()
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(sql, params)
-            if fetch == "one":
-                result = cur.fetchone()
-            elif fetch == "all":
-                result = cur.fetchall()
-            else:
-                result = cur.rowcount > 0
-        if owned:
-            conn.commit()
-        return result
-    finally:
-        if owned:
-            _pool.putconn(conn)
+    if conn is not None:
+        # Inside an open transaction(): reuse its connection, no own slot.
+        return _execute(conn, sql, params, fetch, commit=False)
+    with _checkout() as conn:
+        return _execute(conn, sql, params, fetch, commit=True)
+
+
+def _execute(conn, sql, params, fetch, commit):
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+        cur.execute(sql, params)
+        if fetch == "one":
+            result = cur.fetchone()
+        elif fetch == "all":
+            result = cur.fetchall()
+        else:
+            result = cur.rowcount > 0
+    if commit:
+        conn.commit()
+    return result
 
 
 def query_one(sql: str, params=()):
