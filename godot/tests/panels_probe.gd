@@ -43,6 +43,37 @@ func _init() -> void:
 		"stats and achievements entries live in the settings panel")
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
+	# modal panels: declared sizes, shared 24px padded shell, hidden at boot
+	check(not game.settings_panel.visible and not game.achievements_panel.visible
+		and not game.modes_panel.visible, "the three modal panels start hidden")
+	check(game.settings_panel.rect_min_size == Vector2(360, 320)
+		and game.achievements_panel.rect_min_size == Vector2(400, 480)
+		and game.modes_panel.rect_min_size == Vector2(340, 640),
+		"modal panels keep their declared minimum sizes")
+	var shell_padded := false
+	var panel_stack := [game.settings_panel, game.achievements_panel, game.modes_panel]
+	while not panel_stack.empty():
+		var node = panel_stack.pop_back()
+		for child in node.get_children():
+			panel_stack.push_back(child)
+			if node is MarginContainer and node.get_constant_override("margin_left") == 24:
+				shell_padded = true
+	check(shell_padded, "the shared modal shell pads its content by 24px")
+
+	# modal lifecycle: open through the toolbar entries, close through the panels
+	game._on_settings_pressed()
+	check(game.settings_panel.visible, "settings opens from the toolbar entry")
+	game._on_settings_close()
+	check(not game.settings_panel.visible, "settings closes through its close handler")
+	game._on_achievements_pressed()
+	check(game.achievements_panel.visible, "achievements opens from the toolbar entry")
+	game._on_achievements_close()
+	check(not game.achievements_panel.visible, "achievements closes through its close handler")
+	game._on_modes_pressed()
+	check(game.modes_panel.visible, "modes opens from the toolbar entry")
+	game._on_modes_close_pressed()
+	check(not game.modes_panel.visible, "modes closes through its close handler")
+
 	# board_view: board built and the refresh pipeline is idempotent
 	check(game.board.size() > 0 && game.cell_buttons.size() == game.board.size(), "board and cell buttons built")
 	var found_value = 0
