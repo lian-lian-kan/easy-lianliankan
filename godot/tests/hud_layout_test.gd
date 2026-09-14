@@ -75,8 +75,6 @@ func make_controls():
 		game.stat_values[entry[0]] = {"card": card, "title": title, "value": value}
 	return game
 
-func _init() -> void:
-	print("== hud_layout_test")
 
 func flags(size: Vector2) -> Dictionary:
 	return HUD_LAYOUT._viewport_flags(FakeGame.new(), size)

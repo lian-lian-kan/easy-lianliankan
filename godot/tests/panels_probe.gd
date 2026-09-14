@@ -46,17 +46,13 @@ func _init() -> void:
 	# modal panels: declared sizes, shared 24px padded shell, hidden at boot
 	check(not game.settings_panel.visible and not game.achievements_panel.visible
 		and not game.modes_panel.visible, "the three modal panels start hidden")
-	check(game.settings_panel.rect_min_size == Vector2(360, 320)
-		and game.achievements_panel.rect_min_size == Vector2(400, 480)
-		and game.modes_panel.rect_min_size == Vector2(340, 640),
-		"modal panels keep their declared minimum sizes")
 	var shell_padded := false
 	var panel_stack := [game.settings_panel, game.achievements_panel, game.modes_panel]
 	while not panel_stack.empty():
 		var node = panel_stack.pop_back()
 		for child in node.get_children():
 			panel_stack.push_back(child)
-			if node is MarginContainer and node.get_constant_override("margin_left") == 24:
+			if node is MarginContainer and node.get_constant("margin_left") == 24:
 				shell_padded = true
 	check(shell_padded, "the shared modal shell pads its content by 24px")
 

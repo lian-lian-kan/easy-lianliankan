@@ -63,9 +63,19 @@ jobs:
           for t in godot/tests/*.gd; do
             grep -q "quit(" "$t" || { echo "missing quit(): $t"; exit 1; }
           done
+          # Godot exits 0 even when a -s script fails to parse, so a broken
+          # test file would silently skip itself. Every test run is scanned
+          # for parse/runtime errors below.
           for t in board_engine_test board_pathfinder_test board_logic_test game_config_test progression_test achievements_test missions_test tile_match_test memory_flip_test progress_store_test server_sync_test economy_test content_sanity_test session_combo_test session_settle_test session_fail_test session_clock_test powerup_loadout_test ui_style_test revive_test game_input_test powerups_test special_session_test fx_layer_test hud_layout_test content_decks_test hud_timers_test ui_fonts_test page_router_test path_overlay_input_passthrough_test special_modes_test power_ups_probe frost_probe variants_probe mechanics_probe campaign_levels_test mode_meta_test stat_probe panels_probe page_probe tray_probe flip_probe startup_probe; do
             echo "== $t"
-            timeout 120 "$G" --no-window --path godot -s "res://tests/${t}.gd"
+            out=$(timeout 120 "$G" --no-window --path godot -s "res://tests/${t}.gd" 2>&1) || { echo "$out"; exit 1; }
+            # Godot exits 0 even when a -s script fails to parse — a broken
+            # test file must not silently skip itself.
+            if echo "$out" | grep -qE "SCRIPT ERROR|Parse Error"; then
+              echo "::error::parse/runtime errors in ${t}.gd"
+              echo "$out" | grep -E "SCRIPT ERROR|Parse Error" | head -5
+              exit 1
+            fi
           done
           # Static consistency audit: thin shells, connect targets, orphan
           # shells, Godot 4 syntax leakage (pure text analysis, ~1s).
