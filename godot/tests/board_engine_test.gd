@@ -171,6 +171,13 @@ func _init() -> void:
 		for c in range(stack_board[r].size()):
 			both += int(stack_board[r][c] != 0) + int(lower[r][c] != 0)
 	check(both == 4, "burying preserves the tile count across both layers")
+	var lower_ok = true
+	for r in range(lower.size()):
+		for c in range(lower[r].size()):
+			var v = int(lower[r][c])
+			if v != 0 and not [1, 2, 3, 4].has(v):
+				lower_ok = false
+	check(lower_ok, "buried values come from the original board")
 	check(ENGINE.bury_stack_layer([], 1.0).size() == 0, "empty board yields empty lower layer")
 	var chain_grid = [
 		[1, 0, 2],

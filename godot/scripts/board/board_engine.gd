@@ -285,17 +285,8 @@ static func build_frost_armor_grid(board_state, ratio):
 	return armor
 
 static func build_chain_grid(board_state, ratio):
-	var grid = []
-	for r in range(board_state.size()):
-		var row = []
-		for c in range(board_state[r].size()):
-			row.append(0)
-		grid.append(row)
-	var filled = []
-	for r in range(board_state.size()):
-		for c in range(board_state[r].size()):
-			if int(board_state[r][c]) != 0:
-				filled.append(Vector2(r, c))
+	var grid = _blank_grid(board_state)
+	var filled = _filled_cells(board_state)
 	shuffle_array(filled)
 	var target = clamp(int(round(filled.size() * ratio)), 0, filled.size())
 	for i in range(target):
@@ -303,20 +294,30 @@ static func build_chain_grid(board_state, ratio):
 		grid[cell.x][cell.y] = 1
 	return grid
 
-static func bury_stack_layer(board_state, ratio):
-	# Buries a share of visible tiles into a lower layer: swaps each covered
-	# cell with a donor tile, clears the donor, returns the lower grid.
-	var lower = []
+# A zero grid shaped like board_state, and the list of its non-empty cells —
+# shared helpers for the mechanics that scatter values over the board.
+static func _blank_grid(board_state):
+	var grid = []
 	for r in range(board_state.size()):
 		var row = []
 		for c in range(board_state[r].size()):
 			row.append(0)
-		lower.append(row)
+		grid.append(row)
+	return grid
+
+static func _filled_cells(board_state):
 	var filled = []
 	for r in range(board_state.size()):
 		for c in range(board_state[r].size()):
 			if int(board_state[r][c]) != 0:
 				filled.append(Vector2(r, c))
+	return filled
+
+static func bury_stack_layer(board_state, ratio):
+	# Buries a share of visible tiles into a lower layer: swaps each covered
+	# cell with a donor tile, clears the donor, returns the lower grid.
+	var lower = _blank_grid(board_state)
+	var filled = _filled_cells(board_state)
 	shuffle_array(filled)
 	var target = clamp(int(round(filled.size() * ratio)), 0, int(filled.size() / 2))
 	var used = {}

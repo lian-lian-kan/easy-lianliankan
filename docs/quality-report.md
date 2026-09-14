@@ -86,6 +86,12 @@
   classic 启动交接/daily 种子路径/memory 层级与专属开场白/rock 障碍/未知模式回落/
   time_attack 分派产出。CI 清单 36→37 项，WARN 棘轮 15→12。
 
+- **Round 8**：fx_layer `_play_eliminate_effects` 45→20——连击→颜色/粒子数的 16 行
+  if/elif 档位链收敛为 `COMBO_TIERS` 常量表 + `_combo_visuals` 纯函数查表（fx_layer_test
+  13 项直测：五档边界/次档归属/intensity 双向缩放/封顶），星星 Label+补间构建抽
+  `_spawn_combo_star`；board_engine 抽 `_blank_grid`/`_filled_cells` 助手， bury_stack_layer
+  36→27 与 build_chain_grid 共用样板（WARN 12→10），board_engine_test 补埋层值域断言。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。

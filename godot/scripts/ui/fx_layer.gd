@@ -73,30 +73,34 @@ static func spawn_confetti(game, count):
 
 # --- Eliminate/combo effects (migrated from game.gd) ---
 
+# Combo-tier visuals: the first tier whose threshold the combo meets wins.
+# Below 3, the defaults (orange ring, white particles, baseline count) hold.
+# Colors stay strings here so the const stays a plain literal table.
+const COMBO_TIERS = [
+	{"min_combo": 10, "color": "ffd700", "particle_color": "ffd700", "particles": 30},
+	{"min_combo": 7, "color": "e64980", "particle_color": "e64980", "particles": 24},
+	{"min_combo": 5, "color": "e64980", "particle_color": "60a5fa", "particles": 18},
+	{"min_combo": 3, "color": "0ca678", "particle_color": "34d399", "particles": 12},
+]
+
+static func _combo_visuals(combo, effect_intensity):
+	var color = Color("ff7a00")
+	var particle_color = Color("ffffff")
+	var particle_count = int(6 + effect_intensity * 2.0)
+	for tier in COMBO_TIERS:
+		if combo >= int(tier["min_combo"]):
+			color = Color(tier["color"])
+			particle_color = Color(tier["particle_color"])
+			particle_count = int(int(tier["particles"]) * effect_intensity)
+			break
+	return {"color": color, "particle_color": particle_color, "particle_count": particle_count}
+
 static func _play_eliminate_effects(game, coords):
 	var effect_intensity = float(game._current_level().get("effect_intensity", 1.0))
-
-	# Determine particle color and amount based on combo
-	var color = Color("ff7a00")  # Default orange
-	var particle_count = int(6 + effect_intensity * 2.0)
-	var particle_color = Color("ffffff")  # Default white
-
-	if game.combo >= 10:
-		color = Color("ffd700")  # Gold
-		particle_color = Color("ffd700")
-		particle_count = int(30 * effect_intensity)
-	elif game.combo >= 7:
-		color = Color("e64980")  # Purple
-		particle_color = Color("e64980")
-		particle_count = int(24 * effect_intensity)
-	elif game.combo >= 5:
-		color = Color("e64980")  # Blue
-		particle_color = Color("60a5fa")
-		particle_count = int(18 * effect_intensity)
-	elif game.combo >= 3:
-		color = Color("0ca678")  # Green
-		particle_color = Color("34d399")
-		particle_count = int(12 * effect_intensity)
+	var visuals = _combo_visuals(int(game.combo), effect_intensity)
+	var color = visuals["color"]
+	var particle_color = visuals["particle_color"]
+	var particle_count = visuals["particle_count"]
 
 	for coord in coords:
 		var button = game._try_get_tile_button(coord)
@@ -108,26 +112,29 @@ static func _play_eliminate_effects(game, coords):
 		var center = game._tile_center_in_effect_layer(coord)
 		game._spawn_ring_effect(center, color, 0.24, 14.0 * effect_intensity)
 		game._spawn_combo_particle_burst(center, particle_color, particle_count, game.combo)
+		_spawn_combo_star(game, coord, center, color, effect_intensity)
 
-		var star = Label.new()
-		star.text = "✦"
-		star.add_font_override("font", game.game_font)
-		star.rect_position = center
-		star.rect_pivot_offset = Vector2(8, 8)
-		star.rect_scale = Vector2.ONE
-		star.modulate = color
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		game.effect_layer.add_child(star)
 
-		# Tween animation for star effect
-		var tween = Tween.new()
-		game.add_child(tween)
-		tween.interpolate_property(star, "rect_position", star.rect_position, star.rect_position + Vector2(0, -18 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-		tween.interpolate_property(star, "modulate:a", 1.0, 0.0, 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-		tween.interpolate_property(star, "rect_scale", Vector2.ONE, Vector2.ONE * (1.35 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
-		tween.start()
-		tween.connect("tween_all_completed", star, "queue_free")
-		tween.connect("tween_all_completed", tween, "queue_free")
+static func _spawn_combo_star(game, coord, center, color, effect_intensity):
+	var star = Label.new()
+	star.text = "✦"
+	star.add_font_override("font", game.game_font)
+	star.rect_position = center
+	star.rect_pivot_offset = Vector2(8, 8)
+	star.rect_scale = Vector2.ONE
+	star.modulate = color
+	star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	game.effect_layer.add_child(star)
+
+	# Tween animation for star effect
+	var tween = Tween.new()
+	game.add_child(tween)
+	tween.interpolate_property(star, "rect_position", star.rect_position, star.rect_position + Vector2(0, -18 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	tween.interpolate_property(star, "modulate:a", 1.0, 0.0, 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	tween.interpolate_property(star, "rect_scale", Vector2.ONE, Vector2.ONE * (1.35 * effect_intensity), 0.28, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+	tween.start()
+	tween.connect("tween_all_completed", star, "queue_free")
+	tween.connect("tween_all_completed", tween, "queue_free")
 
 static func _tile_center_in_effect_layer(game, coord):
 	var button = game._try_get_tile_button(coord)
