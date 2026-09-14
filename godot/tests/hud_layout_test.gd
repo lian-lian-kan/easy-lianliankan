@@ -178,9 +178,12 @@ func _init() -> void:
 	# --- idempotent round-trip: portrait -> desktop -> portrait
 	var roundtrip = make_controls()
 	HUD_LAYOUT.update_layout(roundtrip)
+	check(roundtrip.title_row.visible == false, "the portrait pass compacts the header")
+	roundtrip.viewport_size = Vector2(1920, 1080)
 	HUD_LAYOUT.update_layout(roundtrip)
-	check(roundtrip.title_row.visible == true, "restore brings back the title strip")
-	check(roundtrip.subtitle_label.visible, "restore brings back the subtitle line")
+	check(roundtrip.title_row.visible == true and roundtrip.subtitle_label.visible,
+		"restore brings back every hidden strip")
+	roundtrip.viewport_size = Vector2(390, 844)
 	HUD_LAYOUT.update_layout(roundtrip)
 	check(roundtrip.title_row.visible == false
 		and roundtrip.stat_values["level_score"]["card"].visible == false,
