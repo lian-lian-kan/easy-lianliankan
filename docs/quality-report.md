@@ -9,7 +9,7 @@
 | 后端测试覆盖率 | backend.yml（pytest-cov） | **`--cov-fail-under=100`，当前 100%**（39 用例，真 PG16+Redis7） |
 | 后端静态审计 | tools/backend_audit.py | 函数 ≤45 行、禁 print/裸 except/通配导入 |
 | 游戏静态审计 | godot/tools/shell_audit.py | 薄壳一致性、connect 目标、孤儿壳、Godot4 语法泄漏 |
-| 游戏无头测试 | deploy.yml | **27 个测试/探针文件**，全部逻辑域有专属直测 |
+| 游戏无头测试 | deploy.yml | **31 项无头测试/探针**入 CI 清单（godot/tests 共 35 文件），全部逻辑域有专属直测 |
 | 生产端到端 | prod-e2e-check.yml（手动） | 真 Chrome 开线上页，断言云同步 API 流量 |
 
 ## 测试覆盖矩阵（游戏端：模块 → 专属测试）
@@ -41,7 +41,7 @@
 - **低耦合重构**：9 个模块 38 处 `AudioManager.` 编译期 autoload 依赖全部改为经
   `game.audio` 访问——`-s` 无头模式下 autoload 标识符不可解析，是多个测试静默跳过的根因。
 - **新测试文件**：game_config / session_combo（连击增益全语义）/ session_settle（战役结算
-  公式）/ powerup_loadout / content_sanity。无头 CI 清单 16→30 项，且全部真实执行
+  公式）/ powerup_loadout / content_sanity。无头 CI 清单 16→31 项，且全部真实执行
   （新增 quit() 静态门禁防挂死）。
 - **教训**：抽取/改写数据表时必须先读原表内容——powerup_loadout 首版凭印象填了
   extra/override 两张表，被 power_ups_probe 即时抓出（这正是探针存在的意义）。
