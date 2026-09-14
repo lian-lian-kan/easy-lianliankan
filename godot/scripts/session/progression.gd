@@ -32,8 +32,23 @@ static func get_achievement_definitions() :
 	return ACHIEVEMENTS_SCRIPT.get_achievement_definitions()
 
 
+# Flat per-mode best-score keys: the single source of truth shared by
+# default_progress, _normalize_special_records and same_progress, so a new
+# mode is one row here instead of three copy-pasted blocks. The nested
+# records (daily_challenge / endless_best) keep their explicit handling.
+const FLAT_BEST_KEYS = [
+	"time_attack_best_score", "memory_best_score", "frost_best_score",
+	"zen_best_score", "hell_best_score", "moves_best_score",
+	"race_best_score", "stack_best_score", "gravity_best_score",
+	"fog_best_score", "chain_best_score", "tray_best_score",
+	"collect_best_score", "flip_best_score", "fever_best_score",
+	"perfect_best_score", "rock_best_score", "defuse_best_score",
+	"target_best_score", "shift_best_score", "slide_best_score",
+	"defense_best_score", "sum10_best_score", "duel_best_score",
+]
+
 static func default_progress(level_count: int) :
-	return {
+	var state = {
 		"version": SAVE_VERSION,
 		"current_level_index": 0,
 		"highest_unlocked_level_index": 0,
@@ -45,30 +60,6 @@ static func default_progress(level_count: int) :
 		"level_stars": {},  # Level index -> best star rating (1..3)
 		"daily_challenge": {"last_date": "", "streak": 0, "best_streak": 0, "best_score": 0},
 		"endless_best": {"round": 0, "score": 0},
-		"time_attack_best_score": 0,
-		"memory_best_score": 0,
-		"frost_best_score": 0,
-		"zen_best_score": 0,
-		"hell_best_score": 0,
-		"moves_best_score": 0,
-		"race_best_score": 0,
-		"stack_best_score": 0,
-		"gravity_best_score": 0,
-		"fog_best_score": 0,
-		"chain_best_score": 0,
-		"tray_best_score": 0,
-		"collect_best_score": 0,
-		"flip_best_score": 0,
-		"fever_best_score": 0,
-		"perfect_best_score": 0,
-		"rock_best_score": 0,
-		"defuse_best_score": 0,
-		"target_best_score": 0,
-		"shift_best_score": 0,
-		"slide_best_score": 0,
-		"defense_best_score": 0,
-		"sum10_best_score": 0,
-		"duel_best_score": 0,
 		"coins": 0,
 		"collected": [],
 		"owned_sets": ["fruit"],
@@ -78,6 +69,9 @@ static func default_progress(level_count: int) :
 		"last_signin": "",
 		"weekly_missions": {"week_key": "", "progress": {}, "claimed": []}
 	}
+	for key in FLAT_BEST_KEYS:
+		state[key] = 0
+	return state
 
 
 static func normalize_progress(raw, level_count: int) :
@@ -178,30 +172,8 @@ static func _normalize_special_records(raw, normalized):
 			"round": max(0, int(raw_endless.get("round", 0))),
 			"score": max(0, int(raw_endless.get("score", 0)))
 		}
-	normalized["time_attack_best_score"] = max(0, int(raw.get("time_attack_best_score", 0)))
-	normalized["memory_best_score"] = max(0, int(raw.get("memory_best_score", 0)))
-	normalized["frost_best_score"] = max(0, int(raw.get("frost_best_score", 0)))
-	normalized["zen_best_score"] = max(0, int(raw.get("zen_best_score", 0)))
-	normalized["hell_best_score"] = max(0, int(raw.get("hell_best_score", 0)))
-	normalized["moves_best_score"] = max(0, int(raw.get("moves_best_score", 0)))
-	normalized["race_best_score"] = max(0, int(raw.get("race_best_score", 0)))
-	normalized["stack_best_score"] = max(0, int(raw.get("stack_best_score", 0)))
-	normalized["gravity_best_score"] = max(0, int(raw.get("gravity_best_score", 0)))
-	normalized["fog_best_score"] = max(0, int(raw.get("fog_best_score", 0)))
-	normalized["chain_best_score"] = max(0, int(raw.get("chain_best_score", 0)))
-	normalized["tray_best_score"] = max(0, int(raw.get("tray_best_score", 0)))
-	normalized["collect_best_score"] = max(0, int(raw.get("collect_best_score", 0)))
-	normalized["flip_best_score"] = max(0, int(raw.get("flip_best_score", 0)))
-	normalized["fever_best_score"] = max(0, int(raw.get("fever_best_score", 0)))
-	normalized["perfect_best_score"] = max(0, int(raw.get("perfect_best_score", 0)))
-	normalized["rock_best_score"] = max(0, int(raw.get("rock_best_score", 0)))
-	normalized["defuse_best_score"] = max(0, int(raw.get("defuse_best_score", 0)))
-	normalized["target_best_score"] = max(0, int(raw.get("target_best_score", 0)))
-	normalized["shift_best_score"] = max(0, int(raw.get("shift_best_score", 0)))
-	normalized["slide_best_score"] = max(0, int(raw.get("slide_best_score", 0)))
-	normalized["defense_best_score"] = max(0, int(raw.get("defense_best_score", 0)))
-	normalized["sum10_best_score"] = max(0, int(raw.get("sum10_best_score", 0)))
-	normalized["duel_best_score"] = max(0, int(raw.get("duel_best_score", 0)))
+	for key in FLAT_BEST_KEYS:
+		normalized[key] = max(0, int(raw.get(key, 0)))
 
 
 static func apply_update(current_state, level_count: int, patch: Dictionary = {}) :
@@ -334,47 +306,26 @@ static func _apply_special_records(next_state, patch):
 static func same_progress(a, b, level_count: int) :
 	var aa = normalize_progress(a, level_count)
 	var bb = normalize_progress(b, level_count)
-	return int(aa["current_level_index"]) == int(bb["current_level_index"]) \
-		and int(aa["highest_unlocked_level_index"]) == int(bb["highest_unlocked_level_index"]) \
-		and int(aa["best_total_score"]) == int(bb["best_total_score"]) \
-		and int(aa["best_combo"]) == int(bb["best_combo"]) \
-		and _arrays_equal(aa.get("achievements", []), bb.get("achievements", [])) \
-		and _dicts_equal(aa.get("daily_challenge", {}), bb.get("daily_challenge", {})) \
-		and _dicts_equal(aa.get("endless_best", {}), bb.get("endless_best", {})) \
-		and int(aa.get("time_attack_best_score", 0)) == int(bb.get("time_attack_best_score", 0)) \
-		and int(aa.get("memory_best_score", 0)) == int(bb.get("memory_best_score", 0)) \
-		and int(aa.get("frost_best_score", 0)) == int(bb.get("frost_best_score", 0)) \
-		and int(aa.get("zen_best_score", 0)) == int(bb.get("zen_best_score", 0)) \
-		and int(aa.get("hell_best_score", 0)) == int(bb.get("hell_best_score", 0)) \
-		and int(aa.get("moves_best_score", 0)) == int(bb.get("moves_best_score", 0)) \
-		and int(aa.get("race_best_score", 0)) == int(bb.get("race_best_score", 0)) \
-		and int(aa.get("stack_best_score", 0)) == int(bb.get("stack_best_score", 0)) \
-		and int(aa.get("gravity_best_score", 0)) == int(bb.get("gravity_best_score", 0)) \
-		and int(aa.get("fog_best_score", 0)) == int(bb.get("fog_best_score", 0)) \
-		and int(aa.get("chain_best_score", 0)) == int(bb.get("chain_best_score", 0)) \
-		and int(aa.get("tray_best_score", 0)) == int(bb.get("tray_best_score", 0)) \
-		and int(aa.get("collect_best_score", 0)) == int(bb.get("collect_best_score", 0)) \
-		and int(aa.get("flip_best_score", 0)) == int(bb.get("flip_best_score", 0)) \
-		and int(aa.get("fever_best_score", 0)) == int(bb.get("fever_best_score", 0)) \
-		and int(aa.get("perfect_best_score", 0)) == int(bb.get("perfect_best_score", 0)) \
-		and int(aa.get("rock_best_score", 0)) == int(bb.get("rock_best_score", 0)) \
-		and int(aa.get("defuse_best_score", 0)) == int(bb.get("defuse_best_score", 0)) \
-		and int(aa.get("target_best_score", 0)) == int(bb.get("target_best_score", 0)) \
-		and int(aa.get("shift_best_score", 0)) == int(bb.get("shift_best_score", 0)) \
-		and int(aa.get("slide_best_score", 0)) == int(bb.get("slide_best_score", 0)) \
-		and int(aa.get("defense_best_score", 0)) == int(bb.get("defense_best_score", 0)) \
-		and int(aa.get("sum10_best_score", 0)) == int(bb.get("sum10_best_score", 0)) \
-		and int(aa.get("duel_best_score", 0)) == int(bb.get("duel_best_score", 0)) \
-		and bool(aa.get("onboarding_seen", false)) == bool(bb.get("onboarding_seen", false)) \
-		and int(aa.get("coins", 0)) == int(bb.get("coins", 0)) \
-		and _arrays_equal(aa.get("collected", []), bb.get("collected", [])) \
-		and _arrays_equal(aa.get("owned_sets", []), bb.get("owned_sets", [])) \
-		and _arrays_equal(aa.get("owned_themes", []), bb.get("owned_themes", [])) \
-		and str(aa.get("current_theme", "")) == str(bb.get("current_theme", "")) \
-		and int(aa.get("signin_streak", 0)) == int(bb.get("signin_streak", 0)) \
-		and str(aa.get("last_signin", "")) == str(bb.get("last_signin", "")) \
-		and _dicts_equal(aa.get("level_stars", {}), bb.get("level_stars", {})) \
-		and _missions_equal(aa.get("weekly_missions", {}), bb.get("weekly_missions", {}))
+	# Flat per-mode bests plus the scalar fields, compared key by key.
+	for key in FLAT_BEST_KEYS:
+		if int(aa.get(key, 0)) != int(bb.get(key, 0)):
+			return false
+	for key in ["current_level_index", "highest_unlocked_level_index",
+			"best_total_score", "best_combo", "coins", "signin_streak"]:
+		if int(aa.get(key, 0)) != int(bb.get(key, 0)):
+			return false
+	if bool(aa.get("onboarding_seen", false)) != bool(bb.get("onboarding_seen", false)):
+		return false
+	if str(aa.get("current_theme", "")) != str(bb.get("current_theme", "")) \
+			or str(aa.get("last_signin", "")) != str(bb.get("last_signin", "")):
+		return false
+	for key in ["achievements", "collected", "owned_sets", "owned_themes"]:
+		if not _arrays_equal(aa.get(key, []), bb.get(key, [])):
+			return false
+	for key in ["daily_challenge", "endless_best", "level_stars"]:
+		if not _dicts_equal(aa.get(key, {}), bb.get(key, {})):
+			return false
+	return _missions_equal(aa.get("weekly_missions", {}), bb.get("weekly_missions", {}))
 
 
 static func _dicts_equal(a: Dictionary, b: Dictionary) :

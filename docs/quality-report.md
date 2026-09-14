@@ -69,6 +69,13 @@
   碎冰·碎石）/彩虹（选择·取消·异色消除）/暖宝宝（未结冰不消耗）。CI 清单 35→36 项，
   _execute_bomb 44→15 行（最逼近红线的 WARN 清偿）。
 
+- **progression 存档键名表驱动化**：default_progress / _normalize_special_records /
+  same_progress 三函数里逐字重复的 24 个 `{mode}_best_score` 键清单收敛为单一常量
+  `FLAT_BEST_KEYS`——新增玩法模式从改 3 处变改 1 处。三函数 45/40/43 行全部清偿至
+  ≤35 行（shell_audit WARN 19→15）；同_progress 改卫语句式比较，语义与原实现逐字段
+  等价（刻意保持不比 level_best_times 的原行为）。progression_test 增加表驱动增长守卫
+  （24 键声明数/默认存档齐全/单键变更可被 same_progress 察觉）。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。

@@ -105,4 +105,22 @@ func _init() -> void:
 	if not _assert_equal(bool(unseen_again.get("onboarding_seen", true)), false, "onboarding_seen can be cleared"):
 		return
 
+	# Table-driven growth guard: every flat best key declared in
+	# FLAT_BEST_KEYS must exist in a fresh default save and round-trip
+	# through normalize + same_progress when it changes.
+	var flat = progression.FLAT_BEST_KEYS
+	_assert_equal(flat.size(), 24, "FLAT_BEST_KEYS declares 24 mode bests")
+	var fresh = progression.default_progress(10)
+	var missing := []
+	for key in flat:
+		if not fresh.has(key) or int(fresh[key]) != 0:
+			missing.append(key)
+	_assert_equal(missing, [], "every flat best key exists in the default save")
+	var bumped = progression.apply_update(fresh, 10, {"tray_best_score": 77})
+	_assert_equal(int(bumped.get("tray_best_score", 0)), 77, "a flat best can be applied")
+	_assert_equal(progression.same_progress(fresh, bumped, 10), false,
+		"a changed flat best is seen as different")
+	_assert_equal(progression.same_progress(bumped, bumped, 10), true,
+		"identical saves still compare equal")
+
 	quit(0)
