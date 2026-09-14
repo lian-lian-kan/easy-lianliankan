@@ -79,3 +79,17 @@ def test_touch_throttled_tolerates_redis_errors(client, monkeypatch):
     monkeypatch.setattr(redis_client, "get_client", broken_get)
     user_service.touch_throttled(user["user_id"])
     assert calls == [user["user_id"]]
+
+
+def test_touch_throttled_tolerates_failing_set(client, monkeypatch):
+    """Throttle write failing mid-flight must still record presence."""
+    user = register(client)
+    calls = []
+    monkeypatch.setattr(users_repo, "touch", lambda uid: calls.append(uid))
+
+    class Flaky:
+        def set(self, *_args, **_kwargs):
+            raise ConnectionError("set failed")
+    monkeypatch.setattr(redis_client, "get_client", lambda: Flaky())
+    user_service.touch_throttled(user["user_id"])
+    assert calls == [user["user_id"]]
