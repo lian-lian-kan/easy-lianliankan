@@ -9,6 +9,7 @@ stream) and mode_records (all-time board).
 import logging
 
 from . import anticheat, leaderboard_service
+from ..core import db
 from ..repositories import records_repo, score_repo
 
 logger = logging.getLogger("lianliankan")
@@ -66,7 +67,9 @@ def _dig(state, path):
 
 def process(user_id: str, prev_state, new_state, now_ms=None) -> list:
     """Gate every score increase between the two blobs. Returns the accepted
-    entries; rejected ones are only visible in the anticheat audit log."""
+    entries; rejected ones are only visible in the anticheat audit log.
+    All writes land in one transaction: a multi-mode save can never leave
+    half its events on the stream."""
     prev_scores = extract(prev_state) if prev_state else {}
     accepted = []
     for mode_id, score in sorted(extract(new_state).items()):
@@ -74,9 +77,10 @@ def process(user_id: str, prev_state, new_state, now_ms=None) -> list:
             continue
         if not _gate(user_id, mode_id, score, now_ms):
             continue
-        score_repo.insert_event(user_id, mode_id, score)
-        # plays/wins counters belong to explicit result reports, not intake.
-        records_repo.upsert_record(user_id, mode_id, score, 0, 0, score_repo.now_ms())
+        with db.transaction():
+            score_repo.insert_event(user_id, mode_id, score)
+            # plays/wins counters belong to explicit result reports, not intake.
+            records_repo.upsert_record(user_id, mode_id, score, 0, 0, score_repo.now_ms())
         leaderboard_service.invalidate(mode_id)
         accepted.append({"mode_id": mode_id, "score": score})
     return accepted

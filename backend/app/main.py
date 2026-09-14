@@ -16,7 +16,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from .core import config, db, migrations, redis_client
-from .core.maintenance import EVENTS_RETENTION_DAYS, prune_events
+from .core import maintenance
 from .dependencies import new_request_id
 from .routers import auth, engagement, progress, records, users
 from .core.mode_seed import MODES
@@ -35,9 +35,10 @@ async def lifespan(_app: FastAPI):
     db.init_pool()
     migrations.apply_all()
     records_service.seed_modes(MODES)
-    removed = await anyio.to_thread.run_sync(
-        lambda: prune_events(EVENTS_RETENTION_DAYS))
+
+    tokens, removed = await anyio.to_thread.run_sync(maintenance.run_startup_maintenance)
     logger.info('{"event":"events_pruned","removed":%d}', removed)
+    logger.info('{"event":"tokens_pruned","removed":%d}', tokens)
     yield
     db.close_pool()
 

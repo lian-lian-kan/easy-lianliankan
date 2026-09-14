@@ -44,3 +44,17 @@ def find_active_user_by_token(token: str):
 
 def delete_token(token: str) -> None:
     db.execute("DELETE FROM auth_tokens WHERE token_hash = %s", (security.hash_token(token),))
+
+
+def delete_expired_tokens() -> int:
+    """Rows past expiry can never authenticate again; drop them so abandoned
+    accounts don't leave the token table growing forever."""
+    row = db.query_one(
+        """
+        WITH gone AS (
+            DELETE FROM auth_tokens WHERE expires_at < now() RETURNING 1
+        )
+        SELECT COUNT(*) AS removed FROM gone
+        """
+    )
+    return int(row["removed"]) if row else 0

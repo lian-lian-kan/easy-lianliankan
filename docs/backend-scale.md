@@ -124,6 +124,29 @@ wallet_entries       0.04 ms                    → 全部索引命中，无大�
 不足即 TRUNCATE 重灌；guard 阈值 BIG_TABLE_ROWS=10000（auth_tokens 在 2500 行时
 planner 选 Seq Scan 是正确决策，表涨到万行级自动切索引，不算失败）。
 
+## 6.5 代码审查结论（Round 13，分层/事务/索引/校验）
+
+整体结论：四层分层（routers→services→repositories→core）无 SQL 泄漏到服务层、
+无循环内查询（无 N+1）、全部写路径参数化。审查发现并当场修复三项：
+
+1. **score_intake 多模式写入无原子性**——一次 push 同时上涨多个模式成绩时，
+   事件流与总榜写入各自独立提交，中途失败会留下半入账。已包单事务。
+2. **seed_modes 无事务**——启动时 26 条 upsert 逐条提交，失败留半注册注册表。
+   已包单事务。
+3. **过期 token 永不清理**——refresh/登出会删行，但被遗弃账号的过期 token
+   行永久滞留。已加入启动维护（幂等 DELETE）。
+
+审查过并判定为「无需改动」的面（记录避免重复排查）：
+
+- 索引：全部热查询已被覆盖（见 §6.5 db_bench 实证），无缺失索引。
+- 校验：所有写端点都有 schema 硬边界（pydantic ge/le/max_length）+ 限流；
+  成绩另过 anticheat 三道门。
+- 事务：register / refresh / wallet_append 原已使用事务；本次补齐 intake
+  与 seed_modes。
+- N+1：服务层循环内无仓库调用（grep 审计）。
+- 已知并接受：单 push 多模式上涨时 pace 门逐模式查询（真实 push 几乎都是
+  单模式成绩，优化属过度设计）。
+
 ## 7. 部署清单
 
 - migration 006（score_events）先于新镜像上线（runner 自带顺序保证）。

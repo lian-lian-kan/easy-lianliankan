@@ -1,6 +1,7 @@
 """Per-mode records: best score via max, plays/wins via increments."""
 import time
 
+from ..core import db
 from ..repositories import records_repo, score_repo
 from . import anticheat, leaderboard_service
 
@@ -37,9 +38,12 @@ def _gate(user_id: str, mode_id: str, best_score: int, win: bool) -> None:
 
 
 def seed_modes(modes: list) -> None:
-    """Idempotently sync the mode registry from the game's data table."""
-    for mode in modes:
-        records_repo.upsert_mode(mode["mode_id"], mode["label"], int(mode.get("unlock_level", 1)))
+    """Idempotently sync the mode registry from the game's data table, in one
+    transaction so a failed boot can't leave a half-registered registry."""
+    with db.transaction():
+        for mode in modes:
+            records_repo.upsert_mode(
+                mode["mode_id"], mode["label"], int(mode.get("unlock_level", 1)))
 
 
 def list_modes() -> list:
