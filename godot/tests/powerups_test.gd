@@ -18,13 +18,11 @@ func check(value: bool, message: String) -> void:
 class StubTimer:
 	var stopped := 0
 	var started := 0
-	var wait := 0.0
+	var wait_time := 0.0
 	func stop():
 		stopped += 1
 	func start():
 		started += 1
-	func set_wait_time(v):
-		wait = v
 
 class StubAudio:
 	var events := []
@@ -79,6 +77,7 @@ class FakeGame extends Reference:
 	var board_refreshes = 0
 	var effects = []
 	var activations = []
+	var reshuffles = 0
 	var hint_calls = 0
 	func _is_special_session():
 		return special_mode != ""
@@ -124,6 +123,16 @@ class FakeGame extends Reference:
 		refreshes += 1
 	func _refresh_board_visuals():
 		board_refreshes += 1
+	func _animate_select(_point):
+		pass
+	func _animate_hint_tiles(_tiles):
+		pass
+	func _try_get_tile_button(_coord):
+		return null
+	func _reshuffle_board(_b):
+		reshuffles += 1
+	func _on_tile_pressed(_button):
+		pass
 	func _resolve_after_board_changed():
 		resolves += 1
 	func _activate_time_freeze():
@@ -222,6 +231,7 @@ func _init() -> void:
 	# --- warm patch execution
 	game = FakeGame.new()
 	game.special_mode = "frost"
+	game.frost_pending = true
 	game.board_armor = [[5, 0], [0, 0]]
 	POWERUPS._execute_warm_patch(game, Vector2(0, 1))
 	check(game.frost_pending and game.messages[0].find("没有结冰") != -1,
