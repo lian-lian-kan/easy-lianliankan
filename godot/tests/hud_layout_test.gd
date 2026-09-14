@@ -139,18 +139,18 @@ func _init() -> void:
 	check(phone.deferred_calls == 1, "tile sizing is deferred once per pass")
 
 	# --- update_layout on desktop: everything restored
-	var desktop = make_controls()
-	desktop.viewport_size = Vector2(1920, 1080)
+	var desktop_case = make_controls()
+	desktop_case.viewport_size = Vector2(1920, 1080)
 	desktop.title_row.visible = false  # simulate a prior portrait pass
-	HUD_LAYOUT.update_layout(desktop)
-	check(desktop.title_row.visible == true, "desktop restores the title strip")
-	check(desktop.stat_values["level_score"]["card"].visible,
+	HUD_LAYOUT.update_layout(desktop_case)
+	check(desktop_case.title_row.visible == true, "desktop restores the title strip")
+	check(desktop_case.stat_values["level_score"]["card"].visible,
 		"desktop shows every stat card")
-	check(desktop.board_wrapper.rect_min_size == Vector2(0, 1080.0 * 0.52),
+	check(desktop_case.board_wrapper.rect_min_size == Vector2(0, 1080.0 * 0.52),
 		"desktop sizes the board from the viewport ratio")
-	check(desktop.board_grid.get_constant_override("h_separation") == 10,
+	check(desktop_case.board_grid.get_constant_override("h_separation") == 10,
 		"desktop separation is roomy")
-	check(desktop.margin_container.get_constant_override("margin_left") == 16,
+	check(desktop_case.margin_container.get_constant_override("margin_left") == 16,
 		"desktop margins are the widest")
 
 	# --- idempotent round-trip: portrait -> desktop -> portrait
