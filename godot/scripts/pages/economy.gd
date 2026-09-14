@@ -242,8 +242,12 @@ static func build_shop(game):
 	var current_set = game.icon_sets[game.icon_set_index] if game.icon_sets.size() > 0 else {}
 	PAGE_UI.page_frame(game, page_content, "🛍️ 小铺", "樱花币解锁新图集 · 已拥有 %d/%d 套" % [owned.size(), game.icon_sets.size()])
 	var box = PAGE_UI.scroll_area(game, page_content)
+	_build_theme_section(game, box)
+	_build_set_section(game, box, owned, current_set)
 
-	# ambience themes section
+
+# Ambience themes: swatch card per theme with a use/buy action.
+static func _build_theme_section(game, box):
 	var theme_title = Label.new()
 	theme_title.text = "🌫️ 氛围主题"
 	theme_title.add_font_override("font", game._font_at_size(15))
@@ -273,6 +277,10 @@ static func build_shop(game):
 			else:
 				theme_action.connect("pressed", game, "_on_theme_buy_pressed", [theme_id])
 		theme_box.add_child(theme_action)
+
+
+# Icon-set section: one shop card per set.
+static func _build_set_section(game, box, owned, current_set):
 	var grid = GridContainer.new()
 	grid.columns = 2
 	grid.add_constant_override("h_separation", 8)

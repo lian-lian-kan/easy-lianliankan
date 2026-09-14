@@ -77,7 +77,15 @@ static func _build_header_identity(game):
 	var title_col = VBoxContainer.new()
 	title_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game.title_row.add_child(title_col)
+	_build_title_column(game, title_col)
+	_build_status_chip(game)
 
+	var coin_chip = ECONOMY.build_coin_chip(game)
+	game.title_row.add_child(coin_chip)
+
+
+# Title / subtitle / description stack on the header's left column.
+static func _build_title_column(game, title_col):
 	game.title_label = Label.new()
 	game.title_label.text = "Sophia的连连看"
 	game.title_label.add_font_override("font", game.game_font)
@@ -96,6 +104,9 @@ static func _build_header_identity(game):
 	game.desc_label.text = ""
 	title_col.add_child(game.desc_label)
 
+
+# Green status badge at the header's right edge.
+static func _build_status_chip(game):
 	game.status_chip_label = Label.new()
 	game.status_chip_label.text = "进行中"
 	game.status_chip_label.add_font_override("font", game.game_font)
@@ -110,12 +121,35 @@ static func _build_header_identity(game):
 	game.status_chip_label.add_stylebox_override("normal", status_style)
 	game.title_row.add_child(game.status_chip_label)
 
-	var coin_chip = ECONOMY.build_coin_chip(game)
-	game.title_row.add_child(coin_chip)
-
 # Level progress bar, mode/kinds chips and the stat card grid.
 
 static func _build_header_progress(game):
+	_build_level_progress_bar(game)
+
+	var meta_row = HBoxContainer.new()
+	meta_row.add_constant_override("separation", 8)
+	game.header_box.add_child(meta_row)
+
+	game.mode_chip_label = game._create_chip_label()
+	meta_row.add_child(game.mode_chip_label)
+
+	game.kinds_chip_label = game._create_chip_label()
+	meta_row.add_child(game.kinds_chip_label)
+
+	game.stats_flow_container = HFlowContainer.new()
+	game.stats_flow_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	game.stats_flow_container.add_constant_override("h_separation", 6)
+	game.stats_flow_container.add_constant_override("v_separation", 6)
+	game.header_box.add_child(game.stats_flow_container)
+
+	game._add_stat_card(game.stats_flow_container, "总分", "total_score")
+	game._add_stat_card(game.stats_flow_container, "本关分", "level_score")
+	game._add_stat_card(game.stats_flow_container, "步数", "moves")
+	game._add_stat_card(game.stats_flow_container, "剩余", "remaining")
+	game._add_stat_card(game.stats_flow_container, "倒计时", "time_left")
+
+
+static func _build_level_progress_bar(game):
 	game.level_progress_caption_label = Label.new()
 	game.level_progress_caption_label.text = "闯关进度"
 	game.level_progress_caption_label.add_font_override("font", game.game_font)
@@ -139,28 +173,6 @@ static func _build_header_progress(game):
 	progress_fill.set_corner_radius_all(6)
 	game.level_progress_bar.add_stylebox_override("fill", progress_fill)
 	game.header_box.add_child(game.level_progress_bar)
-
-	var meta_row = HBoxContainer.new()
-	meta_row.add_constant_override("separation", 8)
-	game.header_box.add_child(meta_row)
-
-	game.mode_chip_label = game._create_chip_label()
-	meta_row.add_child(game.mode_chip_label)
-
-	game.kinds_chip_label = game._create_chip_label()
-	meta_row.add_child(game.kinds_chip_label)
-
-	game.stats_flow_container = HFlowContainer.new()
-	game.stats_flow_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	game.stats_flow_container.add_constant_override("h_separation", 6)
-	game.stats_flow_container.add_constant_override("v_separation", 6)
-	game.header_box.add_child(game.stats_flow_container)
-
-	game._add_stat_card(game.stats_flow_container, "总分", "total_score")
-	game._add_stat_card(game.stats_flow_container, "本关分", "level_score")
-	game._add_stat_card(game.stats_flow_container, "步数", "moves")
-	game._add_stat_card(game.stats_flow_container, "剩余", "remaining")
-	game._add_stat_card(game.stats_flow_container, "倒计时", "time_left")
 	game._add_stat_card(game.stats_flow_container, "连击", "combo")
 	game._add_stat_card(game.stats_flow_container, "历史高分", "best_total_score")
 	game._add_stat_card(game.stats_flow_container, "历史连击", "best_combo")
@@ -395,6 +407,13 @@ static func _build_board_overlays(game):
 # Floating combat text and rescue buttons anchored over the board.
 
 static func _build_floating_overlays(game):
+	_build_stage_label(game)
+	_build_revive_button(game)
+	_build_husband_button(game)
+	_build_combo_burst_label(game)
+
+
+static func _build_stage_label(game):
 	game.stage_panel_label = Label.new()
 	game.stage_panel_label.add_font_override("font", game.game_font)
 	game.stage_panel_label.align = Label.ALIGN_CENTER
@@ -402,7 +421,9 @@ static func _build_floating_overlays(game):
 	game.stage_panel_label.visible = false
 	game.root_vbox.add_child(game.stage_panel_label)
 
-	# Blossom revive offer, shown beside the failed-settle text.
+
+# Blossom revive offer, shown beside the failed-settle text.
+static func _build_revive_button(game):
 	game.revive_button = Button.new()
 	game.revive_button.text = "🌸30 复活（+30秒 / +5步）"
 	game.revive_button.rect_min_size = Vector2(220, 40)
@@ -417,8 +438,10 @@ static func _build_floating_overlays(game):
 	game.revive_button.connect("pressed", game, "_on_revive_pressed")
 	game.root_vbox.add_child(game.revive_button)
 
-	# Husband rescue button: floats above the board's bottom edge, appears
-	# only when the clock is running low (visibility driven by _refresh_ui).
+
+# Husband rescue button: floats above the board's bottom edge, appears
+# only when the clock is running low (visibility driven by _refresh_ui).
+static func _build_husband_button(game):
 	game.husband_button = Button.new()
 	game.husband_button.text = "🆘 求助老公"
 	game.husband_button.rect_min_size = Vector2(180, 40)
@@ -432,6 +455,8 @@ static func _build_floating_overlays(game):
 	game.husband_button.connect("pressed", game, "_on_husband_pressed")
 	game.root_vbox.add_child(game.husband_button)
 
+
+static func _build_combo_burst_label(game):
 	game.combo_burst_label = Label.new()
 	game.combo_burst_label.add_font_override("font", game.game_font)
 	game.combo_burst_label.align = Label.ALIGN_CENTER

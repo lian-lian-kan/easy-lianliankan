@@ -73,16 +73,17 @@ static func _onboarding_sections(game, content):
 		section_content.add_font_override("font", game.game_font)
 		content.add_child(section_content)
 
-static func _settings_panel(game):
-	game.settings_panel = PanelContainer.new()
-	game.settings_panel.rect_min_size = Vector2(360, 320)
-	game.settings_panel.visible = false
-	game._apply_glass_style(game.settings_panel, Color("ffffff"), 0.95)
-	game._mount_modal_panel(game.settings_panel)
+# Shared modal shell: glass panel mounted on the game, a 24px padded margin
+# and the content box the panel body renders into.
+static func _modal_content_shell(game, panel, min_size, content_separation):
+	panel.rect_min_size = min_size
+	panel.visible = false
+	game._apply_glass_style(panel, Color("ffffff"), 0.95)
+	game._mount_modal_panel(panel)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_constant_override("separation", 16)
-	game.settings_panel.add_child(vbox)
+	panel.add_child(vbox)
 
 	var margin = MarginContainer.new()
 	margin.add_constant_override("margin_left", 24)
@@ -92,8 +93,13 @@ static func _settings_panel(game):
 	vbox.add_child(margin)
 
 	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 16)
+	content.add_constant_override("separation", content_separation)
 	margin.add_child(content)
+	return content
+
+static func _settings_panel(game):
+	game.settings_panel = PanelContainer.new()
+	var content = _modal_content_shell(game, game.settings_panel, Vector2(360, 320), 16)
 
 	# Title
 	var title = Label.new()
@@ -207,25 +213,7 @@ static func _create_toggle_row(game, label_text, initial_value):
 
 static func _achievements_panel(game):
 	game.achievements_panel = PanelContainer.new()
-	game.achievements_panel.rect_min_size = Vector2(400, 480)
-	game.achievements_panel.visible = false
-	game._apply_glass_style(game.achievements_panel, Color("ffffff"), 0.95)
-	game._mount_modal_panel(game.achievements_panel)
-
-	var vbox = VBoxContainer.new()
-	vbox.add_constant_override("separation", 16)
-	game.achievements_panel.add_child(vbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 24)
-	margin.add_constant_override("margin_right", 24)
-	margin.add_constant_override("margin_top", 24)
-	margin.add_constant_override("margin_bottom", 24)
-	vbox.add_child(margin)
-
-	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 12)
-	margin.add_child(content)
+	var content = _modal_content_shell(game, game.achievements_panel, Vector2(400, 480), 12)
 
 	# Title
 	var title = Label.new()
@@ -400,17 +388,7 @@ static func _modes_panel(game):
 	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
 
-	# Mode rows are rebuilt on every open; keep them in a dedicated box.
-	# ScrollContainer keeps thirteen mode cards usable on short screens.
-	var rows_scroll = ScrollContainer.new()
-	rows_scroll.scroll_horizontal_enabled = false
-	rows_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(rows_scroll)
-	var rows_box = VBoxContainer.new()
-	rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rows_box.add_constant_override("separation", 7)
-	rows_scroll.add_child(rows_box)
-	game.modes_content = rows_box
+	_modes_rows_area(game, content)
 
 	var spacer = Control.new()
 	spacer.rect_min_size = Vector2(0, 6)
@@ -424,6 +402,19 @@ static func _modes_panel(game):
 	close_button.connect("pressed", game, "_on_modes_close_pressed")
 	content.add_child(close_button)
 	game._style_dialog_buttons(game.modes_panel)
+
+# Mode rows are rebuilt on every open; keep them in a dedicated box.
+# ScrollContainer keeps thirteen mode cards usable on short screens.
+static func _modes_rows_area(game, content):
+	var rows_scroll = ScrollContainer.new()
+	rows_scroll.scroll_horizontal_enabled = false
+	rows_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(rows_scroll)
+	var rows_box = VBoxContainer.new()
+	rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows_box.add_constant_override("separation", 7)
+	rows_scroll.add_child(rows_box)
+	game.modes_content = rows_box
 
 # --- Shared style helpers (migrated from game.gd) ---
 

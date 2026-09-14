@@ -92,6 +92,15 @@
   `_spawn_combo_star`；board_engine 抽 `_blank_grid`/`_filled_cells` 助手， bury_stack_layer
   36→27 与 build_chain_grid 共用样板（WARN 12→10），board_engine_test 补埋层值域断言。
 
+- **Round 9 棘轮归零**：最后 10 条视图构建告警全部清偿——economy `build_shop` 41→10
+  （氛围主题区块/图集区块拆 `_build_theme_section`/`_build_set_section`）；page_router
+  `build_pages` 42→3（页面面板与底部导航拆 `_build_page_surface`/`_build_nav_bar`）；
+  home_screen 头部身份列/进度条/四个浮层拆五个构建器；ui_panels 三面板共享的
+  「玻璃面板+挂载+24px 边距+内容盒」样板抽 `_modal_content_shell`（设置/成就复用，
+  玩法面板的滚动区另拆 `_modes_rows_area`）；stats_hud `add_card` 39→33 抽 `_card_style`。
+  全部为逐行原样搬移，add_child 顺序不变，行为等价由 panels_probe/page_probe/startup_probe
+  场景探针回归保证。**shell_audit 规模棘轮自 Round CJ 引入以来首次 0 WARN。**
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。

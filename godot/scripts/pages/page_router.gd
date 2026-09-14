@@ -25,8 +25,12 @@ static func nav_items():
 	]
 
 static func build_pages(game):
-	# Full-screen page surface above the home board; the nav bar is added
-	# after it so it stays on top.
+	_build_page_surface(game)
+	_build_nav_bar(game)
+
+# Full-screen page surface above the home board: pink panel + margin +
+# the shared content box every page renders into.
+static func _build_page_surface(game):
 	var pages = PanelContainer.new()
 	pages.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	pages.visible = false
@@ -51,6 +55,8 @@ static func build_pages(game):
 	margin.add_child(content)
 	game.page_content = content
 
+# Bottom nav bar; added after the surface so it stays on top of it.
+static func _build_nav_bar(game):
 	var nav = HBoxContainer.new()
 	nav.set_anchors_and_margins_preset(Control.PRESET_BOTTOM_WIDE)
 	nav.margin_top = -54

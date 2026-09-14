@@ -18,17 +18,7 @@ static func add_card(game, parent, title, key):
 	var card = PanelContainer.new()
 	card.rect_min_size = CARD_MIN_SIZE
 	parent.add_child(card)
-
-	# Apply macaron pastel card style
-	var card_style = StyleBoxFlat.new()
-	card_style.bg_color = PASTEL_BY_KEY.get(key, Color("ffffff"))
-	card_style.set_corner_radius_all(16)
-	card_style.shadow_color = Color("00000010")
-	card_style.shadow_size = 6
-	card_style.shadow_offset = Vector2(0, 3)
-	card_style.set_border_width_all(1)
-	card_style.border_color = Color("ffd9e8")
-	card.add_stylebox_override("panel", card_style)
+	card.add_stylebox_override("panel", _card_style(key))
 
 	var box = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGN_CENTER
@@ -64,6 +54,18 @@ static func add_card(game, parent, title, key):
 		"title": title_label,
 		"value": value_label
 	}
+
+# Macaron pastel card look, tinted per stat key.
+static func _card_style(key):
+	var card_style = StyleBoxFlat.new()
+	card_style.bg_color = PASTEL_BY_KEY.get(key, Color("ffffff"))
+	card_style.set_corner_radius_all(16)
+	card_style.shadow_color = Color("00000010")
+	card_style.shadow_size = 6
+	card_style.shadow_offset = Vector2(0, 3)
+	card_style.set_border_width_all(1)
+	card_style.border_color = Color("ffd9e8")
+	return card_style
 
 # 道具槽显示：数量文本、可用性着色与暖宝宝始终的冰雪专属隐藏。
 static func update_power_up(game, power_up_id, count):
