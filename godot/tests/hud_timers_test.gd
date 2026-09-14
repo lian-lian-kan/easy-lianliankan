@@ -65,6 +65,7 @@ class FakeTimerGame extends Node:
 	var error_tiles = [Vector2(0, 0)]
 	var message_label = Label.new()
 	var level_select_option = null
+	var endless_round = 0
 	var second_timer = null
 	var message_timer = null
 	var error_timer = null
@@ -148,6 +149,8 @@ func _init() -> void:
 		"build stores a Timer under each spec name")
 	check(builder.second_timer.wait_time == 1.0 and builder.second_timer.one_shot == false,
 		"the heartbeat repeats every second")
+	print("[dbg] flip=", builder.flip_back_timer, " wait=", builder.flip_back_timer.wait_time,
+		" one_shot=", builder.flip_back_timer.one_shot)
 	check(builder.flip_back_timer.wait_time == 0.7 and builder.flip_back_timer.one_shot,
 		"the flip-back timer is one-shot at 0.7s")
 
