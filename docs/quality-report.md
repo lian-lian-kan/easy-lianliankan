@@ -61,6 +61,14 @@
   记忆四态（翻开·预览锁·不一致双翻·路径阻塞保持选中）/hint·auto·shuffle·reset·jump·pause/
   键盘路由（含 playing 门禁与未映射键忽略）。CI 清单 34→35 项。
 
+- **powerups 去重 + 首个专属单测**：bomb/rainbow 两条点击执行尾部约 25 行逐字重复
+  （清选择/扣步/路径特效/连击得分/破冰/破链/resolve）抽取为 `_destroy_pair`（炸弹独有
+  的碎石用 shatter_rocks 参数门控，行为严格等价）；顺带删除两处未使用的 score_result
+  死变量、提取 _find_kind_partner/_shatter_rocks_around。powerups_test 30 项直测：
+  装载重置/使用门禁（库存·暂停·模式限制）/收回退款/七种激活/炸弹（无伴退回·双格清除·
+  碎冰·碎石）/彩虹（选择·取消·异色消除）/暖宝宝（未结冰不消耗）。CI 清单 35→36 项，
+  _execute_bomb 44→15 行（最逼近红线的 WARN 清偿）。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。
