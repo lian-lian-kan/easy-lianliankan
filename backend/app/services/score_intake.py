@@ -8,7 +8,7 @@ stream) and mode_records (all-time board).
 """
 import logging
 
-from . import anticheat
+from . import anticheat, leaderboard_service
 from ..repositories import records_repo, score_repo
 
 logger = logging.getLogger("lianliankan")
@@ -77,6 +77,7 @@ def process(user_id: str, prev_state, new_state, now_ms=None) -> list:
         score_repo.insert_event(user_id, mode_id, score)
         # plays/wins counters belong to explicit result reports, not intake.
         records_repo.upsert_record(user_id, mode_id, score, 0, 0, score_repo.now_ms())
+        leaderboard_service.invalidate(mode_id)
         accepted.append({"mode_id": mode_id, "score": score})
     return accepted
 

@@ -2,7 +2,7 @@
 import time
 
 from ..repositories import records_repo, score_repo
-from . import anticheat
+from . import anticheat, leaderboard_service
 
 
 def list_records(user_id: str) -> list:
@@ -21,6 +21,7 @@ def record_result(user_id: str, mode_id: str, best_score: int, play: bool, win: 
     )
     if win:
         score_repo.insert_event(user_id, mode_id, best_score)
+        leaderboard_service.invalidate(mode_id)
     return dict(row)
 
 

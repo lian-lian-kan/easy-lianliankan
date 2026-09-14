@@ -55,6 +55,7 @@ def test_unknown_mode_rejected(client):
 def test_leaderboard_ranks(client):
     # rerunnable: prior runs of this suite must not shift the exact ranks
     db.execute("DELETE FROM mode_records WHERE mode_id = 'hell'")
+    db.execute("DELETE FROM mode_score_events WHERE mode_id = 'hell'")
     alice, bob = register(client, "alice"), register(client, "bob")
     auth(client, alice)
     client.put("/api/v1/records/hell", json={"best_score": 500, "play": True, "win": True})
@@ -62,8 +63,9 @@ def test_leaderboard_ranks(client):
     client.put("/api/v1/records/hell", json={"best_score": 800, "play": True, "win": True})
 
     board = client.get("/api/v1/leaderboard/hell").json()
-    assert [t["best_score"] for t in board["top"]] == [800, 500]
+    assert [t["score"] for t in board["top"]] == [800, 500]
     assert board["top"][0]["nickname"] == "bob"
+    assert board["top"][0]["rank"] == 1
     assert board["my_rank"] == 1  # bob is asking
 
     auth(client, alice)

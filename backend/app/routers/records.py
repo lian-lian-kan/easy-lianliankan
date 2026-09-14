@@ -35,9 +35,6 @@ def record_result(mode_id: str, payload: RecordPutRequest,
 
 @router.get("/leaderboard/{mode_id}")
 def leaderboard(mode_id: str, limit: int = Query(20, ge=1, le=100),
+                period: str = Query("all", pattern="^(all|weekly|daily)$"),
                 user_id: str = Depends(current_user)):
-    return {
-        "mode_id": mode_id,
-        "top": leaderboard_service.top_scores(mode_id, limit),
-        "my_rank": leaderboard_service.user_rank(user_id, mode_id),
-    }
+    return leaderboard_service.board(mode_id, period, limit, user_id)
