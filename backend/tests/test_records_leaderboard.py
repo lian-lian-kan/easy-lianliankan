@@ -1,8 +1,19 @@
 """Mode registry, per-mode records merge, leaderboards."""
 
+import pytest
+
 from app.core import db
+from app.services import anticheat
 
 from tests.conftest import auth, register
+
+
+@pytest.fixture(autouse=True)
+def _legal_run_spacing(monkeypatch):
+    """The suite submits several wins back-to-back; collapse the pace floor
+    so only the anticheat suite exercises the gate itself."""
+    monkeypatch.setattr(anticheat, "DEFAULT_MIN_RUN_MS", 0)
+    monkeypatch.setattr(anticheat, "MIN_RUN_OVERRIDES_MS", {})
 
 
 def test_modes_registry_seeded(client):

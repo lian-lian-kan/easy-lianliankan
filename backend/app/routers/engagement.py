@@ -13,7 +13,8 @@ def list_achievements(user_id: str = Depends(current_user)):
     return {"achievements": engagement_service.list_achievements(user_id)}
 
 
-@router.post("/achievements/{achievement_id}")
+@router.post("/achievements/{achievement_id}",
+             dependencies=[Depends(rate_limit("achievement", limit=60, window_seconds=60))])
 def unlock(achievement_id: str, user_id: str = Depends(current_user)):
     return {"newly_unlocked": engagement_service.unlock(user_id, achievement_id)}
 
@@ -23,7 +24,8 @@ def list_missions(week_key: int = Query(..., ge=0), user_id: str = Depends(curre
     return {"missions": engagement_service.list_missions(user_id, week_key)}
 
 
-@router.put("/missions")
+@router.put("/missions",
+            dependencies=[Depends(rate_limit("missions_put", limit=60, window_seconds=60))])
 def upsert_mission(payload: MissionPutRequest, user_id: str = Depends(current_user)):
     mission = engagement_service.upsert_mission(
         user_id, payload.week_key, payload.mission_id, payload.progress, payload.claimed)
