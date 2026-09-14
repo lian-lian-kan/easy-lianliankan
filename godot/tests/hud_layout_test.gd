@@ -179,8 +179,8 @@ func _init() -> void:
 	var roundtrip = make_controls()
 	HUD_LAYOUT.update_layout(roundtrip)
 	HUD_LAYOUT.update_layout(roundtrip)
-	check(roundtrip.title_row.visible == true and roundtrip.subtitle_label.visible,
-		"restore brings back every hidden strip")
+	check(roundtrip.title_row.visible == true, "restore brings back the title strip")
+	check(roundtrip.subtitle_label.visible, "restore brings back the subtitle line")
 	HUD_LAYOUT.update_layout(roundtrip)
 	check(roundtrip.title_row.visible == false
 		and roundtrip.stat_values["level_score"]["card"].visible == false,
