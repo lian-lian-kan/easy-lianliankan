@@ -107,6 +107,12 @@ class FakeTimerGame extends Node:
 		pass
 	func _current_level():
 		return level
+	func _is_defuse_mode():
+		return special_mode == "defuse"
+	func _is_shift_mode():
+		return special_mode == "shift"
+	func _is_defense_mode():
+		return special_mode == "defense"
 	func _refresh_ui():
 		refreshes += 1
 	func _refresh_board_visuals():
