@@ -110,13 +110,13 @@ func _init() -> void:
 	# through normalize + same_progress when it changes.
 	var flat = progression.FLAT_BEST_KEYS
 	_assert_equal(flat.size(), 24, "FLAT_BEST_KEYS declares 24 mode bests")
-	var fresh = progression.default_progress(10)
+	var fresh_save = progression.default_progress(10)
 	var missing := []
 	for key in flat:
-		if not fresh.has(key) or int(fresh[key]) != 0:
+		if not fresh_save.has(key) or int(fresh_save[key]) != 0:
 			missing.append(key)
 	_assert_equal(missing, [], "every flat best key exists in the default save")
-	var bumped = progression.apply_update(fresh, 10, {"tray_best_score": 77})
+	var bumped = progression.apply_update(fresh_save, 10, {"tray_best_score": 77})
 	_assert_equal(int(bumped.get("tray_best_score", 0)), 77, "a flat best can be applied")
 	_assert_equal(progression.same_progress(fresh, bumped, 10), false,
 		"a changed flat best is seen as different")

@@ -55,8 +55,9 @@ func _init() -> void:
 	check(game.messages.size() == 1 and not game.messages[0].empty(),
 		"an intro message is shown")
 	check(typeof(game.special_level) == TYPE_DICTIONARY \
-		and game.special_level.has("board"),
-		"the classic builder produced a board level")
+		and str(game.special_level.get("mode", "")) == "zen" \
+		and int(game.special_level.get("rows", 0)) > 0,
+		"the classic builder produced a configured zen level")
 
 	# --- daily dispatch: seeded builder through OS date
 	game = FakeGame.new()
