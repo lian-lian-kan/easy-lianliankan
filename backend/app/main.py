@@ -5,6 +5,7 @@ Layering: routers (HTTP) -> services (business rules) -> repositories (SQL)
 a JSON envelope; every response carries an X-Request-Id and requests are
 logged with their id, status and duration.
 """
+import anyio.to_thread
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -25,6 +26,10 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # The psycopg2 layer is sync: every endpoint runs on the shared thread
+    # pool. The 40-token default is the real concurrency ceiling for 2000
+    # online players, so size it above the DB pool and let PG be the queue.
+    anyio.to_thread.current_default_thread_limiter().total_tokens = config.thread_capacity()
     db.init_pool()
     migrations.apply_all()
     records_service.seed_modes(MODES)

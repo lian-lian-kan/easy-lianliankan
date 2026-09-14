@@ -5,7 +5,7 @@ repositories and the rate limiter, so core stays framework-light.
 """
 import uuid
 
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 
 from .core import ratelimit, token_cache
 from .repositories import users_repo
@@ -45,10 +45,27 @@ def current_token(request: Request) -> str:
 
 
 def rate_limit(bucket: str, limit: int, window_seconds: float):
-    """Dependency factory: per-IP sliding window on public endpoints."""
+    """Dependency factory: per-IP sliding window on public endpoints.
+
+    IP scoping alone punishes real players behind shared NAT (offices,
+    campuses); authenticated hot paths pair a loose IP ceiling with a tight
+    per-user one (see user_rate_limit).
+    """
     def _guard(request: Request) -> None:
         ip = request.client.host if request.client else "unknown"
         if not ratelimit.allow(f"{bucket}:{ip}", limit, window_seconds):
+            raise HTTPException(status_code=429, detail="too many requests")
+    return _guard
+
+
+def user_rate_limit(bucket: str, limit: int, window_seconds: float):
+    """Dependency factory: per-user sliding window on authenticated writes.
+
+    One rogue token can only throttle itself; a full NAT office still gets
+    its own budget per player.
+    """
+    def _guard(user_id: str = Depends(current_user)) -> None:
+        if not ratelimit.allow(f"{bucket}:u:{user_id}", limit, window_seconds):
             raise HTTPException(status_code=429, detail="too many requests")
     return _guard
 

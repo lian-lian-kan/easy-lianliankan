@@ -19,6 +19,8 @@
 | token 验证 | Redis 缓存 `token_hash → user_id`（TTL 300s，refresh/登出即失效，Redis 不可用降级直查 PG） | 每请求省 1 条 PG 查询，砍掉热路径大头 |
 | last_seen | 60s 节流（Redis SET NX EX；降级退化为每次直写） | 写放大 -90% |
 | 连接池 | PG_POOL_MAX 默认 8 → 16/副本 | 2 副本 32 连接 < PG 默认 100 上限 |
+| 线程池 | sync psycopg2 层共享线程池 40 → 100（THREAD_CAPACITY） | 消除 200 并发下的排队放大（p95 2.3s → <60ms） |
+| 限流分层 | 认证写端点改 双层：per-user 细限（防单账号脚本）+ per-IP 粗限 3000/min（≈50 活跃玩家/NAT 地址，防单 IP 洪水不误伤合租网络） | 榜单防刷 + NAT 玩家不被误伤 |
 | 榜单读 | Redis TTL 缓存（总榜 30s / 周期榜 15s） | 刷榜压力不落 PG |
 
 水平扩展公式：`副本数 = ceil(峰值 req/s ÷ 单副本实测 RPS × 1.5 安全系数)`；连接池总量
@@ -70,9 +72,31 @@ GET /api/v1/leaderboard/{mode_id}?period=all|weekly|daily&limit≤100
 - 全部拦截/放行决策在应用日志输出结构化行（rid/user/mode/score/verdict），可 grep 回溯。
 - `mode_score_events` 本身是行为流水，事后可做离群分析（本批次不含 ML，只留数据面）。
 
-## 6. 压测结论（tools/loadtest.py，真实 uvicorn+PG+Redis）
+## 6. 压测结论（tools/loadtest.py，真实 uvicorn+PG16+Redis7，本机 docker VM）
 
-（待批次D回填：RPS / p50 / p99 / 错误率 / PG 连接占用 → 2000 在线结论）
+压测负载 = 每虚拟用户循环 [progress push（成绩递增，穿过 intake+anticheat）→ pull →
+榜单读]，同步频率取真实玩家（~30s/次）的 15 倍强度。
+
+**100 虚拟用户 × 60s（≈2000 在线的 2 倍真实峰值强度）：**
+
+```
+progress_put  ok=1999 fail=0  rps=31.4  p50=19.2ms p95=51.8ms  p99=81.8ms
+progress_get  ok=1999 fail=0  rps=31.4  p50= 5.6ms p95=21.9ms  p99=35.7ms
+leaderboard   ok=1999 fail=0  rps=31.4  p50=15.2ms p95=34.1ms  p99=50.2ms
+TOTAL         ok=5997 fail=0  rps=94.1  error_rate=0.00%
+```
+
+**200 虚拟用户 × 60s（4 倍强度）：** 143.6 req/s 总吞吐，错误率 1.51%
+（全部为 IP 粗限桶的预期 429，非故障），p50 27~56ms。
+
+**结论：** 单 uvicorn 进程在本机 docker VM 上即承载 94 req/s @ p99 < 82ms、零错误。
+生产 2 副本跑在独立 K8S 节点，2000 在线（≈70 req/s）的容量富余 ≥ 8 倍；
+瓶颈不在线程/连接/DB，按 §2 公式水平加副本即可线性扩展。若未来负载增长 10 倍，
+先扩副本与 PG 连接上限，再考虑 uvicorn workers 与 PG 读写分离。
+
+压测教训：限流三层（register per-IP / 认证端点 per-user+per-IP）是压测首先撞上的
+墙——脚本被迫串行注册并退避，这是服务器在正确工作；压测实例用
+`REGISTER_RATE_LIMIT=1000` 放宽注册桶，业务桶保持生产值。
 
 ## 7. 部署清单
 

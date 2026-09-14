@@ -52,6 +52,18 @@ def token_ttl_days() -> int:
     return int(os.environ.get("TOKEN_TTL_DAYS", "90"))
 
 
+def register_limit_per_minute() -> int:
+    """Per-IP register ceiling. Production keeps the default; load tests
+    raise it so virtual users from one IP don't spend 20 minutes in backoff."""
+    return int(os.environ.get("REGISTER_RATE_LIMIT", "10"))
+
+
+def thread_capacity() -> int:
+    """Worker threads for the sync DB layer. Must exceed pool_max() so
+    requests queue on threads briefly instead of erroring on the pool."""
+    return int(os.environ.get("THREAD_CAPACITY", "100"))
+
+
 # The game page runs on GitHub Pages; browsers enforce CORS there. Add more
 # origins (comma separated) via env when the page moves to its own domain.
 _DEFAULT_ALLOWED_ORIGINS = "https://lian-lian-kan.github.io"

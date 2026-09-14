@@ -1,7 +1,7 @@
 """Cloud save routes."""
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..dependencies import current_user, rate_limit
+from ..dependencies import current_user, rate_limit, user_rate_limit
 from ..models.schemas import ProgressPutRequest, ProgressPutResponse
 from ..services import progress_service, user_service
 from ..services.progress_service import StateTooLarge, StaleTimestamp
@@ -18,7 +18,8 @@ def read_progress(user_id: str = Depends(current_user)):
 
 
 @router.put("", response_model=ProgressPutResponse,
-            dependencies=[Depends(rate_limit("progress_put", limit=60, window_seconds=60))])
+            dependencies=[Depends(rate_limit("progress_put", limit=3000, window_seconds=60)),
+                          Depends(user_rate_limit("progress_put", limit=60, window_seconds=60))])
 def write_progress(payload: ProgressPutRequest, user_id: str = Depends(current_user)):
     try:
         result = progress_service.put_progress(user_id, payload.state, payload.updated_at)

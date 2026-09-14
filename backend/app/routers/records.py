@@ -1,7 +1,7 @@
 """Mode registry + per-user mode records + leaderboards."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..dependencies import current_user, rate_limit
+from ..dependencies import current_user, rate_limit, user_rate_limit
 from ..models.schemas import RecordPutRequest
 from ..services import leaderboard_service, records_service
 from ..services.records_service import ScoreRejected
@@ -20,7 +20,8 @@ def list_records(user_id: str = Depends(current_user)):
 
 
 @router.put("/records/{mode_id}",
-            dependencies=[Depends(rate_limit("records_put", limit=60, window_seconds=60))])
+            dependencies=[Depends(rate_limit("records_put", limit=3000, window_seconds=60)),
+                          Depends(user_rate_limit("records_put", limit=60, window_seconds=60))])
 def record_result(mode_id: str, payload: RecordPutRequest,
                   user_id: str = Depends(current_user)):
     try:
