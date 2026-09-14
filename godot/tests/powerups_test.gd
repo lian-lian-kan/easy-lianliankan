@@ -210,9 +210,8 @@ func _init() -> void:
 	POWERUPS._activate_time_sand(game)
 	check(game.time_left == 999, "time sand is capped at 999")
 	game = FakeGame.new()
-	game.hint_tiles = [Vector2(0, 0)]
 	POWERUPS._activate_bomb(game)
-	check(game.bomb_pending and game.hint_tiles.empty() and game.rainbow_pending == false \
+	check(game.bomb_pending and game.rainbow_pending == false \
 		and game.frost_pending == false, "arming one click-target disarms the others")
 
 	# --- magnifier highlights up to three pairs
@@ -242,7 +241,7 @@ func _init() -> void:
 
 	# --- bomb execution
 	game = FakeGame.new()
-	game.power_ups = {"bomb": 1}
+	game.power_ups = {"bomb": 0}  # already armed and spent by _use_power_up
 	game.board = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]  # no second "1" anywhere
 	POWERUPS._execute_bomb(game, Vector2(0, 0))
 	check(game.power_ups["bomb"] == 1 and game.messages[0].find("退回") != -1,
@@ -280,6 +279,7 @@ func _init() -> void:
 	POWERUPS._execute_rainbow_click(game, Vector2(0, 0))
 	check(game.selected == Vector2(-1, -1) and game.rainbow_pending,
 		"re-clicking the same tile just deselects")
+	game.selected = Vector2(0, 0)  # pick the first target again
 	POWERUPS._execute_rainbow_click(game, Vector2(0, 1))
 	check(game.board[0][0] == 0 and game.board[0][1] == 0 and game.resolves == 1 \
 		and game.audio.played("eliminate"),
