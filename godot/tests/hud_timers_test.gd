@@ -66,6 +66,16 @@ class FakeTimerGame extends Node:
 	var message_label = Label.new()
 	var level_select_option = null
 	var second_timer = null
+	var message_timer = null
+	var error_timer = null
+	var combo_reset_timer = null
+	var level_highlight_timer = null
+	var level_advance_timer = null
+	var time_freeze_timer = null
+	var memory_preview_timer = null
+	var memory_hide_timer = null
+	var flip_back_timer = null
+	var race_timer = null
 	var refreshes = 0
 	var board_refreshes = 0
 	var time_ups = 0
