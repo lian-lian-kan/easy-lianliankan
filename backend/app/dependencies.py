@@ -7,7 +7,7 @@ import uuid
 
 from fastapi import HTTPException, Request
 
-from .core import ratelimit
+from .core import ratelimit, token_cache
 from .repositories import users_repo
 
 
@@ -19,16 +19,26 @@ def _bearer_token(request: Request) -> str:
 
 
 def current_user(request: Request) -> str:
-    """Dependency: bearer token -> user_id (401 when absent/unknown/expired)."""
+    """Dependency: bearer token -> user_id (401 when absent/unknown/expired).
+
+    Cache hit skips the DB entirely; a miss falls through and backfills.
+    """
     token = _bearer_token(request)
+    user_id = token_cache.lookup(token)
+    if user_id is not None:
+        return user_id
     row = users_repo.find_active_user_by_token(token)
     if row is None:
         raise HTTPException(status_code=401, detail="invalid or expired token")
-    return str(row["user_id"])
+    user_id = str(row["user_id"])
+    token_cache.store(token, user_id)
+    return user_id
 
 
 def current_token(request: Request) -> str:
     token = _bearer_token(request)
+    if token_cache.lookup(token) is not None:
+        return token
     if users_repo.find_active_user_by_token(token) is None:
         raise HTTPException(status_code=401, detail="invalid or expired token")
     return token

@@ -26,5 +26,5 @@ def write_progress(payload: ProgressPutRequest, user_id: str = Depends(current_u
         raise HTTPException(status_code=413, detail=str(exc))
     except StaleTimestamp as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    user_service.touch(user_id)
+    user_service.touch_throttled(user_id)
     return result

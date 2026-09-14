@@ -43,7 +43,9 @@ def pool_min() -> int:
 
 
 def pool_max() -> int:
-    return int(os.environ.get("PG_POOL_MAX", "8"))
+    # 16/replica: with 2 replicas this stays well under the PG default
+    # max_connections=100 while covering sync bursts (see docs/backend-scale.md).
+    return int(os.environ.get("PG_POOL_MAX", "16"))
 
 
 def token_ttl_days() -> int:

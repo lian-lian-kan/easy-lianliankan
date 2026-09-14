@@ -2,10 +2,11 @@
 import uuid as uuid_lib
 from datetime import datetime, timedelta, timezone
 
-from ..core import config, db
+from ..core import config, db, redis_client, token_cache
 from ..repositories import users_repo
 
 NICKNAME_MAX = 32
+SEEN_THROTTLE_SECONDS = 60
 
 
 def register(nickname: str = "") -> dict:
@@ -22,6 +23,7 @@ def refresh_token(old_token: str, user_id: str) -> dict:
     with db.transaction():
         users_repo.delete_token(old_token)
         token = _issue_token(user_id)
+    token_cache.invalidate(old_token)
     return {"token": token}
 
 
@@ -34,7 +36,23 @@ def profile(user_id: str) -> dict:
     return dict(row) if row else {}
 
 
-def touch(user_id: str) -> None:
+def touch_throttled(user_id: str) -> None:
+    """Presence marker for hot write paths: at most one UPDATE per minute.
+
+    Without Redis the throttle degrades to writing every time — correctness
+    first, write amplification second.
+    """
+    client = None
+    try:
+        client = redis_client.get_client()
+    except Exception:
+        pass
+    if client is not None:
+        try:
+            if client.set(f"seen:{user_id}", 1, nx=True, ex=SEEN_THROTTLE_SECONDS) is None:
+                return
+        except Exception:
+            pass
     users_repo.touch(user_id)
 
 
