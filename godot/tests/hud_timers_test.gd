@@ -151,8 +151,9 @@ func _init() -> void:
 		"the heartbeat repeats every second")
 	print("[dbg] flip=", builder.flip_back_timer, " wait=", builder.flip_back_timer.wait_time,
 		" one_shot=", builder.flip_back_timer.one_shot)
-	check(builder.flip_back_timer.wait_time == 0.7 and builder.flip_back_timer.one_shot,
-		"the flip-back timer is one-shot at 0.7s")
+	check(abs(builder.flip_back_timer.wait_time - 0.7) < 0.001,
+		"the flip-back timer waits 0.7s")
+	check(builder.flip_back_timer.one_shot == true, "the flip-back timer is one-shot")
 
 	# --- second tick: gates
 	var game = FakeTimerGame.new()
