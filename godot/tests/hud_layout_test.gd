@@ -163,7 +163,7 @@ func _init() -> void:
 	# --- update_layout on desktop: everything restored
 	var desktop_case = make_controls()
 	desktop_case.viewport_size = Vector2(1920, 1080)
-	desktop.title_row.visible = false  # simulate a prior portrait pass
+	desktop_case.title_row.visible = false  # simulate a prior portrait pass
 	HUD_LAYOUT.update_layout(desktop_case)
 	check(desktop_case.title_row.visible == true, "desktop restores the title strip")
 	check(desktop_case.stat_values["level_score"]["card"].visible,
