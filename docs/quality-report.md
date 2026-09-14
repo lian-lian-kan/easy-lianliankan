@@ -107,6 +107,12 @@
   耗尽重洗、on_combo 门槛/加成文本/里程碑一次支付（combo 12 跨 5/8/12 三里程碑逐笔核对）、
   语音池数据不变量（非空 res:// ogg）、未知键静默、耗尽重洗。CI 清单 38→40 项。
 
+- **Round 11 工具/计时域补测**：hud_timers_test 直测心跳与计时器清单——specs 指向真实
+  回调、_build_timers 构建/存储/默认节奏、二秒心跳四道门（暂停/冻结/无尽/零时限）、
+  defuse 炸弹逐秒 tick、shift 倒数到零换脸、defense 逼近丢距离与归零判负、race AI
+  间隔节奏与终局判负、六个通用超时回调（含 endless 轮次推进与 null 安全）；ui_fonts_test
+  直测字体工厂——按 px 缓存复用、8px 下限钳制、全局主题五控件绑定。CI 清单 40→42 项。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。
