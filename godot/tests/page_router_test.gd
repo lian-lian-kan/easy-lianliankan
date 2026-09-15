@@ -75,7 +75,6 @@ func _init() -> void:
 	# null guard: no page surface built yet -> the router does nothing
 	var early = FakePageGame.new()
 	early.pages_root = null
-	early.pages_root.visible  # would crash if the router touched it later
 	PAGE_ROUTER.show_page(early, "level_map")
 	check(early.current_page == "" and early.pages_root == null,
 		"show_page without a page surface is a no-op")
