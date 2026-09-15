@@ -429,7 +429,8 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "defense", "title": "🧟 守卫模式", "detail": "消除击退怪物近身即败 · 最佳%d分" % int(progression_state.get("defense_best_score", 0))},
 		{"id": "sum10", "title": "🔟 合十消", "detail": "两数相加为10即可消 · 最佳%d分" % int(progression_state.get("sum10_best_score", 0))},
 		{"id": "duel", "title": "👫 同屏对战", "detail": "轮流消牌分高者胜 · 最佳%d分" % int(progression_state.get("duel_best_score", 0))},
-		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]}
+		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]},
+		{"id": "tree", "title": "🌳 攀登树", "detail": "望不到头的大树逐层攀登 · 最佳第%d层" % int(progression_state.get("tree_best_height", 0))}
 	]
 
 
