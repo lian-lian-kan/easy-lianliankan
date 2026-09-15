@@ -175,6 +175,7 @@ static func _meta(game):
 				meta["user_id"] = str(raw.get("user_id", ""))
 				meta["token"] = str(raw["token"])
 				meta["synced_at"] = int(raw.get("synced_at", 0))
+				meta["pending_stamp"] = int(raw.get("pending_stamp", 0))
 	return meta
 
 static func _write_meta(game, meta):
