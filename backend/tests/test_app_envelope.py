@@ -52,3 +52,15 @@ def test_refresh_rejects_unknown_token(client):
                        headers={"Authorization": f"Bearer {uuid.uuid4().hex}"})
     assert resp.status_code == 401
     assert resp.json()["error"]["detail"] == "invalid or expired token"
+
+
+def test_healthz_stays_200_when_redis_is_down(client, monkeypatch):
+    """Redis is an accelerator, not a dependency: the API reports the
+    degradation but stays healthy."""
+    from app.core import redis_client
+
+    monkeypatch.setattr(redis_client, "ping", lambda: False)
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body == {"ok": True, "db": True, "redis": False}
