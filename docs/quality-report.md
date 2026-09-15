@@ -119,6 +119,12 @@
   separations（竖屏 3px 换宽、桌面 10px）、stat 卡三档尺寸与竖屏 value-only pill、
   compact/restore 全量可见性往返。
 
+- **Round 17 云同步与元页面补测**：server_sync_test 补 6 项——连接 banner 仅在状态
+  转换时各触发一次（持续连接不重发、miss 翻转一次并排程）、节流窗口过期后 push 真正
+  上线并写 pending_stamp、未知 lane 静默忽略（前向兼容）、坏 JSON 的 201 注册走重试路径；
+  startup_probe 增加签到/商店页空账号渲染断言（页面打开可见、布局非空、回主页关闭）。
+  后端 README 限流矩阵与代码一致性核对完成（Round 15 门禁 + 本轮五处数值同步）。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。

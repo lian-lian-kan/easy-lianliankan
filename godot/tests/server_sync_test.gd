@@ -115,6 +115,38 @@ func _init() -> void:
 	_forward(game, "push", 422, "{}")
 	check(game.cloud_connected == false and game.scheduled >= 1, "a hard push failure enters the reconnect loop")
 
+	# --- connection banner changes only on transitions
+	game = FakeGame.new()
+	_forward(game, "pull", 404, "{}")   # connects (empty account)
+	check(game.connected_banners == 1 and game.cancelled == 1, "first connect fires the banner once")
+	_forward(game, "pull", 200, '{"state":{"current_level_index":0},"updated_at":1}')
+	check(game.connected_banners == 1, "staying connected never re-fires the banner")
+	check(game.scheduled == 0, "a connected pull never schedules a retry")
+
+	# --- a failed lane while connected flips the banner exactly once
+	_forward(game, "pull", 500, "{}")
+	check(game.missed_banners == 1 and game.scheduled == 1, "the miss flips the banner once and schedules")
+
+	# --- throttled push goes live once the window has elapsed
+	game = FakeGame.new()
+	game.sync_last_push_ms = OS.get_ticks_msec() - 6000
+	game.progression_state["current_level_index"] = 1
+	SERVER_SYNC.push(game)
+	check(game.pull_http != null, "an elapsed throttle window lets the push reach the wire")
+	check(int(SERVER_SYNC._meta(game)["pending_stamp"]) > 0, "the push stages a pending stamp")
+
+	# --- unknown lane kind is ignored (forward-compat)
+	game = FakeGame.new()
+	SERVER_SYNC.on_completed(game, "teleport", 200, "{}")
+	check(game.cloud_connected == false and game.scheduled == 0,
+		"an unknown lane neither connects nor schedules")
+
+	# --- a 201 register with a broken payload degrades like a miss
+	game = FakeGame.new()
+	_forward(game, "register", 201, "not-json{")
+	check(game.cloud_connected == false and game.scheduled == 1,
+		"a malformed register payload takes the retry path")
+
 	# --- meta round trip on disk
 	game = FakeGame.new()
 	SERVER_SYNC._write_meta(game, {"user_id": "u9", "token": "t9", "synced_at": 77})

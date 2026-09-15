@@ -151,6 +151,23 @@ func _init() -> void:
 	game._start_level(0, true)
 	check(_board_cells(game) > 0, "campaign board deals tiles")
 
+	# meta pages render non-empty content from an empty account (first run:
+	# no wallet entries, no sign-ins, default collection state)
+	for page in ["signin", "shop"]:
+		game._on_nav_pressed(page)
+		check(game.pages_root != null && game.pages_root.visible,
+			"%s page opens the page surface" % page)
+		var boxes = 0
+		var stack = [game.page_content]
+		while not stack.empty():
+			var node = stack.pop_back()
+			for child in node.get_children():
+				stack.push_back(child)
+			boxes += 1
+		check(boxes > 3, "%s page renders a real layout (%d nodes)" % [page, boxes])
+		game._on_nav_home_pressed()
+		check(game.pages_root.visible == false, "%s page closes back to the board" % page)
+
 	if failures == 0:
 		print("startup_probe: ALL PASSED")
 		quit(0)
