@@ -59,11 +59,11 @@ tests/               # pytest（CI 带 pg service 真库跑）
 | 端点 | 限流（滑窗） | 入参硬边界 | 额外守卫 |
 |---|---|---|---|
 | POST `/users/register` | 10/min/IP（`REGISTER_RATE_LIMIT` 可调） | 昵称 ≤32 字符 strip | — |
-| POST `/auth/refresh` | 60/min/IP | bearer 必须有效 | 旧 token 立即失效+缓存失效 |
-| PUT `/progress` | 60/min/user + 600/min/IP | state ≤256 KiB、updated_at ≤ now+5min | 成绩过 anticheat 三道门（天花板/节奏/静默隔离） |
-| PUT `/records/{mode_id}` | 60/min/user + 600/min/IP | best_score ≥0、mode 存在 | 同上；越门 422 |
-| PUT `/missions` | 60/min/user + 600/min/IP | week_key 0..1e9、progress ≥0 | — |
-| POST `/achievements/{id}` | 60/min/user + 600/min/IP | id ≤64 字符截断 | 幂等 |
+| POST `/auth/refresh` | 300/min/IP | bearer 必须有效 | 旧 token 立即失效+缓存失效 |
+| PUT `/progress` | 60/min/user + 3000/min/IP | state ≤256 KiB、updated_at ≤ now+5min | 成绩过 anticheat 三道门（天花板/节奏/静默隔离） |
+| PUT `/records/{mode_id}` | 60/min/user + 3000/min/IP | best_score ≥0、mode 存在 | 同上；越门 422 |
+| PUT `/missions` | 60/min/user + 3000/min/IP | week_key 0..1e9、progress ≥0 | — |
+| POST `/achievements/{id}` | 60/min/user + 3000/min/IP | id ≤64 字符截断 | 幂等 |
 | POST `/wallet/entries` | 30/min/user + 1500/min/IP | delta ±`MAX_WALLET_DELTA` | — |
 | POST `/signin` | 10/min/user + 300/min/IP | day YYYY-MM-DD、streak 1..1e4 | 每日幂等 |
 | GET `/leaderboard/{mode_id}` | — | period ∈ all/weekly/daily、limit ≤100 | 共享部分 Redis 缓存（总榜 30s/周期 15s） |
