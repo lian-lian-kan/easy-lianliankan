@@ -28,8 +28,10 @@ static func level_for(height: int):
 		"id": 1,
 		"name": "第" + str(h) + "层",
 		"mode": "tree",
-		"rows": min(BASE_ROWS + int((h - 1) / 6.0), MAX_ROWS),
-		"cols": min(BASE_COLS + int((h - 1) / 10.0), MAX_COLS),
+		# Even +2 strides keep rows/cols always even, so every layer's tile
+		# count stays pairable no matter the height.
+		"rows": min(BASE_ROWS + 2 * int((h - 1) / 12.0), MAX_ROWS),
+		"cols": min(BASE_COLS + 2 * int((h - 1) / 20.0), MAX_COLS),
 		"kinds": min(BASE_KINDS + int((h - 1) / 8.0), MAX_KINDS),
 		"time_limit": max(MIN_TIME, BASE_TIME - h),
 		"tree_height": h,
