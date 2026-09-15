@@ -529,7 +529,7 @@ func _init() -> void:
 			else:
 				unlocked_count += 1
 				unlocked_wired = unlocked_wired && mode_button.is_connected("pressed", game, "_on_special_mode_pressed")
-	check(locked_count == 24 && unlocked_count == 2, "fresh save unlocks only daily and zen (locked %d unlocked %d)" % [locked_count, unlocked_count])
+	check(locked_count == 24 && unlocked_count == 3, "fresh save unlocks daily, zen and tree (locked %d unlocked %d)" % [locked_count, unlocked_count])
 	check(unlocked_wired, "unlocked mode rows wire the session start")
 	var locked_sample = ""
 	for mode_button in game.modes_content.get_children():
@@ -543,7 +543,7 @@ func _init() -> void:
 	for mode_button in game.modes_content.get_children():
 		if mode_button is Button && mode_button.text.find("关解锁") != -1:
 			late_locked += 1
-	check(late_locked == 0 && game.modes_content.get_child_count() == 32, "rebuilt rows reflect the restored unlock index")
+	check(late_locked == 0 && game.modes_content.get_child_count() == 33, "rebuilt rows reflect the restored unlock index")
 	game._on_modes_close_pressed()
 	check(!game.modes_panel.visible, "closing modes hides the browser")
 

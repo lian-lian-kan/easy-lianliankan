@@ -28,7 +28,7 @@ tests/               # pytest（CI 带 pg service 真库跑）
 | `users` | 账号（UUID、昵称、创建/最近活跃） |
 | `auth_tokens` | 登录令牌（只存 SHA-256，90 天过期，可刷新轮换） |
 | `progress_snapshots` | 每用户 progression_state 整包（JSONB + updated_at 陈旧写拒绝） |
-| `modes` | 玩法注册表（26 种特殊玩法，启动 seed，随游戏版本扩展） |
+| `modes` | 玩法注册表（27 种特殊玩法，启动 seed，随游戏版本扩展） |
 | `mode_records` | 每用户×每玩法：最佳分（max 合并）/次数/胜场，排行榜数据源 |
 | `achievements` | 每用户成就（幂等解锁） |
 | `missions_progress` | 每用户×周任务（week_key 滚动周，进度 max 合并 + 领取位） |
