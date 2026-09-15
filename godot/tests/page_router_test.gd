@@ -31,6 +31,8 @@ class FakePageGame extends Node:
 	var page_content = VBoxContainer.new()
 	var second_timer = StubTimer.new()
 	var level_advance_timer = StubTimer.new()
+	var stage_panel_label = null
+	var combo_burst_label = null
 	var stage_status = STATUS_PLAYING
 	var pending_level_index = -1
 	var current_page = ""
