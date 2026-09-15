@@ -41,7 +41,7 @@ func _init() -> void:
 	# mode_id -> [expect_timed(bool), extra check lambda replaced by inline ifs]
 	var modes = ["daily", "time_attack", "endless", "memory", "frost", "zen", "hell",
 		"moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip",
-		"fever", "perfect", "rock", "defuse", "target", "shift", "slide", "defense", "sum10", "duel"]
+		"fever", "perfect", "rock", "defuse", "target", "shift", "slide", "defense", "sum10", "duel", "tree"]
 
 	for mode_id in modes:
 		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
@@ -65,6 +65,11 @@ func _init() -> void:
 			check(int(game.time_left) > 0, "%s starts with clock time" % mode_id)
 
 		match mode_id:
+			"tree":
+				check(int(game.special_level.get("tree_height", 0)) >= 1,
+					"tree enters above layer 0")
+				check(int(game.special_level.get("rows", 0)) >= 2,
+					"tree deals a real board")
 			"tray":
 				check(game.tray_state.has("tiles") && game.tray_state["tiles"].size() == 120,
 					"tray deals 120 tiles")

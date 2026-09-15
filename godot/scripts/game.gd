@@ -74,6 +74,7 @@ var game_mode_configs = {}
 var special_mode = ""
 var special_level = {}
 var endless_round = 1
+var tree_height = 1
 
 # Memory (盲盒) session state
 var memory_previewing = false

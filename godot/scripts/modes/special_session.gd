@@ -40,6 +40,7 @@ static func _start_special_mode(game, mode_id):
 	game.special_mode = mode_id
 	game.endless_round = 1
 	game.special_level = level
+	game.tree_height = int(level.get("tree_height", 1))
 	game._reset_level_session(level, true)
 	print("[Game] special mode started: " + mode_id)
 	if mode_id == "memory":
@@ -73,6 +74,8 @@ static func _build_special_level(game, mode_id, config):
 		return game.SPECIAL_MODES_SCRIPT.build_rock_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
 	if mode_id == "defuse":
 		return game.SPECIAL_MODES_SCRIPT.build_defuse_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+	if mode_id == "tree":
+		return game.SPECIAL_MODES_SCRIPT.build_tree_level(config, int(game.progression_state.get("tree_best_height", 0)) + 1)
 	if mode_id in CLASSIC_STYLE_MODES:
 		return game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
 	return game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
@@ -114,6 +117,8 @@ static func _resolve_special_clear(game):
 		game.level_advance_timer.stop()
 		game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
 		game.level_advance_timer.start()
+	elif game.special_mode == "tree":
+		_advance_tree_layer(game, time_bonus)
 	else:
 		game._record_special_completion()
 		game.stage_status = game.STATUS_COMPLETED
@@ -121,6 +126,30 @@ static func _resolve_special_clear(game):
 
 	game._refresh_ui()
 	game._refresh_board_visuals()
+
+# Tree climb: bank the cleared layer (best height, one-time milestone payout),
+# build the next layer and kick the advance timer, endless-style.
+static func _advance_tree_layer(game, time_bonus):
+	var cleared_height = int(game.special_level.get("tree_height", game.tree_height))
+	var claimed = game.progression_state.get("tree_milestones", [])
+	var patch = {"tree_result": cleared_height}
+	var clear_message = "第" + str(cleared_height) + "层登顶！奖励 +" + str(time_bonus)
+	var reward = game.SPECIAL_MODES_SCRIPT.TREE_LADDER.milestone_reward(cleared_height)
+	if reward > 0 and not claimed.has(cleared_height):
+		var updated_claimed = claimed.duplicate()
+		updated_claimed.append(cleared_height)
+		patch["tree_milestones"] = updated_claimed
+		patch["coins_delta"] = reward
+		clear_message += "\n🌳 里程碑达成！🌸+" + str(reward)
+	game._patch_progress_state(patch)
+	game.tree_height = cleared_height + 1
+	game.special_level = game.SPECIAL_MODES_SCRIPT.build_tree_level(game.game_mode_configs.get("tree", {}), game.tree_height)
+	game.stage_status = game.STATUS_CLEARED
+	game._play_stage_clear_celebration(false)
+	game._show_message(clear_message, 1.6)
+	game.level_advance_timer.stop()
+	game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
+	game.level_advance_timer.start()
 
 static func _record_special_completion(game):
 	game._mission_special_done()

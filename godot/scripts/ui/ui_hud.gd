@@ -86,6 +86,9 @@ static func _subtitle_text(game, level_id, level_name, unlocked_level_count):
 		return "步数挑战 · 最佳%d分 · 剩余%d步" % [int(game.progression_state.get("moves_best_score", 0)), game.moves_left]
 	elif game.special_mode == "perfect":
 		return "完美模式 · 最佳%d分 · 失误%d/%d" % [int(game.progression_state.get("perfect_best_score", 0)), game.perfect_misses, int(game.special_level.get("miss_limit", 3))]
+	elif game.special_mode == "tree":
+		var tree_claimed = game.progression_state.get("tree_milestones", [])
+		return "攀登树 · 第%d层 · 最佳第%d层 · 里程碑%d/%d" % [game.tree_height, int(game.progression_state.get("tree_best_height", 0)), game.SPECIAL_MODES_SCRIPT.TREE_LADDER.claimed_count(tree_claimed), game.SPECIAL_MODES_SCRIPT.TREE_LADDER.MILESTONE_HEIGHTS.size()]
 	else:
 		var record_key = game.SPECIAL_MODES_SCRIPT.subtitle_record_key(game.special_mode)
 		if record_key != "":

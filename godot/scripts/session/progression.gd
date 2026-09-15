@@ -45,6 +45,7 @@ const FLAT_BEST_KEYS = [
 	"perfect_best_score", "rock_best_score", "defuse_best_score",
 	"target_best_score", "shift_best_score", "slide_best_score",
 	"defense_best_score", "sum10_best_score", "duel_best_score",
+	"tree_best_height",
 ]
 
 static func default_progress(level_count: int) :
@@ -67,6 +68,7 @@ static func default_progress(level_count: int) :
 		"current_theme": "sakura",
 		"signin_streak": 0,
 		"last_signin": "",
+		"tree_milestones": [],
 		"weekly_missions": {"week_key": "", "progress": {}, "claimed": []}
 	}
 	for key in FLAT_BEST_KEYS:
@@ -172,6 +174,9 @@ static func _normalize_special_records(raw, normalized):
 			"round": max(0, int(raw_endless.get("round", 0))),
 			"score": max(0, int(raw_endless.get("score", 0)))
 		}
+	var raw_tree_milestones = raw.get("tree_milestones", [])
+	if typeof(raw_tree_milestones) == TYPE_ARRAY:
+		normalized["tree_milestones"] = raw_tree_milestones.duplicate()
 	for key in FLAT_BEST_KEYS:
 		normalized[key] = max(0, int(raw.get(key, 0)))
 
@@ -302,6 +307,14 @@ static func _apply_special_records(next_state, patch):
 			next_state[best_key] = max(int(next_state[best_key]), max(0, int(patch[result_key])))
 	if patch.has("time_attack_result"):
 		next_state["time_attack_best_score"] = max(int(next_state["time_attack_best_score"]), max(0, int(patch["time_attack_result"])))
+	# Tree climb: best height max-merges like a score; the claimed milestone
+	# list arrives already-consistent from special_session.
+	if patch.has("tree_result"):
+		next_state["tree_best_height"] = max(int(next_state["tree_best_height"]), max(0, int(patch["tree_result"])))
+	if patch.has("tree_milestones"):
+		var tree_claimed = patch["tree_milestones"]
+		if typeof(tree_claimed) == TYPE_ARRAY:
+			next_state["tree_milestones"] = tree_claimed.duplicate()
 
 static func same_progress(a, b, level_count: int) :
 	var aa = normalize_progress(a, level_count)
@@ -319,7 +332,7 @@ static func same_progress(a, b, level_count: int) :
 	if str(aa.get("current_theme", "")) != str(bb.get("current_theme", "")) \
 			or str(aa.get("last_signin", "")) != str(bb.get("last_signin", "")):
 		return false
-	for key in ["achievements", "collected", "owned_sets", "owned_themes"]:
+	for key in ["achievements", "collected", "owned_sets", "owned_themes", "tree_milestones"]:
 		if not _arrays_equal(aa.get(key, []), bb.get(key, [])):
 			return false
 	for key in ["daily_challenge", "endless_best", "level_stars"]:

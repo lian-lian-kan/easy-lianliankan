@@ -33,6 +33,12 @@ const DEFAULT_CONFIGS = {
 		"base_rows": 10,
 		"base_cols": 8
 	},
+	"tree": {
+		"mode_id": "tree",
+		"name": "攀登树",
+		"description": "一棵望不到头的大树，逐层向上攀登",
+		"unlock_level": 1
+	},
 	"daily": {
 		"mode_id": "daily",
 		"name": "每日挑战",
@@ -338,6 +344,7 @@ const MODE_LABELS_EXTRA = {
 	"defense": "守卫模式",
 	"sum10": "合十消",
 	"duel": "同屏对战",
+	"tree": "攀登树",
 }
 const INTRO_TEXTS_EXTRA = {
 	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
@@ -353,6 +360,7 @@ const INTRO_TEXTS_EXTRA = {
 	"defense": "守卫模式！🧟 消除击退怪物，它近身就输了",
 	"sum10": "合十消！🔟 两张牌的数字相加为 10 就能消除",
 	"duel": "同屏对战！👫 成功消除继续，失败换对方，分高者胜",
+	"tree": "攀登树！🌳 从第 1 层开始往上爬，每层更难，里程碑送上樱花",
 }
 
 const RECORD_MODES = {

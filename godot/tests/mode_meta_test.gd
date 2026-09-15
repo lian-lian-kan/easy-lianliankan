@@ -82,7 +82,7 @@ func _init() -> void:
 	check(SM.bonus_achievements("race", {}) == [], "race has no conditional bonus")
 
 	# --- modes_panel_rows: 13 ordered rows, best-score formatting, daily done branch.
-	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "tray", "collect", "flip", "rock", "defuse", "target", "shift", "slide", "defense", "sum10", "duel", "endless"]
+	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "tray", "collect", "flip", "rock", "defuse", "target", "shift", "slide", "defense", "sum10", "duel", "endless", "tree"]
 	var state := {
 		"daily_challenge": {"streak": 2, "best_score": 88},
 		"time_attack_best_score": 120, "memory_best_score": 34, "frost_best_score": 56,
@@ -101,7 +101,7 @@ func _init() -> void:
 	var got_ids := []
 	for r in rows:
 		got_ids.append(r["id"])
-	check(got_ids == want_ids, "modes_panel_rows returns 26 rows in panel order")
+	check(got_ids == want_ids, "modes_panel_rows returns 27 rows in panel order")
 	var titles_ok := true
 	for r in rows:
 		if r["title"] == "" or r["detail"] == "":
@@ -109,7 +109,7 @@ func _init() -> void:
 	check(titles_ok, "every row has title and detail")
 	var details_ok := true
 	for r in rows:
-		if r["id"] == "daily" or r["id"] == "endless":
+		if r["id"] == "daily" or r["id"] == "endless" or r["id"] == "tree":
 			continue
 		var want := "最佳%d分" % int(state[r["id"] + "_best_score"])
 		if not r["detail"].ends_with(want):
@@ -141,7 +141,7 @@ func _init() -> void:
 	# --- special_modes_data invariants: the whole campaign's unlock curve
 	# and per-mode payloads must stay inside legal bounds (BQ found unlock
 	# levels beyond the campaign once already) ---
-	check(DATA.DEFAULT_CONFIGS.size() == 26, "data module carries 26 mode configs")
+	check(DATA.DEFAULT_CONFIGS.size() == 27, "data module carries 27 mode configs")
 	var inv_ok = true
 	var unlock_too_high = ""
 	for mode_id in DATA.DEFAULT_CONFIGS:
@@ -158,7 +158,7 @@ func _init() -> void:
 			unlock_too_high = mode_id
 		if int(cfg.get("time_limit", 1)) < 0:
 			inv_ok = false
-	check(inv_ok, "all 26 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
+	check(inv_ok, "all 27 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
 	check(int(DATA.DEFAULT_CONFIGS["fever"]["fever_mode_threshold"]) >= 2, "fever needs combo 2+")
 	check(int(DATA.DEFAULT_CONFIGS["perfect"]["miss_limit"]) >= 1, "perfect carries a miss budget")
 
@@ -175,7 +175,7 @@ func _init() -> void:
 	# --- growth guards: a newly added mode must register its subtitle record
 	# and power-up loadout rows, otherwise the main screen silently falls back
 	# to campaign copy / default grants (the scattered-branch era lost ways) ---
-	var bespoke_subtitle = {"daily": true, "endless": true, "moves": true, "perfect": true, "tray": true, "collect": true, "flip": true}
+	var bespoke_subtitle = {"daily": true, "endless": true, "moves": true, "perfect": true, "tray": true, "collect": true, "flip": true, "tree": true}
 	var sub_ok = true
 	for mode_id in DATA.DEFAULT_CONFIGS:
 		if bespoke_subtitle.has(mode_id):

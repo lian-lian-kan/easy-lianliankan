@@ -31,4 +31,5 @@ MODES = [
     {"mode_id": "defense", "label": "守卫模式", "unlock_level": 16},
     {"mode_id": "sum10", "label": "合十消", "unlock_level": 17},
     {"mode_id": "duel", "label": "同屏对战", "unlock_level": 17},
+    {"mode_id": "tree", "label": "攀登树", "unlock_level": 1},
 ]

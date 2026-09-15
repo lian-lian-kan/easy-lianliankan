@@ -467,8 +467,8 @@ func _init() -> void:
 	game._build_modes_panel()
 	game._refresh_modes_panel()
 	check(game.modes_panel != null, "modes panel built")
-	check(game.modes_content != null && game.modes_content.get_child_count() == 32,
-		"modes panel has 26 mode cards + 6 category headers (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
+	check(game.modes_content != null && game.modes_content.get_child_count() == 33,
+		"modes panel has 27 mode cards + 6 category headers (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
 
 	# modal lifecycle: open pauses the stage clock, close resumes it
 	game.stage_status = game.STATUS_PLAYING

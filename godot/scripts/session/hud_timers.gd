@@ -110,6 +110,11 @@ static func _on_level_advance_timeout(game):
 		game._reset_level_session(game.special_level, false)
 		game._show_message("第" + str(game.endless_round) + "轮开始", 1.2)
 		return
+	if game.special_mode == "tree":
+		# Next tree layer keeps the running total score too.
+		game._reset_level_session(game.special_level, false)
+		game._show_message("🌳 第" + str(game.tree_height) + "层开始", 1.2)
+		return
 	if game.pending_level_index < 0:
 		return
 

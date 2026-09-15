@@ -21,6 +21,7 @@ class FakeGame extends Reference:
 	var progression_state = {"highest_unlocked_level_index": 20}
 	var special_mode = ""
 	var endless_round = 0
+	var tree_height = 0
 	var special_level = null
 	var level_index = 3
 	var messages = []
@@ -81,6 +82,18 @@ func _init() -> void:
 	SPECIAL_SESSION._start_special_mode(game, "rock")
 	check(game.special_mode == "rock" and game.resets.size() == 1,
 		"rock builds an obstacle level")
+
+	# --- tree dispatch: the climb resumes at best height + 1
+	game = FakeGame.new()
+	game.progression_state = {"highest_unlocked_level_index": 20, "tree_best_height": 6}
+	SPECIAL_SESSION._start_special_mode(game, "tree")
+	check(game.special_mode == "tree" and game.resets.size() == 1,
+		"tree lands in special_mode with a session reset")
+	check(int(game.special_level.get("tree_height", 0)) == 7,
+		"tree resumes at best height + 1")
+	check(game.tree_height == 7, "the current layer mirrors the level")
+	check(int(game.special_level.get("time_limit", 0)) > 0, "tree layers are timed")
+	check(game.messages.back().find("攀登树") != -1, "tree announces its intro")
 
 	# --- unknown mode falls back to endless
 	game = FakeGame.new()

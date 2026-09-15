@@ -1,6 +1,7 @@
 extends Reference
 
 const DATA = preload("res://scripts/modes/special_modes_data.gd")
+const TREE_LADDER = preload("res://scripts/modes/tree_ladder.gd")
 
 # Forwarding aliases: existing code and tests read the tables through
 # special_modes.gd, so the data module stays swappable.
@@ -113,6 +114,11 @@ static func build_endless_level(config, round_index: int):
 		"time_limit": 0,
 		"round_index": round_index
 	}
+
+# Tree climb: the layer height alone drives the board (curve + caps live in
+# tree_ladder.gd); config stays unused but keeps the builder signature uniform.
+static func build_tree_level(config, height: int):
+	return TREE_LADDER.level_for(height)
 
 
 # Pick the memory difficulty tier whose level_range covers the player's
@@ -330,6 +336,8 @@ static func stage_callout(mode: String, level, level_index: int, endless_round: 
 		return ["收集挑战", Color("f59f00")]
 	if mode == "flip":
 		return ["翻翻乐", Color("9775fa")]
+	if mode == "tree":
+		return ["攀登树 · 第%d层" % int(level.get("tree_height", 1)), Color("40c057")]
 	return ["第" + str(int(level.get("id", level_index + 1))) + "关 · " + str(level.get("name", "关卡")), Color("e64980")]
 
 # ---- 特殊模式结算表：纪录补丁键 / 首通成就 / 面板标题 ----
@@ -433,5 +441,5 @@ const MODE_CATEGORIES = [
 	{"title": "⚙️ 机制挑战", "modes": ["frost", "stack", "gravity", "fog", "chain", "rock", "defuse", "target", "shift", "slide", "defense", "sum10"]},
 	{"title": "👥 双人", "modes": ["race", "duel"]},
 	{"title": "🌙 休闲自定", "modes": ["zen", "moves", "perfect", "collect"]},
-	{"title": "∞ 无尽", "modes": ["endless"]},
+	{"title": "∞ 无尽", "modes": ["endless", "tree"]},
 ]

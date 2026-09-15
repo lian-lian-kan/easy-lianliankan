@@ -20,7 +20,7 @@ def test_modes_registry_seeded(client):
     modes = client.get("/api/v1/modes").json()["modes"]
     ids = {m["mode_id"] for m in modes}
     assert {"daily", "zen", "duel", "sum10", "defense"} <= ids
-    assert len(ids) == 26
+    assert len(ids) == 27
     duel = next(m for m in modes if m["mode_id"] == "duel")
     assert duel["unlock_level"] == 17 and duel["label"] == "同屏对战"
 

@@ -240,6 +240,7 @@ static func _stats_rows(game, collected, total_icons) -> Array:
 		["🎁 连续签到", "%d 天" % int(game.progression_state.get("signin_streak", 0))],
 		["📅 每日挑战最佳", str(int(game.progression_state.get("daily_challenge", {}).get("best_score", 0)))],
 		["∞ 无尽模式", "第%d轮 · %d分" % [int(game.progression_state.get("endless_best", {}).get("round", 0)), int(game.progression_state.get("endless_best", {}).get("score", 0))]],
+		["🌳 攀登树", "最佳第%d层" % int(game.progression_state.get("tree_best_height", 0))],
 		["⏱️ 限时最佳", str(int(game.progression_state.get("time_attack_best_score", 0)))],
 		["🎁 盲盒最佳", str(int(game.progression_state.get("memory_best_score", 0)))],
 		["❄️ 冰雪最佳", str(int(game.progression_state.get("frost_best_score", 0)))],
