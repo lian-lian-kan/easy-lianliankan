@@ -10,6 +10,8 @@ def _push_save(client, stamp, coins=50):
 
 
 def test_issue_code_requires_auth(client):
+    # Session-scoped client: earlier test files may have left a bearer on it.
+    client.headers.pop("Authorization", None)
     assert client.post("/api/v1/migration/code").status_code in (401, 403)
 
 
@@ -103,3 +105,20 @@ def test_generate_rate_limited(client):
     assert client.post("/api/v1/migration/code").status_code == 200
     assert client.post("/api/v1/migration/code").status_code == 200
     assert client.post("/api/v1/migration/code").status_code == 429
+
+
+def test_token_cache_entries_are_epoch_stamped(client):
+    """A cached session whose account epoch moved (migration revocation)
+    must read as a miss, never as trusted identity."""
+    from app.core import cache, token_cache
+    token_cache.store("t1", "user-e1")
+    assert token_cache.lookup("t1") == "user-e1"
+
+    cache.set_json(token_cache._key("t1"), "garbage", 60)
+    assert token_cache.lookup("t1") is None
+    cache.set_json(token_cache._key("t1"), [0], 60)
+    assert token_cache.lookup("t1") is None
+
+    token_cache.revoke_sessions("user-e1")
+    cache.set_json(token_cache._key("t1"), [0, "user-e1"], 60)
+    assert token_cache.lookup("t1") is None

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 
-from ..core import config, db, security
+from ..core import config, db, security, token_cache
 from ..repositories import migration_repo, users_repo
 from . import user_service
 
@@ -35,7 +35,10 @@ def claim(code: str) -> dict:
         token = user_service.issue_token(user_id)
         # Revoke every other device session: a forgotten old device must
         # never push a stale save over the one the player just migrated to.
+        # The epoch bump makes the auth cache honor it instantly, not just
+        # after its TTL.
         users_repo.revoke_other_tokens(user_id, security.hash_token(token))
+        token_cache.revoke_sessions(user_id)
     users_repo.touch(user_id)
     return {"user_id": user_id, "token": token}
 
