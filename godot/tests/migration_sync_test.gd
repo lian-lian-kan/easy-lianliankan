@@ -58,6 +58,13 @@ func _init() -> void:
 	MIGRATION_SYNC.on_completed(game, "mig_code", 429, "")
 	check(game.failed_msgs.size() == 1, "issue 429 degrades to a human message")
 
+	# ── Lane rides on the request node's meta for the signal forwarder ──
+	var lane_game = FakeGame.new()
+	MIGRATION_SYNC.claim_code(lane_game, "ABCD2345")
+	check(lane_game.migration_http != null and str(lane_game.migration_http.get_meta("lane")) == "mig_claim", "claim stamps its lane on the request node")
+	MIGRATION_SYNC.issue_code(lane_game)
+	check(str(lane_game.migration_http.get_meta("lane")) == "mig_code", "issue re-stamps the lane per request")
+
 	# ── Claim success: fresh session, no stale pending_stamp, pull follows ──
 	var fresh = FakeGame.new()
 	SERVER_SYNC.store_meta(fresh, {"user_id": "throwaway", "token": "tok-old", "synced_at": 9, "pending_stamp": 123})

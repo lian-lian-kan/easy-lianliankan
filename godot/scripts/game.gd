@@ -1140,6 +1140,14 @@ func _save_progress_state():
 func _boot_sync():
 	SERVER_SYNC.boot_sync(self)
 
+# request_completed 只给 4 参，车道号在请求前写进了节点 meta；
+# Web 桥仍直接调 5 参版（自带 kind），两条传输在 5 参处理层合流。
+func _on_pull_http_completed(result, code, headers, body):
+	return _on_sync_request_completed(result, code, headers, body, str(pull_http.get_meta("lane")))
+
+func _on_migration_http_completed(result, code, headers, body):
+	return _on_migration_request_completed(result, code, headers, body, str(migration_http.get_meta("lane")))
+
 # Web-only transport (JS fetch bridge) — native HTTPRequest is inert on HTML5.
 func _get_web_bridge():
 	if web_bridge == null:

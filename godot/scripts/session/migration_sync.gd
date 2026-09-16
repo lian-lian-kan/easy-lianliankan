@@ -60,6 +60,7 @@ static func _human(code):
 
 static func _request(game, kind, url, method, body, token):
 	var req = _http(game)
+	req.set_meta("lane", kind)
 	var headers = ["Content-Type: application/json"]
 	if token != "":
 		headers.append("Authorization: Bearer " + token)
@@ -71,6 +72,6 @@ static func _http(game):
 		req = HTTPRequest.new()
 		req.timeout = HTTP_TIMEOUT
 		game.add_child(req)
-		req.connect("request_completed", game, "_on_migration_request_completed")
+		req.connect("request_completed", game, "_on_migration_http_completed")
 		game.migration_http = req
 	return req

@@ -146,7 +146,9 @@ static func base_url() -> String:
 	return DEFAULT_API_BASE
 
 # A single shared HTTPRequest (requests are serialized by boot flow and the
-# throttle); re-used for register/pull/push lanes.
+# throttle); re-used for register/pull/push lanes. The lane rides on the
+# node's meta: request_completed passes only 4 args, so the handler reads
+# the lane back from there instead of relying on signal binds.
 static func _request(game, kind, url, method, body):
 	print("[Sync] request lane=", kind, " url=", url)
 	var meta = _meta(game)
@@ -154,6 +156,7 @@ static func _request(game, kind, url, method, body):
 	if _on_web():
 		return game._get_web_bridge().request(kind, url, method, body, token)
 	var req = _http(game)
+	req.set_meta("lane", kind)
 	var headers = ["Content-Type: application/json"]
 	if token != "":
 		headers.append("Authorization: Bearer " + token)
@@ -164,7 +167,7 @@ static func _http(game):
 		var req = HTTPRequest.new()
 		req.timeout = 8.0
 		game.add_child(req)
-		req.connect("request_completed", game, "_on_sync_request_completed")
+		req.connect("request_completed", game, "_on_pull_http_completed")
 		game.pull_http = req
 	return game.pull_http
 
