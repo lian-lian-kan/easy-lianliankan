@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'feat/android-apk-ci' ]
   workflow_dispatch:
 
 permissions:
