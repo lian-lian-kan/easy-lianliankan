@@ -77,6 +77,8 @@ static func _on_pull(game, code, body_text):
 		# First contact with an empty cloud account: local cache is the seed.
 		_cloud_ok(game)
 		return
+	if code == 401:
+		return _reauth(game)
 	if code != 200:
 		return _cloud_miss(game, "pull", code)
 	var payload = parse_json(body_text)
@@ -96,6 +98,8 @@ static func _on_pull(game, code, body_text):
 	print("[Sync] adopted server save @", server_stamp)
 
 static func _on_push(game, code, body_text):
+	if code == 401:
+		return _reauth(game)
 	if code != 200:
 		return _cloud_miss(game, "push", code)
 	var payload = parse_json(body_text)
@@ -183,6 +187,28 @@ static func _write_meta(game, meta):
 	if file.open(SYNC_META_PATH, File.WRITE) == OK:
 		file.store_string(to_json(meta))
 		file.close()
+
+# 401 = the stored token died (90-day expiry, or the account was claimed
+# away by a device migration). Wipe the session and re-register: pairing
+# codes recover the identity on the next claim, and a stale old device
+# lands on a fresh account instead of overwriting the migrated save.
+static func _reauth(game):
+	var meta = _meta(game)
+	if str(meta.get("token", "")) == "":
+		return _cloud_miss(game, "auth", 401)
+	meta.erase("user_id")
+	meta.erase("token")
+	meta.erase("synced_at")
+	meta.erase("pending_stamp")
+	_write_meta(game, meta)
+	boot_sync(game)
+
+# Session meta access for the migration module (same user:// file).
+static func read_meta(game):
+	return _meta(game)
+
+static func store_meta(game, meta):
+	_write_meta(game, meta)
 
 static func _now_ms() -> int:
 	return int(OS.get_unix_time()) * 1000

@@ -51,6 +51,7 @@ const PATH_COLOR_ELIMINATE = Color("ff6f9c")
 const PATH_OVERLAY_SCRIPT = preload("res://scripts/board/path_overlay.gd")
 const PROGRESSION_SCRIPT = preload("res://scripts/session/progression.gd")
 const SERVER_SYNC = preload("res://scripts/session/server_sync.gd")
+const MIGRATION_SYNC = preload("res://scripts/session/migration_sync.gd")
 const WEB_HTTP_BRIDGE = preload("res://scripts/session/web_http_bridge.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/modes/campaign_levels.gd")
@@ -146,6 +147,7 @@ var pull_http = null
 var audio = null  # AudioManager autoload, cached at ready
 var web_bridge = null
 var push_http = null
+var migration_http = null
 var sync_last_push_ms = -100000
 var cloud_connected = false
 var sync_retry_timer = null
@@ -252,6 +254,9 @@ var onboarding_panel  # 首次启动引导面板
 const ONBOARDING_SEEN_KEY = "onboarding_seen"
 
 var settings_panel  # 设置面板
+var migration_panel  # 数据迁移面板（懒构建）
+var migration_code_label  # 旧设备生成的迁移码展示
+var migration_input  # 新设备输入迁移码
 var achievements_panel  # 成就面板
 var pause_panel  # 暂停面板
 var modes_panel  # 玩法模式面板
@@ -1145,6 +1150,39 @@ func _get_web_bridge():
 
 func _sync_push():
 	SERVER_SYNC.push(self)
+
+# ═══ 数据迁移（服务器配对码，旧设备生成 / 新设备认领） ═══
+func _on_settings_migration_entry():
+	UI_PANELS.close_modal(self, settings_panel)
+	if migration_panel == null:
+		UI_PANELS._migration_panel(self)
+	UI_PANELS.open_modal(self, migration_panel)
+
+func _on_settings_migration_close():
+	UI_PANELS.close_modal(self, migration_panel)
+
+func _on_migration_generate_pressed():
+	return MIGRATION_SYNC.issue_code(self)
+
+func _on_migration_claim_pressed():
+	if migration_input != null:
+		return MIGRATION_SYNC.claim_code(self, migration_input.text)
+	return null
+
+func _on_migration_code_shown(code_text, expires_in):
+	if migration_code_label != null:
+		migration_code_label.text = "%s\n（%d 分钟内有效，用一次即作废）" % [code_text, int(expires_in / 60.0)]
+	return _show_message("迁移码已生成", 1.2)
+
+func _on_migration_failed(message):
+	return _show_message(message, 2.2)
+
+func _on_migration_done():
+	UI_PANELS.close_modal(self, migration_panel)
+	return _show_message("✅ 迁移完成，进度已恢复", 2.2)
+
+func _on_migration_request_completed(_result, code, _headers, body, kind):
+	return MIGRATION_SYNC.on_completed(self, kind, code, body.get_string_from_utf8())
 
 # Cloud save connection state: quiet banner + retry heartbeat until reachable.
 func _build_sync_retry_timer():

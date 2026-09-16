@@ -181,6 +181,77 @@ static func _settings_feature_entries(game, content):
 	tree_entry.connect("pressed", game, "_on_settings_tree_entry")
 	content.add_child(tree_entry)
 
+	var migration_entry = Button.new()
+	migration_entry.text = "🔀 数据迁移"
+	migration_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	migration_entry.rect_min_size = Vector2(0, 40)
+	migration_entry.add_font_override("font", game.game_font)
+	migration_entry.connect("pressed", game, "_on_settings_migration_entry")
+	content.add_child(migration_entry)
+
+# 数据迁移面板：规则文案 + 旧设备生成段 / 新设备认领段 + 关闭。
+static func _migration_panel(game):
+	game.migration_panel = PanelContainer.new()
+	var content = _modal_content_shell(game, game.migration_panel, Vector2(360, 0), 12)
+
+	var title = Label.new()
+	title.text = "🔀 数据迁移"
+	title.align = Label.ALIGN_CENTER
+	title.add_color_override("font_color", Color("5c3a4d"))
+	content.add_child(title)
+
+	var rules = Label.new()
+	rules.text = "把进度搬到新设备：旧设备点「生成迁移码」，新设备输入同一口令。\n口令 10 分钟内有效、用一次即作废，操作时两台设备都停在本页。"
+	rules.autowrap = true
+	rules.add_color_override("font_color", Color("8a6b7a"))
+	content.add_child(rules)
+
+	_migration_generate_section(game, content)
+	_migration_claim_section(game, content)
+
+	var close_button = Button.new()
+	close_button.text = "关闭"
+	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	close_button.rect_min_size = Vector2(0, 44)
+	close_button.add_font_override("font", game.game_font)
+	close_button.connect("pressed", game, "_on_settings_migration_close")
+	content.add_child(close_button)
+
+static func _migration_generate_section(game, content):
+	var generate_button = Button.new()
+	generate_button.text = "🔑 生成迁移码（旧设备）"
+	generate_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	generate_button.rect_min_size = Vector2(0, 40)
+	generate_button.add_font_override("font", game.game_font)
+	generate_button.connect("pressed", game, "_on_migration_generate_pressed")
+	content.add_child(generate_button)
+
+	game.migration_code_label = Label.new()
+	game.migration_code_label.align = Label.ALIGN_CENTER
+	game.migration_code_label.add_color_override("font_color", Color("d4568c"))
+	content.add_child(game.migration_code_label)
+
+static func _migration_claim_section(game, content):
+	var hint = Label.new()
+	hint.text = "本机是新设备？输入旧设备显示的迁移码："
+	hint.autowrap = true
+	hint.add_color_override("font_color", Color("8a6b7a"))
+	content.add_child(hint)
+
+	game.migration_input = LineEdit.new()
+	game.migration_input.placeholder_text = "例如 7K2M-9QPA"
+	game.migration_input.max_length = 32
+	game.migration_input.add_font_override("font", game.game_font)
+	content.add_child(game.migration_input)
+
+	var claim_button = Button.new()
+	claim_button.text = "✅ 开始迁移（新设备）"
+	claim_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	claim_button.rect_min_size = Vector2(0, 40)
+	claim_button.add_font_override("font", game.game_font)
+	claim_button.connect("pressed", game, "_on_migration_claim_pressed")
+	content.add_child(claim_button)
+
 static func _create_volume_row(game, label_text, initial_value):
 	var container = HBoxContainer.new()
 	container.add_constant_override("separation", 12)
