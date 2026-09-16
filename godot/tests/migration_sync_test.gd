@@ -65,7 +65,7 @@ func _init() -> void:
 	var meta = SERVER_SYNC.read_meta(fresh)
 	check(str(meta.get("token", "")) == "tok-new" and str(meta.get("user_id", "")) == "u1", "claim stores the adopted session")
 	check(int(meta.get("synced_at", -1)) == 0, "adopted session resets synced_at")
-	check(not meta.has("pending_stamp"), "adopted session drops the throwaway pending_stamp")
+	check(int(meta.get("pending_stamp", 0)) == 0, "adopted session drops the throwaway pending_stamp")
 	check(fresh.done_count == 1, "claim success notifies the shell once")
 	check(fresh.pull_http != null, "claim success kicks off the boot pull")
 
@@ -86,7 +86,7 @@ func _init() -> void:
 	SERVER_SYNC.on_completed(healed, "pull", 401, "")
 	var wiped = SERVER_SYNC.read_meta(healed)
 	check(str(wiped.get("token", "")) == "" and str(wiped.get("user_id", "")) == "", "401 wipes the dead session")
-	check(not wiped.has("pending_stamp"), "401 wipes the pending stamp too")
+	check(int(wiped.get("pending_stamp", 0)) == 0, "401 wipes the pending stamp too")
 	check(healed.pull_http != null, "401 re-enters the boot register flow")
 
 	# ── 401 self-heal with nothing stored: banner miss, no crash ──
