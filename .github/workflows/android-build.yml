@@ -51,23 +51,19 @@ jobs:
             "templates/android_release.apk" \
             -d "$TPL"
 
-      - name: Generate debug keystore and register it in editor settings
+      - name: Generate debug keystore and inject it into the export preset
         run: |
           set -euo pipefail
           keytool -genkeypair -v -keystore "$HOME/android-debug.keystore" \
             -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10950 \
             -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-          mkdir -p ~/.config/godot
-          # export_presets.cfg keeps its keystore fields empty on purpose: on
-          # headless export Godot 3.x falls back to these editor settings
-          # (export/android/debug_keystore*) when keystore/debug is empty.
-          cat > ~/.config/godot/editor_settings-3.tres <<EOF
-          [export]
-
-          android/debug_keystore="$HOME/android-debug.keystore"
-          android/debug_keystore_user="androiddebugkey"
-          android/debug_keystore_pass="android"
-          EOF
+          # The preset ships with empty keystore fields (godot-ci community
+          # recipe): fill them in the ephemeral CI checkout only, so the local
+          # GUI export flow keeps using the developer's own keystore config.
+          sed -i "s@keystore/debug=\".*\"@keystore/debug=\"$HOME/android-debug.keystore\"@" godot/export_presets.cfg
+          sed -i 's@keystore/debug_user=".*"@keystore/debug_user="androiddebugkey"@' godot/export_presets.cfg
+          sed -i 's@keystore/debug_password=".*"@keystore/debug_password="android"@' godot/export_presets.cfg
+          grep -n 'keystore/' godot/export_presets.cfg
 
       - name: Import project resources
         run: timeout 300 ~/godot-bin/godot --no-window --editor --quit --path godot || true
