@@ -119,3 +119,24 @@ server {
 - 主题: `godot/data/icon_sets.json`
 - 经济: `godot/data/economy.json`
 - 商店: `godot/data/shop.json`
+
+## 安卓 APK 构建（CI 自动出包）
+
+`.github/workflows/android-build.yml` 在 push main 或手动触发（workflow_dispatch）时构建调试版 APK：
+
+1. 下载 Godot 3.6.2 headless + 官方导出模板中的 Android 模板 APK（与 Web 流水线同款缓存机制）；
+2. CI 内用 `keytool` 生成一次性 debug keystore，写入 `~/.config/godot/editor_settings-3.tres`
+   ——`export_presets.cfg` 的 keystore 字段刻意留空，Godot 3.x headless 导出在
+   `keystore/debug` 为空时自动回退到 editor settings 的 `export/android/debug_keystore*`（源码级确认的官方回退链）；
+3. `--export-debug "Android"` 导出调试包，Sanity 检查清单（manifest / 双架构 so）后以 Artifact 上传，保留 30 天。
+
+产物获取：仓库 → Actions → 对应 run → 底部 Artifacts 下载 `SophiaLianliankan-debug-<sha>`。
+
+- 包名 `cn.zhaixingren.lianliankan`，竖屏 + 沉浸式全屏，armeabi-v7a + arm64-v8a 双架构。
+- 调试包签名是 CI 每次临时生成的，仅用于装机测试，不可上架；正式签名需把 release keystore
+  放入 repo secrets 后改走 release 导出（后续任务）。
+- 云同步零改动：`server_sync.gd` 在非 Web 平台走原生 `HTTPRequest` 分支（`7783efc` 保留），
+  端点用常量 `DEFAULT_API_BASE`（已指向线上）。
+- targetSdk 说明：预构建模板导出的 targetSdk 跟随 Godot 3.6 模板默认值；要上架 Google Play
+  （现要求 targetSdk 34+）需开启 gradle 构建并实测提升 targetSdk，属后续任务。
+- 本地导出：Godot 编辑器「项目 → 导出 → Android」按官方文档配置一次 debug keystore 即可用同一 preset。
