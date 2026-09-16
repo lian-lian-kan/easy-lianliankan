@@ -55,3 +55,12 @@ class WalletEntryRequest(BaseModel):
 class SigninRequest(BaseModel):
     day: str = Field(..., pattern=DAY_PATTERN)
     streak: int = Field(1, ge=1, le=10_000)
+
+
+class MigrationCodeResponse(BaseModel):
+    code: str
+    expires_in: int
+
+
+class MigrationClaimRequest(BaseModel):
+    code: str = Field(..., min_length=1, max_length=32)

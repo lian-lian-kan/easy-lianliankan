@@ -4,7 +4,7 @@ import re
 
 from tests.conftest import auth, register
 
-ROUTERS = ["progress", "records", "engagement", "auth", "users"]
+ROUTERS = ["progress", "records", "engagement", "auth", "users", "migration"]
 
 # bucket -> README table row prefix (the path cell that mentions it)
 README_ROW = {
@@ -15,6 +15,7 @@ README_ROW = {
     "wallet": "POST `/wallet/entries`",
     "signin": "POST `/signin`",
     "refresh": "POST `/auth/refresh`",
+    "migration_claim": "POST `/migration/claim`",
 }
 
 
@@ -41,6 +42,10 @@ def test_ratelimit_matrix_matches_readme():
     assert limits["wallet"] == {"ip": 1500, "user": 30}
     assert limits["signin"] == {"ip": 300, "user": 10}
     assert limits["refresh"] == {"ip": 300}  # IP-only: refresh precedes user resolution
+    # Pairing codes: issue is per-account (old device), claim is anonymous
+    # and attacker-facing, so it gets the tightest IP ceiling in the API.
+    assert limits["migration_code"] == {"user": 2}
+    assert limits["migration_claim"] == {"ip": 5}
 
     for bucket, row in README_ROW.items():
         if bucket not in limits:

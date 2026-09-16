@@ -46,6 +46,17 @@ def delete_token(token: str) -> None:
     db.execute("DELETE FROM auth_tokens WHERE token_hash = %s", (security.hash_token(token),))
 
 
+def revoke_other_tokens(user_id: str, keep_token_hash: str) -> None:
+    """Migration safety: after a pairing-code claim, every other device's
+    session dies — a forgotten old device can never push a stale save over
+    the one the player just migrated to. The fresh token's own cache entry
+    is unaffected; revoked ones age out of the cache within its short TTL."""
+    db.execute(
+        "DELETE FROM auth_tokens WHERE user_id = %s AND token_hash <> %s",
+        (user_id, keep_token_hash),
+    )
+
+
 def delete_expired_tokens() -> int:
     """Rows past expiry can never authenticate again; drop them so abandoned
     accounts don't leave the token table growing forever."""

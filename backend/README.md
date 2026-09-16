@@ -11,10 +11,10 @@ app/
   core/              # config（环境变量）/ db（连接池+事务）/ security（token 原语）
                      # guards（认证/限流依赖）/ migrations / ratelimit（滑动窗口）/ mode_seed
   models/schemas.py  # pydantic 请求/响应模型（硬边界：时间戳/数值/日期格式）
-  routers/           # users / auth / progress / records(+leaderboard) / engagement（薄 HTTP 层）
+  routers/           # users / auth / progress / records(+leaderboard) / engagement / migration（薄 HTTP 层）
   services/          # 业务规则（合并语义、校验、事务边界）——纯 Python 可单测
-  repositories/      # 全部 SQL（users/progress/records/engagement/leaderboard）
-db/migrations/       # 001 账号+令牌 / 002 进度快照 / 003 玩法+纪录 / 004 钱包+签到 / 005 成就+周任务
+  repositories/      # 全部 SQL（users/progress/records/engagement/leaderboard/migration）
+db/migrations/       # 001 账号+令牌 / 002 进度快照 / 003 玩法+纪录 / 004 钱包+签到 / 005 成就+周任务 / 006 成绩流 / 007 迁移码
 tools/backend_audit.py  # 静态质量门禁（函数 ≤45 行、print/裸 except/通配导入禁用）
 tests/               # pytest（CI 带 pg service 真库跑）
 ```
@@ -34,6 +34,7 @@ tests/               # pytest（CI 带 pg service 真库跑）
 | `missions_progress` | 每用户×周任务（week_key 滚动周，进度 max 合并 + 领取位） |
 | `economy_ledger` | 樱花币流水（追加式，余额=SUM(delta)） |
 | `signin_log` | 每日签到（每人每日一行，幂等） |
+| `migration_codes` | 设备迁移配对码（HMAC 哈希、10 分钟 TTL、单次消费、每账号仅一个活跃码） |
 
 ## API（Bearer token 认证）
 
@@ -53,6 +54,8 @@ tests/               # pytest（CI 带 pg service 真库跑）
 | GET/PUT | `/api/v1/missions` | 周任务查询/上报 |
 | GET/POST | `/api/v1/wallet[/entries]` | 钱包余额 + 流水 |
 | GET/POST | `/api/v1/signin` | 签到（幂等）/ 签到记录 |
+| POST | `/api/v1/migration/code` | 老设备生成迁移配对码（需登录态） |
+| POST | `/api/v1/migration/claim` | 新设备凭码认领账号 → `{user_id, token}`（匿名；成功后旧设备会话全部吊销） |
 
 ### 端点校验与限流矩阵（Round 13 审查定稿）
 
@@ -66,6 +69,8 @@ tests/               # pytest（CI 带 pg service 真库跑）
 | POST `/achievements/{id}` | 60/min/user + 3000/min/IP | id ≤64 字符截断 | 幂等 |
 | POST `/wallet/entries` | 30/min/user + 1500/min/IP | delta ±`MAX_WALLET_DELTA` | — |
 | POST `/signin` | 10/min/user + 300/min/IP | day YYYY-MM-DD、streak 1..1e4 | 每日幂等 |
+| POST `/migration/code` | 2/min/user | — | 每账号仅一个活跃码，重新生成即作废旧码 |
+| POST `/migration/claim` | 5/min/IP | code ≤32 字符（归一化后须为 8 位无混淆字母表） | 单次消费（原子）+ 10 分钟 TTL + 认领后吊销旧会话；404/409/410 区分错误形态 |
 | GET `/leaderboard/{mode_id}` | — | period ∈ all/weekly/daily、limit ≤100 | 共享部分 Redis 缓存（总榜 30s/周期 15s） |
 
 失败统一信封 `{"error":{"code":<http>,"detail":...}}`；429 同信封。
@@ -148,6 +153,8 @@ python -m pytest tests -q            # SKIP_PG_TESTS=1 跳过 DB 用例
 | `MAX_STATE_BYTES` | `262144` | 单份存档体积上限 |
 | `PG_POOL_MIN` / `PG_POOL_MAX` | 1 / 8 | 连接池 |
 | `TOKEN_TTL_DAYS` | `90` | 令牌有效期 |
+| `MIGRATION_CODE_TTL_SECONDS` | `600` | 迁移配对码有效期 |
+| `MIGRATION_PEPPER` | 空 | 配对码哈希混入的服务端秘钥（生产经 K8S secret 注入；防库泄离线爆破） |
 | `ALLOWED_ORIGINS` | `https://lian-lian-kan.github.io` | CORS 允许的浏览器源（逗号分隔；游戏页搬家时改这里） |
 
 默认值即 K8S 集群内主机名（`database` namespace，来源：local-server-001:~/k8s-service.txt）；

@@ -64,6 +64,20 @@ def thread_capacity() -> int:
     return int(os.environ.get("THREAD_CAPACITY", "100"))
 
 
+def migration_code_ttl_seconds() -> int:
+    """Pairing codes are a live hand-off: both devices sit on the migration
+    page, so ten minutes is generous. Short TTL + single use + IP rate limit
+    is what makes brute force hopeless (see migration_service)."""
+    return int(os.environ.get("MIGRATION_CODE_TTL_SECONDS", "600"))
+
+
+def migration_pepper() -> str:
+    """Server-side secret mixed into pairing-code hashes: a ~2^40 code space
+    is brute-forceable offline from a leaked DB without it. Set via K8S
+    secret in production; empty in dev (hashes degrade to plain SHA-256)."""
+    return os.environ.get("MIGRATION_PEPPER", "")
+
+
 # The game page runs on GitHub Pages; browsers enforce CORS there. Add more
 # origins (comma separated) via env when the page moves to its own domain.
 _DEFAULT_ALLOWED_ORIGINS = "https://lian-lian-kan.github.io"

@@ -13,7 +13,7 @@ def register(nickname: str = "") -> dict:
     user_id = str(uuid_lib.uuid4())
     with db.transaction():
         users_repo.insert_user(user_id, _clean_nickname(nickname))
-        token = _issue_token(user_id)
+        token = issue_token(user_id)
     users_repo.touch(user_id)
     return {"user_id": user_id, "token": token}
 
@@ -22,7 +22,7 @@ def refresh_token(old_token: str, user_id: str) -> dict:
     """Rotate: the old token dies, a fresh one is minted — atomically."""
     with db.transaction():
         users_repo.delete_token(old_token)
-        token = _issue_token(user_id)
+        token = issue_token(user_id)
     token_cache.invalidate(old_token)
     return {"token": token}
 
@@ -56,7 +56,9 @@ def touch_throttled(user_id: str) -> None:
     users_repo.touch(user_id)
 
 
-def _issue_token(user_id: str) -> str:
+def issue_token(user_id: str) -> str:
+    """Mint and store a fresh token. Public so migration claims can issue a
+    session for a bound account inside their own transaction."""
     from ..core import security
     token = security.mint_token()
     expires = datetime.now(timezone.utc) + timedelta(days=config.token_ttl_days())

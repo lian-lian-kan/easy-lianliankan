@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 from .core import config, db, migrations, redis_client
 from .core import maintenance
 from .dependencies import new_request_id
-from .routers import auth, engagement, progress, records, users
+from .routers import auth, engagement, migration, progress, records, users
 from .core.mode_seed import MODES
 from .services import records_service
 
@@ -102,3 +102,4 @@ app.include_router(auth.router)
 app.include_router(progress.router)
 app.include_router(records.router)
 app.include_router(engagement.router)
+app.include_router(migration.router)
