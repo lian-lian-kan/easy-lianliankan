@@ -66,8 +66,9 @@ static func _request(game, kind, url, method, body, token):
 	return req.request(url, headers, false, method, body)
 
 static func _http(game):
-	if game.migration_http == null:
-		var req = HTTPRequest.new()
+	var req = game.migration_http
+	if req == null:
+		req = HTTPRequest.new()
 		req.timeout = HTTP_TIMEOUT
 		game.add_child(req)
 		req.connect("request_completed", game, "_on_migration_request_completed")
