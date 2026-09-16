@@ -60,6 +60,13 @@ func _init() -> void:
 	check(TREE_LADDER.is_milestone(50) and not TREE_LADDER.is_milestone(51),
 		"is_milestone mirrors the table")
 
+	# --- next_milestone: the "how far to the next tick" readout
+	check(TREE_LADDER.next_milestone(0) == 8, "a fresh climb targets layer 8")
+	check(TREE_LADDER.next_milestone(7) == 8 and TREE_LADDER.next_milestone(8) == 18,
+		"next_milestone steps past a just-claimed tick")
+	check(TREE_LADDER.next_milestone(999999) == 1000000, "the last tick still looms ahead")
+	check(TREE_LADDER.next_milestone(1000000) == 0, "past every tick returns 0")
+
 	# --- claimed_count filters save-data noise
 	check(TREE_LADDER.claimed_count([8, 18, 999]) == 2, "claimed_count keeps real milestones only")
 	check(TREE_LADDER.claimed_count([]) == 0, "claimed_count of nothing is zero")

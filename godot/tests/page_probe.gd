@@ -179,6 +179,28 @@ func _init() -> void:
 	check(all_text.find("图鉴收集") != -1, "stats page lists collection progress")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
+	# --- tree map page: milestone ticks render with the climb position ---
+	game._patch_progress_state({"tree_result": 23, "tree_milestones": [8, 18]})
+	game._on_tree_map_pressed()
+	check(game.current_page == "tree_map" && game.pages_root.visible, "tree map opens as its own page")
+	var tree_labels = []
+	var stack5 = [game.page_content]
+	while stack5.size() > 0:
+		var node5 = stack5.pop_back()
+		if node5 is Label:
+			tree_labels.append(str(node5.text))
+		for child5 in node5.get_children():
+			stack5.append(child5)
+	var tree_text = " | ".join(tree_labels)
+	check(tree_text.find("你在第 23 层") != -1 && tree_text.find("下一刻度第 28 层") != -1,
+		"tree map shows the climb position and the next tick")
+	check(tree_text.find("还差 5 层") != -1, "the next-tick distance counts down from the best height")
+	check(tree_text.find("第 8 层") != -1 && tree_text.find("已登顶") != -1, "claimed ticks show as climbed")
+	check(tree_text.find("第 1000000 层") != -1, "the topmost milestone tick renders")
+	check(tree_text.find("还差 27 层") != -1, "unreached ticks show their remaining layers")
+	game._on_nav_home_pressed()
+	check(!game.pages_root.visible, "closing the tree map returns home")
+
 	# --- signin curve boundaries: broken streak resets, day-7 loops over ---
 	var yd2 = OS.get_date()
 	var two_days_ago = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_datetime_from_unix_time(OS.get_unix_time_from_datetime(yd2) - 172800))

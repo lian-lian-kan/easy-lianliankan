@@ -39,8 +39,9 @@ func _init() -> void:
 			stack.push_back(child)
 			if child is Button:
 				settings_texts.append(str(child.text))
-	check(settings_texts.has("📊 数据统计") and settings_texts.has("🏆 成就图鉴"),
-		"stats and achievements entries live in the settings panel")
+	check(settings_texts.has("📊 数据统计") and settings_texts.has("🏆 成就图鉴")
+			and settings_texts.has("🌳 攀登大树"),
+		"stats, achievements and tree entries live in the settings panel")
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
 	# modal panels: declared sizes, shared 24px padded shell, hidden at boot

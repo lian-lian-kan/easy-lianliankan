@@ -824,6 +824,13 @@ func _refresh_modes_panel():
 func _on_stats_pressed():
 	return PAGE_ROUTER.show_page(self, "stats")
 
+func _on_tree_map_pressed():
+	return PAGE_ROUTER.show_page(self, PAGE_ROUTER.PAGE_TREE_MAP)
+
+func _on_settings_tree_entry():
+	UI_PANELS.close_modal(self, settings_panel)
+	_on_tree_map_pressed()
+
 func _on_modes_pressed():
 	_refresh_modes_panel()
 	if modes_panel:

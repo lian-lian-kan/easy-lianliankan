@@ -14,6 +14,7 @@ const PAGE_COLLECTION = "collection"
 const PAGE_SIGNIN = "signin"
 const PAGE_SHOP = "shop"
 const PAGE_STATS = "stats"
+const PAGE_TREE_MAP = "tree_map"
 
 static func nav_items():
 	return [
@@ -108,6 +109,8 @@ static func show_page(game, page_id):
 				ECONOMY.build_shop(game)
 			PAGE_STATS:
 				_build_stats(game)
+			PAGE_TREE_MAP:
+				_build_tree_map(game)
 
 static func close_page(game):
 	UI_PANELS.close_modal(game, game.pages_root)
@@ -286,6 +289,71 @@ static func _stats_row_panel(game, box, row_data):
 	value_label.add_font_override("font", game._font_at_size(14))
 	value_label.add_color_override("font_color", Color("d6336c"))
 	hbox.add_child(value_label)
+	row_panel.add_child(hbox)
+	box.add_child(row_panel)
+
+# 大树页：位置总结卡 + 里程碑刻度自上而下（大到小，像抬头看树冠）。
+static func _build_tree_map(game):
+	var page_content = game.page_content
+	var best = int(game.progression_state.get("tree_best_height", 0))
+	var claimed = game.progression_state.get("tree_milestones", [])
+	var ladder = game.SPECIAL_MODES_SCRIPT.TREE_LADDER
+	PAGE_UI.page_frame(game, page_content, "🌳 攀登大树", "你在第 %d 层 · 里程碑 %d/%d" % [best, ladder.claimed_count(claimed), ladder.MILESTONE_HEIGHTS.size()])
+	var box = PAGE_UI.scroll_area(game, page_content)
+	_tree_summary_row(game, box, best, ladder.next_milestone(best))
+	var heights = ladder.MILESTONE_HEIGHTS
+	for i in range(heights.size() - 1, -1, -1):
+		_tree_milestone_row(game, box, int(heights[i]), ladder.milestone_reward(int(heights[i])), claimed.has(int(heights[i])), best)
+	var hint = Label.new()
+	hint.text = "从玩法面板的 🌳 攀登树卡片出发，每层更难，刻度层有樱花奖励"
+	hint.add_font_override("font", game._font_at_size(12))
+	hint.add_color_override("font_color", Color("b08a9b"))
+	hint.autowrap = true
+	box.add_child(hint)
+
+# 位置总结卡：当前层数 + 到下一刻度的距离。
+static func _tree_summary_row(game, box, best, next_height):
+	var row_panel = PanelContainer.new()
+	var row_style = StyleBoxFlat.new()
+	row_style.bg_color = Color("fff0f6")
+	row_style.set_corner_radius_all(10)
+	row_panel.add_stylebox_override("panel", row_style)
+	var label = Label.new()
+	if next_height > 0:
+		label.text = "📍 你在第 %d 层 · 下一刻度第 %d 层（还差 %d 层）" % [best, next_height, next_height - best]
+	else:
+		label.text = "📍 你在第 %d 层 · 所有刻度都登完啦" % best
+	label.add_font_override("font", game._font_at_size(13))
+	label.add_color_override("font_color", Color("d6336c"))
+	row_panel.add_child(label)
+	box.add_child(row_panel)
+
+# 单个刻度行：登顶过的亮白底+绿勾，未到的灰底+剩余层数。
+static func _tree_milestone_row(game, box, height, reward, claimed_flag, best):
+	var row_panel = PanelContainer.new()
+	var row_style = StyleBoxFlat.new()
+	row_style.bg_color = Color("ffffff") if claimed_flag else Color("f8f4f6")
+	row_style.set_corner_radius_all(10)
+	row_panel.add_stylebox_override("panel", row_style)
+	var hbox = HBoxContainer.new()
+	var name_label = Label.new()
+	name_label.text = "🌸 第 %d 层 · 奖励 %d" % [height, reward]
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_font_override("font", game._font_at_size(14))
+	name_label.add_color_override("font_color", Color("8f6b80"))
+	hbox.add_child(name_label)
+	var state_label = Label.new()
+	if claimed_flag:
+		state_label.text = "✓ 已登顶"
+		state_label.add_color_override("font_color", Color("0ca678"))
+	elif best > 0:
+		state_label.text = "还差 %d 层" % (height - best)
+		state_label.add_color_override("font_color", Color("adb5bd"))
+	else:
+		state_label.text = "未开始"
+		state_label.add_color_override("font_color", Color("adb5bd"))
+	state_label.add_font_override("font", game._font_at_size(14))
+	hbox.add_child(state_label)
 	row_panel.add_child(hbox)
 	box.add_child(row_panel)
 

@@ -173,6 +173,14 @@ static func _settings_feature_entries(game, content):
 	achievements_entry.connect("pressed", game, "_on_settings_achievements_entry")
 	content.add_child(achievements_entry)
 
+	var tree_entry = Button.new()
+	tree_entry.text = "🌳 攀登大树"
+	tree_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tree_entry.rect_min_size = Vector2(0, 40)
+	tree_entry.add_font_override("font", game.game_font)
+	tree_entry.connect("pressed", game, "_on_settings_tree_entry")
+	content.add_child(tree_entry)
+
 static func _create_volume_row(game, label_text, initial_value):
 	var container = HBoxContainer.new()
 	container.add_constant_override("separation", 12)

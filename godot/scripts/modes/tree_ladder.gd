@@ -39,6 +39,15 @@ static func level_for(height: int):
 	}
 
 
+# Smallest milestone strictly above the given height (0 once the climb has
+# passed every tick).
+static func next_milestone(height: int) -> int:
+	for i in range(MILESTONE_HEIGHTS.size()):
+		if int(MILESTONE_HEIGHTS[i]) > int(height):
+			return int(MILESTONE_HEIGHTS[i])
+	return 0
+
+
 static func milestone_reward(height: int) -> int:
 	for i in range(MILESTONE_HEIGHTS.size()):
 		if int(MILESTONE_HEIGHTS[i]) == int(height):
