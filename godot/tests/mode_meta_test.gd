@@ -97,6 +97,7 @@ func _init() -> void:
 		"target_best_score": 141, "shift_best_score": 151,
 		"slide_best_score": 161, "defense_best_score": 171,
 		"sum10_best_score": 181, "duel_best_score": 191,
+		"drag_best_score": 192, "edu_best_score": 193,
 		"endless_best": {"round": 3, "score": 456},
 	}
 	var rows = SM.modes_panel_rows(state)

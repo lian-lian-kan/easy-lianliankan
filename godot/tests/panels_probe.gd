@@ -544,7 +544,7 @@ func _init() -> void:
 			else:
 				unlocked_count += 1
 				unlocked_wired = unlocked_wired && mode_button.is_connected("pressed", game, "_on_special_mode_pressed")
-	check(locked_count == 24 && unlocked_count == 3, "fresh save unlocks daily, zen and tree (locked %d unlocked %d)" % [locked_count, unlocked_count])
+	check(locked_count == 26 && unlocked_count == 3, "fresh save unlocks daily, zen and tree (locked %d unlocked %d)" % [locked_count, unlocked_count])
 	check(unlocked_wired, "unlocked mode rows wire the session start")
 	var locked_sample = ""
 	for mode_button in game.modes_content.get_children():
