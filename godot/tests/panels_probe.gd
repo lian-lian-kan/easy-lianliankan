@@ -48,10 +48,10 @@ func _init() -> void:
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
 	# modal panels: declared sizes, shared 24px padded shell, hidden at boot
-	check(not game.settings_panel.visible and not game.achievements_panel.visible
-		and not game.modes_panel.visible, "the three modal panels start hidden")
+	check(not game.settings_panel.visible and not game.achievements_panel.visible,
+		"the modal panels start hidden")
 	var shell_padded := false
-	var panel_stack := [game.settings_panel, game.achievements_panel, game.modes_panel]
+	var panel_stack := [game.settings_panel, game.achievements_panel]
 	while not panel_stack.empty():
 		var node = panel_stack.pop_back()
 		for child in node.get_children():
@@ -69,10 +69,12 @@ func _init() -> void:
 	check(game.achievements_panel.visible, "achievements opens from the toolbar entry")
 	game._on_achievements_close()
 	check(not game.achievements_panel.visible, "achievements closes through its close handler")
+	# 玩法入口打开全屏大厅页（不再有弹框），返回主页即收起
 	game._on_modes_pressed()
-	check(game.modes_panel.visible, "modes opens from the toolbar entry")
-	game._on_modes_close_pressed()
-	check(not game.modes_panel.visible, "modes closes through its close handler")
+	check(game.pages_root.visible and game.current_page == "modes", "the toolbar 玩法 entry opens the fullscreen modes hub")
+	check(game.nav_bar.visible, "the hub page brings the page-only nav footer back")
+	game._on_nav_home_pressed()
+	check(not game.pages_root.visible and game.current_page == "", "leaving the hub parks the nav again")
 
 	# board_view: board built and the refresh pipeline is idempotent
 	check(game.board.size() > 0 && game.cell_buttons.size() == game.board.size(), "board and cell buttons built")
@@ -478,12 +480,18 @@ func _init() -> void:
 	game._build_pause_panel()
 	check(game.pause_panel != null and game.pause_panel.get_child_count() > 0, "pause panel built")
 
-	# modes: 13 mode cards rebuilt through the registered rows box
-	game._build_modes_panel()
-	game._refresh_modes_panel()
-	check(game.modes_panel != null, "modes panel built")
-	check(game.modes_content != null && game.modes_content.get_child_count() == 36,
-		"modes panel has 29 mode cards + 7 category headers (got %d)" % (game.modes_content.get_child_count() if game.modes_content != null else -1))
+	# modes hub: the fullscreen page always renders the workshop + all 29 mode
+	# cards (locked ones disabled), whatever the save's unlock state is
+	game._on_modes_pressed()
+	var hub_buttons := []
+	collect_buttons(game.page_content, hub_buttons)
+	var hub_has_workshop = false
+	for sub in hub_buttons:
+		if String(sub.text).find("关卡工坊") != -1:
+			hub_has_workshop = true
+	check(hub_has_workshop, "the hub page carries the workshop entry")
+	check(hub_buttons.size() == 31, "the hub page renders the back button + workshop + all 29 mode cards (got %d)" % hub_buttons.size())
+	game._on_nav_home_pressed()
 
 	# modal lifecycle: open pauses the stage clock, close resumes it
 	game.stage_status = game.STATUS_PLAYING
@@ -528,39 +536,44 @@ func _init() -> void:
 	game._on_achievements_close()
 	check(!game.achievements_panel.visible && game.stage_status == game.STATUS_PLAYING, "closing achievements resumes the stage")
 
-	# modes browser: plain show/hide that never pauses; rows rebuilt from data
-	game._on_modes_pressed()
-	check(game.modes_panel.visible && game.stage_status == game.STATUS_PLAYING, "opening modes never pauses the stage")
+	# modes hub page: opening pauses the clock like every page; with a fresh
+	# save exactly 26 cards sit locked behind their campaign gates, and a
+	# restored unlock index lights every one of them back up
 	var saved_modes_unlock = int(game.progression_state["highest_unlocked_level_index"])
 	game.progression_state["highest_unlocked_level_index"] = 0
-	game._refresh_modes_panel()
+	game._on_modes_pressed()
+	check(game.pages_root.visible && game.stage_status == game.STATUS_PAUSED, "opening the modes hub pauses the stage like any page")
+	var fresh_buttons := []
+	collect_buttons(game.page_content, fresh_buttons)
 	var locked_count = 0
-	var unlocked_count = 0
 	var unlocked_wired = true
-	for mode_button in game.modes_content.get_children():
-		if mode_button is Button:
-			if mode_button.text.find("关解锁") != -1:
-				locked_count += 1
-			else:
-				unlocked_count += 1
-				unlocked_wired = unlocked_wired && mode_button.is_connected("pressed", game, "_on_special_mode_pressed")
-	check(locked_count == 26 && unlocked_count == 3, "fresh save unlocks daily, zen and tree (locked %d unlocked %d)" % [locked_count, unlocked_count])
-	check(unlocked_wired, "unlocked mode rows wire the session start")
 	var locked_sample = ""
-	for mode_button in game.modes_content.get_children():
-		if mode_button is Button && mode_button.text.find("关解锁") != -1:
-			locked_sample = mode_button.text
-			break
-	check(locked_sample.find("\n完成第") != -1, "locked mode rows show their unlock requirement")
+	for mode_button in fresh_buttons:
+		if mode_button.text.find("完成第") != -1:
+			locked_count += 1
+			unlocked_wired = unlocked_wired && not mode_button.is_connected("pressed", game, "_on_special_mode_pressed")
+			if locked_sample == "":
+				locked_sample = mode_button.text
+	check(locked_count == 26, "a fresh save locks 26 of the 29 mode cards (got %d)" % locked_count)
+	check(unlocked_wired, "locked mode cards drop the session wiring")
+	check(locked_sample.find("\n完成第") != -1, "locked mode cards show their unlock requirement")
+
+	game._on_nav_home_pressed()
 	game.progression_state["highest_unlocked_level_index"] = 17
-	game._refresh_modes_panel()
+	game._on_modes_pressed()
+	var late_buttons := []
+	collect_buttons(game.page_content, late_buttons)
 	var late_locked = 0
-	for mode_button in game.modes_content.get_children():
-		if mode_button is Button && mode_button.text.find("关解锁") != -1:
+	var late_playable = 0
+	for sub in late_buttons:
+		if sub.text.find("完成第") != -1:
 			late_locked += 1
-	check(late_locked == 0 && game.modes_content.get_child_count() == 36, "rebuilt rows reflect the restored unlock index")
-	game._on_modes_close_pressed()
-	check(!game.modes_panel.visible, "closing modes hides the browser")
+		elif sub.text.find("关卡工坊") == -1 && sub.text.find("返回") == -1:
+			late_playable += 1
+	check(late_locked == 0 && late_playable == 29, "restored unlock index lights every mode card up (playable %d)" % late_playable)
+	game.progression_state["highest_unlocked_level_index"] = saved_modes_unlock
+	game._on_nav_home_pressed()
+	check(not game.pages_root.visible, "leaving the hub hides the page surface")
 
 	# pause panel refresh: campaign text vs special session text + exit button
 	game.special_mode = ""
@@ -778,3 +791,10 @@ func _init() -> void:
 	else:
 		print("panels_probe: %d FAILURES" % failures)
 		quit(1)
+
+func collect_buttons(node, acc):
+	for child in node.get_children():
+		if child is Button:
+			acc.append(child)
+		collect_buttons(child, acc)
+	return acc

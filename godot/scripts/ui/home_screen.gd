@@ -490,7 +490,6 @@ static func _finalize_build(game):
 	game._build_settings_panel()
 	game._build_achievements_panel()
 	game._build_pause_panel()
-	game._build_modes_panel()
 	PAGE_ROUTER.build_pages(game)
 	# Apply the saved ambience theme (falls back to sakura pink).
 	ECONOMY.apply_theme(game, str(game.progression_state.get("current_theme", "sakura")))

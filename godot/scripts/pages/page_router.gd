@@ -17,10 +17,12 @@ const PAGE_SHOP = "shop"
 const PAGE_STATS = "stats"
 const PAGE_TREE_MAP = "tree_map"
 const PAGE_EVENTS = "events"
+const PAGE_MODES = "modes"
 
 static func nav_items():
 	return [
 		["home", "🏠", "主页"],
+		[PAGE_MODES, "🎮", "玩法"],
 		[PAGE_LEVEL_MAP, "🗺️", "旅程"],
 		[PAGE_COLLECTION, "📖", "图鉴"],
 		[PAGE_SIGNIN, "🎁", "有礼"],
@@ -126,6 +128,8 @@ static func _route_page(game, page_id):
 			_build_tree_map(game)
 		PAGE_EVENTS:
 			_build_events(game)
+		PAGE_MODES:
+			_build_modes_hub(game)
 
 # Refresh the open page in place (a claim mutating its own page rebuilds it).
 static func rebuild_page(game):
@@ -495,3 +499,46 @@ static func _upcoming_festivals(today, count):
 		if found.size() >= int(count):
 			break
 	return found
+
+# --- 玩法大厅：每个玩法都是一等模块——全屏分类章节 + 工坊入口，不再是弹框 ---
+
+static func _build_modes_hub(game):
+	var page_content = game.page_content
+	PAGE_UI.page_frame(game, page_content, "🎮 玩法大厅", "每种玩法都是独立模块 · 点开即玩")
+	var box = PAGE_UI.scroll_area(game, page_content)
+
+	var workshop = Button.new()
+	workshop.text = "🎨 关卡工坊 · 自制关卡 + 分享码挑战"
+	workshop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	workshop.rect_min_size = Vector2(0, 48)
+	workshop.add_font_override("font", game.game_font)
+	workshop.connect("pressed", game, "_on_modes_hub_workshop_pressed")
+	box.add_child(workshop)
+
+	var rows_by_id = {}
+	for row in game.SPECIAL_MODES_SCRIPT.modes_panel_rows(game.progression_state):
+		rows_by_id[row["id"]] = row
+	var unlocked_index = int(game.progression_state.get("highest_unlocked_level_index", 0))
+	for category in game.SPECIAL_MODES_SCRIPT.MODE_CATEGORIES:
+		var header = Label.new()
+		header.text = str(category["title"])
+		header.add_font_override("font", game._font_at_size(15))
+		header.add_color_override("font_color", Color("9c6b7f"))
+		box.add_child(header)
+		for mode_id in category["modes"]:
+			var row = rows_by_id.get(mode_id, null)
+			if row == null:
+				continue
+			var config = game.game_mode_configs.get(mode_id, {})
+			var unlocked = game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(mode_id, config, unlocked_index)
+			var card = Button.new()
+			card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			card.rect_min_size = Vector2(0, 56)
+			card.add_font_override("font", game.game_font)
+			if unlocked:
+				card.text = str(row["title"]) + "\n" + str(row["detail"])
+				card.connect("pressed", game, "_on_special_mode_pressed", [mode_id])
+			else:
+				card.text = str(row["title"]) + "\n" + game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(mode_id, config)
+				card.disabled = true
+			box.add_child(card)

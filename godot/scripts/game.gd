@@ -292,10 +292,8 @@ var migration_code_label  # 旧设备生成的迁移码展示
 var migration_input  # 新设备输入迁移码
 var achievements_panel  # 成就面板
 var pause_panel  # 暂停面板
-var modes_panel  # 玩法模式面板
-var modes_content  # 玩法模式面板行容器
 var pause_exit_button  # 特殊模式退出按钮
-var modes_button  # 玩法模式入口按钮
+var modes_button  # 玩法大厅入口按钮（顶部工具条 → 全屏页面）
 
 # ═══ 生命周期与全局 ═══
 
@@ -543,8 +541,14 @@ func _resolve_special_clear():
 	return SPECIAL_SESSION._resolve_special_clear(self)
 
 func _on_special_mode_pressed(mode_id):
-	_on_modes_close_pressed()
+	if current_page != "":
+		PAGE_ROUTER.close_page(self)
 	_start_special_mode(mode_id)
+
+# 玩法大厅页里的工坊入口：合上页面再开编辑器弹窗。
+func _on_modes_hub_workshop_pressed():
+	PAGE_ROUTER.close_page(self)
+	_on_editor_open_pressed()
 
 func _on_exit_special_pressed():
 	_hide_pause_panel()
@@ -832,9 +836,6 @@ func _build_achievements_panel():
 func _build_pause_panel():
 	UI_PANELS._pause_panel(self)
 
-func _build_modes_panel():
-	UI_PANELS._modes_panel(self)
-
 func _populate_icon_set_options():
 	return UI_PANELS._populate_icon_set_options(self)
 
@@ -899,9 +900,6 @@ func _on_settings_achievements_entry():
 func _on_achievements_close():
 	UI_PANELS.close_modal(self, achievements_panel)
 
-func _refresh_modes_panel():
-	UI_PANELS.refresh_modes_rows(self)
-
 func _on_stats_pressed():
 	return PAGE_ROUTER.show_page(self, "stats")
 
@@ -912,14 +910,9 @@ func _on_settings_tree_entry():
 	UI_PANELS.close_modal(self, settings_panel)
 	_on_tree_map_pressed()
 
+# 玩法入口：直达全屏玩法大厅（不再用弹框收纳玩法）。
 func _on_modes_pressed():
-	_refresh_modes_panel()
-	if modes_panel:
-		modes_panel.visible = true
-
-func _on_modes_close_pressed():
-	if modes_panel:
-		modes_panel.visible = false
+	PAGE_ROUTER.show_page(self, PAGE_ROUTER.PAGE_MODES)
 
 func _show_pause_panel():
 	UI_PANELS.refresh_pause_panel(self)
@@ -1024,7 +1017,6 @@ func _on_editor_play_pressed():
 		return
 	custom_level = LEVEL_EDITOR.build_custom_level(editor_state["grid"], int(editor_state["kinds"]))
 	UI_PANELS.close_modal(self, editor_panel)
-	_on_modes_close_pressed()
 	_start_special_mode("custom")
 
 func _on_editor_share_pressed():

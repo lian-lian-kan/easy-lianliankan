@@ -467,63 +467,6 @@ static func _pause_buttons(game, content):
 	content.add_child(game.pause_exit_button)
 
 
-static func _modes_panel(game):
-	game.modes_panel = PanelContainer.new()
-	game.modes_panel.rect_min_size = Vector2(340, 640)
-	game.modes_panel.visible = false
-	game._apply_glass_style(game.modes_panel, Color("ffffff"), 0.95)
-	game._mount_modal_panel(game.modes_panel)
-
-	var vbox = VBoxContainer.new()
-	game.modes_panel.add_child(vbox)
-
-	var margin = MarginContainer.new()
-	margin.add_constant_override("margin_left", 20)
-	margin.add_constant_override("margin_right", 20)
-	margin.add_constant_override("margin_top", 20)
-	margin.add_constant_override("margin_bottom", 20)
-	margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(margin)
-
-	var content = VBoxContainer.new()
-	content.add_constant_override("separation", 10)
-	margin.add_child(content)
-
-	var title = Label.new()
-	title.text = "🎮 玩法模式"
-	title.align = Label.ALIGN_CENTER
-	title.add_font_override("font", game.game_font)
-	title.add_color_override("font_color", Color("5c3a4d"))
-	content.add_child(title)
-
-	_modes_rows_area(game, content)
-
-	var spacer = Control.new()
-	spacer.rect_min_size = Vector2(0, 6)
-	content.add_child(spacer)
-
-	var close_button = Button.new()
-	close_button.text = "关闭"
-	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close_button.rect_min_size = Vector2(0, 44)
-	close_button.add_font_override("font", game.game_font)
-	close_button.connect("pressed", game, "_on_modes_close_pressed")
-	content.add_child(close_button)
-	game._style_dialog_buttons(game.modes_panel)
-
-# Mode rows are rebuilt on every open; keep them in a dedicated box.
-# ScrollContainer keeps thirteen mode cards usable on short screens.
-static func _modes_rows_area(game, content):
-	var rows_scroll = ScrollContainer.new()
-	rows_scroll.scroll_horizontal_enabled = false
-	rows_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(rows_scroll)
-	var rows_box = VBoxContainer.new()
-	rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rows_box.add_constant_override("separation", 7)
-	rows_scroll.add_child(rows_box)
-	game.modes_content = rows_box
-
 # --- Shared style helpers (migrated from game.gd) ---
 
 static func _populate_icon_set_options(game):
@@ -562,8 +505,6 @@ static func _update_modal_panel_sizes(game, viewport_size, is_portrait):
 		game.achievements_panel.rect_min_size = Vector2(min(400.0, max_width), min(480.0, max_height))
 	if game.pause_panel:
 		game.pause_panel.rect_min_size = Vector2(min(320.0, max_width), min(280.0, max_height))
-	if game.modes_panel:
-		game.modes_panel.rect_min_size = Vector2(min(360.0, max_width), min(700.0, max_height))
 	if game.tree_buff_panel:
 		game.tree_buff_panel.rect_min_size = Vector2(min(360.0, max_width), 0)
 
@@ -614,48 +555,6 @@ static func reopen_achievements(game):
 	game._build_achievements_panel()
 
 
-static func refresh_modes_rows(game):
-	# Mode cards are rebuilt from the data table on every open: unlocked
-	# rows start their session, locked rows show the unlock requirement.
-	if game.modes_content == null:
-		return
-	for child in game.modes_content.get_children():
-		game.modes_content.remove_child(child)
-		child.queue_free()
-
-	var rows_by_id = {}
-	for row in game.SPECIAL_MODES_SCRIPT.modes_panel_rows(game.progression_state):
-		rows_by_id[row["id"]] = row
-	var unlocked_index = int(game.progression_state.get("highest_unlocked_level_index", 0))
-	# Entry orchestration: cards render grouped under category headers; a new
-	# mode joins a group by listing its id in MODE_CATEGORIES (panel order
-	# still comes from modes_panel_rows).
-	for category in game.SPECIAL_MODES_SCRIPT.MODE_CATEGORIES:
-		var header = Label.new()
-		header.text = str(category["title"])
-		header.add_font_override("font", game.game_font)
-		header.add_color_override("font_color", Color("9c6b7f"))
-		game.modes_content.add_child(header)
-		for mode_id in category["modes"]:
-			var row = rows_by_id.get(mode_id, null)
-			if row == null:
-				continue
-			var config = game.game_mode_configs.get(row["id"], {})
-			var unlocked = game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(row["id"], config, unlocked_index)
-			var button = Button.new()
-			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			button.rect_min_size = Vector2(0, 52)
-			button.add_font_override("font", game.game_font)
-			if unlocked:
-				button.text = row["title"] + "\n" + row["detail"]
-				button.connect("pressed", game, "_on_special_mode_pressed", [row["id"]])
-			else:
-				button.text = row["title"] + "\n" + game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(row["id"], config)
-			game._style_dialog_buttons(button)
-			game.modes_content.add_child(button)
-
-
-# --- 攀登树 roguelike 层间增益弹窗（懒构建，登顶后由 special_session 调起） ---
 
 static func _tree_buff_panel(game):
 	game.tree_buff_panel = PanelContainer.new()

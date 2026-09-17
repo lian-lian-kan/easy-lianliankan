@@ -49,7 +49,7 @@ func _init() -> void:
 	game.progression_state["highest_unlocked_level_index"] = 14
 
 	# --- shell construction ---
-	check(game.nav_bar != null && game.nav_buttons.size() == 6, "bottom nav holds 6 tabs")
+	check(game.nav_bar != null && game.nav_buttons.size() == 7, "bottom nav holds 7 tabs")
 	check(game.pages_root != null && !game.pages_root.visible, "page surface starts hidden")
 	check(game.coin_label != null, "blossom wallet chip registered")
 
