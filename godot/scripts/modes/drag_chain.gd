@@ -74,6 +74,7 @@ static func on_tile_button_up(game, button):
 		_execute_chain_clear(game, chain)
 	elif chain.size() == 2:
 		game.drag_consumed = true
+		game.moves += 1
 		var a: Vector2 = chain[0]
 		var b: Vector2 = chain[1]
 		game.GAME_INPUT._execute_pair_match(game, [a, b], a, b)

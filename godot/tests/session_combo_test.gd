@@ -25,6 +25,7 @@ class FakeTimer:
 		started += 1
 
 class FakeGame extends Reference:
+	const TREE_BUFFS = preload("res://scripts/modes/tree_buffs.gd")
 	var tuning = {"combo_window_ms": 2600, "max_combo": 8}
 	var game_mode_configs = {}
 	var special_mode = ""

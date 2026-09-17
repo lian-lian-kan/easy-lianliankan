@@ -46,8 +46,8 @@ func _init() -> void:
 
 	var items = PAGE_ROUTER.nav_items()
 
-	# --- shape: five entries, each [id, icon, label]
-	check(items.size() == 5, "the nav shows exactly five entries")
+	# --- shape: six entries, each [id, icon, label]
+	check(items.size() == 6, "the nav shows exactly six entries")
 	var well_formed := true
 	for item in items:
 		if item.size() != 3 or str(item[0]).empty() \
@@ -60,8 +60,8 @@ func _init() -> void:
 	for item in items:
 		ids.append(item[0])
 	check(ids == ["home", PAGE_ROUTER.PAGE_LEVEL_MAP, PAGE_ROUTER.PAGE_COLLECTION,
-		PAGE_ROUTER.PAGE_SIGNIN, PAGE_ROUTER.PAGE_SHOP],
-		"nav order is home, journey, collection, gift, shop")
+		PAGE_ROUTER.PAGE_SIGNIN, PAGE_ROUTER.PAGE_EVENTS, PAGE_ROUTER.PAGE_SHOP],
+		"nav order is home, journey, collection, gift, events, shop")
 
 	# --- home must be the first entry so the nav returns home by default
 	check(ids[0] == "home", "home is the first nav entry")

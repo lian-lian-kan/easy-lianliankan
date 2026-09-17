@@ -52,6 +52,8 @@ class FakeGame extends Reference:
 	var messages = []
 	var refreshes = 0
 	var GAME_INPUT = StubInput.new()
+	func _is_tree_mode():
+		return special_mode == "tree"
 	func _current_level():
 		return level
 	func _find_any_hint(_board):

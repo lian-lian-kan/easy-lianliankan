@@ -18,15 +18,15 @@ func _init() -> void:
 
 	# --- catalog integrity
 	var defs = ACHIEVEMENTS.get_achievement_definitions()
-	check(defs.size() == 34, "catalog exposes 34 achievements")
+	check(defs.size() == 36, "catalog exposes 36 achievements")
 	var ids = {}
 	for definition in defs:
 		ids[definition["id"]] = true
 		check(definition.has("name") and definition.has("desc"), "achievement %s has name and desc" % definition["id"])
-	check(ids.size() == 34, "achievement ids are unique")
-	check(ids.has("first_clear") and ids.has("sum10_first"), "catalog spans first_clear..sum10_first")
+	check(ids.size() == 36, "achievement ids are unique")
+	check(ids.has("first_clear") and ids.has("edu_first"), "catalog spans first_clear..edu_first")
 	defs.append({"id": "mutated", "name": "x", "desc": "x"})
-	check(ACHIEVEMENTS.get_achievement_definitions().size() == 34, "get_all returns a duplicate safe to mutate")
+	check(ACHIEVEMENTS.get_achievement_definitions().size() == 36, "get_all returns a duplicate safe to mutate")
 
 	# --- state accessors
 	var state = {"achievements": ["first_clear"]}

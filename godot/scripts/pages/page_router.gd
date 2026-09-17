@@ -395,7 +395,11 @@ static func _build_events(game):
 	PAGE_UI.page_frame(game, page_content, "🎉 活动", "限时活动与限定奖励")
 	var box = PAGE_UI.scroll_area(game, page_content)
 	var today = OS.get_date()
+	_build_events_weekend(game, box, today)
+	_build_events_festival(game, box, today)
+	_build_events_calendar(game, box, today)
 
+static func _build_events_weekend(game, box, today):
 	var weekend_box = _event_card(game, "🌈 周末双倍樱花")
 	var weekend_status = Label.new()
 	if EVENTS.is_weekend(today):
@@ -410,6 +414,7 @@ static func _build_events(game):
 	weekend_box.add_child(weekend_status)
 	box.add_child(weekend_box.get_parent())
 
+static func _build_events_festival(game, box, today):
 	var festival = EVENTS.festival_for(today)
 	if festival.empty():
 		var next_days = EVENTS.days_until_next_festival(today)
@@ -421,30 +426,31 @@ static func _build_events(game):
 		quiet_label.add_color_override("font_color", Color("8f6b80"))
 		quiet_box.add_child(quiet_label)
 		box.add_child(quiet_box.get_parent())
+		return
+	var fest_box = _event_card(game, "%s %s · 限定奖池" % [str(festival["emoji"]), str(festival["name"])])
+	var fest_label = Label.new()
+	fest_label.text = "今日限定礼盒 🌸x%d，每个存档限领一次" % int(festival["chest"])
+	fest_label.autowrap = true
+	fest_label.add_font_override("font", game._font_at_size(13))
+	fest_label.add_color_override("font_color", Color("8f6b80"))
+	fest_box.add_child(fest_label)
+	if EVENTS.chest_claimed(game.progression_state, festival["id"]):
+		var claimed = Label.new()
+		claimed.text = "✓ 已领取，明年节日再见"
+		claimed.add_font_override("font", game._font_at_size(13))
+		claimed.add_color_override("font_color", Color("0ca678"))
+		fest_box.add_child(claimed)
 	else:
-		var fest_box = _event_card(game, "%s %s · 限定奖池" % [str(festival["emoji"]), str(festival["name"])])
-		var fest_label = Label.new()
-		fest_label.text = "今日限定礼盒 🌸x%d，每个存档限领一次" % int(festival["chest"])
-		fest_label.autowrap = true
-		fest_label.add_font_override("font", game._font_at_size(13))
-		fest_label.add_color_override("font_color", Color("8f6b80"))
-		fest_box.add_child(fest_label)
-		if EVENTS.chest_claimed(game.progression_state, festival["id"]):
-			var claimed = Label.new()
-			claimed.text = "✓ 已领取，明年节日再见"
-			claimed.add_font_override("font", game._font_at_size(13))
-			claimed.add_color_override("font_color", Color("0ca678"))
-			fest_box.add_child(claimed)
-		else:
-			var claim = Button.new()
-			claim.text = "🎁 领取限定礼盒"
-			claim.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			claim.rect_min_size = Vector2(0, 40)
-			claim.add_font_override("font", game.game_font)
-			claim.connect("pressed", game, "_on_event_chest_claimed", [str(festival["id"]), int(festival["chest"])])
-			fest_box.add_child(claim)
-		box.add_child(fest_box.get_parent())
+		var claim = Button.new()
+		claim.text = "🎁 领取限定礼盒"
+		claim.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		claim.rect_min_size = Vector2(0, 40)
+		claim.add_font_override("font", game.game_font)
+		claim.connect("pressed", game, "_on_event_chest_claimed", [str(festival["id"]), int(festival["chest"])])
+		fest_box.add_child(claim)
+	box.add_child(fest_box.get_parent())
 
+static func _build_events_calendar(game, box, today):
 	var upcoming_box = _event_card(game, "📅 节日日历")
 	for entry in _upcoming_festivals(today, 3):
 		var row = Label.new()

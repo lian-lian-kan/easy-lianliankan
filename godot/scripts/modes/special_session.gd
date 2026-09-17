@@ -132,15 +132,18 @@ static func _resolve_special_clear(game):
 	elif game.special_mode == "tree":
 		_advance_tree_layer(game, time_bonus)
 	elif game.special_mode == "custom":
-		# UGC 试玩：a small flat thank-you, no records/missions/leaderboard.
-		game._patch_progress_state({"coins_delta": 10})
-		game.stage_status = game.STATUS_COMPLETED
-		game._play_stage_clear_celebration(true)
-		game._show_message("自定义关卡通关！作者之手一定能难住朋友 · 🌸+10", 2.0)
+		_settle_custom_win(game)
 	else:
 		game._record_special_completion()
 		game.stage_status = game.STATUS_COMPLETED
 		game._play_stage_clear_celebration(true)
+
+# UGC 试玩结算：a small flat thank-you, no records/missions/leaderboard.
+static func _settle_custom_win(game):
+	game._patch_progress_state({"coins_delta": 10})
+	game.stage_status = game.STATUS_COMPLETED
+	game._play_stage_clear_celebration(true)
+	game._show_message("自定义关卡通关！作者之手一定能难住朋友 · 🌸+10", 2.0)
 
 	game._refresh_ui()
 	game._refresh_board_visuals()

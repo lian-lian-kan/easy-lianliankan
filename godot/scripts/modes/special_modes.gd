@@ -249,43 +249,26 @@ static func build_defuse_level(config, progress_level: int) -> Dictionary:
 
 # Classic-rules boards with different knobs: zen/hell change board and
 # clock pressure, moves adds a pair budget, race adds the AI interval.
+# Optional passthroughs are table-driven so new knobs are one row here.
+const CLASSIC_OPTIONAL_FIELDS = [
+	"move_budget", "miss_limit", "ai_interval", "stack_ratio", "fog_layers",
+	"defense_start", "defense_step", "sum10", "chain_ratio", "target_bonus",
+	"shift_interval", "chain_min",
+]
+
 static func build_classic_style_level(config, mode_id: String):
-	var rows = int(config.get("rows", 10))
-	var cols = int(config.get("cols", 8))
-	var kinds = int(config.get("kinds", 8))
 	var level = {
 		"id": 1,
 		"name": str(config.get("name", mode_id)),
 		"mode": mode_id,
-		"rows": rows,
-		"cols": cols,
-		"kinds": kinds,
+		"rows": int(config.get("rows", 10)),
+		"cols": int(config.get("cols", 8)),
+		"kinds": int(config.get("kinds", 8)),
 		"time_limit": int(config.get("time_limit", 90))
 	}
-	if config.has("move_budget"):
-		level["move_budget"] = int(config.get("move_budget", 56))
-	if config.has("miss_limit"):
-		level["miss_limit"] = int(config.get("miss_limit", 3))
-	if config.has("ai_interval"):
-		level["ai_interval"] = float(config.get("ai_interval", 8.5))
-	if config.has("stack_ratio"):
-		level["stack_ratio"] = float(config.get("stack_ratio", 0.25))
-	if config.has("fog_layers"):
-		level["fog_layers"] = int(config.get("fog_layers", 2))
-	if config.has("defense_start"):
-		level["defense_start"] = int(config.get("defense_start", 5))
-	if config.has("defense_step"):
-		level["defense_step"] = int(config.get("defense_step", 12))
-	if config.has("sum10"):
-		level["sum10"] = true
-	if config.has("chain_ratio"):
-		level["chain_ratio"] = float(config.get("chain_ratio", 0.22))
-	if config.has("target_bonus"):
-		level["target_bonus"] = int(config.get("target_bonus", 5))
-	if config.has("shift_interval"):
-		level["shift_interval"] = int(config.get("shift_interval", 8))
-	if config.has("chain_min"):
-		level["chain_min"] = int(config.get("chain_min", 3))
+	for field in CLASSIC_OPTIONAL_FIELDS:
+		if config.has(field):
+			level[field] = config[field]
 	return level
 
 

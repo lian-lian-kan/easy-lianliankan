@@ -248,9 +248,7 @@ static func _apply_meta_economy(next_state, patch):
 		var theme_id = str(patch["unlock_theme"])
 		if not next_state["owned_themes"].has(theme_id):
 			next_state["owned_themes"].append(theme_id)
-	if patch.has("event_chest"):
-		# 限时活动限定奖池：每个节日 id 每存档只可领一次。
-		next_state["event_chests"][str(patch["event_chest"])] = true
+	_apply_event_chest(next_state, patch)
 	if patch.has("current_theme"):
 		next_state["current_theme"] = str(patch["current_theme"])
 	if patch.has("signin"):
@@ -264,6 +262,13 @@ static func _apply_meta_economy(next_state, patch):
 					int(next_state["signin_streak"]))
 				next_state["last_signin"] = sign_date
 				next_state["signin_streak"] = sign_streak
+
+
+# Per-level best time and star rating.
+static func _apply_event_chest(next_state, patch):
+	# 限时活动限定奖池：每个节日 id 每存档只可领一次。
+	if patch.has("event_chest"):
+		next_state["event_chests"][str(patch["event_chest"])] = true
 
 
 # Per-level best time and star rating.

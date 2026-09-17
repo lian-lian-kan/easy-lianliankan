@@ -131,6 +131,8 @@ class FakeGame extends Reference:
 		return special_mode == "memory"
 	func _is_sum_mode():
 		return special_mode == "sum10"
+	func _is_tree_mode():
+		return special_mode == "tree"
 	func _is_edu_mode():
 		return special_mode == "edu"
 	func _is_drag_mode():

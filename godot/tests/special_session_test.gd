@@ -23,6 +23,10 @@ class FakeGame extends Reference:
 	var endless_round = 0
 	var tree_height = 0
 	var special_level = null
+	# roguelike buff state the tree flow now maintains on every entry
+	var tree_buffs = {}
+	var tree_pending_buffs = []
+	var tree_buff_offer_open = false
 	var level_index = 3
 	var messages = []
 	var resets = []

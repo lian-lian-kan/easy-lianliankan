@@ -373,7 +373,7 @@ static func _finish_intermediate_clear(game, reward):
 static func _apply_combo_gain(game, base_score):
 	var now_ms = OS.get_ticks_msec()
 	# 攀登树余烬连击：本层增益拉长连击窗口（无增益时恒为 1.0）。
-	var combo_window = int(float(game.tuning.get("combo_window_ms", 2600)) * game.TREE_BUFFS.combo_window_mult(game.get("tree_buffs", {})))
+	var combo_window = int(float(game.tuning.get("combo_window_ms", 2600)) * game.TREE_BUFFS.combo_window_mult(game.get("tree_buffs")))
 	var max_combo = int(game.tuning.get("max_combo", 8))
 	var score_multiplier = float(game._current_level().get("score_multiplier", 1.0))
 

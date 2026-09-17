@@ -58,15 +58,22 @@ static func tools_free(buffs) -> bool:
 static func has_time_gift(buffs) -> bool:
 	return _has_buff(buffs, "time_gift")
 
-# Power-up grants merge into the layer's resolved loadout: bomb_gift /
-# freeze_gift / shuffle_gift map onto the loadout keys 1:1.
+# Power-up grants merge into the layer's resolved loadout; gift ids map onto
+# their loadout keys explicitly (freeze_gift → time_freeze, shuffle_gift →
+# reshuffle — the naive suffix strip would miss both).
+const GIFT_LOADOUT_KEYS = {
+	"bomb_gift": "bomb",
+	"freeze_gift": "time_freeze",
+	"shuffle_gift": "reshuffle",
+}
+
 static func bonus_loadout(buffs) -> Dictionary:
 	var bonus = {}
 	if typeof(buffs) != TYPE_DICTIONARY:
 		return bonus
-	for buff_id in ["bomb_gift", "freeze_gift", "shuffle_gift"]:
-		if buffs.has(buff_id):
-			bonus[str(buff_id).replace("_gift", "")] = 1
+	for gift_id in GIFT_LOADOUT_KEYS:
+		if buffs.has(gift_id):
+			bonus[GIFT_LOADOUT_KEYS[gift_id]] = 1
 	return bonus
 
 static func _has_buff(buffs, buff_id: String) -> bool:

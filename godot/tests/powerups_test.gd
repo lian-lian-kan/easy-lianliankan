@@ -79,6 +79,8 @@ class FakeGame extends Reference:
 	var activations = []
 	var reshuffles = 0
 	var hint_calls = 0
+	func _is_tree_mode():
+		return special_mode == "tree"
 	func _is_special_session():
 		return special_mode != ""
 	func _is_memory_mode():

@@ -41,6 +41,7 @@ const SPECIAL_SESSION = preload("res://scripts/modes/special_session.gd")
 const EDU = preload("res://scripts/content/edu_decks.gd")
 const DRAG_CHAIN = preload("res://scripts/modes/drag_chain.gd")
 const TREE_BUFFS = preload("res://scripts/modes/tree_buffs.gd")
+const LEVEL_EDITOR_UI = preload("res://scripts/ui/level_editor_ui.gd")
 const EVENTS = preload("res://scripts/content/events_calendar.gd")
 const LEVEL_EDITOR = preload("res://scripts/modes/level_editor.gd")
 
@@ -981,37 +982,37 @@ func _on_event_chest_claimed(festival_id, chest):
 # ── 关卡工坊（UGC 编辑器 + 分享码） ──
 
 func _on_editor_open_pressed():
-	UI_PANELS._editor_panel(self)
-	UI_PANELS.refresh_editor(self)
+	LEVEL_EDITOR_UI._editor_panel(self)
+	LEVEL_EDITOR_UI.refresh_editor(self)
 	UI_PANELS.open_modal(self, editor_panel)
 
 func _on_editor_close():
 	UI_PANELS.close_modal(self, editor_panel)
 
 func _on_editor_rows_changed(index):
-	UI_PANELS.editor_resize(self, UI_PANELS.EDITOR_DIM_VALUES[clamp(index, 0, 3)], int(editor_state["cols"]), int(editor_state["kinds"]))
+	LEVEL_EDITOR_UI.editor_resize(self, LEVEL_EDITOR_UI.EDITOR_DIM_VALUES[clamp(index, 0, 3)], int(editor_state["cols"]), int(editor_state["kinds"]))
 
 func _on_editor_cols_changed(index):
-	UI_PANELS.editor_resize(self, int(editor_state["rows"]), UI_PANELS.EDITOR_DIM_VALUES[clamp(index, 0, 3)], int(editor_state["kinds"]))
+	LEVEL_EDITOR_UI.editor_resize(self, int(editor_state["rows"]), LEVEL_EDITOR_UI.EDITOR_DIM_VALUES[clamp(index, 0, 3)], int(editor_state["kinds"]))
 
 func _on_editor_kinds_changed(index):
-	UI_PANELS.editor_resize(self, int(editor_state["rows"]), int(editor_state["cols"]), UI_PANELS.EDITOR_KIND_VALUES[clamp(index, 0, UI_PANELS.EDITOR_KIND_VALUES.size() - 1)])
+	LEVEL_EDITOR_UI.editor_resize(self, int(editor_state["rows"]), int(editor_state["cols"]), LEVEL_EDITOR_UI.EDITOR_KIND_VALUES[clamp(index, 0, LEVEL_EDITOR_UI.EDITOR_KIND_VALUES.size() - 1)])
 
 func _on_editor_kind_pressed(kind):
 	editor_state["active_kind"] = int(kind)
-	UI_PANELS.refresh_editor(self)
+	LEVEL_EDITOR_UI.refresh_editor(self)
 
 func _on_editor_cell_pressed(r, c):
 	var value = int(editor_state["grid"][r][c])
 	var kind = int(editor_state["active_kind"])
 	# Same-kind repaint erases (quick eraser gesture); anything else paints.
 	editor_state["grid"][r][c] = 0 if value == kind else kind
-	UI_PANELS.refresh_editor(self)
+	LEVEL_EDITOR_UI.refresh_editor(self)
 
 func _on_editor_random_pressed():
 	var level = {"rows": int(editor_state["rows"]), "cols": int(editor_state["cols"]), "kinds": int(editor_state["kinds"])}
 	editor_state["grid"] = BOARD_ENGINE.create_playable_board(level)
-	UI_PANELS.refresh_editor(self)
+	LEVEL_EDITOR_UI.refresh_editor(self)
 
 func _on_editor_play_pressed():
 	var verdict = LEVEL_EDITOR.validate_layout(editor_state["grid"], int(editor_state["kinds"]))
@@ -1047,8 +1048,8 @@ func _on_editor_import_pressed():
 	editor_state["grid"] = result["grid"]
 	editor_state["active_kind"] = 1
 	editor_share_label.text = ""
-	UI_PANELS._editor_build_dim_options(self)
-	UI_PANELS.refresh_editor(self)
+	LEVEL_EDITOR_UI._editor_build_dim_options(self)
+	LEVEL_EDITOR_UI.refresh_editor(self)
 	_show_message("已导入好友关卡，可以试玩或再创作", 1.4)
 
 # ═══ 周任务（missions） ═══

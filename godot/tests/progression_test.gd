@@ -109,7 +109,7 @@ func _init() -> void:
 	# FLAT_BEST_KEYS must exist in a fresh default save and round-trip
 	# through normalize + same_progress when it changes.
 	var flat = progression.FLAT_BEST_KEYS
-	_assert_equal(flat.size(), 25, "FLAT_BEST_KEYS declares 25 mode bests")
+	_assert_equal(flat.size(), 27, "FLAT_BEST_KEYS declares 27 mode bests")
 	var fresh_save = progression.default_progress(10)
 	var missing := []
 	for key in flat:

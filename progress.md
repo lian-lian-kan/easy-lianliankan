@@ -1050,3 +1050,15 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **关键认知**：stretch(base 390×844 + expand) 把视口高度钉在 ~844——几乎所有桌面窗口几何都落"移动类"（860 阈值按视口单位判定），桌面分支实际极少触达；正因如此全分支行为统一后，任何窗口形状表现一致。真机窗口三档（683×412 / 640×480 / 880×960 点）截图验证：HUD 一行、棋盘贴满、瓦片避开导航。
 - 环境坑：本地无导出模板（CI 才有）——下载 3.6.2 tpz 后导出仍报错，真因是输出目录 public/godot/ 不存在（CI 有 mkdir，本地没有）；本地无头 Chrome 冒烟对已知良好的旧部署构建同样失败（CVDisplayLink 噪音/无信标），判定为本地环境限制，导出+冒烟门禁交由 CI build job。
 - Validation: 50 个无头测试全绿 ×2 轮（含 panels_probe 5 连跑）；shell_audit clean；web 导出产物 index.pck/wasm 落盘；真机窗口三档目测达标；CI（build+smoke+全测试）push 后看板确认。
+
+## 2026-09-17 玩法范式轮（feat/gameplay-paradigms）：业内差距分析落地 5 个新玩法
+
+- **背景**：业内盘点结论「玩法规则覆盖已高，空白在玩法范式/社交 meta」。本轮落地五个单点创新：连线消（拖链）、知识配对（教育）、攀登树 roguelike、限时活动日历、UGC 关卡工坊。
+- **连线消（drag，8x8 kinds6）**：Button button_down/mouse_entered/button_up 三信号组成一笔拖链——按住同款相邻延伸、松手全消；链长加成（3 连 x1.5）；2 连回落为相邻对（find_path 必通）；1 连回落经典点选（拖出未松手则静默）；`drag_consumed` 单次吞掉 Button 释放后补发的 pressed。链逻辑纯静态在 modes/drag_chain.gd。
+- **知识配对（edu）**：sum10「逻辑类型+发牌变脸」范式泛化——values_match 增加 `"edu"` 分支（(a-1)/2 同概念且 a≠b），apply_edu_faces 把概念 1..kinds 拆成 牌面(2c-1 问)/答案(2c 答)；三个科目牌组（汉字拼音/单词翻译/算式答案）各 30 概念 60 面，按 epoch 天轮换；难度分层 6x6/8x6/10x6（kinds=对数，牌组刚好够发）。
+- **攀登树 roguelike**：登顶后不再直接开下一层——先弹「三选一增益」弹窗（时间礼物/分数棱镜/余烬连击/工具清风/炸弹时光瓶洗牌礼物），选完才启动 level_advance；增益只作用于即将开始的一层（tree_buffs 字典随每层重选重置）；钩子四处：combo 窗口乘数（session）、工具免耗时（revive._consume_time_cost）、道具 grants 合并（powerups._init_power_ups）、开局+15s（hud_timers advance 分支）。
+- **限时活动日历（events_calendar.gd 纯函数）**：周末双倍樱花走统一 earn 钩子 apply_earn（关卡/叠叠消/收集/翻翻乐/树里程碑全部只在这一处翻倍）；10 个固定节日各带限定奖池（每存档每节日限领一次，event_chests 进 progression 持久化四件套：default/normalize/apply/same）；活动页挂进底部导航（6 键）+ 设置页入口。
+- **UGC 关卡工坊**：编辑器（行/列/图案数 OptionButton + 调色板涂牌 + 同色重涂=擦除 + 实时校验：成对/≥4 牌/有解）+ **LK1 分享码**（rows/cols/kinds 字节 + 每字节两格 nibble + 全字节和 mod 251 校验 → base64，<120 字符）；试玩走 `custom` 特殊会话（custom_grid 直装棋盘、无 RECORD_MODES 不进榜、通关 🌸+10 无周任务计数）；UI 独立 level_editor_ui.gd（ui_panels 931→757 行）。
+- **规模门禁**：build_classic_style_level 可选字段表驱动化；_apply_meta_economy 拆 _apply_event_chest；_build_events 拆三段；shell_audit clean。
+- **坑**：GDScript3 全局 `max()` 返回 float——`int % max(1,n)` 是 "int and float to %" parse error（board_view color_for）、`return max(1, int(...))` 类型不匹配（drag_chain chain_score）；revive/powerups 引用 `game._is_tree_mode()` 时忘了在 game.gd 加帮助函数——探针日志里 60 条 SCRIPT ERROR 而测试照绿（守卫链吞错），靠错误扫描抓出。
+- **测试**：新 5 文件（edu_test/drag_probe/tree_buffs_test/events_calendar_test/level_editor_test）入 CI 清单 49→54；假体镜像链再补课（game_input_test FakeGame 加 _is_edu_mode/_is_drag_mode）；后端 mode_seed +registry 测试 27→29（本地临时 PG/Redis 容器全量 101 用例绿）。
