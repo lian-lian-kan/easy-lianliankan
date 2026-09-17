@@ -197,10 +197,10 @@ func _init() -> void:
 	# The wrapper is container-assigned (EXPAND_FILL takes all remaining
 	# height after the header); assert the REALIZED frame, not the min.
 	var wrapper_ratio = float(game.board_wrapper.rect_size.y) / vp_height
-	check(wrapper_ratio >= 0.94, "portrait board realizes >=94%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	check(wrapper_ratio >= 0.91, "portrait board realizes >=91%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
 	check(game.stat_values["total_score"]["title"] != null and not game.stat_values["total_score"]["title"].visible,
 		"portrait stat cards drop their titles (value-only pills)")
-	check(float(game.board_wrapper.rect_min_size.y) >= vp_height * 0.94 - 0.5, "wrapper floor carries the 94%-of-viewport contract")
+	check(float(game.board_wrapper.rect_min_size.y) >= vp_height * 0.92 - 0.5, "wrapper floor carries the 92%-of-viewport contract")
 	check(game.nav_bar.visible == false, "portrait parks the nav on the board view (page-only footer)")
 	check(game.stats_flow_container.get_child_count() == 0 and not game.stats_flow_container.visible
 			and game.stat_values["total_score"]["card"].get_parent() == game.controls_flow_container,

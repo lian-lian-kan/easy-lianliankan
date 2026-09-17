@@ -19,7 +19,7 @@ class FakeGame extends Reference:
 	const MOBILE_SHORT_SIDE_MAX = 860.0
 	const MOBILE_COMPACT_HEIGHT_MAX = 460.0
 	const BOARD_MIN_HEIGHT = 200.0
-	const BOARD_RATIO_MIN = 0.95
+	const BOARD_RATIO_MIN = 0.92
 
 	var viewport_size = Vector2(390, 844)
 	var board_wrapper = null
@@ -155,7 +155,7 @@ func _init() -> void:
 		"portrait hides the secondary stat card")
 	check(phone.stat_values["total_score"]["card"].visible,
 		"portrait keeps the essential card")
-	check(abs(float(phone.board_wrapper.rect_min_size.y) - 844.0 * 0.95) < 0.01,
+	check(abs(float(phone.board_wrapper.rect_min_size.y) - 844.0 * 0.92) < 0.01,
 		"portrait board floor is 90% of the viewport height")
 	check(phone.margin_container.get_constant("margin_left") == 0,
 		"portrait margins collapse to zero")
@@ -177,7 +177,7 @@ func _init() -> void:
 		"desktop compacts the title strip too (board-first everywhere)")
 	check(desktop_case.stat_values["level_score"]["card"].visible == false,
 		"desktop hides the secondary stat cards too")
-	check(abs(float(desktop_case.board_wrapper.rect_min_size.y) - 1080.0 * 0.95) < 0.01,
+	check(abs(float(desktop_case.board_wrapper.rect_min_size.y) - 1080.0 * 0.92) < 0.01,
 		"desktop board floor is 90% of the viewport height")
 	check(desktop_case.board_grid.get_constant("h_separation") == 6,
 		"desktop separation is tight so tiles fill the canvas")
@@ -197,7 +197,7 @@ func _init() -> void:
 	var landscape = make_controls()
 	landscape.viewport_size = Vector2(844, 390)
 	HUD_LAYOUT.update_layout(landscape)
-	check(abs(float(landscape.board_wrapper.rect_min_size.y) - 390.0 * 0.95) < 0.01,
+	check(abs(float(landscape.board_wrapper.rect_min_size.y) - 390.0 * 0.92) < 0.01,
 		"landscape board floor is 90% of the viewport height")
 	check(landscape.title_row.visible == false,
 		"landscape compacts the header to the HUD line")
