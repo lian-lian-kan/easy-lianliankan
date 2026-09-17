@@ -96,6 +96,12 @@ static func show_page(game, page_id):
 	if game.level_advance_timer:
 		game.level_advance_timer.stop()
 	game.current_page = page_id
+	# Desktop hides the nav on the chrome-free home board; it belongs to
+	# pages, so it comes back the moment one opens. get() keeps fakes and
+	# partial shells without the member safe.
+	var nav_bar = game.get("nav_bar")
+	if nav_bar != null:
+		nav_bar.visible = true
 	if not reopened:
 		PAGE_UI.clear_page(game, game.page_content)
 		match page_id:
@@ -114,6 +120,10 @@ static func show_page(game, page_id):
 
 static func close_page(game):
 	UI_PANELS.close_modal(game, game.pages_root)
+	# Back to the board-first home: desktop parks the nav again.
+	var nav_bar = game.get("nav_bar")
+	if nav_bar != null:
+		nav_bar.visible = game._viewport_flags(game.get_viewport_rect().size)["is_mobile"]
 	# Resume a settle that was interrupted by opening the page.
 	if game.stage_status == game.STATUS_CLEARED and game.pending_level_index >= 0 \
 			and game.level_advance_timer:

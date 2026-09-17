@@ -57,9 +57,9 @@ const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/modes/campaign_levels.gd")
 const MOBILE_SHORT_SIDE_MAX = 860.0
 const MOBILE_COMPACT_HEIGHT_MAX = 460.0
-const BOARD_RATIO_MOBILE_PORTRAIT = 0.85
-const BOARD_RATIO_MOBILE_LANDSCAPE = 0.46
-const BOARD_RATIO_DESKTOP = 0.52
+# Board-first contract: the board canvas is >=90% of the viewport height in
+# every viewport class (see hud_layout.gd).
+const BOARD_RATIO_MIN = 0.90
 const BOARD_MIN_HEIGHT = 200.0
 
 # ═══ 数据与配置（game_config / special_modes / progress_store） ═══
@@ -732,6 +732,14 @@ func _viewport_flags(viewport_size):
 
 func _update_layout_for_screen_size():
 	HUD_LAYOUT.update_layout(self)
+
+func _refresh_nav_visibility():
+	HUD_LAYOUT._apply_nav_visibility(self, _viewport_flags(get_viewport_rect().size))
+
+# 从设置面板进入元页面（桌面端棋盘页没有常驻导航条）。
+func _on_settings_page_entry(page_id):
+	UI_PANELS.close_modal(self, settings_panel)
+	PAGE_ROUTER.show_page(self, page_id)
 
 # ═══ 弹窗面板（ui_panels） ═══
 

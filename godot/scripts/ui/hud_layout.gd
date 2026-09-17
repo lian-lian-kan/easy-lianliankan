@@ -20,42 +20,36 @@ static func update_layout(game):
 	_apply_stat_card_sizes(game, flags)
 	_apply_control_sizes(game, flags)
 	_apply_header_compaction(game, flags)
+	_apply_nav_visibility(game, flags)
 	game._update_modal_panel_sizes(viewport_size, flags["is_portrait"])
 	# Tile sizing depends on the wrapper frame above; re-run once the
 	# container has actually applied it, or tiles stay at the boot-time size.
 	game.call_deferred("_update_tile_sizes")
 
 
-# responsive board height per viewport class (portrait is container-ruled).
+# Board-first contract: the canvas is guaranteed >=90% of the viewport
+# height in EVERY viewport class. The wrapper is EXPAND_FILL with stretch
+# ratio 1.0, so it absorbs whatever the one-line header leaves; the min
+# below is the hard floor the container honors on top of that.
 static func _apply_board_height(game, viewport_size, flags):
-	var is_mobile = flags["is_mobile"]
-	var is_portrait = flags["is_portrait"]
-	# Give board more vertical room on mobile and wide desktop.
-	if is_mobile and not is_portrait:
-		game.board_wrapper.rect_min_size = Vector2(0, max(game.BOARD_MIN_HEIGHT, viewport_size.y * game.BOARD_RATIO_MOBILE_LANDSCAPE))
-	elif is_mobile:
-		# Portrait layout authority lives with the container: the wrapper is
-		# EXPAND_FILL with stretch_ratio 1.0, so it receives EXACTLY the space
-		# left after the header's natural height — no hand-computed ratio that
-		# can overflow into the nav bar and cover the last tile row. Whatever
-		# the header grows or shrinks, the board absorbs the remainder.
-		game.board_wrapper.rect_min_size = Vector2(0, game.BOARD_MIN_HEIGHT)
-	else:
-		game.board_wrapper.rect_min_size = Vector2(0, max(420.0, viewport_size.y * game.BOARD_RATIO_DESKTOP))
+	var wanted = max(game.BOARD_MIN_HEIGHT, viewport_size.y * game.BOARD_RATIO_MIN)
+	game.board_wrapper.rect_min_size = Vector2(0, wanted)
 
 
-# page margins plus floating banners parked just above the nav bar.
+# page margins: thin everywhere, the board is the product. Floating banners
+# park just above where the nav bar sits while it is visible.
 static func _apply_margins(game, flags):
 	var is_mobile = flags["is_mobile"]
 	var is_portrait = flags["is_portrait"]
 	var is_compact_height = flags["is_compact_height"]
-	# Adjust margins based on screen size
-	var margin_value = 0 if (is_mobile and is_portrait) else (6 if is_compact_height else (8 if is_mobile else 16))
-	# The bottom strip also reserves room for the persistent navigation bar.
+	# Portrait phones keep their zero side rails; everything else gets a
+	# 4px hairline so tiles can run nearly edge to edge.
+	var margin_value = 0 if (is_mobile and is_portrait) else 4
+	# The nav bar floats over the board's bottom edge on every class (on
+	# desktop it only exists while a page is open), so the board only ever
+	# reserves a thin cushion, never a whole strip.
 	var nav_strip = 40 if is_mobile else 64
-	# Portrait gives the board the strip too: the centered grid keeps the
-	# last tile row clear of the nav, so only a thin cushion is reserved.
-	var board_bottom_reserve = 10 if (is_mobile and is_portrait) else nav_strip
+	var board_bottom_reserve = 10
 	# Keep the floating message banner parked just above the navigation bar.
 	if game.message_label:
 		game.message_label.margin_bottom = -(nav_strip + 4)
@@ -90,89 +84,75 @@ static func _apply_header_visibility(game, flags):
 static func _apply_separations(game, flags):
 	var is_mobile = flags["is_mobile"]
 	var is_compact_height = flags["is_compact_height"]
-	# Adjust tile separation based on screen size
+	# Tight grid gaps on every class: the freed pixels go to the tiles.
 	if is_mobile and is_compact_height:
 		game.board_grid.add_constant_override("h_separation", 3)
 		game.board_grid.add_constant_override("v_separation", 3)
 	elif is_mobile:
-		# Portrait phones are width-bound: tighter separation buys ~1 tile of width.
 		game.board_grid.add_constant_override("h_separation", 3)
 		game.board_grid.add_constant_override("v_separation", 3)
 	else:
-		game.board_grid.add_constant_override("h_separation", 10)
-		game.board_grid.add_constant_override("v_separation", 10)
+		game.board_grid.add_constant_override("h_separation", 6)
+		game.board_grid.add_constant_override("v_separation", 6)
 
 	if game.stats_flow_container:
 		game.stats_flow_container.add_constant_override("h_separation", 4 if is_mobile else 6)
 		game.stats_flow_container.add_constant_override("v_separation", 6 if is_mobile else 6)
 
 
-# stat cards: portrait uses value-only pills.
+# stat cards: value-only pills on every class — the board owns the pixels.
 static func _apply_stat_card_sizes(game, flags):
 	var is_mobile = flags["is_mobile"]
 	var is_portrait = flags["is_portrait"]
-	var stat_card_size = Vector2(60, 24) if is_mobile and is_portrait else (Vector2(82, 54) if is_mobile else Vector2(100, 64))
-	var stat_value_size = 14 if is_mobile and is_portrait else (20 if is_mobile else 22)
+	var stat_card_size = Vector2(60, 24) if is_mobile else Vector2(72, 26)
+	var stat_value_size = 14 if is_mobile else 16
 	var stat_title_size = 10 if is_mobile else 11
 	for key in game.stat_values.keys():
 		var card = game.stat_values[key]["card"]
 		var title_small = game.stat_values[key]["title"]
 		var value_label = game.stat_values[key]["value"]
 		card.rect_min_size = stat_card_size
-		# Portrait cards are value-only pills: the title row yields to the
-		# board (the four survivors — 总分/剩余/倒计时/连击 — read clearly
-		# from context), and the clipped value holder shrinks to match.
-		title_small.visible = not (is_mobile and is_portrait)
+		# Cards are value-only pills: the title row yields to the board (the
+		# four survivors — 总分/剩余/倒计时/连击 — read clearly from context),
+		# and the clipped value holder shrinks to match.
+		title_small.visible = false
 		var value_holder = value_label.get_parent()
-		if is_mobile and is_portrait:
-			value_holder.rect_min_size = Vector2(60, stat_value_size + 8)
-		else:
-			value_holder.rect_min_size = Vector2(88, 24)
+		value_holder.rect_min_size = Vector2(56 if is_mobile else 64, stat_value_size + 8)
 		title_small.rect_min_size = Vector2(0, stat_title_size + 4)
 		value_label.rect_min_size = Vector2(0, stat_value_size + 6)
 
 
-# control buttons and dropdowns sizing (portrait single 44x26 row).
+# control buttons sizing (portrait/compact 44x26, desktop 72x32 — one HUD
+# line on every class; dropdowns/jump/clear live in panels and pages).
 static func _apply_control_sizes(game, flags):
 	var is_mobile = flags["is_mobile"]
 	var is_portrait = flags["is_portrait"]
 	var is_compact_height = flags["is_compact_height"]
-	var control_min = Vector2(72, 34) if is_mobile and is_compact_height else (Vector2(76, 36) if is_mobile and is_portrait else (Vector2(80, 36) if is_mobile else Vector2(88, 42)))
-	if game.icon_set_option:
-		game.icon_set_option.rect_min_size = Vector2(108 if is_mobile else 122, control_min.y)
-	if game.level_select_option:
-		game.level_select_option.rect_min_size = Vector2(130 if is_mobile else 172, control_min.y)
+	var control_min = Vector2(44, 26) if is_mobile else Vector2(72, 32)
 	for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.jump_level_button, game.clear_progress_button, game.modes_button]:
 		if button:
 			button.rect_min_size = control_min
-	# Portrait: seven taps (five play controls + modes/settings) fit ONE
-	# 44x26 line with 12px glyphs — 📊/🏆 live in the settings panel.
-	if is_mobile and is_portrait:
-		for button in [game.hint_button, game.auto_button, game.shuffle_button, game.pause_button, game.reset_button, game.modes_button, game.settings_button]:
-			if button:
-				button.rect_min_size = Vector2(44, 26)
-				button.add_font_override("font", game._font_at_size(12))
+			button.add_font_override("font", game._font_at_size(12 if is_mobile else 14))
+	if game.settings_button:
+		game.settings_button.rect_min_size = control_min
+		game.settings_button.add_font_override("font", game._font_at_size(12 if is_mobile else 14))
 
 	if game.controls_flow_container:
 		game.controls_flow_container.add_constant_override("h_separation", 4 if is_mobile else 8)
-		game.controls_flow_container.add_constant_override("v_separation", 6 if is_mobile else 8)
-		# Compact rows look ragged left-aligned on a narrow phone; center them.
+		game.controls_flow_container.add_constant_override("v_separation", 4 if is_mobile else 6)
+		# Narrow phones wrap the HUD line; centered rows read tidy there.
 		game.controls_flow_container.alignment = BoxContainer.ALIGN_CENTER if (is_mobile and is_portrait) else BoxContainer.ALIGN_BEGIN
 
 
-# portrait compresses the header so the board owns the screen; landscape/desktop restores.
+# every class compresses the header to the single HUD line; the board owns
+# the screen (update_layout re-runs idempotently on resize).
 static func _apply_header_compaction(game, flags):
-	var is_mobile = flags["is_mobile"]
-	var is_portrait = flags["is_portrait"]
-	if is_mobile and is_portrait:
-		_compact_portrait_header(game)
-		_hide_portrait_extras(game)
-	else:
-		_restore_full_header(game)
+	_compact_header(game)
+	_hide_header_extras(game)
 
 
-# portrait: hide every strip that is not the board.
-static func _compact_portrait_header(game):
+# hide every strip that is not the board or the one HUD line.
+static func _compact_header(game):
 	if game.root_vbox:
 		game.root_vbox.add_constant_override("separation", 2)
 	if game.header_box:
@@ -201,65 +181,40 @@ static func _compact_portrait_header(game):
 		game.kinds_chip_label.visible = false
 	if game.level_progress_caption_label:
 		game.level_progress_caption_label.visible = false
-	if game.level_progress_bar:
-		game.level_progress_bar.rect_min_size = Vector2(0, 6)
+	if game.combo_progress_bar:
+		game.combo_progress_bar.visible = false
 	if game.jump_level_button:
 		game.jump_level_button.visible = false
 	if game.clear_progress_button:
 		game.clear_progress_button.visible = false
 
 
-# portrait: dropdowns/combo/secondary stat cards yield too.
-static func _hide_portrait_extras(game):
-	# Set picking lives in the shop page, level picking in the journey map:
-	# the two dropdowns only cost header rows on touch screens.
+# dropdowns and secondary stat cards yield on every class: set picking
+# lives in the shop page, level picking in the journey map.
+static func _hide_header_extras(game):
 	if game.icon_set_option:
 		game.icon_set_option.visible = false
 	if game.level_select_option:
 		game.level_select_option.visible = false
 	if game.level_select_label:
 		game.level_select_label.visible = false
-	if game.combo_progress_bar:
-		game.combo_progress_bar.visible = false
-	# Single row of the 4 essential cards keeps the header to one stat line.
+	# The four essential cards (总分/剩余/倒计时/连击) stay in the HUD line.
 	for hidden_key in ["level_score", "moves", "best_total_score", "best_combo"]:
 		if game.stat_values.has(hidden_key) and game.stat_values[hidden_key].has("card"):
 			game.stat_values[hidden_key]["card"].visible = false
 
 
-# non-portrait: everything visible again (update_layout re-runs idempotently).
-static func _restore_full_header(game):
-	if game.title_row:
-		game.title_row.visible = true
-	if game.level_progress_bar:
-		game.level_progress_bar.visible = true
-	if game.power_ups_container:
-		game.power_ups_container.visible = true
-	if game.combo_progress_bar:
-		game.combo_progress_bar.visible = true
-	if game.subtitle_label:
-		game.subtitle_label.visible = true
-	if game.status_chip_label:
-		game.status_chip_label.visible = true
-	if game.mode_chip_label:
-		game.mode_chip_label.visible = true
-	if game.kinds_chip_label:
-		game.kinds_chip_label.visible = true
-	if game.icon_set_option:
-		game.icon_set_option.visible = true
-	if game.level_select_option:
-		game.level_select_option.visible = true
-	if game.level_select_label:
-		game.level_select_label.visible = true
-	for hidden_key in ["level_score", "moves", "best_total_score", "best_combo"]:
-		if game.stat_values.has(hidden_key) and game.stat_values[hidden_key].has("card"):
-			game.stat_values[hidden_key]["card"].visible = true
-	if game.level_progress_caption_label:
-		game.level_progress_caption_label.visible = true
-	if game.jump_level_button:
-		game.jump_level_button.visible = true
-	if game.clear_progress_button:
-		game.clear_progress_button.visible = true
+# The nav bar is a page-switcher: touch screens keep it (their only entry
+# to the meta pages); desktop shows it only while a page is open, so the
+# home board plays chrome-free. get() keeps partial fakes without the
+# members safe.
+static func _apply_nav_visibility(game, flags):
+	var nav_bar = game.get("nav_bar")
+	if nav_bar == null:
+		return
+	var pages_root = game.get("pages_root")
+	var pages_open = pages_root != null and pages_root.visible
+	nav_bar.visible = flags["is_mobile"] or pages_open
 
 
 static func _viewport_flags(game, viewport_size):

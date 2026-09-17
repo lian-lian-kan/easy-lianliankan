@@ -19,8 +19,7 @@ class FakeGame extends Reference:
 	const MOBILE_SHORT_SIDE_MAX = 860.0
 	const MOBILE_COMPACT_HEIGHT_MAX = 460.0
 	const BOARD_MIN_HEIGHT = 200.0
-	const BOARD_RATIO_MOBILE_LANDSCAPE = 0.46
-	const BOARD_RATIO_DESKTOP = 0.52
+	const BOARD_RATIO_MIN = 0.90
 
 	var viewport_size = Vector2(390, 844)
 	var board_wrapper = null
@@ -58,6 +57,8 @@ class FakeGame extends Reference:
 	var jump_level_label = null
 	var power_up_labels = {}
 	var stat_values = {}
+	var nav_bar = null
+	var pages_root = null
 	func get_viewport_rect():
 		return Rect2(0, 0, viewport_size.x, viewport_size.y)
 	func _viewport_flags(viewport_size):
@@ -144,54 +145,86 @@ func _init() -> void:
 	HUD_LAYOUT.update_layout(guarded)
 	check(guarded.deferred_calls == 0, "update_layout bails out without a board")
 
-	# --- update_layout on a portrait phone: compaction + pills + margins
+	# --- update_layout on a portrait phone: board-first canvas + HUD line
 	var phone = make_controls()
+	phone.nav_bar = HBoxContainer.new()
+	phone.nav_bar.visible = true
 	HUD_LAYOUT.update_layout(phone)
 	check(phone.title_row.visible == false, "portrait compacts the title strip away")
 	check(phone.stat_values["level_score"]["card"].visible == false,
 		"portrait hides the secondary stat card")
 	check(phone.stat_values["total_score"]["card"].visible,
 		"portrait keeps the essential card")
-	check(phone.board_wrapper.rect_min_size == Vector2(0, 200.0),
-		"portrait board keeps the container-ruled minimum height")
+	check(abs(float(phone.board_wrapper.rect_min_size.y) - 844.0 * 0.90) < 0.01,
+		"portrait board floor is 90% of the viewport height")
 	check(phone.margin_container.get_constant("margin_left") == 0,
 		"portrait margins collapse to zero")
 	check(phone.margin_container.get_constant("margin_bottom") == 10,
 		"portrait reserves only a thin board cushion above the nav")
+	check(phone.nav_bar.visible, "portrait keeps the persistent nav")
 	check(phone.deferred_calls == 1, "tile sizing is deferred once per pass")
 
-	# --- update_layout on desktop: everything restored
+	# --- update_layout on desktop: the SAME board-first contract
 	var desktop_case = make_controls()
 	desktop_case.viewport_size = Vector2(1920, 1080)
-	desktop_case.title_row.visible = false  # simulate a prior portrait pass
+	desktop_case.title_row.visible = true  # simulate a prior pass
+	desktop_case.nav_bar = HBoxContainer.new()
+	desktop_case.nav_bar.visible = true
+	desktop_case.pages_root = PanelContainer.new()
+	desktop_case.pages_root.visible = false
 	HUD_LAYOUT.update_layout(desktop_case)
-	check(desktop_case.title_row.visible == true, "desktop restores the title strip")
-	check(desktop_case.stat_values["level_score"]["card"].visible,
-		"desktop shows every stat card")
-	check(desktop_case.board_wrapper.rect_min_size == Vector2(0, 1080.0 * 0.52),
-		"desktop sizes the board from the viewport ratio")
-	check(desktop_case.board_grid.get_constant("h_separation") == 10,
-		"desktop separation is roomy")
-	check(desktop_case.margin_container.get_constant("margin_left") == 16,
-		"desktop margins are the widest")
+	check(desktop_case.title_row.visible == false,
+		"desktop compacts the title strip too (board-first everywhere)")
+	check(desktop_case.stat_values["level_score"]["card"].visible == false,
+		"desktop hides the secondary stat cards too")
+	check(abs(float(desktop_case.board_wrapper.rect_min_size.y) - 1080.0 * 0.90) < 0.01,
+		"desktop board floor is 90% of the viewport height")
+	check(desktop_case.board_grid.get_constant("h_separation") == 6,
+		"desktop separation is tight so tiles fill the canvas")
+	check(desktop_case.margin_container.get_constant("margin_left") == 4,
+		"desktop margins are a hairline")
+	check(desktop_case.nav_bar.visible == false,
+		"desktop parks the nav on the chrome-free home board")
+	# the nav belongs to pages: it comes back the moment one opens
+	desktop_case.pages_root.visible = true
+	HUD_LAYOUT.update_layout(desktop_case)
+	check(desktop_case.nav_bar.visible, "desktop shows the nav while a page is open")
+	desktop_case.pages_root.visible = false
+	HUD_LAYOUT.update_layout(desktop_case)
+	check(desktop_case.nav_bar.visible == false, "closing the page parks the nav again")
 
-	# --- idempotent round-trip: portrait -> desktop -> portrait
+	# --- landscape phone: same floor, compact single-line budget
+	var landscape = make_controls()
+	landscape.viewport_size = Vector2(844, 390)
+	HUD_LAYOUT.update_layout(landscape)
+	check(abs(float(landscape.board_wrapper.rect_min_size.y) - 390.0 * 0.90) < 0.01,
+		"landscape board floor is 90% of the viewport height")
+	check(landscape.title_row.visible == false,
+		"landscape compacts the header to the HUD line")
+	check(landscape.margin_container.get_constant("margin_left") == 4,
+		"landscape margins are a hairline")
+
+	# --- idempotent round-trip: portrait -> desktop -> portrait stays compact
 	var roundtrip = make_controls()
+	roundtrip.nav_bar = HBoxContainer.new()
+	roundtrip.pages_root = PanelContainer.new()
+	roundtrip.pages_root.visible = false
 	HUD_LAYOUT.update_layout(roundtrip)
 	check(roundtrip.title_row.visible == false, "the portrait pass compacts the header")
 	roundtrip.viewport_size = Vector2(1920, 1080)
 	HUD_LAYOUT.update_layout(roundtrip)
-	check(roundtrip.title_row.visible == true and roundtrip.subtitle_label.visible,
-		"restore brings back every hidden strip")
+	check(roundtrip.title_row.visible == false
+		and roundtrip.stat_values["level_score"]["card"].visible == false,
+		"a desktop pass keeps the same board-first compaction")
 	roundtrip.viewport_size = Vector2(390, 844)
 	HUD_LAYOUT.update_layout(roundtrip)
 	check(roundtrip.title_row.visible == false
 		and roundtrip.stat_values["level_score"]["card"].visible == false,
 		"a second portrait pass compacts again identically")
 
-	# --- direct compaction helpers honour the four hidden keys
+	# --- the compaction is unconditional: no class restores the full header
 	var keys = ["level_score", "moves", "best_total_score", "best_combo"]
-	check(keys.size() == 4, "four secondary cards yield in portrait")
+	check(keys.size() == 4, "four secondary cards yield on every class")
 
 	if failures == 0:
 		print("hud_layout_test: ALL PASSED")

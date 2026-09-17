@@ -228,6 +228,19 @@ static func _build_controls_flow(game):
 	game.controls_flow_container.add_constant_override("v_separation", 8)
 	game.header_box.add_child(game.controls_flow_container)
 
+	# Board-first HUD: the stat pills share the SAME flow line as the
+	# controls, so the whole header is one row (two on a narrow phone) and
+	# the board keeps >=90% of the screen. The cards move in FLAT: a flow
+	# nested in a flow collapses to its min width and stacks the pills
+	# vertically. The emptied stats flow stays around, hidden — texts and
+	# visibility are driven per card and never through the container.
+	var stats_flow = game.stats_flow_container
+	while stats_flow.get_child_count() > 0:
+		var card = stats_flow.get_child(0)
+		stats_flow.remove_child(card)
+		game.controls_flow_container.add_child(card)
+	stats_flow.visible = false
+
 	game.icon_set_option = OptionButton.new()
 	game.icon_set_option.add_font_override("font", game.game_font)
 	game.icon_set_option.rect_min_size = Vector2(140, 42)

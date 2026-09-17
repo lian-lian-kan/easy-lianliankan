@@ -113,6 +113,7 @@ static func _settings_panel(game):
 
 	_settings_audio_rows(game, content)
 	_settings_feature_entries(game, content)
+	_settings_page_entries(game, content)
 
 	var spacer = Control.new()
 	spacer.rect_min_size = Vector2(0, 8)
@@ -188,6 +189,24 @@ static func _settings_feature_entries(game, content):
 	migration_entry.add_font_override("font", game.game_font)
 	migration_entry.connect("pressed", game, "_on_settings_migration_entry")
 	content.add_child(migration_entry)
+
+# Page entries: desktop hides the nav bar on the chrome-free home board,
+# so the meta pages stay reachable from settings (ids match page_router).
+static func _settings_page_entries(game, content):
+	var page_entries = [
+		["🗺️ 旅程地图", "level_map"],
+		["📖 图鉴收集", "collection"],
+		["🎁 每日有礼", "signin"],
+		["🛍️ 樱花小铺", "shop"],
+	]
+	for entry in page_entries:
+		var button = Button.new()
+		button.text = entry[0]
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.rect_min_size = Vector2(0, 40)
+		button.add_font_override("font", game.game_font)
+		button.connect("pressed", game, "_on_settings_page_entry", [entry[1]])
+		content.add_child(button)
 
 # 数据迁移面板：规则文案 + 旧设备生成段 / 新设备认领段 + 关闭。
 static func _migration_panel(game):

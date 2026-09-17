@@ -1039,3 +1039,14 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - 抽取 powerup_loadout 时曾凭印象臆造 extra/override 两表数据，被 power_ups_probe 当场抓出——已从 git 历史恢复真实表，教训（先读原表再改写）已入记忆。
 - 低耦合收尾：AudioManager autoload 编译期依赖全量解除（9 文件 38 处改经 game.audio），-s 无头模式从"部分测试静默跳过"变为全量真实执行；CI 增设测试文件 quit() 静态门禁防挂死；mode_meta 道具表校验改指新模块。
 - Validation: deploy build 绿（30 文件全跑全绿）+ backend pytest 100% 双覆盖绿 + prod e2e（真开线上页 register 201 / pull 404）绿。
+
+## 2026-09-17 (棋盘优先收口：全机型画布 ≥90% 视口高 + 瓦片填满画布)
+- 用户仍反馈棋盘画布太小。根因：桌面/横屏分支画布只保底 52% 视口高，头部（标题/9 张统计卡/道具条/下拉框/进度条）吃掉 ~300px；且瓦片 max_tile 上限（桌面 110）让大屏上瓦片格远填不满画布。
+- **画布契约**：BOARD_RATIO_* 三常量收敛为 BOARD_RATIO_MIN=0.90——任何视口类棋盘 wrapper 保底 90% 视口高（EXPAND_FILL 吸余量 + min 硬底，比例随 stretch 缩放不变量传递）。
+- **头部单行化（全机型）**：portrait 已有的压缩策略推广到所有类——标题条/副标题/状态章/模式章/进度条/道具条/连击条/下拉框/跳关卡全部隐藏，保留 4 张必需统计药丸（总分/剩余/倒计时/连击）+ 7 个对局按钮。统计卡从 stats_flow **平铺移入** controls_flow（HFlow 嵌 HFlow 会塌缩到最小宽度把药丸竖堆 4 行——实测 138px 的事故即此）；被清空的 stats_flow 隐藏保留（文本/可见性全按卡片驱动）。
+- **瓦片填满画布**：max_tile 抬到 移动竖屏 150 / 横屏 110 / 桌面 220，桌面 padding 24→12、网格间距 10→6，图标字体上限 44→88；新增 _nav_reserve_y——导航条悬浮在画布底缘时从瓦片可用高度里避让（真机高度,启动期回退 58+8），末行牌永不压导航（panels_probe 导航锁从"上限凑巧"变结构性保证）。
+- **桌面导航开页才显示**：触摸屏保持常驻（唯一页面入口）；桌面棋盘页 chrome-free，导航在 show_page 显示、close_page 收起；设置面板补 旅程/图鉴/有礼/小铺 四个入口补路。page_router 对 fake game 用 game.get("nav_bar") 安全读取（缺成员的假体不再 Invalid get index）。
+- **测试契约更新**：hud_layout_test（桌面同样压缩、三类视口 0.9 保底、导航可见性三态、压缩幂等往返）；panels_probe（wrapper floor ≥90% 契约替代旧"无手工放大的 min"、药丸平铺断言、设置页入口）。顺带修了一个既有时序毛刺：ring panel 检查从固定 0.25s 等待改为逐帧轮询 ~2s（光环 0.2s 生成/0.18s 后自毁，固定时点在机器忙时两头踩空）。
+- **关键认知**：stretch(base 390×844 + expand) 把视口高度钉在 ~844——几乎所有桌面窗口几何都落"移动类"（860 阈值按视口单位判定），桌面分支实际极少触达；正因如此全分支行为统一后，任何窗口形状表现一致。真机窗口三档（683×412 / 640×480 / 880×960 点）截图验证：HUD 一行、棋盘贴满、瓦片避开导航。
+- 环境坑：本地无导出模板（CI 才有）——下载 3.6.2 tpz 后导出仍报错，真因是输出目录 public/godot/ 不存在（CI 有 mkdir，本地没有）；本地无头 Chrome 冒烟对已知良好的旧部署构建同样失败（CVDisplayLink 噪音/无信标），判定为本地环境限制，导出+冒烟门禁交由 CI build job。
+- Validation: 50 个无头测试全绿 ×2 轮（含 panels_probe 5 连跑）；shell_audit clean；web 导出产物 index.pck/wasm 落盘；真机窗口三档目测达标；CI（build+smoke+全测试）push 后看板确认。

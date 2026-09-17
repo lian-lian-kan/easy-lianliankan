@@ -125,6 +125,14 @@ static func _tile_effect_style(game, button, r, c, bg, border, frozen, fogged, c
 		border = Color("da77f2")
 		has_effect = true
 	return [bg, border, has_effect]
+
+# The nav is an overlay on the board's bottom edge; tiles stop short of it
+# (realized nav height with a boot-time fallback, plus a gap).
+static func _nav_reserve_y(game) -> float:
+	if game.nav_bar == null or not game.nav_bar.visible:
+		return 0.0
+	return max(game.nav_bar.rect_size.y, 58.0) + 8.0
+
 static func _update_tile_sizes(game):
 	if game.board.empty() or game.cell_buttons.empty():
 		return
@@ -140,7 +148,7 @@ static func _update_tile_sizes(game):
 	var is_mobile = flags["is_mobile"]
 	var is_portrait = flags["is_portrait"]
 	var is_compact_height = flags["is_compact_height"]
-	var padding = 4 if is_mobile and is_compact_height else (4 if is_mobile and is_portrait else (10 if is_mobile else 24))
+	var padding = 4 if is_mobile and is_compact_height else (4 if is_mobile and is_portrait else (10 if is_mobile else 12))
 	var board_area = game.board_wrapper.rect_size
 	var wanted_area = game.board_wrapper.rect_min_size
 	# Early in boot the VBox has not re-laid-out yet, so rect_size still
@@ -151,6 +159,11 @@ static func _update_tile_sizes(game):
 		board_area.y = wanted_area.y
 	if board_area.x <= 1 or board_area.x < wanted_area.x - 4:
 		board_area.x = wanted_area.x
+	# The floating nav bar parks over the board's bottom edge while visible
+	# (touch screens keep it always; desktop only on open pages). Reserve it
+	# from the TILE area so the last row never hides behind the buttons —
+	# the canvas itself still fills >=90% of the screen.
+	board_area.y -= _nav_reserve_y(game)
 	var available = board_area - Vector2(padding * 2, padding * 2)
 	available.x = max(available.x, 120.0)
 	available.y = max(available.y, 120.0)
@@ -159,12 +172,13 @@ static func _update_tile_sizes(game):
 	var by_width = int(floor((available.x - float(cols - 1) * h_sep) / max(1, cols)))
 	var by_height = int(floor((available.y - float(rows - 1) * v_sep) / max(1, rows)))
 
-	# Clamp tile size: portrait mobile gets larger minimum tiles for readability.
+	# Clamp tile size: the floor keeps touch targets readable, the ceiling
+	# only exists so huge monitors do not turn 6-tile boards into posters.
 	var min_tile = 34 if is_mobile and is_portrait else (30 if is_mobile else 34)
-	var max_tile = 90 if is_mobile and is_portrait else (76 if is_mobile else 110)
+	var max_tile = 150 if is_mobile and is_portrait else (110 if is_mobile else 220)
 	var tile = clamp(min(by_width, by_height), min_tile, max_tile)
 
-	var tile_font = game._font_at_size(int(clamp(float(tile) * 0.52, 14.0, 44.0)))
+	var tile_font = game._font_at_size(int(clamp(float(tile) * 0.52, 14.0, 88.0)))
 	for r in range(rows):
 		for c in range(cols):
 			var button = game.cell_buttons[r][c]

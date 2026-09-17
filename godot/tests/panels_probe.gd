@@ -42,6 +42,9 @@ func _init() -> void:
 	check(settings_texts.has("📊 数据统计") and settings_texts.has("🏆 成就图鉴")
 			and settings_texts.has("🌳 攀登大树"),
 		"stats, achievements and tree entries live in the settings panel")
+	check(settings_texts.has("🗺️ 旅程地图") and settings_texts.has("📖 图鉴收集")
+			and settings_texts.has("🎁 每日有礼") and settings_texts.has("🛍️ 樱花小铺"),
+		"nav pages stay reachable from settings (desktop parks the nav)")
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
 	# modal panels: declared sizes, shared 24px padded shell, hidden at boot
@@ -197,7 +200,11 @@ func _init() -> void:
 	check(wrapper_ratio >= 0.90, "portrait board realizes >=90%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
 	check(game.stat_values["total_score"]["title"] != null and not game.stat_values["total_score"]["title"].visible,
 		"portrait stat cards drop their titles (value-only pills)")
-	check(float(game.board_wrapper.rect_min_size.y) <= float(game.BOARD_MIN_HEIGHT) + 0.5, "portrait wrapper carries no oversized hand-set minimum")
+	check(float(game.board_wrapper.rect_min_size.y) >= vp_height * 0.90 - 0.5, "wrapper floor carries the 90%-of-viewport contract")
+	check(game.nav_bar.visible, "portrait keeps the persistent nav")
+	check(game.stats_flow_container.get_child_count() == 0 and not game.stats_flow_container.visible
+			and game.stat_values["total_score"]["card"].get_parent() == game.controls_flow_container,
+		"stat pills live flat in the toolbar row (one-line HUD)")
 	check(game.subtitle_label != null && !game.subtitle_label.visible, "portrait hides the subtitle line")
 	check(game.status_chip_label != null && !game.status_chip_label.visible, "portrait hides the status badge")
 	check(game.mode_chip_label != null && !game.mode_chip_label.visible && game.kinds_chip_label != null && !game.kinds_chip_label.visible, "portrait hides the meta chips")
@@ -328,11 +335,18 @@ func _init() -> void:
 		if child is Panel:
 			before_panels.append(child)
 	game._animate_select(anim_cell)
-	yield(self.create_timer(0.25), "timeout")
+	# The ring appears when the select tween completes (~0.2s) and frees
+	# itself ~0.18s later — a fixed-time check races that short life under
+	# load. Poll every frame instead: assert a ring shows up within ~2s.
 	var new_panels = 0
-	for child in game.effect_layer.get_children():
-		if child is Panel and before_panels.find(child) == -1:
-			new_panels += 1
+	for _i in range(120):
+		yield(self, "idle_frame")
+		new_panels = 0
+		for child in game.effect_layer.get_children():
+			if child is Panel and before_panels.find(child) == -1:
+				new_panels += 1
+		if new_panels == 1:
+			break
 	check(new_panels == 1, "select spawns exactly one new ring panel")
 	yield(self.create_timer(0.35), "timeout")
 	check(rest_button.rect_scale.distance_to(Vector2.ONE) < 0.01, "select animation returns the tile to rest scale")
