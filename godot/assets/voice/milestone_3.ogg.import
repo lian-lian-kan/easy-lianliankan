@@ -1,0 +1,15 @@
+[remap]
+
+importer="ogg_vorbis"
+type="AudioStreamOGGVorbis"
+path="res://.import/milestone_3.ogg-b4e35c9ab082b992677dc337a3e8faba.oggstr"
+
+[deps]
+
+source_file="res://assets/voice/milestone_3.ogg"
+dest_files=[ "res://.import/milestone_3.ogg-b4e35c9ab082b992677dc337a3e8faba.oggstr" ]
+
+[params]
+
+loop=false
+loop_offset=0

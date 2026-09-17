@@ -135,10 +135,10 @@ static func rebuild_page(game):
 
 static func close_page(game):
 	UI_PANELS.close_modal(game, game.pages_root)
-	# Back to the board-first home: desktop parks the nav again.
+	# Back to the board-first home: the nav parks again (page-only footer).
 	var nav_bar = game.get("nav_bar")
 	if nav_bar != null:
-		nav_bar.visible = game._viewport_flags(game.get_viewport_rect().size)["is_mobile"]
+		nav_bar.visible = false
 	# Resume a settle that was interrupted by opening the page.
 	if game.stage_status == game.STATUS_CLEARED and game.pending_level_index >= 0 \
 			and game.level_advance_timer:

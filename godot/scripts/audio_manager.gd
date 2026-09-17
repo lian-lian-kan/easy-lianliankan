@@ -13,8 +13,14 @@ var muted: bool = false
 # Voice line playback: one dedicated player (a new clip interrupts the
 # previous one) and a stream cache. Loading is fault-tolerant — the headless
 # test env has no ogg import cache, so a failed load just means silence.
+# Godot 3's OGG importer bakes loop=true into imported streams by default
+# (godotengine/godot#15895), so playback force-clears the loop flag and a
+# same-clip guard keeps a line from ever feeling stuck on repeat.
 var _voice_player: AudioStreamPlayer = null
 var _voice_cache: Dictionary = {}
+var _voice_last_path: String = ""
+var _voice_last_ms: int = -1000000
+const VOICE_REPEAT_GUARD_MS = 12000
 
 # Sound effect streams (using procedural audio or simple beeps for web compatibility)
 var _sounds: Dictionary = {}
@@ -292,12 +298,19 @@ func play_voice_path(path: String) :
 		return
 	if path == "":
 		return
+	var now = OS.get_ticks_msec()
+	if path == _voice_last_path and now - _voice_last_ms < VOICE_REPEAT_GUARD_MS:
+		return
 	var stream = _load_voice_stream(path)
 	if stream == null:
 		return
+	if "loop" in stream:
+		stream.loop = false
 	_voice_player.stop()
 	_voice_player.stream = stream
 	_voice_player.play()
+	_voice_last_path = path
+	_voice_last_ms = now
 
 func _load_voice_stream(path: String):
 	if _voice_cache.has(path):

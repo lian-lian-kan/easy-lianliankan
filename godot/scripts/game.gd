@@ -63,9 +63,10 @@ const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/modes/campaign_levels.gd")
 const MOBILE_SHORT_SIDE_MAX = 860.0
 const MOBILE_COMPACT_HEIGHT_MAX = 460.0
-# Board-first contract: the board canvas is >=90% of the viewport height in
-# every viewport class (see hud_layout.gd).
-const BOARD_RATIO_MIN = 0.90
+# Board-first contract: the board canvas claims >=95% of the viewport height
+# in every viewport class (see hud_layout.gd). All chrome is one top toolbar;
+# the nav is a page-only footer, so the canvas can claim nearly everything.
+const BOARD_RATIO_MIN = 0.95
 const BOARD_MIN_HEIGHT = 200.0
 
 # ═══ 数据与配置（game_config / special_modes / progress_store） ═══

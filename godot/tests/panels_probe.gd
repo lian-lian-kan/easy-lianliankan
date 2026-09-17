@@ -197,11 +197,11 @@ func _init() -> void:
 	# The wrapper is container-assigned (EXPAND_FILL takes all remaining
 	# height after the header); assert the REALIZED frame, not the min.
 	var wrapper_ratio = float(game.board_wrapper.rect_size.y) / vp_height
-	check(wrapper_ratio >= 0.90, "portrait board realizes >=90%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
+	check(wrapper_ratio >= 0.94, "portrait board realizes >=94%% of screen height (got %d%%)" % int(wrapper_ratio * 100.0))
 	check(game.stat_values["total_score"]["title"] != null and not game.stat_values["total_score"]["title"].visible,
 		"portrait stat cards drop their titles (value-only pills)")
-	check(float(game.board_wrapper.rect_min_size.y) >= vp_height * 0.90 - 0.5, "wrapper floor carries the 90%-of-viewport contract")
-	check(game.nav_bar.visible, "portrait keeps the persistent nav")
+	check(float(game.board_wrapper.rect_min_size.y) >= vp_height * 0.94 - 0.5, "wrapper floor carries the 94%-of-viewport contract")
+	check(game.nav_bar.visible == false, "portrait parks the nav on the board view (page-only footer)")
 	check(game.stats_flow_container.get_child_count() == 0 and not game.stats_flow_container.visible
 			and game.stat_values["total_score"]["card"].get_parent() == game.controls_flow_container,
 		"stat pills live flat in the toolbar row (one-line HUD)")
@@ -221,8 +221,8 @@ func _init() -> void:
 	for c in range(game.board[0].size()):
 		var btn = game.cell_buttons[game.board.size() - 1][c]
 		last_row_bottom = max(last_row_bottom, float(btn.get_global_position().y) + float(btn.rect_size.y))
-	var nav_top = float(game.nav_bar.get_global_position().y)
-	check(last_row_bottom <= nav_top, "last tile row stays above the nav bar (tiles end %.0f, nav starts %.0f)" % [last_row_bottom, nav_top])
+	var board_bottom = float(game.get_viewport_rect().size.y)
+	check(last_row_bottom <= board_bottom, "last tile row stays on screen with the nav parked (tiles end %.0f, viewport %.0f)" % [last_row_bottom, board_bottom])
 	check(game.power_ups_container != null && !game.power_ups_container.visible, "portrait hides the power-up count strip")
 
 	# --- header height stability: nothing dynamic may live in the layout flow ---

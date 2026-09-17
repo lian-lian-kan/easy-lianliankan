@@ -1,0 +1,15 @@
+[remap]
+
+importer="ogg_vorbis"
+type="AudioStreamOGGVorbis"
+path="res://.import/signin_1.ogg-3fc6cde668f45fdcf8a12f483da762dd.oggstr"
+
+[deps]
+
+source_file="res://assets/voice/signin_1.ogg"
+dest_files=[ "res://.import/signin_1.ogg-3fc6cde668f45fdcf8a12f483da762dd.oggstr" ]
+
+[params]
+
+loop=false
+loop_offset=0

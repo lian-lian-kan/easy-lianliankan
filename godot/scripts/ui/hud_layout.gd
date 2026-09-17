@@ -45,11 +45,10 @@ static func _apply_margins(game, flags):
 	# Portrait phones keep their zero side rails; everything else gets a
 	# 4px hairline so tiles can run nearly edge to edge.
 	var margin_value = 0 if (is_mobile and is_portrait) else 4
-	# The nav bar floats over the board's bottom edge on every class (on
-	# desktop it only exists while a page is open), so the board only ever
-	# reserves a thin cushion, never a whole strip.
+	# The nav is a page-only footer now, so on the board view these floats
+	# park just above the thin bottom cushion.
 	var nav_strip = 40 if is_mobile else 64
-	var board_bottom_reserve = 10
+	var board_bottom_reserve = 6
 	# Keep the floating message banner parked just above the navigation bar.
 	if game.message_label:
 		game.message_label.margin_bottom = -(nav_strip + 4)
@@ -86,11 +85,11 @@ static func _apply_separations(game, flags):
 	var is_compact_height = flags["is_compact_height"]
 	# Tight grid gaps on every class: the freed pixels go to the tiles.
 	if is_mobile and is_compact_height:
-		game.board_grid.add_constant_override("h_separation", 3)
-		game.board_grid.add_constant_override("v_separation", 3)
+		game.board_grid.add_constant_override("h_separation", 2)
+		game.board_grid.add_constant_override("v_separation", 2)
 	elif is_mobile:
-		game.board_grid.add_constant_override("h_separation", 3)
-		game.board_grid.add_constant_override("v_separation", 3)
+		game.board_grid.add_constant_override("h_separation", 2)
+		game.board_grid.add_constant_override("v_separation", 2)
 	else:
 		game.board_grid.add_constant_override("h_separation", 6)
 		game.board_grid.add_constant_override("v_separation", 6)
@@ -208,13 +207,16 @@ static func _hide_header_extras(game):
 # to the meta pages); desktop shows it only while a page is open, so the
 # home board plays chrome-free. get() keeps partial fakes without the
 # members safe.
+# The nav is a page-only footer now: the board view keeps zero bottom chrome
+# (all controls live in the single top toolbar), and the bar reappears while
+# a meta page is open. get() keeps partial fakes without the members safe.
 static func _apply_nav_visibility(game, flags):
 	var nav_bar = game.get("nav_bar")
 	if nav_bar == null:
 		return
 	var pages_root = game.get("pages_root")
 	var pages_open = pages_root != null and pages_root.visible
-	nav_bar.visible = flags["is_mobile"] or pages_open
+	nav_bar.visible = pages_open
 
 
 static func _viewport_flags(game, viewport_size):
