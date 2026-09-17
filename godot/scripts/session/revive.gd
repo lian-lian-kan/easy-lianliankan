@@ -28,6 +28,9 @@ static func _consume_time_cost(game, seconds):
 	# nothing to drain; guard against a divide of the clock into negatives.
 	if int(game._current_level().get("time_limit", 90)) <= 0:
 		return
+	# 攀登树工具清风：本层提示/自动/洗牌不耗时。
+	if game._is_tree_mode() and game.TREE_BUFFS.tools_free(game.get("tree_buffs", {})):
+		return
 	if seconds <= 0 or game.stage_status != game.STATUS_PLAYING:
 		return
 

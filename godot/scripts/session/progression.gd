@@ -45,6 +45,7 @@ const FLAT_BEST_KEYS = [
 	"perfect_best_score", "rock_best_score", "defuse_best_score",
 	"target_best_score", "shift_best_score", "slide_best_score",
 	"defense_best_score", "sum10_best_score", "duel_best_score",
+	"drag_best_score", "edu_best_score",
 	"tree_best_height",
 ]
 
@@ -68,6 +69,7 @@ static func default_progress(level_count: int) :
 		"current_theme": "sakura",
 		"signin_streak": 0,
 		"last_signin": "",
+		"event_chests": {},
 		"tree_milestones": [],
 		"weekly_missions": {"week_key": "", "progress": {}, "claimed": []}
 	}
@@ -125,6 +127,12 @@ static func _normalize_meta_economy(raw, normalized):
 	normalized["current_theme"] = str(raw.get("current_theme", "sakura"))
 	normalized["signin_streak"] = max(0, int(raw.get("signin_streak", 0)))
 	normalized["last_signin"] = str(raw.get("last_signin", ""))
+	var raw_event_chests = raw.get("event_chests", {})
+	if typeof(raw_event_chests) == TYPE_DICTIONARY:
+		var chests = {}
+		for chest_id in raw_event_chests:
+			chests[str(chest_id)] = bool(raw_event_chests[chest_id])
+		normalized["event_chests"] = chests
 
 
 # Rolling-week missions blob (missions.gd owns its semantics).
@@ -240,6 +248,9 @@ static func _apply_meta_economy(next_state, patch):
 		var theme_id = str(patch["unlock_theme"])
 		if not next_state["owned_themes"].has(theme_id):
 			next_state["owned_themes"].append(theme_id)
+	if patch.has("event_chest"):
+		# 限时活动限定奖池：每个节日 id 每存档只可领一次。
+		next_state["event_chests"][str(patch["event_chest"])] = true
 	if patch.has("current_theme"):
 		next_state["current_theme"] = str(patch["current_theme"])
 	if patch.has("signin"):
@@ -335,7 +346,7 @@ static func same_progress(a, b, level_count: int) :
 	for key in ["achievements", "collected", "owned_sets", "owned_themes", "tree_milestones"]:
 		if not _arrays_equal(aa.get(key, []), bb.get(key, [])):
 			return false
-	for key in ["daily_challenge", "endless_best", "level_stars"]:
+	for key in ["daily_challenge", "endless_best", "level_stars", "event_chests"]:
 		if not _dicts_equal(aa.get(key, {}), bb.get(key, {})):
 			return false
 	return _missions_equal(aa.get("weekly_missions", {}), bb.get("weekly_missions", {}))

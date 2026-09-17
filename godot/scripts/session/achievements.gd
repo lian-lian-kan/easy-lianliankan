@@ -40,7 +40,9 @@ const ACHIEVEMENTS = [
 	{"id": "slide_first", "name": "滑移行者", "desc": "完成一局滑移模式"},
 	{"id": "defense_first", "name": "守卫骑士", "desc": "完成一局守卫模式"},
 	{"id": "sum10_first", "name": "合十高手", "desc": "完成一局合十消"},
-	{"id": "duel_first", "name": "同屏赢家", "desc": "完成一局同屏对战"}
+	{"id": "duel_first", "name": "同屏赢家", "desc": "完成一局同屏对战"},
+	{"id": "drag_first", "name": "一笔连消", "desc": "完成一局连线消"},
+	{"id": "edu_first", "name": "知识学士", "desc": "完成一局知识配对"}
 ]
 
 

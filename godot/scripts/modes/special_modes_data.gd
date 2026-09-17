@@ -308,6 +308,30 @@ const DEFAULT_CONFIGS = {
 		"cols": 8,
 		"kinds": 8,
 		"time_limit": 240
+	},
+	"drag": {
+		"mode_id": "drag",
+		"name": "连线消",
+		"description": "一笔拖过相邻同款，三连即消",
+		"unlock_level": 15,
+		"rows": 8,
+		"cols": 8,
+		"kinds": 6,
+		"time_limit": 150,
+		"chain_min": 3
+	},
+	"edu": {
+		"mode_id": "edu",
+		"name": "知识配对",
+		"description": "汉字↔拼音、单词↔翻译、算式↔答案",
+		"unlock_level": 14,
+		"time_base": 120,
+		"time_per_tile": 1.2,
+		"difficulty_tiers": [
+			{"level_range": [1, 5], "rows": 6, "cols": 6, "time_base": 110},
+			{"level_range": [6, 10], "rows": 8, "cols": 6, "time_base": 130},
+			{"level_range": [11, 999], "rows": 10, "cols": 6, "time_base": 150}
+		]
 	}
 }
 
@@ -345,6 +369,8 @@ const MODE_LABELS_EXTRA = {
 	"sum10": "合十消",
 	"duel": "同屏对战",
 	"tree": "攀登树",
+	"drag": "连线消",
+	"edu": "知识配对",
 }
 const INTRO_TEXTS_EXTRA = {
 	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
@@ -361,6 +387,8 @@ const INTRO_TEXTS_EXTRA = {
 	"sum10": "合十消！🔟 两张牌的数字相加为 10 就能消除",
 	"duel": "同屏对战！👫 成功消除继续，失败换对方，分高者胜",
 	"tree": "攀登树！🌳 从第 1 层开始往上爬，每层更难，里程碑送上樱花",
+	"drag": "连线消！🖋️ 按住一笔拖过相邻同款，凑满 3 个松手一次消掉",
+	"edu": "知识配对！🎓 牌面是一对知识：找到相关的两张（如 汉字↔拼音）",
 }
 
 const RECORD_MODES = {
@@ -387,6 +415,8 @@ const RECORD_MODES = {
 	"defense": {"label": "守卫成功", "patch_key": "defense_result", "best_key": "defense_best_score", "achievements": ["defense_first"]},
 	"sum10": {"label": "合十满分", "patch_key": "sum10_result", "best_key": "sum10_best_score", "achievements": ["sum10_first"]},
 	"duel": {"label": "同屏争霸", "patch_key": "duel_result", "best_key": "duel_best_score", "achievements": ["duel_first"]},
+	"drag": {"label": "一笔连消", "patch_key": "drag_result", "best_key": "drag_best_score", "achievements": ["drag_first"]},
+	"edu": {"label": "知识学士", "patch_key": "edu_result", "best_key": "edu_best_score", "achievements": ["edu_first"]},
 }
 
 # 主屏副标题「<标签> · 最佳N分」模式段的最佳分字段；标签统一取 mode_label()。
@@ -412,6 +442,8 @@ const SUBTITLE_RECORDS = {
 	"defense": "defense_best_score",
 	"sum10": "sum10_best_score",
 	"duel": "duel_best_score",
+	"drag": "drag_best_score",
+	"edu": "edu_best_score",
 }
 
 # 结算后按模式语境补发的条件成就。

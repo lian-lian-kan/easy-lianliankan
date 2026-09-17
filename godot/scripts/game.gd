@@ -38,6 +38,11 @@ const MISSIONS = preload("res://scripts/session/missions.gd")
 const CHEERS = preload("res://scripts/content/cheers.gd")
 const VOICE_LINES = preload("res://scripts/content/voice_lines.gd")
 const SPECIAL_SESSION = preload("res://scripts/modes/special_session.gd")
+const EDU = preload("res://scripts/content/edu_decks.gd")
+const DRAG_CHAIN = preload("res://scripts/modes/drag_chain.gd")
+const TREE_BUFFS = preload("res://scripts/modes/tree_buffs.gd")
+const EVENTS = preload("res://scripts/content/events_calendar.gd")
+const LEVEL_EDITOR = preload("res://scripts/modes/level_editor.gd")
 
 const DIRS = [
 	Vector2(-1, 0),
@@ -76,6 +81,19 @@ var special_mode = ""
 var special_level = {}
 var endless_round = 1
 var tree_height = 1
+
+# 知识配对：当前科目的牌面文本表（值-1 索引）；连线消：一笔拖链状态。
+var edu_faces = []
+var drag_chain = []
+var drag_active = false
+var drag_consumed = false
+
+# 攀登树 roguelike 增益（本层/本次攀登生效，见 tree_buffs.gd）。
+var tree_buffs = {}
+var tree_pending_buffs = []
+var tree_buff_offer_open = false
+var tree_buff_panel  # 层间增益弹窗（懒构建）
+var tree_buff_options  # 增益选项容器
 
 # Memory (盲盒) session state
 var memory_previewing = false
@@ -252,6 +270,17 @@ var current_page = ""
 
 var onboarding_panel  # 首次启动引导面板
 const ONBOARDING_SEEN_KEY = "onboarding_seen"
+
+# ═══ 关卡工坊（level_editor / ui_panels） ═══
+var editor_panel  # 工坊面板（懒构建）
+var editor_state = null  # {rows, cols, kinds, grid, active_kind}
+var editor_dims_row
+var editor_palette
+var editor_grid
+var editor_validation
+var editor_share_label
+var editor_import_input
+var custom_level = {}  # 工坊「试玩」进行中的虚拟关卡
 
 var settings_panel  # 设置面板
 var migration_panel  # 数据迁移面板（懒构建）
@@ -445,6 +474,30 @@ func _is_duel_mode():
 func _is_sum_mode():
 	return special_mode == "sum10"
 
+func _is_tree_mode():
+	return special_mode == "tree"
+
+func _is_edu_mode():
+	return special_mode == "edu"
+
+func _is_drag_mode():
+	return special_mode == "drag"
+
+# 知识配对牌面：值-1 索引进当前科目的牌面表。
+func _edu_face_text(value):
+	return EDU.face_text(edu_faces, int(value))
+
+# ── 连线消（drag chain）输入路由 ──
+
+func _on_tile_button_down(button):
+	return DRAG_CHAIN.on_tile_button_down(self, button)
+
+func _on_tile_mouse_entered(button):
+	return DRAG_CHAIN.on_tile_mouse_entered(self, button)
+
+func _on_tile_button_up(button):
+	return DRAG_CHAIN.on_tile_button_up(self, button)
+
 # 指定连消：挑一对可连消的高亮格（无解返回 false）。
 func _pick_target_pair():
 	return SESSION._pick_target_pair(self)
@@ -492,6 +545,14 @@ func _on_special_mode_pressed(mode_id):
 func _on_exit_special_pressed():
 	_hide_pause_panel()
 	_exit_special_mode()
+
+# ── 攀登树 roguelike 增益（层间三选一） ──
+
+func _on_tree_buff_picked(buff_id):
+	return SPECIAL_SESSION._resolve_tree_buff_pick(self, buff_id)
+
+func _on_tree_buff_skipped():
+	return SPECIAL_SESSION._resolve_tree_buff_pick(self, "")
 
 func _on_tray_tile_pressed(tile_index):
 	var result = TILE_MATCH.pick(tray_state, tile_index)
@@ -628,6 +689,9 @@ func _animate_shuffle_wave():
 # ═══ 棋盘算法（board_engine） ═══
 
 func _create_playable_board(level):
+	# 关卡工坊试玩：the editor grid is the board, exactly as shared.
+	if level.has("custom_grid"):
+		return level["custom_grid"].duplicate(true)
 	return BOARD_ENGINE.create_playable_board(level, self, "_is_coord_playable", special_mode)
 
 func _contains_coord(list, coord):
@@ -901,6 +965,91 @@ func _on_theme_use_pressed(theme_id):
 
 func _on_collect_pair_progress(patterns):
 	return ECONOMY.collect_pair(self, patterns)
+
+# ── 限时活动（events_calendar） ──
+
+func _on_event_chest_claimed(festival_id, chest):
+	if EVENTS.chest_claimed(progression_state, festival_id):
+		return
+	var patch = EVENTS.claim_patch(festival_id)
+	patch["coins_delta"] = int(chest)
+	_patch_progress_state(patch)
+	ECONOMY.update_coin_label(self)
+	_show_message("🎉 限定礼盒到手 · 🌸+%d" % int(chest), 1.6)
+	PAGE_ROUTER.rebuild_page(self)
+
+# ── 关卡工坊（UGC 编辑器 + 分享码） ──
+
+func _on_editor_open_pressed():
+	UI_PANELS._editor_panel(self)
+	UI_PANELS.refresh_editor(self)
+	UI_PANELS.open_modal(self, editor_panel)
+
+func _on_editor_close():
+	UI_PANELS.close_modal(self, editor_panel)
+
+func _on_editor_rows_changed(index):
+	UI_PANELS.editor_resize(self, UI_PANELS.EDITOR_DIM_VALUES[clamp(index, 0, 3)], int(editor_state["cols"]), int(editor_state["kinds"]))
+
+func _on_editor_cols_changed(index):
+	UI_PANELS.editor_resize(self, int(editor_state["rows"]), UI_PANELS.EDITOR_DIM_VALUES[clamp(index, 0, 3)], int(editor_state["kinds"]))
+
+func _on_editor_kinds_changed(index):
+	UI_PANELS.editor_resize(self, int(editor_state["rows"]), int(editor_state["cols"]), UI_PANELS.EDITOR_KIND_VALUES[clamp(index, 0, UI_PANELS.EDITOR_KIND_VALUES.size() - 1)])
+
+func _on_editor_kind_pressed(kind):
+	editor_state["active_kind"] = int(kind)
+	UI_PANELS.refresh_editor(self)
+
+func _on_editor_cell_pressed(r, c):
+	var value = int(editor_state["grid"][r][c])
+	var kind = int(editor_state["active_kind"])
+	# Same-kind repaint erases (quick eraser gesture); anything else paints.
+	editor_state["grid"][r][c] = 0 if value == kind else kind
+	UI_PANELS.refresh_editor(self)
+
+func _on_editor_random_pressed():
+	var level = {"rows": int(editor_state["rows"]), "cols": int(editor_state["cols"]), "kinds": int(editor_state["kinds"])}
+	editor_state["grid"] = BOARD_ENGINE.create_playable_board(level)
+	UI_PANELS.refresh_editor(self)
+
+func _on_editor_play_pressed():
+	var verdict = LEVEL_EDITOR.validate_layout(editor_state["grid"], int(editor_state["kinds"]))
+	if not verdict["ok"]:
+		_show_message(str(verdict["reason"]), 1.6)
+		return
+	custom_level = LEVEL_EDITOR.build_custom_level(editor_state["grid"], int(editor_state["kinds"]))
+	UI_PANELS.close_modal(self, editor_panel)
+	_on_modes_close_pressed()
+	_start_special_mode("custom")
+
+func _on_editor_share_pressed():
+	var verdict = LEVEL_EDITOR.validate_layout(editor_state["grid"], int(editor_state["kinds"]))
+	if not verdict["ok"]:
+		_show_message(str(verdict["reason"]), 1.6)
+		return
+	var code = LEVEL_EDITOR.encode(editor_state["grid"], int(editor_state["kinds"]))
+	editor_share_label.text = "分享码：\n" + code
+	if not OS.has_feature("HTML5"):
+		OS.clipboard = code
+		editor_share_label.text += "\n（已复制到剪贴板）"
+
+func _on_editor_import_pressed():
+	if editor_import_input == null:
+		return
+	var result = LEVEL_EDITOR.decode(editor_import_input.text)
+	if not result["ok"]:
+		_show_message(str(result["reason"]), 1.8)
+		return
+	editor_state["rows"] = int(result["rows"])
+	editor_state["cols"] = int(result["cols"])
+	editor_state["kinds"] = int(result["kinds"])
+	editor_state["grid"] = result["grid"]
+	editor_state["active_kind"] = 1
+	editor_share_label.text = ""
+	UI_PANELS._editor_build_dim_options(self)
+	UI_PANELS.refresh_editor(self)
+	_show_message("已导入好友关卡，可以试玩或再创作", 1.4)
 
 # ═══ 周任务（missions） ═══
 

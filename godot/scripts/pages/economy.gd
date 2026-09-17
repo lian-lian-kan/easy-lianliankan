@@ -7,6 +7,7 @@ extends Reference
 const PAGE_UI = preload("res://scripts/pages/page_ui.gd")
 const MISSIONS = preload("res://scripts/session/missions.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
+const EVENTS = preload("res://scripts/content/events_calendar.gd")
 
 const SIGNIN_REWARDS = [5, 10, 15, 20, 25, 35, 50]
 const SET_PRICE = 30
@@ -140,8 +141,8 @@ static func level_clear_reward(level) -> int:
 
 static func award_level_clear(game, level):
 	# Pure calculation: the caller folds the reward into its own progress
-	# patch so the coins are applied exactly once.
-	return level_clear_reward(level)
+	# patch so the coins are applied exactly once. 周末双倍在这里统一生效。
+	return EVENTS.apply_earn(OS.get_date(), level_clear_reward(level))
 
 # --- Sign-in page ---
 

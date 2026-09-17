@@ -11,6 +11,8 @@ extends Reference
 #   - Optional playable filter: callers may pass (filter_obj, filter_method)
 #     where filter_obj.filter_method(coord) -> bool.
 
+const EDU = preload("res://scripts/content/edu_decks.gd")
+
 const DIRS = [
 	Vector2(-1, 0),
 	Vector2(1, 0),
@@ -39,10 +41,13 @@ static func pad_board(board_state):
 	return padded
 
 # Pair rule: equal faces everywhere; sum10 mode also clears digit pairs that
-# add up to 10 (1-9, 2-8, 3-7, 4-6, plus the equal 5-5 pair).
+# add up to 10 (1-9, 2-8, 3-7, 4-6, plus the equal 5-5 pair); edu mode pairs
+# a concept's prompt face with its answer face (values 2c-1 / 2c).
 static func values_match(mode_id, a, b):
 	if mode_id == "sum10":
 		return a == b or a + b == 10
+	if mode_id == "edu":
+		return EDU.values_match(int(a), int(b))
 	return a == b
 
 

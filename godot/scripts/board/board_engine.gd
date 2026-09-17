@@ -117,6 +117,20 @@ static func apply_sum10_faces(board_state):
 				board_state[r][c] = 10 - v
 
 
+# Edu deal: concept ids 1..kinds (each dealt exactly twice) split into a
+# prompt face (2c-1) and an answer face (2c); edu values_match pairs them.
+static func apply_edu_faces(board_state):
+	var seen = {}
+	for r in range(board_state.size()):
+		for c in range(board_state[0].size()):
+			var v = int(board_state[r][c])
+			if v == 0 or is_rock_value(v):
+				continue
+			var times = int(seen.get(v, 0))
+			seen[v] = times + 1
+			board_state[r][c] = 2 * v - 1 if times % 2 == 0 else 2 * v
+
+
 const PATHFINDER = preload("res://scripts/board/board_pathfinder.gd")
 
 # ── pathfinding (delegated to board_pathfinder.gd; these shells keep the

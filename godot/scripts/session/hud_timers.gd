@@ -111,8 +111,11 @@ static func _on_level_advance_timeout(game):
 		game._show_message("第" + str(game.endless_round) + "轮开始", 1.2)
 		return
 	if game.special_mode == "tree":
-		# Next tree layer keeps the running total score too.
+		# Next tree layer keeps the running total score too; the time gift
+		# buff lands on top of the fresh layer clock.
 		game._reset_level_session(game.special_level, false)
+		if game.TREE_BUFFS.has_time_gift(game.get("tree_buffs", {})):
+			game.time_left = int(game.time_left) + int(game.TREE_BUFFS.TIME_GIFT_SECONDS)
 		game._show_message("🌳 第" + str(game.tree_height) + "层开始", 1.2)
 		return
 	if game.pending_level_index < 0:

@@ -10,8 +10,14 @@ const LOADOUT = preload("res://scripts/session/powerup_loadout.gd")
 # New modes need no code here — just a row in powerup_loadout.gd's
 # SPECIAL_LOADOUT_EXTRA.
 static func _init_power_ups(game, level):
-	# Reset power-ups
-	game.power_ups = LOADOUT.resolve(int(level.get("id", 1)), str(level.get("mode", "classic")), game._is_special_session(), game.special_mode)
+	# Reset power-ups, then fold in the 攀登树 roguelike grants (bomb/freeze/
+	# shuffle gifts picked between layers).
+	var loadout = LOADOUT.resolve(int(level.get("id", 1)), str(level.get("mode", "classic")), game._is_special_session(), game.special_mode)
+	if game._is_tree_mode():
+		var bonus = game.TREE_BUFFS.bonus_loadout(game.get("tree_buffs", {}))
+		for key in bonus:
+			loadout[key] = int(loadout.get(key, 0)) + int(bonus[key])
+	game.power_ups = loadout
 	game.bomb_pending = false
 	game.rainbow_pending = false
 	game.frost_pending = false

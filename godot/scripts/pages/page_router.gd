@@ -8,6 +8,7 @@ extends Reference
 const UI_PANELS = preload("res://scripts/ui/ui_panels.gd")
 const PAGE_UI = preload("res://scripts/pages/page_ui.gd")
 const ECONOMY = preload("res://scripts/pages/economy.gd")
+const EVENTS = preload("res://scripts/content/events_calendar.gd")
 
 const PAGE_LEVEL_MAP = "level_map"
 const PAGE_COLLECTION = "collection"
@@ -15,6 +16,7 @@ const PAGE_SIGNIN = "signin"
 const PAGE_SHOP = "shop"
 const PAGE_STATS = "stats"
 const PAGE_TREE_MAP = "tree_map"
+const PAGE_EVENTS = "events"
 
 static func nav_items():
 	return [
@@ -22,6 +24,7 @@ static func nav_items():
 		[PAGE_LEVEL_MAP, "🗺️", "旅程"],
 		[PAGE_COLLECTION, "📖", "图鉴"],
 		[PAGE_SIGNIN, "🎁", "有礼"],
+		[PAGE_EVENTS, "🎉", "活动"],
 		[PAGE_SHOP, "🛍️", "小铺"],
 	]
 
@@ -103,20 +106,32 @@ static func show_page(game, page_id):
 	if nav_bar != null:
 		nav_bar.visible = true
 	if not reopened:
-		PAGE_UI.clear_page(game, game.page_content)
-		match page_id:
-			PAGE_LEVEL_MAP:
-				_build_level_map(game)
-			PAGE_COLLECTION:
-				_build_collection(game)
-			PAGE_SIGNIN:
-				ECONOMY.build_signin(game)
-			PAGE_SHOP:
-				ECONOMY.build_shop(game)
-			PAGE_STATS:
-				_build_stats(game)
-			PAGE_TREE_MAP:
-				_build_tree_map(game)
+		_route_page(game, page_id)
+
+# Build (or rebuild) the given page's body into the shared content box.
+static func _route_page(game, page_id):
+	PAGE_UI.clear_page(game, game.page_content)
+	match page_id:
+		PAGE_LEVEL_MAP:
+			_build_level_map(game)
+		PAGE_COLLECTION:
+			_build_collection(game)
+		PAGE_SIGNIN:
+			ECONOMY.build_signin(game)
+		PAGE_SHOP:
+			ECONOMY.build_shop(game)
+		PAGE_STATS:
+			_build_stats(game)
+		PAGE_TREE_MAP:
+			_build_tree_map(game)
+		PAGE_EVENTS:
+			_build_events(game)
+
+# Refresh the open page in place (a claim mutating its own page rebuilds it).
+static func rebuild_page(game):
+	if game.current_page == "" or game.page_content == null:
+		return
+	_route_page(game, game.current_page)
 
 static func close_page(game):
 	UI_PANELS.close_modal(game, game.pages_root)
@@ -372,3 +387,105 @@ static func _total_icons(game):
 	for icon_set in game.icon_sets:
 		total += icon_set.get("icons", []).size()
 	return total
+
+# --- 活动日历：周末双倍樱花 + 节日限定奖池（events_calendar.gd 供数） ---
+
+static func _build_events(game):
+	var page_content = game.page_content
+	PAGE_UI.page_frame(game, page_content, "🎉 活动", "限时活动与限定奖励")
+	var box = PAGE_UI.scroll_area(game, page_content)
+	var today = OS.get_date()
+
+	var weekend_box = _event_card(game, "🌈 周末双倍樱花")
+	var weekend_status = Label.new()
+	if EVENTS.is_weekend(today):
+		weekend_status.text = "进行中！今天所有樱花入账 x2（关卡/玩法/里程碑通用）"
+		weekend_status.add_color_override("font_color", Color("2f9e44"))
+	else:
+		var days = (6 - int(today.weekday)) % 7
+		weekend_status.text = "休息中 · %d 天后开启（周六、周日入账 x2）" % days
+		weekend_status.add_color_override("font_color", Color("8f6b80"))
+	weekend_status.autowrap = true
+	weekend_status.add_font_override("font", game._font_at_size(13))
+	weekend_box.add_child(weekend_status)
+	box.add_child(weekend_box.get_parent())
+
+	var festival = EVENTS.festival_for(today)
+	if festival.empty():
+		var next_days = EVENTS.days_until_next_festival(today)
+		var quiet_box = _event_card(game, "🎈 今日限定")
+		var quiet_label = Label.new()
+		quiet_label.text = "今天没有节日活动" + ("，下一个活动在 %d 天后" % next_days if next_days >= 0 else "")
+		quiet_label.autowrap = true
+		quiet_label.add_font_override("font", game._font_at_size(13))
+		quiet_label.add_color_override("font_color", Color("8f6b80"))
+		quiet_box.add_child(quiet_label)
+		box.add_child(quiet_box.get_parent())
+	else:
+		var fest_box = _event_card(game, "%s %s · 限定奖池" % [str(festival["emoji"]), str(festival["name"])])
+		var fest_label = Label.new()
+		fest_label.text = "今日限定礼盒 🌸x%d，每个存档限领一次" % int(festival["chest"])
+		fest_label.autowrap = true
+		fest_label.add_font_override("font", game._font_at_size(13))
+		fest_label.add_color_override("font_color", Color("8f6b80"))
+		fest_box.add_child(fest_label)
+		if EVENTS.chest_claimed(game.progression_state, festival["id"]):
+			var claimed = Label.new()
+			claimed.text = "✓ 已领取，明年节日再见"
+			claimed.add_font_override("font", game._font_at_size(13))
+			claimed.add_color_override("font_color", Color("0ca678"))
+			fest_box.add_child(claimed)
+		else:
+			var claim = Button.new()
+			claim.text = "🎁 领取限定礼盒"
+			claim.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			claim.rect_min_size = Vector2(0, 40)
+			claim.add_font_override("font", game.game_font)
+			claim.connect("pressed", game, "_on_event_chest_claimed", [str(festival["id"]), int(festival["chest"])])
+			fest_box.add_child(claim)
+		box.add_child(fest_box.get_parent())
+
+	var upcoming_box = _event_card(game, "📅 节日日历")
+	for entry in _upcoming_festivals(today, 3):
+		var row = Label.new()
+		row.text = "%s %s · %d月%d日（%s）" % [str(entry["emoji"]), str(entry["name"]), int(entry["month"]), int(entry["day"]), entry["when"]]
+		row.add_font_override("font", game._font_at_size(13))
+		row.add_color_override("font_color", Color("5c3a4d"))
+		upcoming_box.add_child(row)
+	box.add_child(upcoming_box.get_parent())
+
+static func _event_card(game, title_text):
+	var card = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color("ffffff")
+	style.set_corner_radius_all(12)
+	style.set_border_width_all(1)
+	style.border_color = Color("f09ebb")
+	card.add_stylebox_override("panel", style)
+	var card_box = VBoxContainer.new()
+	card_box.add_constant_override("separation", 8)
+	card.add_child(card_box)
+	var title = Label.new()
+	title.text = title_text
+	title.add_font_override("font", game._font_at_size(15))
+	title.add_color_override("font_color", Color("a85878"))
+	card_box.add_child(title)
+	return card_box
+
+# Next `count` festivals from today (today inclusive, marked 今日).
+static func _upcoming_festivals(today, count):
+	var found = []
+	var epoch_today = EVENTS._epoch_of(today)
+	for offset in range(0, 367):
+		var probe = OS.get_datetime_from_unix_time(epoch_today + offset * 86400)
+		var festival = EVENTS.festival_for(probe)
+		if festival.empty():
+			continue
+		var entry = festival.duplicate()
+		entry["month"] = int(probe.month)
+		entry["day"] = int(probe.day)
+		entry["when"] = "今天" if offset == 0 else ("%d 天后" % offset)
+		found.append(entry)
+		if found.size() >= int(count):
+			break
+	return found

@@ -2,6 +2,7 @@ extends Reference
 
 const DATA = preload("res://scripts/modes/special_modes_data.gd")
 const TREE_LADDER = preload("res://scripts/modes/tree_ladder.gd")
+const EDU = preload("res://scripts/content/edu_decks.gd")
 
 # Forwarding aliases: existing code and tests read the tables through
 # special_modes.gd, so the data module stays swappable.
@@ -283,7 +284,28 @@ static func build_classic_style_level(config, mode_id: String):
 		level["target_bonus"] = int(config.get("target_bonus", 5))
 	if config.has("shift_interval"):
 		level["shift_interval"] = int(config.get("shift_interval", 8))
+	if config.has("chain_min"):
+		level["chain_min"] = int(config.get("chain_min", 3))
 	return level
+
+
+# 知识配对: concept count equals the pair count so every concept deals exactly
+# one prompt + one answer; the subject rotates daily (see edu_decks.gd).
+static func build_edu_level(config, progress_level: int) -> Dictionary:
+	var tier = mode_tier(config, progress_level, "time_base")
+	var rows = int(tier.get("rows", 6))
+	var cols = int(tier.get("cols", 6))
+	var pairs = int(rows * cols / 2)
+	return {
+		"id": 1,
+		"name": "知识配对",
+		"mode": "edu",
+		"rows": rows,
+		"cols": cols,
+		"kinds": pairs,
+		"time_limit": int(tier.get("time_base", 120)) + int(rows * cols * float(config.get("time_per_tile", 1.2))),
+		"subject": EDU.subject_for_date(OS.get_date())
+	}
 
 
 static func is_mode_unlocked(mode_id: String, config, highest_unlocked_level_index: int) :
@@ -338,6 +360,11 @@ static func stage_callout(mode: String, level, level_index: int, endless_round: 
 		return ["翻翻乐", Color("9775fa")]
 	if mode == "tree":
 		return ["攀登树 · 第%d层" % int(level.get("tree_height", 1)), Color("40c057")]
+	if mode == "drag":
+		return ["连线消 · 一笔拖过 3+ 同款", Color("20c997")]
+	if mode == "edu":
+		var subject_name = str(EDU.SUBJECT_NAMES.get(level.get("subject", "hanzi"), ""))
+		return ["知识配对 · 今日主题 %s" % subject_name, Color("7048e8")]
 	return ["第" + str(int(level.get("id", level_index + 1))) + "关 · " + str(level.get("name", "关卡")), Color("e64980")]
 
 # ---- 特殊模式结算表：纪录补丁键 / 首通成就 / 面板标题 ----
@@ -429,6 +456,8 @@ static func modes_panel_rows(progression_state) -> Array:
 		{"id": "defense", "title": "🧟 守卫模式", "detail": "消除击退怪物近身即败 · 最佳%d分" % int(progression_state.get("defense_best_score", 0))},
 		{"id": "sum10", "title": "🔟 合十消", "detail": "两数相加为10即可消 · 最佳%d分" % int(progression_state.get("sum10_best_score", 0))},
 		{"id": "duel", "title": "👫 同屏对战", "detail": "轮流消牌分高者胜 · 最佳%d分" % int(progression_state.get("duel_best_score", 0))},
+		{"id": "drag", "title": "🖋️ 连线消", "detail": "一笔拖过相邻同款三连即消 · 最佳%d分" % int(progression_state.get("drag_best_score", 0))},
+		{"id": "edu", "title": "🎓 知识配对", "detail": "每日轮换知识主题配对 · 最佳%d分" % int(progression_state.get("edu_best_score", 0))},
 		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]},
 		{"id": "tree", "title": "🌳 攀登树", "detail": "望不到头的大树逐层攀登 · 最佳第%d层" % int(progression_state.get("tree_best_height", 0))}
 	]
@@ -440,6 +469,7 @@ const MODE_CATEGORIES = [
 	{"title": "🏁 竞速限时", "modes": ["daily", "time_attack", "hell", "fever"]},
 	{"title": "🧠 记忆翻牌", "modes": ["memory", "flip", "tray"]},
 	{"title": "⚙️ 机制挑战", "modes": ["frost", "stack", "gravity", "fog", "chain", "rock", "defuse", "target", "shift", "slide", "defense", "sum10"]},
+	{"title": "🎓 知识新范式", "modes": ["edu", "drag"]},
 	{"title": "👥 双人", "modes": ["race", "duel"]},
 	{"title": "🌙 休闲自定", "modes": ["zen", "moves", "perfect", "collect"]},
 	{"title": "∞ 无尽", "modes": ["endless", "tree"]},

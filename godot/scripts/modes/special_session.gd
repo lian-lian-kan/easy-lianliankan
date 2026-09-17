@@ -9,11 +9,12 @@ const ECONOMY = preload("res://scripts/pages/economy.gd")
 const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 const TILE_MATCH = preload("res://scripts/modes/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/modes/memory_flip.gd")
+const EVENTS = preload("res://scripts/content/events_calendar.gd")
 
 
 # Shared tail of the per-mode win settlements: record, celebration, banner.
 # Modes dealt by build_classic_style_level (one row in DEFAULT_CONFIGS, no bespoke builder).
-const CLASSIC_STYLE_MODES = ["zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "target", "shift", "slide", "defense", "duel", "sum10"]
+const CLASSIC_STYLE_MODES = ["zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "target", "shift", "slide", "defense", "duel", "sum10", "drag"]
 
 static func _finish_special_win(game, message):
 	if game._is_duel_mode():
@@ -41,6 +42,9 @@ static func _start_special_mode(game, mode_id):
 	game.endless_round = 1
 	game.special_level = level
 	game.tree_height = int(level.get("tree_height", 1))
+	# A fresh climb starts with no buffs (roguelike offers arrive per layer).
+	game.tree_buffs = {}
+	game.tree_pending_buffs = []
 	game._reset_level_session(level, true)
 	print("[Game] special mode started: " + mode_id)
 	if mode_id == "memory":
@@ -76,11 +80,19 @@ static func _build_special_level(game, mode_id, config):
 		return game.SPECIAL_MODES_SCRIPT.build_defuse_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
 	if mode_id == "tree":
 		return game.SPECIAL_MODES_SCRIPT.build_tree_level(config, int(game.progression_state.get("tree_best_height", 0)) + 1)
+	if mode_id == "edu":
+		return game.SPECIAL_MODES_SCRIPT.build_edu_level(config, int(game.progression_state.get("highest_unlocked_level_index", 0)) + 1)
+	if mode_id == "custom":
+		# 关卡工坊「试玩」：the level was assembled by the editor beforehand.
+		return game.custom_level
 	if mode_id in CLASSIC_STYLE_MODES:
 		return game.SPECIAL_MODES_SCRIPT.build_classic_style_level(config, mode_id)
 	return game.SPECIAL_MODES_SCRIPT.build_endless_level(config, 1)
 
 static func _exit_special_mode(game):
+	if game.tree_buff_offer_open:
+		game.tree_buff_offer_open = false
+		game.UI_PANELS.hide_tree_buff_panel(game)
 	game._start_level(game.level_index, false)
 	game._show_message("已返回关卡模式", 1.0)
 
@@ -119,6 +131,12 @@ static func _resolve_special_clear(game):
 		game.level_advance_timer.start()
 	elif game.special_mode == "tree":
 		_advance_tree_layer(game, time_bonus)
+	elif game.special_mode == "custom":
+		# UGC 试玩：a small flat thank-you, no records/missions/leaderboard.
+		game._patch_progress_state({"coins_delta": 10})
+		game.stage_status = game.STATUS_COMPLETED
+		game._play_stage_clear_celebration(true)
+		game._show_message("自定义关卡通关！作者之手一定能难住朋友 · 🌸+10", 2.0)
 	else:
 		game._record_special_completion()
 		game.stage_status = game.STATUS_COMPLETED
@@ -134,7 +152,7 @@ static func _advance_tree_layer(game, time_bonus):
 	var claimed = game.progression_state.get("tree_milestones", [])
 	var patch = {"tree_result": cleared_height}
 	var clear_message = "第" + str(cleared_height) + "层登顶！奖励 +" + str(time_bonus)
-	var reward = game.SPECIAL_MODES_SCRIPT.TREE_LADDER.milestone_reward(cleared_height)
+	var reward = EVENTS.apply_earn(OS.get_date(), game.SPECIAL_MODES_SCRIPT.TREE_LADDER.milestone_reward(cleared_height))
 	if reward > 0 and not claimed.has(cleared_height):
 		var updated_claimed = claimed.duplicate()
 		updated_claimed.append(cleared_height)
@@ -147,6 +165,28 @@ static func _advance_tree_layer(game, time_bonus):
 	game.stage_status = game.STATUS_CLEARED
 	game._play_stage_clear_celebration(false)
 	game._show_message(clear_message, 1.6)
+	# Roguelike interlude: offer three buffs before the next layer starts;
+	# the offer's resolve kicks the advance timer.
+	_offer_tree_buffs(game)
+
+# Roll the three-choice buff offer and surface it; the clock stays stopped
+# (the stage is CLEARED) until the player picks or skips.
+static func _offer_tree_buffs(game):
+	game.tree_pending_buffs = game.TREE_BUFFS.roll_offer()
+	game.tree_buff_offer_open = true
+	game.UI_PANELS.offer_tree_buffs(game)
+
+# Buff picked (or skipped with ""): apply it to the pending layer, then let
+# the advance timer start the next layer.
+static func _resolve_tree_buff_pick(game, buff_id):
+	game.tree_buff_offer_open = false
+	game.UI_PANELS.hide_tree_buff_panel(game)
+	game.tree_buffs = {}
+	if str(buff_id) != "" and not game.TREE_BUFFS.buff_by_id(buff_id).empty():
+		game.tree_buffs = {str(buff_id): true}
+		game.TREE_BUFFS.apply_score_mult(game.special_level, game.tree_buffs)
+		var buff = game.TREE_BUFFS.buff_by_id(buff_id)
+		game._show_message("%s %s：%s" % [str(buff["icon"]), str(buff["name"]), str(buff["desc"])], 1.6)
 	game.level_advance_timer.stop()
 	game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
 	game.level_advance_timer.start()
@@ -225,7 +265,7 @@ static func _on_memory_hide_timeout(game):
 	game._refresh_board_visuals()
 
 static func _resolve_tray_clear(game):
-	var coin_reward = 20
+	var coin_reward = EVENTS.apply_earn(OS.get_date(), 20)
 	game.total_score = TILE_MATCH.score_for(game.tray_state)
 	game.level_score = game.total_score
 	game._patch_progress_state({
@@ -235,7 +275,7 @@ static func _resolve_tray_clear(game):
 	_finish_special_win(game, "叠叠消通关！🌸+" + str(coin_reward))
 
 static func _resolve_collect_clear(game):
-	var coin_reward = 20
+	var coin_reward = EVENTS.apply_earn(OS.get_date(), 20)
 	game._patch_progress_state({
 		"collect_result": game.total_score,
 		"coins_delta": coin_reward
@@ -243,7 +283,7 @@ static func _resolve_collect_clear(game):
 	_finish_special_win(game, "目标收集达成！🌸+" + str(coin_reward))
 
 static func _resolve_flip_clear(game):
-	var coin_reward = 20
+	var coin_reward = EVENTS.apply_earn(OS.get_date(), 20)
 	game.total_score += 200
 	game.level_score = game.total_score
 	game._patch_progress_state({

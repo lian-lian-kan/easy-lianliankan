@@ -121,6 +121,9 @@ static func _init_mode_boards(game, level):
 		game.BOARD_MECHANICS.build_bombs(game, level)
 	if game._is_sum_mode():
 		game.BOARD_ENGINE.apply_sum10_faces(game.board)
+	if game._is_edu_mode():
+		game.edu_faces = game.EDU.faces_for(str(level.get("subject", "hanzi")))
+		game.BOARD_ENGINE.apply_edu_faces(game.board)
 	if game._is_stack_mode():
 		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
 	if game._is_chain_mode():
@@ -369,7 +372,8 @@ static func _finish_intermediate_clear(game, reward):
 
 static func _apply_combo_gain(game, base_score):
 	var now_ms = OS.get_ticks_msec()
-	var combo_window = int(game.tuning.get("combo_window_ms", 2600))
+	# 攀登树余烬连击：本层增益拉长连击窗口（无增益时恒为 1.0）。
+	var combo_window = int(float(game.tuning.get("combo_window_ms", 2600)) * game.TREE_BUFFS.combo_window_mult(game.get("tree_buffs", {})))
 	var max_combo = int(game.tuning.get("max_combo", 8))
 	var score_multiplier = float(game._current_level().get("score_multiplier", 1.0))
 

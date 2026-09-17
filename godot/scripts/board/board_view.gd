@@ -42,6 +42,12 @@ static func _refresh_tile(game, button, r, c, playing):
 	if game._is_target_mode() and _is_target_tile(game, r, c):
 		border = Color("ffd43b")
 		has_effect = true
+	if game._is_drag_mode() and game.drag_chain.size() > 0 \
+			and game._contains_coord(game.drag_chain, Vector2(r, c)):
+		# 连线消: the held chain glows violet while the drag lasts.
+		border = game.DRAG_CHAIN.CHAIN_COLOR
+		bg = bg.linear_interpolate(Color("f3d9fa"), 0.4)
+		has_effect = true
 	if base["is_selected"]:
 		border = Color("ff8fab")
 		has_effect = true
@@ -59,8 +65,12 @@ static func _tile_base_style(game, button, r, c, value, playing) -> Dictionary:
 		button.text = "❓"
 		bg = Color("ffc2d4")
 		border = Color("f09ebb")
+	elif game._is_sum_mode():
+		button.text = str(value)
+	elif game._is_edu_mode():
+		button.text = game._edu_face_text(value)
 	else:
-		button.text = str(value) if game._is_sum_mode() else game._icon_for(value)
+		button.text = game._icon_for(value)
 	button.disabled = not playing
 
 	var is_selected = (game.selected.x == r and game.selected.y == c)
@@ -329,6 +339,9 @@ static func _render_board(game):
 			button.set_meta("row", r)
 			button.set_meta("col", c)
 			button.connect("pressed", game, "_on_tile_pressed", [button])
+			button.connect("button_down", game, "_on_tile_button_down", [button])
+			button.connect("mouse_entered", game, "_on_tile_mouse_entered", [button])
+			button.connect("button_up", game, "_on_tile_button_up", [button])
 			game.board_grid.add_child(button)
 			row_buttons.append(button)
 		game.cell_buttons.append(row_buttons)
@@ -392,7 +405,12 @@ static func color_for(game, value):
 
 	var icon_set: Dictionary = game.icon_sets[game.icon_set_index]
 	var colors: Array = icon_set.get("colors", [])
-	var index = value - 1
+	# 知识配对: both faces of a concept share one color so the pair reads
+	# as related while the faces stay textually different.
+	var index = int(value) - 1
+	if game._is_edu_mode():
+		var color_count = colors.size() if colors.size() > 0 else 1
+		index = int((int(value) - 1) / 2) % color_count
 	if index >= 0 and index < colors.size():
 		return Color(str(colors[index]))
 	return Color("ffffff")

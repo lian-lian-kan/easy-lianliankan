@@ -4,6 +4,11 @@ extends Reference
 # keyboard shortcut router. Statics take the live game node.
 
 static func _on_tile_pressed(game, button):
+	# 连线消: a chain release that landed on the start button already consumed
+	# the gesture; swallow the trailing `pressed` emission.
+	if game.get("drag_consumed"):
+		game.drag_consumed = false
+		return
 	if not _tile_press_valid(game, button):
 		return
 	var r = int(button.get_meta("row"))
@@ -21,7 +26,11 @@ static func _on_tile_pressed(game, button):
 	var selected_value = int(game.board[previous.x][previous.y])
 	var target_value = int(game.board[point.x][point.y])
 	if not game._values_match(selected_value, target_value):
-		var hint = "合十消：两张牌的数字相加要等于 10 哦" if game._is_sum_mode() else "请先选择相同图案"
+		var hint = "请先选择相同图案"
+		if game._is_sum_mode():
+			hint = "合十消：两张牌的数字相加要等于 10 哦"
+		elif game._is_edu_mode():
+			hint = "知识配对：找一对相关的牌（如 汉字↔拼音、单词↔翻译）"
 		_reject_pair(game, previous, point, hint, 0.7)
 		return
 	if game._is_target_mode() and not _is_target_pair(game, previous, point):
