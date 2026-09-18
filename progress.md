@@ -1062,3 +1062,9 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **规模门禁**：build_classic_style_level 可选字段表驱动化；_apply_meta_economy 拆 _apply_event_chest；_build_events 拆三段；shell_audit clean。
 - **坑**：GDScript3 全局 `max()` 返回 float——`int % max(1,n)` 是 "int and float to %" parse error（board_view color_for）、`return max(1, int(...))` 类型不匹配（drag_chain chain_score）；revive/powerups 引用 `game._is_tree_mode()` 时忘了在 game.gd 加帮助函数——探针日志里 60 条 SCRIPT ERROR 而测试照绿（守卫链吞错），靠错误扫描抓出。
 - **测试**：新 5 文件（edu_test/drag_probe/tree_buffs_test/events_calendar_test/level_editor_test）入 CI 清单 49→54；假体镜像链再补课（game_input_test FakeGame 加 _is_edu_mode/_is_drag_mode）；后端 mode_seed +registry 测试 27→29（本地临时 PG/Redis 容器全量 101 用例绿）。
+
+## 2026-09-19 提交推送链路验证（current turn）
+
+- **目的**：验证当前环境的 git commit → push 全链路（SSH 凭据、origin 远端）是否可用。
+- **操作**：追加本条记录 → commit → push origin main → 远端确认。
+- Validation: 待推送后回填结果。
