@@ -29,6 +29,8 @@ static func show_start_screen(game):
 	game.start_screen_root = root
 	game.start_screen_open = true
 	UI_PANELS.open_modal(game, root)
+	# 开局字幕与页面互斥（单例常驻，显隐控制）。
+	game._hide_stage_callout()
 	# 开局结算尚未跳关时进入首页，冻结推进，关闭时按 close_page 同款恢复。
 	if game.level_advance_timer:
 		game.level_advance_timer.stop()

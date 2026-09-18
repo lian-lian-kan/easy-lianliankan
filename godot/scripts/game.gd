@@ -299,6 +299,7 @@ var migration_panel  # 数据迁移面板（懒构建）
 var migration_code_label  # 旧设备生成的迁移码展示
 var migration_input  # 新设备输入迁移码
 var pause_panel  # 暂停面板
+var stage_callout_label  # 开局字幕（单例复用；页面/首页打开时隐藏，防淡影水印）
 var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法大厅入口按钮（顶部工具条 → 全屏页面）
 
@@ -784,6 +785,10 @@ func _hide_message():
 
 func _show_stage_callout(text, color, font_size):
 	return UI_HUD._show_stage_callout(self, text, color, font_size)
+
+func _hide_stage_callout():
+	if stage_callout_label:
+		stage_callout_label.visible = false
 
 func _reset_combo():
 	return UI_HUD._reset_combo(self)

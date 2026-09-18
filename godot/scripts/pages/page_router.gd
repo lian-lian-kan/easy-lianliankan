@@ -98,6 +98,9 @@ static func show_page(game, page_id):
 		game.stage_panel_label.visible = false
 	if game.combo_burst_label:
 		game.combo_burst_label.visible = false
+	var stage_callout = game.get("stage_callout_label")
+	if stage_callout:
+		stage_callout.visible = false
 	# Freeze the post-clear level advance while browsing: the settle flow
 	# resumes when the page closes.
 	if game.level_advance_timer:

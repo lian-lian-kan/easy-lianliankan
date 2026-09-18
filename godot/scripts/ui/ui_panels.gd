@@ -465,8 +465,6 @@ static func _update_modal_panel_sizes(game, viewport_size, is_portrait):
 		game.onboarding_panel.rect_min_size = Vector2(min(320.0, max_width), min(400.0, max_height))
 	if game.settings_panel:
 		game.settings_panel.rect_min_size = Vector2(min(360.0, max_width), min(320.0, max_height))
-	if game.achievements_panel:
-		game.achievements_panel.rect_min_size = Vector2(min(400.0, max_width), min(480.0, max_height))
 	if game.pause_panel:
 		game.pause_panel.rect_min_size = Vector2(min(320.0, max_width), min(280.0, max_height))
 	if game.tree_buff_panel:

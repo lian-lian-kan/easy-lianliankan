@@ -157,26 +157,41 @@ static func _hide_message(game):
 	game.message_timer.stop()
 
 static func _show_stage_callout(game, text, color, font_size):
-	var label = Label.new()
+	# 单例复用（曾经每局新建一次性 Label，播完 alpha=0 却常驻树上，在
+	# 页面/首页之下留下淡影水印）。页面与首页打开时由 _hide_stage_callout
+	# 统一隐藏。
+	if game.stage_callout_label == null:
+		var label = Label.new()
+		label.name = "StageCallout"
+		label.align = Label.ALIGN_CENTER
+		label.valign = Label.VALIGN_CENTER
+		label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
+		label.margin_left = 0
+		label.margin_right = 0
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		game.add_child(label)
+		game.stage_callout_label = label
+	var label = game.stage_callout_label
 	label.text = text
 	label.add_font_override("font", game._font_at_size(font_size))
-	label.align = Label.ALIGN_CENTER
-	label.valign = Label.VALIGN_CENTER
-	label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
+	label.add_color_override("font_color", color)
 	label.margin_top = 150
-	label.margin_left = 0
-	label.margin_right = 0
 	label.margin_bottom = 190
 	label.modulate = Color(1, 1, 1, 0.0)
-	label.add_color_override("font_color", color)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	game.add_child(label)
+	label.visible = true
 
-	var tween = game._make_fx_tween(label)
+	var tween = game._make_fx_tween()
 	tween.interpolate_property(label, "margin_top", 150.0, 116.0, 0.35, Tween.TRANS_QUAD, Tween.EASE_OUT)
 	tween.interpolate_property(label, "modulate:a", 0.0, 0.95, 0.2, Tween.TRANS_LINEAR, Tween.EASE_OUT)
 	tween.interpolate_property(label, "modulate:a", 0.95, 0.0, 0.3, Tween.TRANS_LINEAR, Tween.EASE_IN, 1.1)
+	# 收尾隐藏：tween 即便停在半程（部分环境的怪癖），下一次进页面/首页
+	# 或结算时也会被重置，节点本体永不泄漏。
+	tween.interpolate_callback(game, 1.45, "_hide_stage_callout")
 	tween.start()
+	# 兜底自毁：callout 是一次性浮层，实测部分环境下 tween 会停在半程
+	# （alpha≈0.95 常驻），在页面之下留下淡影水印——SceneTreeTimer 不依赖
+	# tween 存活，1.8s 后无条件回收节点。
+	game.get_tree().create_timer(1.8).connect("timeout", label, "queue_free")
 
 
 # --- Control factories and notifications (migrated from game.gd) ---
