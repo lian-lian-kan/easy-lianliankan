@@ -621,9 +621,13 @@ static func _mission_card(game, task_id, state):
 	reward.add_color_override("font_color", Color("d6336c"))
 	top_row.add_child(reward)
 
+	card_box.add_child(_mission_card_actions(game, task_id, claimed, done, progress, target))
+	return card
+
+# 状态行：已领取打勾 / 可领取亮主按钮 / 进行中给「前往」出口（闭环的动线）。
+static func _mission_card_actions(game, task_id, claimed, done, progress, target):
 	var bottom_row = HBoxContainer.new()
 	bottom_row.add_constant_override("separation", 8)
-	card_box.add_child(bottom_row)
 	var status = Label.new()
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status.add_font_override("font", game._font_at_size(12))
@@ -631,27 +635,23 @@ static func _mission_card(game, task_id, state):
 	if claimed:
 		status.text = "✓ 已领取"
 		status.add_color_override("font_color", Color("0ca678"))
+		return bottom_row
+	status.text = "%d / %d" % [progress, target]
+	status.add_color_override("font_color", Color("d6336c") if done else Color("a85878"))
+	var action = Button.new()
+	action.rect_min_size = Vector2(96, 32)
+	action.add_font_override("font", game._font_at_size(12))
+	if done:
+		action.text = "🌸 领取奖励"
+		action.connect("pressed", game, "_on_mission_claim_pressed", [task_id])
+		game._style_dialog_buttons(action)
 	else:
-		status.text = "%d / %d" % [progress, target]
-		status.add_color_override("font_color", Color("d6336c") if done else Color("a85878"))
-		if done:
-			var claim_button = Button.new()
-			claim_button.text = "🌸 领取奖励"
-			claim_button.rect_min_size = Vector2(96, 32)
-			claim_button.add_font_override("font", game._font_at_size(12))
-			claim_button.connect("pressed", game, "_on_mission_claim_pressed", [task_id])
-			game._style_dialog_buttons(claim_button)
-			bottom_row.add_child(claim_button)
-		else:
-			var go_target = str(MISSION_GO_TARGETS.get(task_id, "board"))
-			var go_button = Button.new()
-			go_button.text = str(MISSION_GO_LABELS[go_target])
-			go_button.rect_min_size = Vector2(96, 32)
-			go_button.add_font_override("font", game._font_at_size(12))
-			go_button.connect("pressed", game, "_on_mission_go_pressed", [go_target])
-			game._style_secondary_button(go_button)
-			bottom_row.add_child(go_button)
-	return card
+		var go_target = str(MISSION_GO_TARGETS.get(task_id, "board"))
+		action.text = str(MISSION_GO_LABELS[go_target])
+		action.connect("pressed", game, "_on_mission_go_pressed", [go_target])
+		game._style_secondary_button(action)
+	bottom_row.add_child(action)
+	return bottom_row
 
 # --- 成就页：从设置弹窗升级为一等页面（与图鉴对仗的收集面） ---
 
