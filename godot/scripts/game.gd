@@ -31,6 +31,7 @@ const UI_STYLE = preload("res://scripts/ui/ui_style.gd")
 const HUD_TIMERS = preload("res://scripts/session/hud_timers.gd")
 const HUD_LAYOUT = preload("res://scripts/ui/hud_layout.gd")
 const PAGE_ROUTER = preload("res://scripts/pages/page_router.gd")
+const START_SCREEN = preload("res://scripts/pages/start_screen.gd")
 const TILE_MATCH = preload("res://scripts/modes/tile_match.gd")
 const MEMORY_FLIP = preload("res://scripts/modes/memory_flip.gd")
 const ECONOMY = preload("res://scripts/pages/economy.gd")
@@ -272,6 +273,11 @@ var nav_buttons = {}
 var coin_label
 var current_page = ""
 
+# 首页（启动标题页，start_screen.gd）：进游戏先见首页再落棋盘。
+var start_screen_root
+var start_screen_open = false
+var start_screen_suppressed = false  # 测试/特殊宿主：启动跳过首页（老行为）
+
 var onboarding_panel  # 首次启动引导面板
 const ONBOARDING_SEEN_KEY = "onboarding_seen"
 
@@ -318,8 +324,19 @@ func _ready():
 	set_process(true)
 	_build_sync_retry_timer()
 	call_deferred("_boot_sync")
-	call_deferred("_show_onboarding_if_needed")
+	call_deferred("_boot_show_start_screen")
 	call_deferred("_start_bgm")
+
+# 启动门：真实启动先见首页（棋盘就绪但暂停）；-s 探针/显式压制走老路径
+# （直接进棋盘 + 引导面板），探针因此零改动。
+func _boot_show_start_screen():
+	if start_screen_suppressed or not START_SCREEN.should_autoshow(self):
+		_show_onboarding_if_needed()
+		return
+	_show_start_screen()
+
+func _show_start_screen():
+	START_SCREEN.show_start_screen(self)
 
 func _process(delta):
 	_update_combo_progress()
@@ -933,6 +950,23 @@ func _on_nav_pressed(page_id):
 
 func _on_nav_home_pressed():
 	return PAGE_ROUTER.close_page(self)
+
+# ═══ 首页（start_screen） ═══
+
+# 「▶ 开始游戏」：收起首页落回棋盘；新玩家的引导挪到这一刻（老行为是
+# 开局即弹，有首页后先弹引导会把两层盖在一起）。
+func _on_start_game_pressed():
+	START_SCREEN.dismiss_start_screen(self)
+	_show_onboarding_if_needed()
+
+func _on_start_open_page(page_id):
+	return START_SCREEN.open_page_from_start(self, page_id)
+
+# 暂停面板「🌸 回到首页」：先合暂停（恢复一帧内即被首页重新暂停），再上首页。
+func _on_pause_home_pressed():
+	if pause_panel != null:
+		UI_PANELS.close_modal(self, pause_panel)
+	_show_start_screen()
 
 func _on_map_level_pressed(level_index):
 	PAGE_ROUTER.close_page(self)

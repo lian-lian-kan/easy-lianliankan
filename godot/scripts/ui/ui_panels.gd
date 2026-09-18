@@ -456,6 +456,15 @@ static func _pause_buttons(game, content):
 	back_button.connect("pressed", game, "_on_back_to_first_level")
 	content.add_child(back_button)
 
+	# 首页入口：标题页随时可达（棋盘头部不放按钮，保住棋盘 ≥92% 高度契约）。
+	var home_button = Button.new()
+	home_button.text = "🌸 回到首页"
+	home_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	home_button.rect_min_size = Vector2(0, 44)
+	home_button.add_font_override("font", game.game_font)
+	home_button.connect("pressed", game, "_on_pause_home_pressed")
+	content.add_child(home_button)
+
 	# Exit special session button (daily / time attack / endless)
 	game.pause_exit_button = Button.new()
 	game.pause_exit_button.text = "🚪 返回关卡模式"

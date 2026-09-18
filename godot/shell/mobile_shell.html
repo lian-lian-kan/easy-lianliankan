@@ -298,8 +298,14 @@ const engine = new Engine(GODOT_CONFIG);
 	// canvas backing-store size, and the effective render ratio (backing /
 	// CSS pixels). effRatio staying at ~1 while dpr says 2+ is the smoking gun
 	// for a webview that ignores the devicePixelRatio override.
+	// ?diag=1 / ?nostart=1 also set LLK_SKIP_START so the in-game title page
+	// (start_screen.gd) steps aside and probes/screenshots see the board.
 	(function () {
-		if (!new URLSearchParams(window.location.search).has('diag')) {
+		const params = new URLSearchParams(window.location.search);
+		if (params.has('diag') || params.has('nostart')) {
+			window.LLK_SKIP_START = true;
+		}
+		if (!params.has('diag')) {
 			return;
 		}
 		const badge = document.createElement('div');

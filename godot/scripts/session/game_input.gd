@@ -250,6 +250,9 @@ static func _unhandled_input(game, event):
 				game._show_message("已退出全屏", 0.8)
 				game.accept_event()
 			return
+		# 首页盖场时快捷键不穿底（用 get() 兼容无该成员的测试假体）。
+		if game.get("start_screen_open"):
+			return
 		var action = KEY_ACTIONS.get(key_event.scancode)
 		if action == null:
 			return
