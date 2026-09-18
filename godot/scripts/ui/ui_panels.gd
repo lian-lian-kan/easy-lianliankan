@@ -332,72 +332,7 @@ static func _create_toggle_row(game, label_text, initial_value):
 
 	return {"container": container, "toggle": toggle}
 
-static func _achievements_panel(game):
-	game.achievements_panel = PanelContainer.new()
-	var content = _modal_content_shell(game, game.achievements_panel, Vector2(400, 480), 12)
-
-	# Title
-	var title = Label.new()
-	title.text = "🏆 成就"
-	title.align = Label.ALIGN_CENTER
-	title.add_color_override("font_color", Color("5c3a4d"))
-	content.add_child(title)
-
-	var line = HSeparator.new()
-	content.add_child(line)
-
-	# Achievement list
-	var achievements_list = VBoxContainer.new()
-	achievements_list.add_constant_override("separation", 10)
-	content.add_child(achievements_list)
-
-	for achievement in game.PROGRESSION_SCRIPT.get_achievement_definitions():
-		var item = _create_achievement_item(game, achievement)
-		achievements_list.add_child(item)
-
-	var spacer = Control.new()
-	spacer.rect_min_size = Vector2(0, 8)
-	content.add_child(spacer)
-
-	# Close button
-	var close_button = Button.new()
-	close_button.text = "关闭"
-	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	close_button.rect_min_size = Vector2(0, 44)
-	close_button.add_font_override("font", game.game_font)
-	close_button.connect("pressed", game, "_on_achievements_close")
-	content.add_child(close_button)
-	UI_STYLE.style_all_secondary_buttons(game.achievements_panel)
-
-static func _create_achievement_item(game, achievement):
-	var hbox = HBoxContainer.new()
-	hbox.add_constant_override("separation", 12)
-
-	var unlocked = game.PROGRESSION_SCRIPT.has_achievement(game.progression_state, achievement["id"])
-
-	# Icon
-	var icon_label = Label.new()
-	icon_label.text = "🏆" if unlocked else "🔒"
-	hbox.add_child(icon_label)
-
-	# Text content
-	var vbox = VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(vbox)
-
-	var name_label = Label.new()
-	name_label.text = achievement["name"]
-	name_label.add_color_override("font_color", Color("059669" if unlocked else "94a3b8"))
-	name_label.add_font_override("font", game.game_font)
-	vbox.add_child(name_label)
-
-	var desc_label = Label.new()
-	desc_label.text = achievement["desc"]
-	desc_label.add_color_override("font_color", Color("64748b" if unlocked else "cbd5e1"))
-	desc_label.add_font_override("font", game.game_font)
-	vbox.add_child(desc_label)
-
-	return hbox
+# 成就展示已升级为一等页面（page_router._build_achievements），弹窗工厂退役。
 
 static func _pause_panel(game):
 	game.pause_panel = PanelContainer.new()
@@ -572,18 +507,8 @@ static func close_modal(game, panel):
 			game.second_timer.start()
 
 
-static func reopen_achievements(game):
-	# Rebuild the list so unlock states reflect the current progression.
-	# Free the whole old holder: the factory mounts a fresh holder+panel, and
-	# freeing only the old panel children leaked the holder on every reopen.
-	if game.achievements_panel == null:
-		return
-	var old_holder = game.achievements_panel.get_parent()
-	if old_holder != null:
-		old_holder.queue_free()
-	game._build_achievements_panel()
-
-
+# 成就展示已升级为一等页面（page_router._build_achievements），弹窗工厂与
+# reopen 生命周期（页面每次 route 都重建）一并退役。
 
 static func _tree_buff_panel(game):
 	game.tree_buff_panel = PanelContainer.new()

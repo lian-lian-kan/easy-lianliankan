@@ -18,6 +18,8 @@ const PAGE_STATS = "stats"
 const PAGE_TREE_MAP = "tree_map"
 const PAGE_EVENTS = "events"
 const PAGE_MODES = "modes"
+const PAGE_MISSIONS = "missions"
+const PAGE_ACHIEVEMENTS = "achievements"
 
 static func nav_items():
 	return [
@@ -130,6 +132,10 @@ static func _route_page(game, page_id):
 			_build_events(game)
 		PAGE_MODES:
 			_build_modes_hub(game)
+		PAGE_MISSIONS:
+			_build_missions(game)
+		PAGE_ACHIEVEMENTS:
+			_build_achievements(game)
 
 # Refresh the open page in place (a claim mutating its own page rebuilds it).
 static func rebuild_page(game):
@@ -546,3 +552,155 @@ static func _build_modes_hub(game):
 			# 白卡玩法条目：大厅读起来是产品清单而非一排默认灰按钮。
 			game._style_secondary_button(card)
 			box.add_child(card)
+
+# --- 任务页：周任务进度 + 领取 + 前往（任务动线闭环的出口） ---
+
+# 每个任务的去处：闯关类去旅程、特殊类去大厅、对局行为类直接回棋盘开局。
+const MISSION_GO_TARGETS = {
+	"levels_5": "journey",
+	"specials_3": "modes",
+	"pairs_30": "board",
+	"combo_5": "board",
+	"coins_100": "board",
+}
+const MISSION_GO_LABELS = {
+	"journey": "🗺️ 去闯关",
+	"modes": "🎮 去玩法",
+	"board": "▶ 去开局",
+}
+
+static func _build_missions(game):
+	var page_content = game.page_content
+	var state = game.MISSIONS.active_state(game)
+	PAGE_UI.page_frame(game, page_content, "📋 任务", "每周刷新 · 完成后回这里领取樱花币")
+	var box = PAGE_UI.scroll_area(game, page_content)
+
+	# 本周剩余时间：滚动周桶的对齐边界倒推天数。
+	var seconds_left = int(game.MISSIONS.WEEK_SECONDS) - int(OS.get_unix_time()) % int(game.MISSIONS.WEEK_SECONDS)
+	var days_left = int(ceil(seconds_left / 86400.0))
+	var reset_hint = Label.new()
+	reset_hint.text = "⏳ 本周任务还有 %d 天刷新" % days_left
+	reset_hint.add_font_override("font", game._font_at_size(12))
+	reset_hint.add_color_override("font_color", Color("b08a9b"))
+	box.add_child(reset_hint)
+
+	for task_id in game.MISSIONS.MISSIONS:
+		box.add_child(_mission_card(game, task_id, state))
+
+	var hint = Label.new()
+	hint.text = "任意玩法都能攒进度 · 达成后横幅会提醒你回来领取"
+	hint.add_font_override("font", game._font_at_size(12))
+	hint.add_color_override("font_color", Color("b08a9b"))
+	hint.autowrap = true
+	box.add_child(hint)
+
+static func _mission_card(game, task_id, state):
+	var mission: Dictionary = game.MISSIONS.MISSIONS[task_id]
+	var progress = game.MISSIONS.progress_of(state, task_id)
+	var target = int(mission["target"])
+	var claimed = game.MISSIONS.is_claimed(state, task_id)
+	var done = progress >= target
+
+	var card = PanelContainer.new()
+	game._apply_glass_style(card, Color("ffffff"), 0.92)
+	var card_box = VBoxContainer.new()
+	card_box.add_constant_override("separation", 6)
+	card.add_child(card_box)
+
+	var top_row = HBoxContainer.new()
+	card_box.add_child(top_row)
+	var desc = Label.new()
+	desc.text = str(mission["desc"])
+	desc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	desc.add_font_override("font", game._font_at_size(14))
+	desc.add_color_override("font_color", Color("5c3a4d"))
+	top_row.add_child(desc)
+	var reward = Label.new()
+	reward.text = "🌸 %d" % int(mission["reward"])
+	reward.add_font_override("font", game._font_at_size(14))
+	reward.add_color_override("font_color", Color("d6336c"))
+	top_row.add_child(reward)
+
+	var bottom_row = HBoxContainer.new()
+	bottom_row.add_constant_override("separation", 8)
+	card_box.add_child(bottom_row)
+	var status = Label.new()
+	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status.add_font_override("font", game._font_at_size(12))
+	bottom_row.add_child(status)
+	if claimed:
+		status.text = "✓ 已领取"
+		status.add_color_override("font_color", Color("0ca678"))
+	else:
+		status.text = "%d / %d" % [progress, target]
+		status.add_color_override("font_color", Color("d6336c") if done else Color("a85878"))
+		if done:
+			var claim_button = Button.new()
+			claim_button.text = "🌸 领取奖励"
+			claim_button.rect_min_size = Vector2(96, 32)
+			claim_button.add_font_override("font", game._font_at_size(12))
+			claim_button.connect("pressed", game, "_on_mission_claim_pressed", [task_id])
+			game._style_dialog_buttons(claim_button)
+			bottom_row.add_child(claim_button)
+		else:
+			var go_target = str(MISSION_GO_TARGETS.get(task_id, "board"))
+			var go_button = Button.new()
+			go_button.text = str(MISSION_GO_LABELS[go_target])
+			go_button.rect_min_size = Vector2(96, 32)
+			go_button.add_font_override("font", game._font_at_size(12))
+			go_button.connect("pressed", game, "_on_mission_go_pressed", [go_target])
+			game._style_secondary_button(go_button)
+			bottom_row.add_child(go_button)
+	return card
+
+# --- 成就页：从设置弹窗升级为一等页面（与图鉴对仗的收集面） ---
+
+static func _build_achievements(game):
+	var page_content = game.page_content
+	var unlocked_count = 0
+	var definitions = game.PROGRESSION_SCRIPT.get_achievement_definitions()
+	for achievement in definitions:
+		if game.PROGRESSION_SCRIPT.has_achievement(game.progression_state, achievement["id"]):
+			unlocked_count += 1
+	PAGE_UI.page_frame(game, page_content, "🏆 成就图鉴", "已解锁 %d / %d 项成就" % [unlocked_count, definitions.size()])
+	var box = PAGE_UI.scroll_area(game, page_content)
+	for achievement in definitions:
+		box.add_child(_achievement_item(game, achievement))
+
+static func _achievement_item(game, achievement):
+	var hbox = HBoxContainer.new()
+	hbox.add_constant_override("separation", 12)
+
+	var unlocked = game.PROGRESSION_SCRIPT.has_achievement(game.progression_state, achievement["id"])
+
+	var card = PanelContainer.new()
+	game._apply_glass_style(card, Color("ffffff"), 0.92 if unlocked else 0.7)
+	card.rect_min_size = Vector2(0, 52)
+	hbox.add_child(card)
+	var row = HBoxContainer.new()
+	row.add_constant_override("separation", 12)
+	card.add_child(row)
+
+	var icon_label = Label.new()
+	icon_label.text = "🏆" if unlocked else "🔒"
+	icon_label.add_font_override("font", game._font_at_size(18))
+	row.add_child(icon_label)
+
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_constant_override("separation", 2)
+	row.add_child(vbox)
+
+	var name_label = Label.new()
+	name_label.text = str(achievement["name"])
+	name_label.add_color_override("font_color", Color("059669") if unlocked else Color("94a3b8"))
+	name_label.add_font_override("font", game._font_at_size(14))
+	vbox.add_child(name_label)
+
+	var desc_label = Label.new()
+	desc_label.text = str(achievement["desc"])
+	desc_label.add_color_override("font_color", Color("64748b") if unlocked else Color("cbd5e1"))
+	desc_label.add_font_override("font", game._font_at_size(12))
+	vbox.add_child(desc_label)
+
+	return hbox

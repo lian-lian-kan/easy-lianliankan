@@ -438,11 +438,37 @@ func _init() -> void:
 	missions_state = game.progression_state.get("weekly_missions", {})
 	check(str(missions_state.get("week_key", "")) == missions_week && !game.MISSIONS.is_claimed(missions_state, "combo_5") && game.MISSIONS.progress_of(missions_state, "pairs_30") == 0, "stale week rolls over to a fresh state")
 	game._on_nav_pressed("signin")
-	var found_mission_section = false
+	# 有礼页：周任务分区升级为一等任务页，这里只留跳转入口卡
+	var found_mission_entry = false
+	var entry_stack = [game.page_content]
+	while entry_stack.size() > 0:
+		var entry_node = entry_stack.pop_back()
+		if entry_node is Button and str(entry_node.text).find("周任务") != -1:
+			found_mission_entry = true
+		for child in entry_node.get_children():
+			entry_stack.append(child)
+	check(found_mission_entry, "sign-in page carries the missions entry card")
+
+	# 任务页：入口卡跳转 → 进度渲染 → 前往按钮跳玩法大厅（动线闭环）
+	game._on_missions_entry_pressed()
+	check(game.current_page == "missions", "the sign-in entry card jumps to the missions page")
+	var found_progress = false
 	for label_text in _page_labels(game):
-		if str(label_text).find("周任务") != -1:
-			found_mission_section = true
-	check(found_mission_section, "sign-in page hosts the weekly missions section")
+		if str(label_text).find("0 / 30") != -1:
+			found_progress = true
+	check(found_progress, "the missions page renders per-task progress rows")
+	game._on_mission_go_pressed("modes")
+	check(game.current_page == "modes", "a mission's go button jumps to the modes hub")
+	game._on_nav_home_pressed()
+
+	# 成就页：摘要行 + 列表渲染（弹窗升级为一等页面）
+	game._on_settings_achievements_entry()
+	check(game.current_page == "achievements", "the achievements page opens as a routed page")
+	var found_summary = false
+	for label_text in _page_labels(game):
+		if str(label_text).find("已解锁") != -1:
+			found_summary = true
+	check(found_summary, "the achievements page renders its unlocked summary")
 	game._on_nav_home_pressed()
 
 	# --- combo cheers: tiered decks, no repeats, one-shot milestones ---

@@ -14,14 +14,14 @@ func check(value: bool, message: String) -> void:
 	failures += 1
 	push_error("FAIL - %s" % message)
 
-class StubEconomy:
-	func refresh_economy_page(_game):
+class StubPageRouter:
+	func rebuild_page(_game):
 		pass
 
 class FakeGame:
 	var progression_state = {}
 	var messages = []
-	var ECONOMY = StubEconomy.new()
+	var PAGE_ROUTER = StubPageRouter.new()
 	func _patch_progress_state(patch):
 		for k in patch:
 			if k == "coins_delta":

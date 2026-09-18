@@ -142,6 +142,8 @@ static func _quick_grid(game):
 		["🗺️ 旅程", PAGE_ROUTER.PAGE_LEVEL_MAP],
 		["🎁 有礼", PAGE_ROUTER.PAGE_SIGNIN],
 		["📊 数据", PAGE_ROUTER.PAGE_STATS],
+		["📋 任务", PAGE_ROUTER.PAGE_MISSIONS],
+		["🏆 成就", PAGE_ROUTER.PAGE_ACHIEVEMENTS],
 	]
 	for entry in entries:
 		var button = Button.new()

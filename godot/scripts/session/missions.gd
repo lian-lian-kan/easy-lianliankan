@@ -4,8 +4,8 @@ extends Reference
 # seven-day cycle. Progress is earned across every play mode; claiming pays
 # blossoms. The rolling week logic lives here so progression.gd stays a pure
 # store — it only persists the whole weekly_missions dictionary verbatim.
-
-const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
+# 渲染在 page_router._build_missions（一等任务页，含领取与前往闭环）；
+# 有礼页只保留跳转入口卡。
 
 # use_max=true means progress keeps the highest value seen (combo peaks);
 # otherwise amounts accumulate additively.
@@ -91,55 +91,5 @@ static func claim(game, task_id: String):
 	state["claimed"].append(task_id)
 	game._patch_progress_state({"weekly_missions": state, "coins_delta": reward})
 	game._show_message("任务完成！🌸+%d" % reward, 1.4)
-	# Member access, not preload: economy.gd already preloads this module.
-	game.ECONOMY.refresh_economy_page(game)
-
-
-# --- Sign-in page section -----------------------------------------------
-
-static func build_section(game, box):
-	var state = active_state(game)
-	var title = Label.new()
-	title.text = "📋 周任务"
-	title.add_font_override("font", game._font_at_size(15))
-	title.add_color_override("font_color", Color("a85878"))
-	box.add_child(title)
-	for task_id in MISSIONS:
-		box.add_child(_mission_row(game, task_id, state))
-
-
-static func _mission_row(game, task_id: String, state):
-	var mission: Dictionary = MISSIONS[task_id]
-	var progress = progress_of(state, task_id)
-	var target = int(mission["target"])
-	var claimed = is_claimed(state, task_id)
-	var done = progress >= target
-	var row = PanelContainer.new()
-	game._apply_glass_style(row, Color("ffffff"), 0.88)
-	row.rect_min_size = Vector2(0, 44)
-	var row_box = HBoxContainer.new()
-	row_box.add_constant_override("separation", 8)
-	row.add_child(row_box)
-	var desc = Label.new()
-	desc.text = str(mission["desc"])
-	desc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	desc.add_font_override("font", game._font_at_size(13))
-	desc.add_color_override("font_color", Color("5c3a4d"))
-	row_box.add_child(desc)
-	var status_text = ("🌸%d" % int(mission["reward"])) + (" · 已领" if claimed else (" · %d/%d" % [progress, target]))
-	var status = Label.new()
-	status.text = status_text
-	status.align = Label.ALIGN_RIGHT
-	status.add_font_override("font", game._font_at_size(12))
-	status.add_color_override("font_color", Color("d6336c") if done and not claimed else Color("a85878"))
-	row_box.add_child(status)
-	if done and not claimed:
-		var claim_button = Button.new()
-		claim_button.text = "领取"
-		claim_button.rect_min_size = Vector2(56, 24)
-		claim_button.add_font_override("font", game._font_at_size(12))
-		game._apply_button_style(claim_button, Color("f06ba8"), Color("d6336c"))
-		claim_button.add_color_override("font_color", Color("ffffff"))
-		claim_button.connect("pressed", game, "_on_mission_claim_pressed", [task_id])
-		row_box.add_child(claim_button)
-	return row
+	# 任务页就地刷新（rebuild_page 对未开页早退，安全）。
+	game.PAGE_ROUTER.rebuild_page(game)

@@ -298,7 +298,6 @@ var settings_panel  # 设置面板
 var migration_panel  # 数据迁移面板（懒构建）
 var migration_code_label  # 旧设备生成的迁移码展示
 var migration_input  # 新设备输入迁移码
-var achievements_panel  # 成就面板
 var pause_panel  # 暂停面板
 var pause_exit_button  # 特殊模式退出按钮
 var modes_button  # 玩法大厅入口按钮（顶部工具条 → 全屏页面）
@@ -849,9 +848,6 @@ func _build_onboarding_panel():
 func _build_settings_panel():
 	UI_PANELS._settings_panel(self)
 
-func _build_achievements_panel():
-	UI_PANELS._achievements_panel(self)
-
 func _build_pause_panel():
 	UI_PANELS._pause_panel(self)
 
@@ -907,23 +903,30 @@ func _register_perfect_miss():
 func _on_mute_toggled(muted):
 	audio.set_muted(muted)
 
-func _on_achievements_pressed():
-	UI_PANELS.reopen_achievements(self)
-	UI_PANELS.open_modal(self, achievements_panel)
-
 func _on_settings_stats_entry():
 	UI_PANELS.close_modal(self, settings_panel)
 	_on_stats_pressed()
 
+# 成就从设置弹窗升级为一等页面（与图鉴对仗），入口直达页面。
 func _on_settings_achievements_entry():
 	UI_PANELS.close_modal(self, settings_panel)
-	_on_achievements_pressed()
-
-func _on_achievements_close():
-	UI_PANELS.close_modal(self, achievements_panel)
+	PAGE_ROUTER.show_page(self, PAGE_ROUTER.PAGE_ACHIEVEMENTS)
 
 func _on_stats_pressed():
 	return PAGE_ROUTER.show_page(self, "stats")
+
+# 任务页「前往」：跳对应一级页，或关页回棋盘直接开局——任务动线的出口。
+func _on_mission_go_pressed(target):
+	if target == "journey":
+		return PAGE_ROUTER.show_page(self, PAGE_ROUTER.PAGE_LEVEL_MAP)
+	if target == "modes":
+		return PAGE_ROUTER.show_page(self, PAGE_ROUTER.PAGE_MODES)
+	PAGE_ROUTER.close_page(self)
+	return null
+
+# 有礼页的周任务入口卡 → 任务页。
+func _on_missions_entry_pressed():
+	return PAGE_ROUTER.show_page(self, PAGE_ROUTER.PAGE_MISSIONS)
 
 func _on_tree_map_pressed():
 	return PAGE_ROUTER.show_page(self, PAGE_ROUTER.PAGE_TREE_MAP)

@@ -48,10 +48,10 @@ func _init() -> void:
 	check(game.power_up_labels != null and game.power_up_labels.size() > 0, "power-up labels registered")
 
 	# modal panels: declared sizes, shared 24px padded shell, hidden at boot
-	check(not game.settings_panel.visible and not game.achievements_panel.visible,
+	check(not game.settings_panel.visible,
 		"the modal panels start hidden")
 	var shell_padded := false
-	var panel_stack := [game.settings_panel, game.achievements_panel]
+	var panel_stack := [game.settings_panel]
 	while not panel_stack.empty():
 		var node = panel_stack.pop_back()
 		for child in node.get_children():
@@ -65,10 +65,13 @@ func _init() -> void:
 	check(game.settings_panel.visible, "settings opens from the toolbar entry")
 	game._on_settings_close()
 	check(not game.settings_panel.visible, "settings closes through its close handler")
-	game._on_achievements_pressed()
-	check(game.achievements_panel.visible, "achievements opens from the toolbar entry")
-	game._on_achievements_close()
-	check(not game.achievements_panel.visible, "achievements closes through its close handler")
+	# 成就入口：设置直达一等成就页（弹窗已退役），关页回棋盘
+	game._on_settings_pressed()
+	game._on_settings_achievements_entry()
+	check(not game.settings_panel.visible and game.pages_root.visible and game.current_page == "achievements",
+		"the settings achievements entry jumps to the achievements page")
+	game._on_nav_home_pressed()
+	check(not game.pages_root.visible, "closing the achievements page returns to the board")
 	# 玩法入口打开全屏大厅页（不再有弹框），返回主页即收起
 	game._on_modes_pressed()
 	check(game.pages_root.visible and game.current_page == "modes", "the toolbar 玩法 entry opens the fullscreen modes hub")
@@ -492,10 +495,6 @@ func _init() -> void:
 	game._build_settings_panel()
 	check(game.settings_panel != null and game.settings_panel.get_child_count() > 0, "settings panel built")
 
-	# achievements
-	game._build_achievements_panel()
-	check(game.achievements_panel != null and game.achievements_panel.get_child_count() > 0, "achievements panel built")
-
 	# pause
 	game._build_pause_panel()
 	check(game.pause_panel != null and game.pause_panel.get_child_count() > 0, "pause panel built")
@@ -546,15 +545,14 @@ func _init() -> void:
 	game._show_onboarding_if_needed()
 	check(!game.onboarding_panel.visible, "seen progress keeps onboarding hidden")
 
-	# achievements: reopen frees the old holder, rebuilds the list, and joins
-	# the pause lifecycle
-	var old_ach_holder = game.achievements_panel.get_parent()
-	game._on_achievements_pressed()
-	check(game.achievements_panel.get_parent() != old_ach_holder && old_ach_holder.is_queued_for_deletion(), "achievements reopen frees the old holder and mounts a fresh panel")
-	check(game.achievements_panel.visible && game.stage_status == game.STATUS_PAUSED, "opening achievements pauses the stage")
-	check(game.achievements_panel.get_child_count() == 1, "fresh achievements panel carries exactly one content block")
-	game._on_achievements_close()
-	check(!game.achievements_panel.visible && game.stage_status == game.STATUS_PLAYING, "closing achievements resumes the stage")
+	# achievements page: opening pauses the clock like every page and the
+	# list renders per route (fresh unlocks always show); closing resumes
+	game.stage_status = game.STATUS_PLAYING
+	game._on_settings_achievements_entry()
+	check(game.pages_root.visible && game.stage_status == game.STATUS_PAUSED, "opening the achievements page pauses the stage")
+	check(game.current_page == "achievements" && game.page_content.get_child_count() > 0, "the achievements page renders its list")
+	game._on_nav_home_pressed()
+	check(!game.pages_root.visible && game.stage_status == game.STATUS_PLAYING, "closing the achievements page resumes the stage")
 
 	# modes hub page: opening pauses the clock like every page; with a fresh
 	# save exactly 26 cards sit locked behind their campaign gates, and a

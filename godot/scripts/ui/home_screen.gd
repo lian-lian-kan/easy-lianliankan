@@ -488,7 +488,6 @@ static func _finalize_build(game):
 	game._populate_level_select_options()
 	game._build_onboarding_panel()
 	game._build_settings_panel()
-	game._build_achievements_panel()
 	game._build_pause_panel()
 	PAGE_ROUTER.build_pages(game)
 	# Apply the saved ambience theme (falls back to sakura pink).

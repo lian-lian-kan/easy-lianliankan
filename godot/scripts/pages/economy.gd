@@ -173,7 +173,18 @@ static func build_signin(game):
 	box.add_child(grid)
 	for day in range(SIGNIN_REWARDS.size()):
 		grid.add_child(_signin_cell(game, day, signed_today, slot, today, yesterday))
-	MISSIONS.build_section(game, box)
+	box.add_child(_missions_entry(game))
+
+# 周任务在任务页有一等页面（进度/领取/前往闭环），这里只放跳转入口卡。
+static func _missions_entry(game):
+	var entry = Button.new()
+	entry.text = "📋 周任务 · 每周刷新领樱花币"
+	entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	entry.rect_min_size = Vector2(0, 44)
+	entry.add_font_override("font", game.game_font)
+	entry.connect("pressed", game, "_on_missions_entry_pressed")
+	game._style_secondary_button(entry)
+	return entry
 
 static func _signin_cell(game, day, signed_today, slot, today, yesterday):
 	var cell = PanelContainer.new()
