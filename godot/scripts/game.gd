@@ -64,6 +64,8 @@ const SPECIAL_MODES_SCRIPT = preload("res://scripts/modes/special_modes.gd")
 const CAMPAIGN_LEVELS_SCRIPT = preload("res://scripts/modes/campaign_levels.gd")
 const MOBILE_SHORT_SIDE_MAX = 860.0
 const MOBILE_COMPACT_HEIGHT_MAX = 460.0
+# Product version surfaced in the settings panel and the start screen footnote.
+const GAME_VERSION = "1.0.0"
 # Board-first contract: the board canvas claims the whole viewport minus the
 # single top toolbar (see hud_layout.gd) — ~92% on a portrait phone, higher
 # elsewhere. The nav is a page-only footer, so no bottom chrome ever competes
@@ -864,6 +866,9 @@ func _apply_glass_style(panel, bg_color, alpha):
 
 func _apply_button_style(button, bg_color, border_color):
 	return UI_STYLE.apply_button_style(button, bg_color, border_color)
+
+func _style_secondary_button(button):
+	return UI_STYLE.style_secondary_button(button)
 
 func _style_dialog_buttons(node):
 	return UI_STYLE.style_dialog_buttons(node)

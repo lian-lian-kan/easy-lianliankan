@@ -116,6 +116,14 @@ static func _settings_panel(game):
 	_settings_feature_entries(game, content)
 	_settings_page_entries(game, content)
 
+	# 产品身份行：版本随 GAME_VERSION 单点更新，用户反馈/排查有据可依。
+	var version_label = Label.new()
+	version_label.text = "🌸 Sophia的连连看 v%s" % game.GAME_VERSION
+	version_label.align = Label.ALIGN_CENTER
+	version_label.add_font_override("font", game._font_at_size(11))
+	version_label.add_color_override("font_color", Color("c2a3b2"))
+	content.add_child(version_label)
+
 	var spacer = Control.new()
 	spacer.rect_min_size = Vector2(0, 8)
 	content.add_child(spacer)
@@ -128,6 +136,8 @@ static func _settings_panel(game):
 	close_button.add_font_override("font", game.game_font)
 	close_button.connect("pressed", game, "_on_settings_close")
 	content.add_child(close_button)
+	# Brand sweep: every settings action is a companion entry — all secondary.
+	UI_STYLE.style_all_secondary_buttons(game.settings_panel)
 
 # Volume + four toggles, every row wired to its settings callback.
 static func _settings_audio_rows(game, content):
@@ -245,6 +255,7 @@ static func _migration_panel(game):
 	close_button.add_font_override("font", game.game_font)
 	close_button.connect("pressed", game, "_on_settings_migration_close")
 	content.add_child(close_button)
+	UI_STYLE.style_secondary_button(close_button)
 
 static func _migration_generate_section(game, content):
 	var generate_button = Button.new()
@@ -254,6 +265,7 @@ static func _migration_generate_section(game, content):
 	generate_button.add_font_override("font", game.game_font)
 	generate_button.connect("pressed", game, "_on_migration_generate_pressed")
 	content.add_child(generate_button)
+	UI_STYLE.style_dialog_buttons(generate_button)
 
 	game.migration_code_label = Label.new()
 	game.migration_code_label.align = Label.ALIGN_CENTER
@@ -280,6 +292,7 @@ static func _migration_claim_section(game, content):
 	claim_button.add_font_override("font", game.game_font)
 	claim_button.connect("pressed", game, "_on_migration_claim_pressed")
 	content.add_child(claim_button)
+	UI_STYLE.style_dialog_buttons(claim_button)
 
 static func _create_volume_row(game, label_text, initial_value):
 	var container = HBoxContainer.new()
@@ -354,6 +367,7 @@ static func _achievements_panel(game):
 	close_button.add_font_override("font", game.game_font)
 	close_button.connect("pressed", game, "_on_achievements_close")
 	content.add_child(close_button)
+	UI_STYLE.style_all_secondary_buttons(game.achievements_panel)
 
 static func _create_achievement_item(game, achievement):
 	var hbox = HBoxContainer.new()
@@ -429,6 +443,7 @@ static func _pause_panel(game):
 
 
 # 继续重开返回三键 + 特殊会话的退出键（默认隐藏）。
+# 继续是唯一主按钮（实心玫瑰）；其余白卡次按钮——面板读得出主次而非一墙粉。
 static func _pause_buttons(game, content):
 	var resume_button = Button.new()
 	resume_button.text = "▶️ 继续游戏 (P)"
@@ -437,6 +452,7 @@ static func _pause_buttons(game, content):
 	resume_button.add_font_override("font", game.game_font)
 	resume_button.connect("pressed", game, "_resume_stage")
 	content.add_child(resume_button)
+	UI_STYLE.style_dialog_buttons(resume_button)
 
 	# Restart button
 	var restart_button = Button.new()
@@ -446,6 +462,7 @@ static func _pause_buttons(game, content):
 	restart_button.add_font_override("font", game.game_font)
 	restart_button.connect("pressed", game, "_on_restart_current_level")
 	content.add_child(restart_button)
+	UI_STYLE.style_secondary_button(restart_button)
 
 	# Back to level 1 button
 	var back_button = Button.new()
@@ -455,6 +472,7 @@ static func _pause_buttons(game, content):
 	back_button.add_font_override("font", game.game_font)
 	back_button.connect("pressed", game, "_on_back_to_first_level")
 	content.add_child(back_button)
+	UI_STYLE.style_secondary_button(back_button)
 
 	# 首页入口：标题页随时可达（棋盘头部不放按钮，保住棋盘 ≥92% 高度契约）。
 	var home_button = Button.new()
@@ -464,6 +482,7 @@ static func _pause_buttons(game, content):
 	home_button.add_font_override("font", game.game_font)
 	home_button.connect("pressed", game, "_on_pause_home_pressed")
 	content.add_child(home_button)
+	UI_STYLE.style_secondary_button(home_button)
 
 	# Exit special session button (daily / time attack / endless)
 	game.pause_exit_button = Button.new()
@@ -474,6 +493,7 @@ static func _pause_buttons(game, content):
 	game.pause_exit_button.connect("pressed", game, "_on_exit_special_pressed")
 	game.pause_exit_button.visible = false
 	content.add_child(game.pause_exit_button)
+	UI_STYLE.style_secondary_button(game.pause_exit_button)
 
 
 # --- Shared style helpers (migrated from game.gd) ---

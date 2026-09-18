@@ -57,3 +57,23 @@ static func style_dialog_buttons(node):
 		node.add_color_override("font_focus_color", Color("ffffff"))
 	for child in node.get_children():
 		style_dialog_buttons(child)
+
+static func style_secondary_button(button):
+	# Quiet companion to style_dialog_buttons: the white-card look for the
+	# non-primary actions, so a panel reads as hierarchy instead of a wall
+	# of solid pink (same recipe as the start screen's quick entries).
+	apply_button_style(button, Color("ffffff"), Color("f09ebb"))
+	button.add_color_override("font_color", Color("d6336c"))
+	button.add_color_override("font_hover_color", Color("d6336c"))
+	button.add_color_override("font_pressed_color", Color("d6336c"))
+	button.add_color_override("font_focus_color", Color("d6336c"))
+	button.add_color_override("font_disabled_color", Color("c9a5b6"))
+
+static func style_all_secondary_buttons(node):
+	# Recursive sweep: every Button under the panel takes the white-card
+	# look — for panels whose every action is a companion (settings,
+	# achievements). Primaries, where they exist, re-assert style_dialog_buttons.
+	if node is Button:
+		style_secondary_button(node)
+	for child in node.get_children():
+		style_all_secondary_buttons(child)

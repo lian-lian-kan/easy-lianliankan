@@ -265,6 +265,26 @@ func _init() -> void:
 	game.add_child(plain_button)
 	game._apply_button_style(plain_button, Color("f06ba8"), Color("d6336c"))
 	check(plain_button.has_stylebox_override("normal") && plain_button.has_stylebox_override("hover") && plain_button.has_stylebox_override("pressed") && plain_button.has_stylebox_override("disabled"), "button style overrides all states")
+	# brand sweep: panels ship styled at build time — pause primary is rose,
+	# settings carries the product version line (no default-gray leftovers).
+	var pause_primary = null
+	var brand_stack = [game.pause_panel]
+	while brand_stack.size() > 0:
+		var brand_node = brand_stack.pop_back()
+		if pause_primary == null and brand_node is Button:
+			pause_primary = brand_node
+		for child in brand_node.get_children():
+			brand_stack.append(child)
+	check(pause_primary != null && pause_primary.has_stylebox_override("normal"), "pause panel ships its primary button pre-styled")
+	var version_found = false
+	var version_stack = [game.settings_panel]
+	while version_stack.size() > 0:
+		var version_node = version_stack.pop_back()
+		if version_node is Label and str(version_node.text).find("v%s" % game.GAME_VERSION) >= 0:
+			version_found = true
+		for child in version_node.get_children():
+			version_stack.append(child)
+	check(version_found, "settings panel shows the product version")
 	game._style_dialog_buttons(game.pause_panel)
 	var dialog_button = null
 	var stack2 = [game.pause_panel]

@@ -451,6 +451,7 @@ static func _build_events_festival(game, box, today):
 		claim.rect_min_size = Vector2(0, 40)
 		claim.add_font_override("font", game.game_font)
 		claim.connect("pressed", game, "_on_event_chest_claimed", [str(festival["id"]), int(festival["chest"])])
+		game._style_dialog_buttons(claim)
 		fest_box.add_child(claim)
 	box.add_child(fest_box.get_parent())
 
@@ -513,6 +514,7 @@ static func _build_modes_hub(game):
 	workshop.rect_min_size = Vector2(0, 48)
 	workshop.add_font_override("font", game.game_font)
 	workshop.connect("pressed", game, "_on_modes_hub_workshop_pressed")
+	game._style_dialog_buttons(workshop)
 	box.add_child(workshop)
 
 	var rows_by_id = {}
@@ -541,4 +543,6 @@ static func _build_modes_hub(game):
 			else:
 				card.text = str(row["title"]) + "\n" + game.SPECIAL_MODES_SCRIPT.unlock_requirement_text(mode_id, config)
 				card.disabled = true
+			# 白卡玩法条目：大厅读起来是产品清单而非一排默认灰按钮。
+			game._style_secondary_button(card)
 			box.add_child(card)

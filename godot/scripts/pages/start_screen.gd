@@ -96,7 +96,7 @@ static func _build(game):
 	box.add_child(_spacer(2))
 
 	var footnote = Label.new()
-	footnote.text = "进度自动保存 · 樱花币与图鉴随时可看"
+	footnote.text = "进度自动保存 · 樱花币与图鉴随时可看 · v%s" % game.GAME_VERSION
 	footnote.align = Label.ALIGN_CENTER
 	footnote.add_font_override("font", game._font_at_size(11))
 	footnote.add_color_override("font_color", Color("c2a3b2"))
