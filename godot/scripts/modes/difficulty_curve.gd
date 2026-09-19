@@ -58,47 +58,56 @@ static func campaign_audit(levels, max_kinds: int = 15) -> Array:
 		violations.append("campaign table is empty")
 		return violations
 	var first_pressure := -1.0
-	var prev_pressure := -1.0
-	var prev_score := -1.0
-	var prev_effect := -1.0
-	var prev_mode := ""
+	var prev := {"pressure": -1.0, "score": -1.0, "effect": -1.0, "mode": ""}
 	for i in range(levels.size()):
 		var lv = levels[i]
-		var tag := "level %d" % (i + 1)
+		violations += _campaign_level_violations(lv, i, max_kinds, prev)
 		var rows := int(lv.get("rows", 0))
 		var cols := int(lv.get("cols", 0))
-		var kinds := int(lv.get("kinds", 0))
-		var time_limit := float(lv.get("time_limit", 0))
-		var mode := str(lv.get("mode", ""))
-		if int(lv.get("id", -1)) != i + 1:
-			violations.append("%s: id should be %d" % [tag, i + 1])
-		if rows < 4 or cols < 4 or (rows * cols) % 2 != 0:
-			violations.append("%s: board %dx%d is not sane/pairable" % [tag, rows, cols])
-		if kinds < 4 or kinds > max_kinds:
-			violations.append("%s: kinds %d outside 4..%d" % [tag, kinds, max_kinds])
-		if kinds * 2 > rows * cols:
-			violations.append("%s: not enough tiles for %d kinds" % [tag, kinds])
-		if time_limit <= 0.0:
-			violations.append("%s: time_limit must be positive" % tag)
-		if not VALID_MODES.has(mode):
-			violations.append("%s: unknown mode '%s'" % [tag, mode])
-		if str(lv.get("name", "")) == "":
-			violations.append("%s: missing name" % tag)
-		if float(lv.get("score_multiplier", 0)) < prev_score:
-			violations.append("%s: score_multiplier shrinks" % tag)
-		if float(lv.get("effect_intensity", 0)) < prev_effect:
-			violations.append("%s: effect_intensity shrinks" % tag)
-		var pressure := seconds_per_pair(rows, cols, time_limit)
+		var pressure := seconds_per_pair(rows, cols, float(lv.get("time_limit", 0)))
 		if i == 0:
 			first_pressure = pressure
 		elif pressure > first_pressure + 0.0001:
-			violations.append("%s: easier than the opening level (%.2f vs %.2f s/pair)" % [tag, pressure, first_pressure])
-		if i > 0 and mode == "rush" and prev_mode != "rush" and pressure >= prev_pressure - 0.0001:
-			violations.append("%s: rush level should be tighter than its predecessor" % tag)
-		prev_pressure = pressure
-		prev_score = float(lv.get("score_multiplier", 0))
-		prev_effect = float(lv.get("effect_intensity", 0))
-		prev_mode = mode
+			violations.append("level %d: easier than the opening level (%.2f vs %.2f s/pair)" % [i + 1, pressure, first_pressure])
+		if i > 0 and str(lv.get("mode", "")) == "rush" and prev["mode"] != "rush" and pressure >= prev["pressure"] - 0.0001:
+			violations.append("level %d: rush level should be tighter than its predecessor" % [i + 1])
+		prev = {
+			"pressure": pressure,
+			"score": float(lv.get("score_multiplier", 0)),
+			"effect": float(lv.get("effect_intensity", 0)),
+			"mode": str(lv.get("mode", ""))
+		}
+	return violations
+
+
+# Structural checks for one campaign level: id order, board sanity, kinds
+# capacity, positive clock, known mode, present name, non-shrinking
+# multipliers. `prev` carries the previous level's reward multipliers.
+static func _campaign_level_violations(lv, index: int, max_kinds: int, prev: Dictionary) -> Array:
+	var violations := []
+	var tag := "level %d" % (index + 1)
+	var rows := int(lv.get("rows", 0))
+	var cols := int(lv.get("cols", 0))
+	var kinds := int(lv.get("kinds", 0))
+	var mode := str(lv.get("mode", ""))
+	if int(lv.get("id", -1)) != index + 1:
+		violations.append("%s: id should be %d" % [tag, index + 1])
+	if rows < 4 or cols < 4 or (rows * cols) % 2 != 0:
+		violations.append("%s: board %dx%d is not sane/pairable" % [tag, rows, cols])
+	if kinds < 4 or kinds > max_kinds:
+		violations.append("%s: kinds %d outside 4..%d" % [tag, kinds, max_kinds])
+	if kinds * 2 > rows * cols:
+		violations.append("%s: not enough tiles for %d kinds" % [tag, kinds])
+	if float(lv.get("time_limit", 0)) <= 0.0:
+		violations.append("%s: time_limit must be positive" % tag)
+	if not VALID_MODES.has(mode):
+		violations.append("%s: unknown mode '%s'" % [tag, mode])
+	if str(lv.get("name", "")) == "":
+		violations.append("%s: missing name" % tag)
+	if float(lv.get("score_multiplier", 0)) < prev["score"]:
+		violations.append("%s: score_multiplier shrinks" % tag)
+	if float(lv.get("effect_intensity", 0)) < prev["effect"]:
+		violations.append("%s: effect_intensity shrinks" % tag)
 	return violations
 
 

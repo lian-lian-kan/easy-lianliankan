@@ -1083,3 +1083,6 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 
 - **续（同轮后段）：拆掉测试套件的"周末日期炸弹"**。首次推送后 CI 测试步失败，本地拉起 Godot 3.6.2（Windows 版，并行分片下载；跑无头测试不需要导出模板）复现：session_settle_test 与 page_probe 在**上一个绿提交 83dcd69 上同样失败**——根因是 events_calendar 周末双倍樱花钩子在周六把奖励翻倍，而两测试硬编码奖励期望值；CI 周五跑所以一直绿，纯日期炸弹。修法：期望值改经同一个 EVENTS.apply_earn(OS.get_date(), …) 钩子计算（settle 1 处 + page_probe 5 处，新增 earn() 助手），既日期免疫又继续验证钩子恰好生效一次。修复后全量 53 项无头测试本地全绿（Godot 3.6.2 真跑，非对拍模拟）。
 - Validation: 本地全量 53 无头测试全绿（Godot 3.6.2 Windows 实跑，2026-09-19 周六——正是此前会误报的日期）；待 CI deploy 回填。
+
+- **续（CI 失败二连复盘）**：第二次 CI 仍红在"Godot headless tests"步——该步末尾还串着 shell_audit 门禁，campaign_audit 首版 48 行越过"新函数 ≤45 行"ERROR 棘轮（本机无 python3 没能提前跑它）。已按高内聚风格拆出 _campaign_level_violations（每关结构检查），主函数瘦回 21 行；本机无 python3，遂将 shell_audit 全部 ERROR 级检查移植为 perl 对拍脚本跑绿（含跨模块调用解析/规模棘轮/顶层卫生），再叠加全量 53 项无头测试真跑全绿后才推。
+- Validation: 本地 port-shell_audit clean + 53 项无头测试全绿（Godot 3.6.2 实跑）；待 CI deploy 回填。
