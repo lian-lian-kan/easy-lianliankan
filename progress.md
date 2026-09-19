@@ -1111,4 +1111,4 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **board_view 简化**：瓦片 = 可用宽/列、可用高/行 精确铺满（4px 漂移边距保留），正方形/弹性钳制全部删除；字体按短边算。
 - **豁免**：工坊 custom_grid、drag 8x8、edu 概念牌组（lock_shape，牌组按形状刚好够发）。
 - **代价与接受度**：不同设备同关牌数可差 ±10%（排行榜跨设备比较变软）；一个 54 项清单跑批时 panels_probe 出现过一次时序抖动假红（机器繁忙，09-17 已有同类记录），单独复跑 3/3 绿、再跑全量 54/54 绿。
-- Validation: 本地 54 项全绿 ×2 轮（Godot 3.6.2 实跑）+ port-shell_audit clean；待 CI deploy 回填。
+- Validation: CI deploy 全绿（bc91341：54 项无头测试 + shell_audit + 导出 + 冒烟 + Pages 部署）+ Android 绿；线上 1280x720 实测：第 1 关 8 列 x 6 行铺满画布零侧边留白，消除/计分/剩余对数回归正常（15 分 / 23 对）。
