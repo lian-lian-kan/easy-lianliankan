@@ -50,7 +50,7 @@ const DEFAULT_CONFIGS = {
 	"memory": {
 		"mode_id": "memory",
 		"name": "盲盒模式",
-		"description": "先记忆，再盲配",
+		"description": "考验你的记忆力",
 		"preview_seconds": 5.0,
 		"face_up_duration": 1.0,
 		"unlock_level": 10,

@@ -3,7 +3,14 @@ extends SceneTree
 # Page-shell probe: bottom navigation, the four meta pages (journey map /
 # collection / sign-in / theme shop) and the blossom economy loop.
 
+# Win rewards flow through the events earn hook (weekend doubling), so coin
+# expectations below must ride the same hook or the probe breaks on weekends.
+const EVENTS = preload("res://scripts/content/events_calendar.gd")
+
 var failures := 0
+
+func earn(amount: int) -> int:
+	return EVENTS.apply_earn(OS.get_date(), amount)
 
 func check(value: bool, message: String) -> void:
 	if value:
@@ -145,7 +152,7 @@ func _init() -> void:
 	var coins_before_tray = int(game.progression_state.get("coins", 0))
 	game._resolve_tray_clear()
 	check(int(game.progression_state.get("tray_best_score", 0)) >= 1200, "tray win records its score")
-	check(int(game.progression_state.get("coins", 0)) == coins_before_tray + 20, "tray win pays 20 blossoms")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_tray + earn(20), "tray win pays 20 blossoms through the earn hook")
 	check(game.stage_panel_label.visible, "tray win shows the settle panel")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
@@ -156,7 +163,7 @@ func _init() -> void:
 		game.collect_progress[target] = int(game.collect_targets[target])
 	game._resolve_collect_clear()
 	check(int(game.progression_state.get("collect_best_score", 0)) >= 0, "collect win records its result")
-	check(int(game.progression_state.get("coins", 0)) == coins_before_collect + 20, "collect win pays 20 blossoms")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_collect + earn(20), "collect win pays 20 blossoms through the earn hook")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
 	# --- stats page: every headline number renders from progression state ---
@@ -227,7 +234,7 @@ func _init() -> void:
 	var coins_before_flip = int(game.progression_state.get("coins", 0))
 	game._resolve_flip_clear()
 	check(int(game.progression_state.get("flip_best_score", 0)) >= 200, "flip win records its bonus score")
-	check(int(game.progression_state.get("coins", 0)) == coins_before_flip + 20, "flip win pays 20 blossoms")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_flip + earn(20), "flip win pays 20 blossoms through the earn hook")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
 	# --- tray tools: undo refunds the pickup, shuffle rerolls the pile ---
@@ -268,7 +275,7 @@ func _init() -> void:
 		pending_pairs.append(int(target_key))
 	game._on_collect_pair_progress(pending_pairs)
 	check(game.stage_status == game.STATUS_CLEARED, "filling all targets auto-resolves the collect session")
-	check(int(game.progression_state.get("coins", 0)) == coins_before_auto + 20, "collect auto-resolve pays 20 blossoms")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_auto + earn(20), "collect auto-resolve pays 20 blossoms through the earn hook")
 	game.SPECIAL_SESSION._exit_special_mode(game)
 
 	# --- economy: wallet starts at zero and over-collection is capped ---
@@ -406,7 +413,7 @@ func _init() -> void:
 	game.stage_status = game.STATUS_PLAYING
 	game._resolve_after_board_changed()
 	check(game.stage_status == game.STATUS_CLEARED, "empty board resolves as cleared")
-	check(int(game.progression_state.get("coins", 0)) == coins_before_clear + 14, "level 3 clear pays 14 blossoms (8+2x3)")
+	check(int(game.progression_state.get("coins", 0)) == coins_before_clear + earn(14), "level 3 clear pays 14 blossoms (8+2x3) through the earn hook")
 
 	# --- weekly missions: progress, max-semantics, claim-once, week roll ---
 	game.progression_state["weekly_missions"] = {"week_key": "", "progress": {}, "claimed": []}

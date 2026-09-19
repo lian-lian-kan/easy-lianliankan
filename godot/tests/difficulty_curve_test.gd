@@ -62,7 +62,7 @@ func _init() -> void:
 	check(CURVE.plateau_int(8, 14, 2, 12, 24) == 12, "two periods compound")
 	check(CURVE.plateau_int(8, 14, 2, 12, 9999) == 14, "the cap holds no matter the progress")
 	check(CURVE.plateau_int(8, 14, 2, 12, -5) == 8, "negative progress clamps to the base")
-	check(CURVE.plateau_int(6, 20, 5, 0, 10) == 11, "a zero/negative period is treated as 1")
+	check(CURVE.plateau_int(6, 20, 5, 0, 10) == 20, "a zero/negative period means the stride applies every round")
 	check(CURVE.plateau_int(10, 8, 2, 3, 99) == 8, "a cap below the base clamps immediately")
 
 	# --- plateau_int reproduces the retired hand-rolled tree formulas

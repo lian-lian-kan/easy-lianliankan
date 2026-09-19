@@ -5,6 +5,9 @@ extends SceneTree
 # final-level wrap-around — pure settlement math via a fake game node.
 
 const SESSION = preload("res://scripts/session/session.gd")
+# Settlement coins flow through the events earn hook (weekend doubling), so
+# expectations must ride the same hook or the test breaks on Saturdays.
+const EVENTS = preload("res://scripts/content/events_calendar.gd")
 
 var failures := 0
 
@@ -50,7 +53,7 @@ func _init() -> void:
 	var reward = SESSION._settle_campaign_rewards(game)
 	check(int(reward["time_bonus"]) == 80, "40s left at x2.0 pays an 80 point time bonus")
 	check(int(reward["stars"]) == 3, "finishing with 2/3 of the clock earns 3 stars")
-	check(int(reward["coin_reward"]) == 10, "level 1 pays the 8+2 coin reward")
+	check(int(reward["coin_reward"]) == EVENTS.apply_earn(OS.get_date(), 10), "level 1 pays the 8+2 coin reward through the earn hook")
 	check(int(game.total_score) == 180 and int(game.level_score) == 100, "the time bonus lands on both score totals")
 	check(game.patches.size() == 1, "settlement pushes exactly one progression patch")
 	var patch = game.patches[0]
