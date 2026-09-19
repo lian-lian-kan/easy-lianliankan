@@ -268,6 +268,9 @@ static func build_classic_style_level(config, mode_id: String):
 		"kinds": int(config.get("kinds", 8)),
 		"time_limit": int(config.get("time_limit", 90))
 	}
+	# 连线消的一笔拖链密度是 8x8 设计的一部分，形状不做屏幕适配。
+	if mode_id == "drag":
+		level["lock_shape"] = true
 	for field in CLASSIC_OPTIONAL_FIELDS:
 		if config.has(field):
 			level[field] = config[field]

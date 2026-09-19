@@ -188,11 +188,18 @@ static func _update_tile_sizes(game):
 	var max_tile = 150 if is_mobile and is_portrait else (110 if is_mobile else 220)
 	var tile = clamp(min(by_width, by_height), min_tile, max_tile)
 
+	# Bounded elastic: let tiles go mildly rectangular to soak up whatever
+	# aspect mismatch the shape fit leaves, instead of parking it as side
+	# margins. Distortion is capped at 1.6x so emoji glyphs and touch
+	# targets stay readable; the font follows the square base so nothing
+	# clips inside a stretched tile.
+	var tile_w = int(clamp(float(by_width), float(tile), float(tile) * 1.6))
+	var tile_h = int(clamp(float(by_height), float(tile), float(tile) * 1.6))
 	var tile_font = game._font_at_size(int(clamp(float(tile) * 0.52, 14.0, 88.0)))
 	for r in range(rows):
 		for c in range(cols):
 			var button = game.cell_buttons[r][c]
-			button.rect_min_size = Vector2(tile, tile)
+			button.rect_min_size = Vector2(tile_w, tile_h)
 			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			button.add_font_override("font", tile_font)

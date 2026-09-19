@@ -14,6 +14,7 @@ const STATUS_COMPLETED = "completed"
 
 const BOARD_ENGINE = preload("res://scripts/board/board_engine.gd")
 const BOARD_MECHANICS = preload("res://scripts/board/board_mechanics.gd")
+const BOARD_FIT = preload("res://scripts/board/board_fit.gd")
 
 const UI_PANELS = preload("res://scripts/ui/ui_panels.gd")
 
@@ -719,7 +720,12 @@ func _create_playable_board(level):
 	# 关卡工坊试玩：the editor grid is the board, exactly as shared.
 	if level.has("custom_grid"):
 		return level["custom_grid"].duplicate(true)
-	return BOARD_ENGINE.create_playable_board(level, self, "_is_coord_playable", special_mode)
+	# Same tile count, arrangement fitted to the viewport (board_fit.gd);
+	# outside the tree (headless tests, fakes) the level passes through.
+	var viewport_size = Vector2.ZERO
+	if is_inside_tree():
+		viewport_size = get_viewport_rect().size
+	return BOARD_ENGINE.create_playable_board(BOARD_FIT.level_with_fitted_shape(level, viewport_size), self, "_is_coord_playable", special_mode)
 
 func _contains_coord(list, coord):
 	return BOARD_ENGINE.contains_coord(list, coord)
