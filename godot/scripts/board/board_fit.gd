@@ -1,50 +1,54 @@
 extends Reference
 
-# Screen-fit for level boards. Two ideas, both gameplay-neutral:
+# Screen-derived board grids. The level's tile count seeds the difficulty;
+# the arrangement belongs to the screen. grid_for() decides columns and rows
+# straight from the board area's size — tiles may be rectangular (no square
+# rule), the grid fills the area edge to edge, and any extra tiles are dealt
+# as whole pairs so every kind stays pairable. Time limits scale with the
+# dealt count so a big screen is not penalized with a phone's clock.
 #
-#   1. Shape fit: a level's tile count is the design contract (it sets the
-#      difficulty, the clock, the records), but the rows x cols ARRANGEMENT
-#      is free. pick() walks the factor shapes of the same tile count and
-#      keeps the one whose cols/rows ratio lands closest to the board area's
-#      aspect — a wide desktop deals 12x4 where a phone keeps 8x6 — same
-#      tiles, same kinds, same clock, no side margins.
-#   2. Everything stays opt-out: the level editor's custom grid, levels
-#      flagged lock_shape (drag chains want their designed 8x8), headless
-#      calls without a viewport, and tiny tile counts all pass through
-#      untouched. board_view.gd's bounded-elastic tiles (max 1.6x) absorb
-#      whatever aspect gap the chosen shape still leaves.
+# Opt-outs: editor custom grids, levels flagged lock_shape (drag's 8x8
+# chain density, edu's exactly-sized concept decks), and headless calls
+# without a viewport.
 
 const MIN_DIM = 4
-
-# The board canvas floors at ~90% of viewport height (HUD chrome above).
-# Fit against that area's aspect, not the raw window, so phones keep a
-# board wider than tall instead of collapsing into a narrow snake.
 const BOARD_AREA_FRACTION = 0.9
+const MAX_TILE = 220
+const MIN_TILE = 34
+const MAX_DISTORTION = 1.6
 
-# Best-fitting arrangement for this board-area aspect (width / height).
-# Ties and unsuitable counts keep the incoming shape.
-static func pick(rows: int, cols: int, aspect: float) -> Dictionary:
-	var best := {"rows": rows, "cols": cols}
-	var tile_count := rows * cols
-	if aspect <= 0.0 or tile_count < 2 * MIN_DIM:
-		return best
-	var best_dist := _shape_distance(cols, rows, aspect)
-	var candidate := MIN_DIM
-	while candidate <= tile_count:
-		if tile_count % candidate == 0:
-			var other := tile_count / candidate
-			if other >= MIN_DIM:
-				var dist := _shape_distance(candidate, other, aspect)
-				if dist < best_dist - 0.0001:
-					best_dist = dist
-					best = {"rows": other, "cols": candidate}
-		candidate += 1
+# Integer grid (rows x cols, even tile count) tiling a width x height area
+# with at least tile_count tiles, fewest extras first, then the squarest
+# tiles. Columns and rows come from the area: big screens simply deal more
+# tiles instead of growing margins or poster-sized pieces.
+static func grid_for(tile_count: int, width: float, height: float) -> Dictionary:
+	var best := {"rows": 0, "cols": 0, "extra": 0}
+	var min_cols = max(MIN_DIM, int(ceil(width / MAX_TILE)))
+	var max_cols = int(floor(width / MIN_TILE))
+	var min_rows = max(MIN_DIM, int(ceil(height / MAX_TILE)))
+	var max_rows = int(floor(height / MIN_TILE))
+	var best_score := INF
+	for cols in range(min_cols, max_cols + 1):
+		var rows_floor = max(min_rows, int(ceil(float(tile_count) / cols)))
+		for rows in range(rows_floor, max_rows + 1):
+			var total = rows * cols
+			if total % 2 != 0:
+				continue
+			var extra = total - tile_count
+			if extra < 0:
+				continue
+			var dist = _tile_distortion(width, height, cols, rows)
+			var score = extra * 10.0 + (dist * 40.0 if dist > MAX_DISTORTION else dist)
+			if score < best_score - 0.0001:
+				best_score = score
+				best = {"rows": rows, "cols": cols, "extra": extra}
 	return best
 
 
-# Copy of the level with rows/cols swapped to the fitted shape. Only the
-# shape changes; kinds, clocks, rewards and every other field carry over,
-# and the incoming level dict is never mutated.
+# Copy of the level with rows/cols re-derived from the viewport. Kinds,
+# rewards and every other field carry over; time_limit scales with the dealt
+# tile count (a 4K screen dealing 162 tiles gets a proportionally longer
+# clock); the incoming level dict is never mutated.
 static func level_with_fitted_shape(level, viewport_size):
 	if level.has("custom_grid") or bool(level.get("lock_shape", false)):
 		return level
@@ -52,18 +56,22 @@ static func level_with_fitted_shape(level, viewport_size):
 		return level
 	var rows := int(level.get("rows", 8))
 	var cols := int(level.get("cols", 6))
-	var area_aspect: float = float(viewport_size.x) / float(viewport_size.y) / BOARD_AREA_FRACTION
-	var shape := pick(rows, cols, area_aspect)
-	if shape["rows"] == rows and shape["cols"] == cols:
+	var height := float(viewport_size.y) * BOARD_AREA_FRACTION
+	var grid := grid_for(rows * cols, float(viewport_size.x), height)
+	if int(grid["rows"]) == 0:
 		return level
 	var fitted = level.duplicate()
-	fitted["rows"] = shape["rows"]
-	fitted["cols"] = shape["cols"]
+	fitted["rows"] = int(grid["rows"])
+	fitted["cols"] = int(grid["cols"])
+	var total := int(grid["rows"]) * int(grid["cols"])
+	var time_limit := float(level.get("time_limit", 0))
+	if time_limit > 0.0 and total != rows * cols:
+		fitted["time_limit"] = int(round(time_limit * float(total) / float(rows * cols)))
 	return fitted
 
 
-# Log-space distance between a shape's ratio and the target aspect: picking
-# the minimum is exactly picking the tile shape with the least square/rect
-# distortion once the elastic clamp is applied.
-static func _shape_distance(cols: int, rows: int, aspect: float) -> float:
-	return abs(log(float(cols) / float(rows)) - log(aspect))
+# Tile aspect a cols x rows grid produces in this area; 1.0 means square.
+static func _tile_distortion(width: float, height: float, cols: int, rows: int) -> float:
+	var tile_w = width / float(cols)
+	var tile_h = height / float(rows)
+	return max(tile_w, tile_h) / min(tile_w, tile_h)

@@ -284,16 +284,19 @@ static func build_edu_level(config, progress_level: int) -> Dictionary:
 	var rows = int(tier.get("rows", 6))
 	var cols = int(tier.get("cols", 6))
 	var pairs = int(rows * cols / 2)
-	return {
+	# 概念牌组刚好够发该形状，形状不随屏幕适配。
+	var level = {
 		"id": 1,
 		"name": "知识配对",
 		"mode": "edu",
+		"lock_shape": true,
 		"rows": rows,
 		"cols": cols,
 		"kinds": pairs,
 		"time_limit": int(tier.get("time_base", 120)) + int(rows * cols * float(config.get("time_per_tile", 1.2))),
 		"subject": EDU.subject_for_date(OS.get_date())
 	}
+	return level
 
 
 static func is_mode_unlocked(mode_id: String, config, highest_unlocked_level_index: int) :

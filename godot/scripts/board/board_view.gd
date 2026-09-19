@@ -178,27 +178,19 @@ static func _update_tile_sizes(game):
 	available.x = max(available.x, 120.0)
 	available.y = max(available.y, 120.0)
 
-	# Calculate tile size to fit all tiles.
+	# Calculate tile size to fill the area edge to edge. Columns and rows
+	# were derived from this screen by board_fit.gd, so tiles are allowed to
+	# be rectangular — there is no square rule and nothing is left over. A
+	# 4px safety margin absorbs layout-estimation drift so the last row
+	# stays on screen; the font follows the shorter side so glyphs never
+	# clip inside a stretched tile.
 	var by_width = int(floor((available.x - float(cols - 1) * h_sep) / max(1, cols)))
 	var by_height = int(floor((available.y - float(rows - 1) * v_sep) / max(1, rows)))
-
-	# Clamp tile size: the floor keeps touch targets readable, the ceiling
-	# only exists so huge monitors do not turn 6-tile boards into posters.
 	var min_tile = 34 if is_mobile and is_portrait else (30 if is_mobile else 34)
-	var max_tile = 150 if is_mobile and is_portrait else (110 if is_mobile else 220)
-	var tile = clamp(min(by_width, by_height), min_tile, max_tile)
-
-	# Bounded elastic: stretch each dimension toward its own available space
-	# (a 4px safety margin absorbs layout-estimation drift; the last row must
-	# stay on screen), so tiles go mildly rectangular instead of parking the
-	# leftover as side margins. The 1.6x cap bounds the distortion vs square
-	# so emoji glyphs stay readable; the font follows the square base so
-	# nothing clips inside a stretched tile.
-	var tile_w = clamp(min(float(by_width) - 4.0, float(tile) * 1.6), min(float(tile), float(min_tile)), float(by_width))
-	var tile_h = clamp(min(float(by_height) - 4.0, float(tile) * 1.6), min(float(tile), float(min_tile)), float(by_height))
-	tile_w = int(tile_w)
-	tile_h = int(tile_h)
-	var tile_font = game._font_at_size(int(clamp(float(tile) * 0.52, 14.0, 88.0)))
+	var tile_w = max(by_width - 4, min_tile)
+	var tile_h = max(by_height - 4, min_tile)
+	var short_side = min(tile_w, tile_h)
+	var tile_font = game._font_at_size(int(clamp(float(short_side) * 0.52, 14.0, 88.0)))
 	for r in range(rows):
 		for c in range(cols):
 			var button = game.cell_buttons[r][c]
