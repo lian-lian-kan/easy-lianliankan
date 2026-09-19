@@ -188,13 +188,16 @@ static func _update_tile_sizes(game):
 	var max_tile = 150 if is_mobile and is_portrait else (110 if is_mobile else 220)
 	var tile = clamp(min(by_width, by_height), min_tile, max_tile)
 
-	# Bounded elastic: let tiles go mildly rectangular to soak up whatever
-	# aspect mismatch the shape fit leaves, instead of parking it as side
-	# margins. Distortion is capped at 1.6x so emoji glyphs and touch
-	# targets stay readable; the font follows the square base so nothing
-	# clips inside a stretched tile.
-	var tile_w = int(clamp(float(by_width), float(tile), float(tile) * 1.6))
-	var tile_h = int(clamp(float(by_height), float(tile), float(tile) * 1.6))
+	# Bounded elastic: stretch each dimension toward its own available space
+	# (a 4px safety margin absorbs layout-estimation drift; the last row must
+	# stay on screen), so tiles go mildly rectangular instead of parking the
+	# leftover as side margins. The 1.6x cap bounds the distortion vs square
+	# so emoji glyphs stay readable; the font follows the square base so
+	# nothing clips inside a stretched tile.
+	var tile_w = clamp(min(float(by_width) - 4.0, float(tile) * 1.6), min(float(tile), float(min_tile)), float(by_width))
+	var tile_h = clamp(min(float(by_height) - 4.0, float(tile) * 1.6), min(float(tile), float(min_tile)), float(by_height))
+	tile_w = int(tile_w)
+	tile_h = int(tile_h)
 	var tile_font = game._font_at_size(int(clamp(float(tile) * 0.52, 14.0, 88.0)))
 	for r in range(rows):
 		for c in range(cols):

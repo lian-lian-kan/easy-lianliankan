@@ -1098,3 +1098,7 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **效果**：16:9 桌面第 1 关从"8 行 6 列居中 + 两侧大留白"变为 8 宽×6 高铺满（残余 1.48x 内弹性吸收）；超宽屏 21:9 摆 12×4；手机保持 8 行 6 列竖版不变。同一关任何设备牌数/时限/难度完全一致，排行榜公平。
 - **测试**：新增 board_fit_test（形状枚举/最近形变选择/仅动形状的拷贝语义/三类豁免直通）入 CI 清单 53→54；本地 Godot 3.6.2 全量 54 项实跑全绿 + port-shell_audit clean。
 - Validation: 待 CI deploy 回填。
+
+- **续（CI 三连复盘：弹性瓦片越界 4px）**：诊断性推送（测试失败时输出 ::error:: 注解）定位到 panels_probe——"最后一行瓦片越出视口 848 > 844"。两个根因：①弹性下限误用方形基准 tile，宽度为紧约束时 tile_h 被抬到超出可用高度；②旧正方形实现留有 ~200px 冗余，铺满后引导期 min_size 估算漂移（2-4px）直接顶边。修复：每维 clamp 上界收回 by_width/by_height 自身（1.6x 只约束相对方形的形变），填充目标留 4px 安全边距。panels_probe 4 连跑 + 全量 54 项本地全绿。
+- **CI 可观测性**：deploy.yml 测试循环失败时现在输出 ::error:: 注解（测试名 + 首条失败行 + 退出码），shell_audit 失败同样有注解——无日志权限时远端可诊断。
+- Validation: 本地 54 项全绿（Godot 3.6.2 实跑）+ panels_probe 4 连跑绿 + port-shell_audit clean；待 CI deploy 回填。
