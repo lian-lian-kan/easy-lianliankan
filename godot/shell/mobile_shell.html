@@ -298,6 +298,17 @@ const engine = new Engine(GODOT_CONFIG);
 				console.warn('[H5] service worker unavailable', err);
 			});
 		});
+		// A freshly deployed service worker claims the page mid-session
+		// (skipWaiting + clients.claim in sw.js). Reload once so the visitor
+		// plays the new build immediately instead of on their NEXT visit —
+		// the cache-first payloads would otherwise keep the old version up
+		// for a whole extra visit after every deploy.
+		let llkSwRefreshing = false;
+		navigator.serviceWorker.addEventListener('controllerchange', () => {
+			if (llkSwRefreshing) return;
+			llkSwRefreshing = true;
+			window.location.reload();
+		});
 	}
 
 	// ?diag=1 renders a live sharpness badge: the ratio the shell forces, the
