@@ -293,21 +293,37 @@ const engine = new Engine(GODOT_CONFIG);
 	// the first download, so later visits load instantly. A new deploy swaps
 	// the cache in the background via the build hash baked into sw.js.
 	if ('serviceWorker' in navigator) {
+		// Was a service worker controlling this page load? First-ever
+		// visitors have nothing stale to update, so they never see the bar.
+		const llkWasControlled = !!navigator.serviceWorker.controller;
 		window.addEventListener('load', () => {
 			navigator.serviceWorker.register('./sw.js').catch((err) => {
 				console.warn('[H5] service worker unavailable', err);
 			});
 		});
 		// A freshly deployed service worker claims the page mid-session
-		// (skipWaiting + clients.claim in sw.js). Reload once so the visitor
-		// plays the new build immediately instead of on their NEXT visit —
-		// the cache-first payloads would otherwise keep the old version up
-		// for a whole extra visit after every deploy.
-		let llkSwRefreshing = false;
+		// (skipWaiting + clients.claim in sw.js) once the new payloads have
+		// finished prefetching. Never auto-reload mid-game — surface a
+		// visible prompt and let the visitor pick the moment to switch,
+		// otherwise a stale build can stick around for a whole extra visit.
 		navigator.serviceWorker.addEventListener('controllerchange', () => {
-			if (llkSwRefreshing) return;
-			llkSwRefreshing = true;
-			window.location.reload();
+			if (!llkWasControlled || document.getElementById('llk-update-bar')) return;
+			const bar = document.createElement('div');
+			bar.id = 'llk-update-bar';
+			bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483000;' +
+				'display:flex;gap:12px;align-items:center;justify-content:center;' +
+				'padding:10px 14px;background:#ff5f9e;color:#fff;' +
+				'font:14px/1.4 system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25)';
+			const text = document.createElement('span');
+			text.textContent = '🌸 新版本已就绪';
+			const btn = document.createElement('button');
+			btn.textContent = '立即更新';
+			btn.style.cssText = 'border:0;border-radius:999px;padding:6px 16px;' +
+				'background:#fff;color:#ff5f9e;font-weight:700;cursor:pointer';
+			btn.addEventListener('click', () => window.location.reload());
+			bar.appendChild(text);
+			bar.appendChild(btn);
+			document.body.appendChild(bar);
 		});
 	}
 
