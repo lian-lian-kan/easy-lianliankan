@@ -16,7 +16,9 @@ func check(value: bool, message: String) -> void:
 func _init() -> void:
 	print("== campaign_levels_test")
 	var levels = CL.default_campaign_levels()
-	check(levels.size() == 10, "campaign has 10 levels")
+	# 15 levels, kinds up to 15 (the icon sets ship 15 textures each);
+	# mirror-vs-live equality is gated in difficulty_curve_test.
+	check(levels.size() == 15, "campaign has 15 levels")
 
 	var ids_ok := true
 	var dims_ok := true
@@ -37,7 +39,7 @@ func _init() -> void:
 		if rows < 4 or cols < 4 or (rows * cols) % 2 != 0:
 			dims_ok = false
 		var kinds := int(lv.get("kinds", 0))
-		if kinds < 4 or kinds > 12 or kinds * 2 > rows * cols:
+		if kinds < 4 or kinds > 15 or kinds * 2 > rows * cols:
 			kinds_ok = false
 		if float(lv.get("time_limit", 0)) <= 0.0:
 			time_ok = false
@@ -49,9 +51,9 @@ func _init() -> void:
 			mult_ok = false
 		prev_score_mult = float(lv.get("score_multiplier", 0))
 		prev_effect = float(lv.get("effect_intensity", 0))
-	check(ids_ok, "level ids are 1..10 in order")
+	check(ids_ok, "level ids are 1..15 in order")
 	check(dims_ok, "every board has sane dimensions and an even tile count")
-	check(kinds_ok, "kinds stay within the 12-texture range with enough tiles")
+	check(kinds_ok, "kinds stay within the 15-texture range with enough tiles")
 	check(time_ok, "every level has a positive time limit")
 	check(mode_ok, "every level uses a known mode")
 	check(text_ok, "every level has a name and description")

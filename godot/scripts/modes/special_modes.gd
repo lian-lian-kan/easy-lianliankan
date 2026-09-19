@@ -3,6 +3,7 @@ extends Reference
 const DATA = preload("res://scripts/modes/special_modes_data.gd")
 const TREE_LADDER = preload("res://scripts/modes/tree_ladder.gd")
 const EDU = preload("res://scripts/content/edu_decks.gd")
+const CURVE = preload("res://scripts/modes/difficulty_curve.gd")
 
 # Forwarding aliases: existing code and tests read the tables through
 # special_modes.gd, so the data module stays swappable.
@@ -100,18 +101,19 @@ static func build_time_attack_level(config):
 
 
 static func build_endless_level(config, round_index: int):
-	var rows = int(config.get("base_rows", 10))
-	var cols = int(config.get("base_cols", 8))
-	var kinds = int(config.get("base_kinds", 6))
-	var expansion_every = max(1, int(config.get("board_expansion_every", 3)))
-	var extra_rounds = max(0, round_index - 1)
+	var expansion_every = int(config.get("board_expansion_every", 3))
+	var extra_rounds = round_index - 1
+	if extra_rounds < 0:
+		extra_rounds = 0
+	# Rows/cols/kinds all ride the shared grow-then-plateau step; even bases
+	# with +2 strides keep every round's tile count pairable.
 	return {
 		"id": 1,
 		"name": "第" + str(round_index) + "轮",
 		"mode": "endless",
-		"rows": min(rows + 2 * int(extra_rounds / expansion_every), int(config.get("max_rows", 16))),
-		"cols": min(cols + 2 * int(extra_rounds / expansion_every), int(config.get("max_cols", 14))),
-		"kinds": min(kinds + extra_rounds * int(config.get("kinds_increment_every", 1)), int(config.get("max_kinds", 20))),
+		"rows": CURVE.plateau_int(int(config.get("base_rows", 10)), int(config.get("max_rows", 16)), 2, expansion_every, extra_rounds),
+		"cols": CURVE.plateau_int(int(config.get("base_cols", 8)), int(config.get("max_cols", 14)), 2, expansion_every, extra_rounds),
+		"kinds": CURVE.plateau_int(int(config.get("base_kinds", 6)), int(config.get("max_kinds", 20)), int(config.get("kinds_increment_every", 1)), 1, extra_rounds),
 		"time_limit": 0,
 		"round_index": round_index
 	}

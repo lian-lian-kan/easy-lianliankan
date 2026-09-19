@@ -1068,3 +1068,15 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **目的**：验证当前环境的 git commit → push 全链路（SSH 凭据、origin 远端）是否可用。
 - **操作**：追加本条记录 → commit → push origin main → 远端确认。
 - Validation: 待推送后回填结果。
+
+## 2026-09-19 (难度机制细化 + 持续重构：plateau 曲线收敛 + 配置一致性门禁)
+
+- **背景**：用户复盘"难度递进机制"后定向继续细化迭代，同时保持重构节奏。摸排发现三处双源/漂移隐患：
+  ① campaign_levels.gd 硬编码镜像表停在 10 关（线上 campaign.json 已是 15 关、kinds≤15），campaign_levels_test 还在断言"10 关/kinds≤12"——测试守卫的是过期副本，真数据早已越过它守卫的边界（图案库其实每套 15 个）；
+  ② 无尽模式 kinds_increment_every 代码默认 1 vs game_modes.json 5——若 JSON 加载失败会静默 5 倍加速变难；
+  ③ campaign_v2.json 是零引用死数据（同 rewrite 提交进来的草稿，数值与线上 v1 不一致），本次不删，留产品决策。
+- **新模块 scripts/modes/difficulty_curve.gd**（纯静态、无头可测）：plateau_int 统一"增长后平台"步进（树层与无尽 builder 共用，杜绝两条手写曲线再漂移）；seconds_per_pair 跨棋盘压力度量；campaign_audit（顺序 id/可配对棋盘/kinds 容量/正时限/压力包络"任何关不得比第 1 关轻松"/rush 关必须比前一关更紧/倍率不回落——体积与 kinds 允许中途回落，闪电战即此设计）；growth_series_audit（爬坡不回折、全程可配对、时钟只紧不松）；endless_audit（奇偶/上限/步进）；override_consistency_violations（JSON 覆盖字段必须与代码默认值相等——两层配置从此有漂移门禁）。
+- **重构**：tree_ladder.level_for 与 special_modes.build_endless_level 全部改走 plateau_int，等价性由新测试对拍钉死（含旧公式采样对拍）；special_modes_data 无尽默认值 1→5 对齐线上（附注释指回门禁）；campaign_levels.gd 镜像改为**由 campaign.json 脚本化再生成**（tools/gen_campaign_mirror.pl，文件头注明；本地预览服务器亦收编为 tools/dev-serve.pl），本地 perl 比对 165/165 字段全等。
+- **测试**：新增 difficulty_curve_test（plateau 单元/旧公式对拍/压力度量/线上表审计/镜像等价/无尽 60 轮爬坡/树 400 层爬坡/一致性门禁），入 deploy.yml 无头清单 54→55；campaign_levels_test 过期断言刷新（15 关、kinds≤15），镜像↔线上等价门禁归口 difficulty_curve_test。
+- **本地验证受限**：本机无 Godot 3.6/导出模板（09-17 已记），按团队约定导出+全量门禁交 CI；本地以 perl harness 在真实数据上跑全部不变量 19 项全绿后才推送。
+- Validation: 待 CI（deploy build: 55 个无头测试 + shell_audit + 导出 + 冒烟）回填。

@@ -1,7 +1,11 @@
 extends Reference
 
-# Campaign level table extracted from game.gd: pure data plus one accessor, so
-# the progression can be asserted headless (tests/campaign_levels_test.gd).
+# Campaign level table extracted from game.gd: pure data plus one accessor,
+# so the progression can be asserted headless (tests/campaign_levels_test.gd).
+# This is a generated MIRROR of the live table in data/campaign.json -
+# difficulty_curve_test's mirror gate fails CI if the two drift apart.
+# Regenerate with: perl tools/gen_campaign_mirror.pl (do not hand-edit
+# numbers; CI gates the mirror against the live table).
 
 const LEVELS = [
 	{
@@ -13,9 +17,9 @@ const LEVELS = [
 		"cols": 6,
 		"kinds": 6,
 		"time_limit": 90,
-		"time_bonus_multiplier": 2.0,
-		"score_multiplier": 1.0,
-		"effect_intensity": 1.0
+		"time_bonus_multiplier": 2,
+		"score_multiplier": 1,
+		"effect_intensity": 1,
 	},
 	{
 		"id": 2,
@@ -28,7 +32,7 @@ const LEVELS = [
 		"time_limit": 100,
 		"time_bonus_multiplier": 2.2,
 		"score_multiplier": 1.05,
-		"effect_intensity": 1.05
+		"effect_intensity": 1.05,
 	},
 	{
 		"id": 3,
@@ -41,7 +45,7 @@ const LEVELS = [
 		"time_limit": 110,
 		"time_bonus_multiplier": 2.4,
 		"score_multiplier": 1.15,
-		"effect_intensity": 1.1
+		"effect_intensity": 1.1,
 	},
 	{
 		"id": 4,
@@ -54,7 +58,7 @@ const LEVELS = [
 		"time_limit": 120,
 		"time_bonus_multiplier": 2.5,
 		"score_multiplier": 1.2,
-		"effect_intensity": 1.15
+		"effect_intensity": 1.15,
 	},
 	{
 		"id": 5,
@@ -67,7 +71,7 @@ const LEVELS = [
 		"time_limit": 130,
 		"time_bonus_multiplier": 2.8,
 		"score_multiplier": 1.25,
-		"effect_intensity": 1.2
+		"effect_intensity": 1.2,
 	},
 	{
 		"id": 6,
@@ -78,9 +82,9 @@ const LEVELS = [
 		"cols": 10,
 		"kinds": 10,
 		"time_limit": 136,
-		"time_bonus_multiplier": 3.0,
+		"time_bonus_multiplier": 3,
 		"score_multiplier": 1.32,
-		"effect_intensity": 1.28
+		"effect_intensity": 1.28,
 	},
 	{
 		"id": 7,
@@ -93,7 +97,7 @@ const LEVELS = [
 		"time_limit": 144,
 		"time_bonus_multiplier": 3.2,
 		"score_multiplier": 1.38,
-		"effect_intensity": 1.32
+		"effect_intensity": 1.32,
 	},
 	{
 		"id": 8,
@@ -106,7 +110,7 @@ const LEVELS = [
 		"time_limit": 152,
 		"time_bonus_multiplier": 3.4,
 		"score_multiplier": 1.45,
-		"effect_intensity": 1.36
+		"effect_intensity": 1.36,
 	},
 	{
 		"id": 9,
@@ -119,7 +123,7 @@ const LEVELS = [
 		"time_limit": 160,
 		"time_bonus_multiplier": 3.7,
 		"score_multiplier": 1.52,
-		"effect_intensity": 1.4
+		"effect_intensity": 1.4,
 	},
 	{
 		"id": 10,
@@ -130,9 +134,74 @@ const LEVELS = [
 		"cols": 10,
 		"kinds": 12,
 		"time_limit": 168,
-		"time_bonus_multiplier": 4.0,
+		"time_bonus_multiplier": 4,
 		"score_multiplier": 1.6,
-		"effect_intensity": 1.46
+		"effect_intensity": 1.46,
+	},
+	{
+		"id": 11,
+		"name": "极限挑战",
+		"mode": "rush",
+		"description": "时间压力极限测试",
+		"rows": 14,
+		"cols": 10,
+		"kinds": 12,
+		"time_limit": 150,
+		"time_bonus_multiplier": 4.2,
+		"score_multiplier": 1.65,
+		"effect_intensity": 1.5,
+	},
+	{
+		"id": 12,
+		"name": "记忆大师",
+		"mode": "classic",
+		"description": "最大棋盘，考验记忆力",
+		"rows": 12,
+		"cols": 12,
+		"kinds": 14,
+		"time_limit": 180,
+		"time_bonus_multiplier": 4.5,
+		"score_multiplier": 1.7,
+		"effect_intensity": 1.55,
+	},
+	{
+		"id": 13,
+		"name": "闪电战",
+		"mode": "rush",
+		"description": "极短时间，极限速度",
+		"rows": 10,
+		"cols": 10,
+		"kinds": 10,
+		"time_limit": 90,
+		"time_bonus_multiplier": 4.8,
+		"score_multiplier": 1.75,
+		"effect_intensity": 1.6,
+	},
+	{
+		"id": 14,
+		"name": "连击风暴",
+		"mode": "combo",
+		"description": "连击奖励翻倍挑战",
+		"rows": 12,
+		"cols": 10,
+		"kinds": 13,
+		"time_limit": 160,
+		"time_bonus_multiplier": 5,
+		"score_multiplier": 1.8,
+		"effect_intensity": 1.65,
+	},
+	{
+		"id": 15,
+		"name": "终极试炼",
+		"mode": "endurance",
+		"description": "全游戏最终挑战",
+		"rows": 14,
+		"cols": 12,
+		"kinds": 15,
+		"time_limit": 200,
+		"time_bonus_multiplier": 5.5,
+		"score_multiplier": 2,
+		"effect_intensity": 1.7,
 	}
 ]
 

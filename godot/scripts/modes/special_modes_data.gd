@@ -24,7 +24,9 @@ const DEFAULT_CONFIGS = {
 		"name": "无尽模式",
 		"description": "挑战极限，看你能走多远",
 		"base_kinds": 6,
-		"kinds_increment_every": 1,
+		# Must stay equal to data/game_modes.json (override_consistency gate):
+		# this default is what players get if the JSON ever fails to load.
+		"kinds_increment_every": 5,
 		"board_expansion_every": 3,
 		"max_rows": 16,
 		"max_cols": 14,

@@ -22,17 +22,21 @@ const MAX_KINDS = 12
 const BASE_TIME = 100
 const MIN_TIME = 45
 
+const CURVE = preload("res://scripts/modes/difficulty_curve.gd")
+
 static func level_for(height: int):
 	var h = max(1, height)
+	var progress: int = int(h) - 1
 	return {
 		"id": 1,
 		"name": "第" + str(h) + "层",
 		"mode": "tree",
 		# Even +2 strides keep rows/cols always even, so every layer's tile
-		# count stays pairable no matter the height.
-		"rows": min(BASE_ROWS + 2 * int((h - 1) / 12.0), MAX_ROWS),
-		"cols": min(BASE_COLS + 2 * int((h - 1) / 20.0), MAX_COLS),
-		"kinds": min(BASE_KINDS + int((h - 1) / 8.0), MAX_KINDS),
+		# count stays pairable no matter the height. Same shared step as the
+		# endless builder (difficulty_curve.plateau_int).
+		"rows": CURVE.plateau_int(BASE_ROWS, MAX_ROWS, 2, 12, progress),
+		"cols": CURVE.plateau_int(BASE_COLS, MAX_COLS, 2, 20, progress),
+		"kinds": CURVE.plateau_int(BASE_KINDS, MAX_KINDS, 1, 8, progress),
 		"time_limit": max(MIN_TIME, BASE_TIME - h),
 		"tree_height": h,
 		"score_multiplier": 1.0 + min(1.0, float(h) / 200.0)
