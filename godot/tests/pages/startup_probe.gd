@@ -49,19 +49,10 @@ func _init() -> void:
 	var modes = game.SPECIAL_MODES_SCRIPT.MODES.keys()
 
 	for mode_id in modes:
-		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
 		# Daily settlement rewrites progression from the stored save, so the
 		# unlock index must be re-raised before every entry attempt.
 		game.progression_state["highest_unlocked_level_index"] = 17
 		game.SPECIAL_SESSION._start_special_mode(game, mode_id)
-		if game.special_mode != mode_id:
-			var dbg_cfg = game.game_mode_configs.get(mode_id, {})
-			print("DBG %s: special=%s unlocked=%s unlock_level=%s highest=%s coins=%s" % [
-				mode_id, game.special_mode,
-				str(game.SPECIAL_MODES_SCRIPT.is_mode_unlocked(mode_id, dbg_cfg, int(game.progression_state.get("highest_unlocked_level_index", 0)))),
-				str(dbg_cfg.get("unlock_level", "?")),
-				str(int(game.progression_state.get("highest_unlocked_level_index", 0))),
-				str(int(game.progression_state.get("coins", 0)))])
 		check(game.special_mode == mode_id, "%s enters its session" % mode_id)
 		check(game.stage_status == game.STATUS_PLAYING, "%s lands in PLAYING" % mode_id)
 
@@ -192,7 +183,6 @@ func _init() -> void:
 		game.SPECIAL_SESSION._exit_special_mode(game)
 		check(game.special_mode == "" && game.stage_status == game.STATUS_PLAYING,
 			"%s exits back to the campaign" % mode_id)
-		print("DBG %s done: highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
 
 	# perfect mode must fail on the third miss: two misses warn, the third
 	# one fails the stage and bumps the miss counter each time.

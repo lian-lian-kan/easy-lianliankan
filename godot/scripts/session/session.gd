@@ -184,13 +184,15 @@ static func _reset_session_meta(game, level):
 
 
 # 指定连消：从当前盘面挑一对可连消的格子作为金光目标。
+# 纯状态变更——不刷新棋盘视觉：开局路径在棋盘挂载、按钮网格重建之前调用这里
+# （此时新盘行列与旧按钮网格不一致，刷新会越界），统一由 _reset_level_session
+# 尾部的 _refresh_board_visuals 覆盖；对局中重挑由 _execute_match_core 尾部刷新覆盖。
 static func _pick_target_pair(game):
 	var hint = game._find_any_hint(game.board)
 	if hint.empty():
 		game.target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
 		return
 	game.target_pair = [hint["a"], hint["b"]]
-	game._refresh_board_visuals()
 
 
 # Final UI sync of the level reset.
