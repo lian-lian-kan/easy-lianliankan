@@ -17,9 +17,17 @@ Checks, in order:
   6. Scale gates              — function/file length ceilings so quality does
      not erode as the codebase grows (game.gd exempt from the file gate:
      it is the documented thin-shell composition root).
+  7. Top-level hygiene        — statements outside any body (botched
+     extraction leaves dedented statement soup).
+  8. Test exit honesty        — a test that can fail (quit(1)) must not end
+     with a bare quit(0): quit() is last-call-wins, so a trailing quit(0)
+     silently turns a red suite green (progression_test and
+     special_modes_test shipped false-green this way).
 
 Exit code 0 when clean, 1 when any ERROR-level finding exists.
 Run:  python3 tools/shell_audit.py
+A 1:1 perl port lives in tools/port_shell_audit.pl for dev boxes without
+python3; keep the two in sync when either side changes.
 """
 
 import glob
@@ -30,7 +38,7 @@ ROOT = "."
 # Scripts live in domain subdirs (board/modes/session/ui/pages/content);
 # game.gd and the audio_manager autoload stay at the scripts/ root.
 SCRIPTS = sorted(glob.glob("scripts/**/*.gd", recursive=True))
-ALL_FILES = SCRIPTS + sorted(glob.glob("tests/*.gd")) + sorted(glob.glob("scenes/*.tscn"))
+ALL_FILES = SCRIPTS + sorted(glob.glob("tests/**/*.gd", recursive=True)) + sorted(glob.glob("scenes/*.tscn"))
 
 FUNC_LEN_WARN = 35
 FUNC_LEN_MAX = 45
@@ -126,7 +134,7 @@ def main():
     for path, src in sources.items():
         if not path.endswith("game.gd"):
             others_text += src
-    for f in glob.glob("tests/*.gd") + glob.glob("scenes/*.tscn"):
+    for f in glob.glob("tests/**/*.gd", recursive=True) + glob.glob("scenes/*.tscn"):
         others_text += read(f)
     game_src = sources["scripts/game.gd"]
     orphan_vars = []
@@ -164,7 +172,7 @@ def main():
     # --- 5) cross-module calls resolve ---
     # Aliases are file-scoped consts, so each file's own preload map is used.
     print("== 5. cross-module calls resolve")
-    all_gd = SCRIPTS + sorted(glob.glob("tests/*.gd"))
+    all_gd = SCRIPTS + sorted(glob.glob("tests/**/*.gd", recursive=True))
     module_funcs = {}
     for path in all_gd:
         module_funcs[path] = set(re.findall(r"(?m)^(?:static )?func (\w+)\(", read(path)))
@@ -270,6 +278,22 @@ def main():
                     soup += 1
     if soup == 0:
         print("  ok  no stray top-level statements")
+
+    # --- 8) test exit honesty: an assertion failure must reach the exit code ---
+    # SceneTree.quit() is last-call-wins, so a trailing bare quit(0) after a
+    # failure quit(1) overwrites it — the suite can never go red.
+    print("== 8. test exit honesty (quit(1) is never overridden by quit(0))")
+    liars = 0
+    for path in sorted(glob.glob("tests/**/*.gd", recursive=True)):
+        lines = read(path).split("\n")
+        quits = [ln for ln in lines if re.match(r"^\s*quit\(", ln)]
+        if not any(re.search(r"\bquit\(1\)", ln) for ln in lines):
+            continue  # probes/screenshots that never assert-fail
+        if quits and re.match(r"^\s*quit\(0\)\s*$", quits[-1]):
+            report("ERROR", f"{path} can fail (quit(1)) but its last quit is a bare quit(0) that overwrites the exit code")
+            liars += 1
+    if liars == 0:
+        print("  ok  every failing test keeps its failure exit code")
 
     finish()
 
