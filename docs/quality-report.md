@@ -8,8 +8,8 @@
 |---|---|---|
 | 后端测试覆盖率 | backend.yml（pytest-cov） | **`--cov-fail-under=100`，当前 100%**（39 用例，真 PG16+Redis7） |
 | 后端静态审计 | tools/backend_audit.py | 函数 ≤45 行、禁 print/裸 except/通配导入 |
-| 游戏静态审计 | godot/tools/shell_audit.py | 薄壳一致性、connect 目标、孤儿壳、Godot4 语法泄漏 |
-| 游戏无头测试 | deploy.yml | **33 项无头测试/探针**入 CI 清单（godot/tests 共 37 文件），全部逻辑域有专属直测 |
+| 游戏静态审计 | godot/tools/shell_audit.py | 薄壳一致性、connect 目标、孤儿壳、Godot4 语法泄漏、跨模块调用解析、规模棘轮（函数≤45 行）、顶层卫生、测试退出诚实性（quit(1) 不得被末尾 quit(0) 覆盖） |
+| 游戏无头测试 | deploy.yml | **55 项无头测试/探针**入 CI 清单（godot/tests 共 58 文件，截图工具与 shell 专用 web_entry 留根不入），全部逻辑域有专属直测 |
 | 生产端到端 | prod-e2e-check.yml（手动） | 真 Chrome 开线上页，断言云同步 API 流量 |
 
 ## 测试覆盖矩阵（游戏端：模块 → 专属测试）
@@ -125,7 +125,98 @@
   startup_probe 增加签到/商店页空账号渲染断言（页面打开可见、布局非空、回主页关闭）。
   后端 README 限流矩阵与代码一致性核对完成（Round 15 门禁 + 本轮五处数值同步）。
 
+- **Round 18 交互域成立（2026-09-19）**：棋盘手势从 game_input/drag_chain/session 收敛为
+  `scripts/interactions/` 多阶段交互域——interaction_registry（交互类型登记：优先级/手势/
+  armed 维度/阶段表/每阶段提示）、interaction_manager（路由门面 + 阶段查询 + reset/cancel）、
+  pair_select / memory_pick / power_target / drag_link 四个 handler。既有行为严格等价
+  （56 项测试全绿）；新增 interaction_manager_test 74 项直测（注册表不变量/路由优先级/
+  配对与彩虹阶段推进/阶段提示/门禁/生命周期），CI 清单 56→57 项。行为增量仅一处：
+  彩虹收下第一块后补播「再点一块」的阶段提示（文案全部复用既有字符，字体子集免重跑）。
+
+- **Round 19 规模警戒线清零（2026-09-19）**：shell_audit 8 项存量 WARN 全部清偿——
+  page_router 710→333（按内容分族拆出 page_records 316（旅程/图鉴/数据/大树/成就）与
+  page_events 125（活动页），路由壳 + 动线页留下；PAGE_EVENTS 别名与页面 id 常量撞名
+  一并规避）；六个 36~44 行函数拆至 ≤35 行（_build_modes_hub/_build/refresh_editor/
+  _pause_buttons（四段同构按钮表驱动化）/_resolve_special_clear（按模式完赛分支抽出）/
+  _update_tile_sizes（可用面积计算抽出））；删除孤儿成员 push_http（全仓零引用死成员）；
+  删除 Godot 4 遗留的 progression_test.gd.uid。审计七项全过且零警告。
+
+- **Round 20 tests/ 分域 + 探针离线化（2026-09-19）**：58 个测试文件越过 growth 剧本
+  阈值，按域镜像子目录（board/interactions/modes/session/ui/pages/content，shell 专用
+  web_entry 留根），deploy.yml 清单改域前缀路径 + quit 守卫改 find，shell_audit 三处
+  glob 改递归。**顺带修掉一个真 flake**：11 个启动真实场景的探针没有像 drag_probe 那样
+  屏蔽 LIANLIAN_API_BASE，本地跑会打真实生产后端——慢响应恰好在断言中途 adopt 云存档
+  重建棋盘，panels_probe 以「previously freed instance」崩溃（复现依赖网络时序与序列
+  累计时长，单跑必过所以隐蔽）。全部补齐黑洞环境变量后，此前 100% 复现的序列修复。
+
+- **Round 21 视觉重设计 + 颜色解析修复（2026-09-20）**：① 全局真 bug——13 处
+  8 位 hex 颜色 `Color("RRGGBBAA")` 被 Godot 3 错误解析（消息横幅变蓝、控制按钮
+  阴影变绿、全应用卡片阴影 alpha=0 隐形），统一替换为 `Color8(r,g,b,a)`，这是
+  界面"平、没有质感"的主要根源；② 按钮四态文字色（悬停不再回落主题默认灰，
+  按背景亮度推导深底白字/浅底粉字）；③ 首页重设计为「樱花请柬」构图——竖向
+  渐变底 + 柔光圆斑 + 花瓣飘落层（PetalDrift 内类）+ 白色玻璃英雄卡（药丸徽章/
+  药丸主按钮/同族白卡快捷格），英雄卡宽度经 TitleDriver 逐帧自校正以覆盖窗口
+  缩放与构建期视口竞态；④ 新增 tools/screenshot.gd 视觉自查工具（真窗口四视
+  角截图到 output/ui-shots/）。回归锁：ui_style_test 四态文字色 + 阴影 alpha、
+  panels_probe 横幅玫瑰色。新文案全部复用既有字符，字体子集无需重跑。
+
+- **Round 22 首页少女向重构（2026-09-21）**：首页从「素雅卡片」升级为少女向
+  游戏标题画面——甜系天空三段渐变、标题白圈光晕、底部双层山丘剪影、✨ 呼吸
+  闪烁、花瓣星星混合飘落；英雄卡内改为贴纸描边大标题、糖果主按钮（4px 白圈
+  描边）、花边圆点分隔线 ×2、马卡龙底色图标徽章快捷卡（emoji 徽章在上、名字
+  在下，三色轮换）。工程要点：Button 不会把内嵌 VBox 计入最小尺寸，图标卡列
+  宽给常量下限 140 + EXPAND 拉伸（与驱动器解耦，避免构建期视口竞态烤死列宽）；
+  驱动器兼管英雄卡宽逐帧收敛与星星闪烁。字形 🌷⭐✨🌸🎀 均在既有字体子集
+  覆盖内，无需重跑。四视角截图（output/ui-shots/）逐张人工验收。
+
+- **Round 23 面板/会话分册拆分（2026-09-21）**：两块超 500 行的非编排文件按
+  内容分族落册——ui_panels 586→262（弹窗框架 + 暂停/攀登树面板）+ 新
+  ui_preferences 332（引导/设置/数据迁移偏好族，框架壳经 game.UI_PANELS 复用；
+  game.gd 七个薄壳重指）；session 551→392（生命周期/判负）+ 新 session_settle
+  181（过关结算/连击计分/成就发放，session.gd 留五个委托薄壳保 game.gd 与
+  测试调用点零改动）。shell_audit 七项零警告。
+
+- **Round 24 舞台字幕单例重建 bug（2026-09-21，tests 抓到的真产品缺陷）**：
+  开场字幕 Label 带 1.8s 兜底自毁计时器，自毁后 `stage_callout_label` 成员残留
+  悬空引用——Godot 3 里已释放实例 `== null` 为 false，`_show_stage_callout` 的
+  重建守卫因此永不触发：**第一关之后所有关卡的开场字幕都静默失效**。修复：
+  重建/隐藏两处守卫补 `is_instance_valid`；panels_probe 增加固锁（free 单例后
+  再 show 必须重建）。该 flake 曾以「previously freed instance」形态间歇出现，
+  本轮拆分引发的时序抖动让它稳定复现，才得以定根因。
+
 ## 已知边界（记录不阻塞）
 
 - 集群 pod→Service 通路故障期间，config.yaml 临时经 NodePort 连 PG/Redis（回退条件见文件注释）。
 - session.gd 复活/超时块与 AudioManager/活动节点强耦合，无头直测不可行——由 startup_probe/panels_probe 等场景探针覆盖。
+
+- **Round 25 测试套件假绿清零 + 开局可解性真 bug（2026-09-22）**：Godot 3 的
+  quit() 是 last-call-wins——4 个测试文件（special_modes/progression/
+  path_overlay/web_entry）失败分支 quit(1) 后被末尾 quit(0) 覆盖退出码，
+  **断言失败从不反映到 CI**。假绿清零暴露并修复：① special_modes_test 的
+  endless kinds 期望停留在数据表对齐线上前的旧曲线（改 config 驱动）；
+  ② progression_test 的平铺键守卫自 92874bf 起从没绿过（契约与产品写入路径
+  不符，重写为 `<mode>_result` 真实路径 + FLAT_BEST_KEYS 无孤儿键双射不变量）；
+  ③ **真产品 bug**——`_create_playable_board` 的开局可解性检查经可玩性过滤器
+  读到的是上一局 `game.board`（候选棋盘未挂载），board_fit 形状可变后恶化为
+  越界+石头/迷雾判定用错网格；board_engine 拆 `ensure_playable`、game.gd 先
+  挂载候选再检查，startup_probe 回归守卫钉死（旧盘涂满石头再开新局必有解）；
+  ④ page_router_test FakeGame 补齐旅程页构建表面并加 15 节点断言。
+  shell_audit 新增第 8 项"测试退出诚实性"硬门禁，假绿模式自此无法合入。
+
+- **Round 26 MODES 玩法注册表（2026-09-22）**：加一个玩法从 5 文件 9 处散表收敛为
+  注册表 1 行声明（icon/label/blurb/intro/cat/settle/sub），标签/横幅/面板行/
+  分组/结算表/副标题/统计页/存档 schema 八个表面全部派生；GDScript 3 无静态变量，
+  派生走 special_modes 静态函数（record_modes/flat_best_keys/mode_categories），
+  消费方 4 处函数化接线。统计页手写行已真实漂移（drag/edu 从未上榜）——派生后
+  自愈。mode_meta_test 守卫升级为注册表完整性强制（镜像/字段/分类/派生键/成就/
+  schema 六类违规直接 CI 红）。
+
+- **Round 27 startup_probe 注册表化 + 本地试玩环境（2026-09-22）**：探针玩法清单从手写
+  27 项数组改为遍历 `MODES.keys()`，match 兜底臂改为直接 FAIL（"no startup witness"）——
+  新玩法注册后无专属启动断言即 CI 红，drag/edu 首次被全量探测。本地导出模板装好后全量
+  导出 + dev-serve.pl 局域网/gzip 直供，手机真机试玩闭环。
+- **Round 28 Round 18-27 批次合入 + 审计对拍工具化（2026-09-23）**：前会话积累的整批
+  改动以四主题提交合入（tests 分域 / CI 与门禁工具 / 产品代码 / docs）；shell_audit 的
+  perl 对拍固化为 `tools/port_shell_audit.pl`（8 项 1:1、与 python 版互注同步），修掉
+  perl 嵌套 /g 的 pos() 重置死循环与 `$path::` 插值坑，阴性对照（假悬挂调用 + quit 假绿）
+  确认可抓。本地 58 项无头测试全绿 + 八项门禁零警告。

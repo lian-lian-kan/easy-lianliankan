@@ -1122,3 +1122,39 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **现场**：用户线上截图显示仍在玩旧固定布局（83dcd69 时代的 8 行 x 6 列 + 大留白）。排查：线上 sw.js BUILD=12592bb、shell 已带更新逻辑——部署本身没问题，用户的浏览器被 SW 旧缓存钉在旧包（cache-first 的 wasm/pck 要等新 SW 后台预取 ~60MB 完成激活后才换新）。
 - **修复**：shell 更新策略从"自动 reload"改为可见提示条——controllerchange 且此前已被 SW 接管（排除首访噪音）时，页面顶部弹"🌸 新版本已就绪 [立即更新]"横幅，玩家自选切换时机，不会打断对局；旧包也因此不再静默滞留一整个访问周期。
 - Validation: 线上 BUILD=12592bb 验证；提示条逻辑入 shell 待 CI 导出后线上可见。
+
+## 2026-09-22 (代码质量 Round 25：测试套件假绿清零 + 开局可解性真 bug 修复)
+
+- Context: 会话目标"继续重构和完善代码"。入场先验证工作区（含前会话未合入的 Round 18-24 改动）状态，发现全套件最大的质量问题不在产品代码而在测试本身：**quit() 假绿**。Godot 3 的 SceneTree.quit() 是"最后一次调用生效"——含断言的测试在失败分支 quit(1) 后继续跑完，末尾的 quit(0) 会把退出码覆盖回 0（最小实验实证）。全仓 57 个测试文件中 4 个带此模式（special_modes_test / progression_test / path_overlay_input_passthrough_test / web_entry_status_mode_test），其余已是个别新文件引入的 failures 计数条件尾部。另两个截图工具（offscreen/visual_meta）无断言豁免。
+- **假绿掩盖的真实问题（逐个暴露并修复）**：
+  ① special_modes_test "endless round 3 kinds grew" 断言失败被吞——期望值停留在 09-19 数据表对齐线上之前的 kinds_increment_every=1 旧曲线（现在 6+2×5=16）。改为 config 驱动期望（base_kinds/kinds_increment_every 源值一并钉死），防数据表再静默漂移。
+  ② progression_test "a flat best can be applied" 断言失败被吞（09-15 表驱动化提交 92874bf 写下的守卫从出生起就没绿过）：它期望 apply_update 支持直接平铺键 patch（{"tray_best_score": 77}），但产品代码只走 `<mode>_result` → RECORD_MODES[mode].best_key 路径，游戏侧也从无直接平铺键写入。判定为测试契约错误而非产品 bug——重写守卫对齐真实写入路径（tray_result 77 落 tray_best_score、低重复不抬最佳），并升级为更强的增长不变量：**FLAT_BEST_KEYS 每个键必须有写入方**（RECORD_MODES best_key ∪ {time_attack_best_score, tree_best_height} 双射，孤儿键=永远写不进的死纪录）。
+- **真产品 bug：开局可解性检查判的是上一局的棋盘**。startup_probe 稳定输出 25 条 `Invalid get index '8'..'14' (on base: 'Array')`（此前被当作探针容错噪音）：`_create_playable_board` 在 create_playable_board 内部跑"开局必有可连对"检查时，可玩性过滤器（is_rock/is_fogged/锁链）读的是 `game.board`——**候选棋盘尚未挂载，读到的是上一局残留**。board_fit 引入"同牌数形状随屏幕推导"后新棋盘行列不再与旧棋盘一致，stale 读取从"语义可疑"恶化为"越界报错+石头/迷雾判定用错网格"（开局可解性保证失效）。修复：board_engine 拆出 `ensure_playable(board, filter...)`（create_playable_board = create_board + ensure_playable，行为等价），game.gd 壳改为**先挂载候选棋盘再跑可解性检查**。修复后 startup_probe SCRIPT ERROR 25→1（剩 1 条为 ogg 导入环境噪音）。回归守卫入 startup_probe rock 段：把上一局棋盘涂满 ROCK_VALUE 再开新局，断言新局仍有可连对且尺寸不被污染（bug 存在时确定性红）。
+- **page_router_test FakeGame 补课**：show_page("level_map") 会真实构建旅程页，但假体缺 `_font_at_size`/`campaign_levels` 等，页面构建第一行即 SCRIPT ERROR 中断——测试名义上跑了 level_map 实际啥也没盖到。补齐假体表面（真 ui_fonts 工厂 + 15 关表 + 解锁谓词），新增"旅程页构建出全部 15 个关卡节点"断言，SCRIPT ERROR 6→0。
+- **门禁固化**：shell_audit 新增第 8 项"测试退出诚实性"——含 quit(1) 的测试文件，最后一个 quit 语句若是无条件 quit(0) 即 ERROR（git grep 语义：quit() 是 last-call-wins）。修复后全仓对拍零命中，假绿模式自此进 CI 硬门禁。
+- Validation: 本地 Godot 3.6.2 全量 55 项无头测试 rc 全 0（两轮：修复中途一轮 + 终验一轮）；web_entry 专项绿；shell_audit 第 8 项 perl 对拍零命中（本机无 python，正式执行交 CI）。工作区同时承载前会话 Round 18-24 未合入改动与本轮，二者一体验证。
+
+## 2026-09-22 (重构 Round 26：MODES 玩法注册表——加一个玩法从 9 处散表收敛为 1 行声明)
+
+- Context: 用户定向"底层代码能力要支撑功能规模再翻好多倍"。摸底量化：加一个新玩法要在 5 个文件改约 9 处散表（DEFAULT_CONFIGS/MODE_LABELS/INTRO_TEXTS/RECORD_MODES/SUBTITLE_RECORDS/MODE_CATEGORIES/modes_panel_rows/统计页行/progression FLAT_BEST_KEYS + 成就文案），且散表已经真实漂移——统计页手写行里 drag/edu 两个玩法的最佳分从未上榜。这正是规模化路径上的头号阻力。
+- **注册表化**：special_modes_data.gd 新增 `MODES` 注册表（29 个特殊玩法 × 7 字段：icon/label/blurb/intro/cat/settle/sub，声明顺序即面板展示顺序）+ `CATEGORY_TITLES`（组标题与顺序，组内成员由 cat 字段派生）+ `CAMPAIGN_LABELS`（战役规则名不进注册表）；删除 MODE_LABELS/INTRO_TEXTS/各自 EXTRA/RECORD_MODES/SUBTITLE_RECORDS/MODE_CATEGORIES 六张散表。
+- **派生视图**（special_modes.gd 静态函数，GDScript 3 无 static var 故由 const 表即时派生，调用方零状态）：`record_modes()`（结算表，键名走 <id>_result/<id>_best_score/<id>_first 注册表约定）、`flat_best_keys()`（存档 schema 单一来源 = 结算玩法 best keys + time_attack/tree 两个专属路径）、`mode_categories()`（面板分组）、`mode_label()/intro_text()/subtitle_record_key()`、`modes_panel_rows()`（daily/endless/tree 三个动态详情保留专属分支，其余统一 blurb+最佳分）。消费方接线：progression（schema 派生 + 结算循环）、special_session（结算表）、page_router（分组迭代）、page_records（统计页行派生——顺带修好 drag/edu 缺行漂移）、ui_hud（零改动，函数签名保持）。
+- **守卫升级**：mode_meta_test 增长守卫重写为注册表完整性强制——注册表与配置表互为镜像（漏一边即红）、行七字段齐全且取值合法（分类存在、sub ∈ best/dyn/fall、icon/label 非空）、每个分类至少一个成员、副标题派生逐模式精确、flat_best_keys 27 键覆盖全部结算玩法且 progression schema 镜像、纪录成就均已定义。今后加玩法漏配任意表面，CI 直接红，不再静默回落。
+- 行为增量（刻意）：统计页玩法行标题统一为「icon+label+最佳」（原手写行长短不一），并补上 drag/edu 两行；其余表面（面板行/副标题/结算文案/分组标题）逐字等价。
+- Validation: mode_meta/progression/page_router/economy 四个核心受影响测试先行全绿；全量 55 项无头测试 rc 全 0、零 Parse Error、零 CHECK FAILED；已删表全仓零残留引用。shell_audit 交 CI 复核。
+
+## 2026-09-22 (Round 27：startup_probe 注册表化 + 本地手机试玩环境)
+
+- **startup_probe 增长自动化（修一处真实漂移）**：探针的玩法清单原是手写 27 项数组——最新的 drag/edu 两个玩法从未被探测（又一个散表漂移活例）。改为遍历 `MODES.keys()`（注册表即清单），match 兜底臂从"通用棋盘检查"改为**直接 FAIL（"no startup witness"）**：新玩法注册后若无专属启动断言，CI 立即红——架构文档清单的第⑤步从"记得去加"变为"不加就红"。补齐 8 个缺失分支（daily 时钟带/偶数行、time_attack 配置时钟、endless 无时钟+第1轮、zen 无时钟、hell 紧时钟、gravity 偶数行、drag 8x8 锁形、edu 概念牌面），drag/edu 首次全量探测全绿。
+- **本地手机试玩环境**：本机原无 3.6.2 导出模板——下载官方 tpz（526MB）解包装入 %APPDATA%/Godot/templates/3.6.2.stable，本地全量导出当前工作区代码（含 Round 18-27 全部改动）到 public/godot/，project.godot 复核无被 import 步骤改写（allow_hidpi/stretch 完好）。dev-serve.pl 升级：绑定地址参数（0.0.0.0 供局域网手机访问）+ Accept-Encoding 协商 + `<file>.gz` 预压缩直供（wasm 19.8MB→5.4MB、pck 3.7MB→3.4MB，wifi 首载显著提速），wasm/pck/js 已预压缩入库旁。served sw.js BUILD 置为 local-0922 强制老缓存设备换新。调试支线：首启实例未生效 gzip（同端口双绑定的陈年实例截流），停掉重启后逐请求日志实证 gz 协商生效。
+- 试玩入口：手机连同一 WiFi 开 http://192.168.1.13:8080/godot/（本机 http://localhost:8080/godot/）；如手机打不开是 Windows 防火墙拦 Git Bash perl 入站，放行即可；?diag=1 可看 DPR/画布实况。
+- 已知边界：startup_probe 退出后有一条 quit 尾帧的 `_refresh_board_visuals` 越界噪音（ALL PASSED 之后才打印，rc 不受影响），源于 rock 回归场景替换 board 后的帧尾残留回调，属探针自造噪音非产品问题，待后续定位。
+- Validation: startup_probe 29 玩法全绿（rc=0、ALL PASSED、零 no-witness）；导出 rc=0 且产物时间戳/尺寸确认含新代码；服务器三端点（html/sw/pck/wasm gz）逐一 curl 验证。
+
+## 2026-09-23 (Round 28：Round 18-27 批次合入 + shell_audit perl 对拍固化)
+
+- **背景**：入场盘点工作区，发现前会话 Round 18-27 全部改动（交互域成立/分册拆分/MODES 注册表/假绿清零/开局可解性修复/视觉重设计/测试分域）积累在工作区从未提交——与本会话目标"及时提交推送"直接冲突。本轮以"验证→记录→合入"为主。
+- **验证**：本地 Godot 3.6.2 全量 58 个测试文件实跑 rc 全 0（含分域后全部路径 + web_entry + 两个截图工具）；shell_audit 八项门禁经 perl 对拍全绿零警告。
+- **shell_audit 本地对拍固化（tools/port_shell_audit.pl，新增）**：此前每轮"本机无 python3"都临时手搓对拍脚本用完即弃，本轮固化为入库工具——python 版 8 项检查 1:1 移植（同级别 ERROR/WARN、同退出码），文件头与 shell_audit.py 互相注明同步义务。移植中修掉两个 perl 坑：① 同变量嵌套 /g while——内层循环耗尽时最后一次失败匹配把 pos() 重置为 0，外层死循环（修法：外层匹配先收集成列表再逐个别扫，顺带修掉嵌套扫漏配的正确性问题）；② "$path::$cur" 被 perl 解析为包限定变量 $path::，改 "${path}::$cur"。**阴性对照**：临时植入假悬挂调用 + quit 假绿样本，对拍脚本 2 ERROR 抓出、退出码 1，非"永远绿"的摆设。
+- **合入结构**：四个主题提交——① tests/ 分域纯移动（暂存区既有）；② CI 清单分域路径 + shell_audit 递归 glob/第 8 项门禁 + port_shell_audit.pl + screenshot.gd + dev-serve.pl；③ 产品代码与测试全部内容改动（Round 18-27）；④ docs 回填 + progress + 首页视觉自查截图（output/ui-shots，符合 output/ 入库惯例）。
+- Validation: 本地 58 项无头测试全绿 + port_shell_audit clean + 阴性对照 2/2 抓出；推送后待 CI deploy 回填（python 版 shell_audit 正式执行）。
