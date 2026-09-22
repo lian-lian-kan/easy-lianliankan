@@ -1,8 +1,11 @@
 extends SceneTree
 
+var failures := 0
+
 func _assert_true(value: bool, message: String) -> void:
 	if value:
 		return
+	failures += 1
 	push_error(message)
 	quit(1)
 
@@ -10,10 +13,12 @@ func _init() -> void:
 	var file := File.new()
 	var path := "res://scripts/game.gd"
 	if not file.file_exists(path):
+		failures += 1
 		push_error("missing file: " + path)
 		quit(1)
 		return
 	if file.open(path, File.READ) != OK:
+		failures += 1
 		push_error("failed to open: " + path)
 		quit(1)
 		return
@@ -30,4 +35,4 @@ func _init() -> void:
 		found,
 		"path_overlay must ignore input so board touch events are not blocked"
 	)
-	quit(0)
+	quit(1 if failures > 0 else 0)

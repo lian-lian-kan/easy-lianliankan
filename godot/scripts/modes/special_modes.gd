@@ -8,12 +8,9 @@ const CURVE = preload("res://scripts/modes/difficulty_curve.gd")
 # Forwarding aliases: existing code and tests read the tables through
 # special_modes.gd, so the data module stays swappable.
 const DEFAULT_CONFIGS = DATA.DEFAULT_CONFIGS
-const MODE_LABELS = DATA.MODE_LABELS
-const INTRO_TEXTS = DATA.INTRO_TEXTS
-const MODE_LABELS_EXTRA = DATA.MODE_LABELS_EXTRA
-const INTRO_TEXTS_EXTRA = DATA.INTRO_TEXTS_EXTRA
-const RECORD_MODES = DATA.RECORD_MODES
-const SUBTITLE_RECORDS = DATA.SUBTITLE_RECORDS
+const MODES = DATA.MODES
+const CATEGORY_TITLES = DATA.CATEGORY_TITLES
+const CAMPAIGN_LABELS = DATA.CAMPAIGN_LABELS
 
 # Pure logic for the special game modes (daily challenge / time attack /
 # endless). Kept free of scene-tree dependencies so it can run headless in
@@ -312,23 +309,63 @@ static func unlock_requirement_text(mode_id: String, config) :
 		return ""
 	return "完成第" + str(int(config.get("unlock_level", 1))) + "关解锁"
 
-# ---- 模式展示元数据（标签 / 开场文案）----
+# ---- 模式展示元数据：全部由 MODES 注册表派生 ----
+
+# 结算纪录表（旧 RECORD_MODES 散表的派生视图）：settle 非空的玩法各得一行，
+# 键名走注册表约定（mode_meta_test 强制）：patch_key=<id>_result、
+# best_key=<id>_best_score、首胜成就=<id>_first。
+static func record_modes() -> Dictionary:
+	var records = {}
+	for mode_id in MODES:
+		var row = MODES[mode_id]
+		if str(row["settle"]) == "":
+			continue
+		records[mode_id] = {
+			"label": str(row["settle"]),
+			"patch_key": str(mode_id) + "_result",
+			"best_key": str(mode_id) + "_best_score",
+			"achievements": [str(mode_id) + "_first"],
+		}
+	return records
+
+# 平铺最佳分键（progression 存档 schema 的单一来源）：
+# 注册表结算玩法的 best_key + time_attack/tree 两个专属结算路径。
+static func flat_best_keys() -> Array:
+	var keys = []
+	for mode_id in record_modes():
+		keys.append(str(mode_id) + "_best_score")
+	keys.append("time_attack_best_score")
+	keys.append("tree_best_height")
+	return keys
+
+# 玩法面板分组（旧 MODE_CATEGORIES 常量的派生视图）：组顺序取 CATEGORY_TITLES，
+# 组内成员与顺序取 MODES 行的 cat 字段。
+static func mode_categories() -> Array:
+	var groups = []
+	for category in CATEGORY_TITLES:
+		var modes = []
+		for mode_id in MODES:
+			if str(MODES[mode_id]["cat"]) == str(category["id"]):
+				modes.append(mode_id)
+		groups.append({"title": str(category["title"]), "modes": modes})
+	return groups
 
 static func mode_label(mode: String) -> String:
-	if MODE_LABELS_EXTRA.has(mode):
-		return str(MODE_LABELS_EXTRA[mode])
-	return str(MODE_LABELS.get(mode, '未知'))
+	if MODES.has(mode):
+		return str(MODES[mode]["label"])
+	return str(CAMPAIGN_LABELS.get(mode, "未知"))
 
 # Empty when the mode's subtitle falls to ui_hud's bespoke branches
-# (daily/endless/moves/perfect) or the campaign line (tray/collect/flip).
+# (sub "dyn") or the campaign line (sub "fall").
 static func subtitle_record_key(mode: String) -> String:
-	return str(SUBTITLE_RECORDS.get(mode, ""))
+	if MODES.has(mode) and str(MODES[mode]["sub"]) == "best":
+		return mode + "_best_score"
+	return ""
 
 static func intro_text(mode_id: String) -> String:
-	if INTRO_TEXTS_EXTRA.has(mode_id):
-		return str(INTRO_TEXTS_EXTRA[mode_id])
-	return str(INTRO_TEXTS.get(mode_id, "特殊模式开始"))
-
+	if MODES.has(mode_id) and str(MODES[mode_id]["intro"]) != "":
+		return str(MODES[mode_id]["intro"])
+	return "特殊模式开始"
 # Stage-opening callout (title banner): mode -> [text, color]. Campaign
 # levels share one format; daily/endless/frost embed their dynamic context.
 static func stage_callout(mode: String, level, level_index: int, endless_round: int):
@@ -416,52 +453,27 @@ static func build_memory_flip_level(config):
 		"score_multiplier": 1.0
 	}
 
+# 玩法面板行：注册表驱动。daily/endless/tree 的详情带动态上下文，走专属分支；
+# 其余玩法统一「blurb · 最佳N分」（有结算纪录的玩法）或纯 blurb。
 static func modes_panel_rows(progression_state) -> Array:
-	var today = date_string(OS.get_date())
-	var daily = progression_state.get("daily_challenge", {})
-	var endless_best = progression_state.get("endless_best", {})
-	var done_today = str(daily.get("last_date", "")) == today
-	return [
-		{"id": "daily", "title": "📅 每日挑战", "detail": "全网同一棋盘 · 连胜%d · 最佳%d分 · %s" % [int(daily.get("streak", 0)), int(daily.get("best_score", 0)), "今日已完成" if done_today else "今日未完成"]},
-		{"id": "time_attack", "title": "⏱️ 限时挑战", "detail": "60秒起，消除得时间 · 最佳%d分" % int(progression_state.get("time_attack_best_score", 0))},
-		{"id": "memory", "title": "🎁 盲盒模式", "detail": "记忆翻牌配对 · 最佳%d分" % int(progression_state.get("memory_best_score", 0))},
-		{"id": "frost", "title": "❄️ 冰雪挑战", "detail": "冰冻方块要消除两次 · 最佳%d分" % int(progression_state.get("frost_best_score", 0))},
-		{"id": "zen", "title": "🍵 休闲模式", "detail": "没有时限，纯享受 · 最佳%d分" % int(progression_state.get("zen_best_score", 0))},
-		{"id": "hell", "title": "🔥 地狱模式", "detail": "大盘少图案超紧时间 · 最佳%d分" % int(progression_state.get("hell_best_score", 0))},
-		{"id": "moves", "title": "🧮 步数挑战", "detail": "步数有限精打细算 · 最佳%d分" % int(progression_state.get("moves_best_score", 0))},
-		{"id": "race", "title": "🤖 竞速对战", "detail": "和机器人抢消·先完成者胜 · 最佳%d分" % int(progression_state.get("race_best_score", 0))},
-		{"id": "stack", "title": "🥞 叠层模式", "detail": "上层压下层先消上层 · 最佳%d分" % int(progression_state.get("stack_best_score", 0))},
-		{"id": "gravity", "title": "🍎 重力模式", "detail": "消除后方块掉落补位 · 最佳%d分" % int(progression_state.get("gravity_best_score", 0))},
-		{"id": "fog", "title": "🌫️ 迷雾模式", "detail": "边缘迷雾随消除退散 · 最佳%d分" % int(progression_state.get("fog_best_score", 0))},
-		{"id": "chain", "title": "⛓️ 锁链模式", "detail": "相邻消除解锁锁链 · 最佳%d分" % int(progression_state.get("chain_best_score", 0))},
-		{"id": "fever", "title": "🌶️ 狂热模式", "detail": "全程x1.5分消除返时间 · 最佳%d分" % int(progression_state.get("fever_best_score", 0))},
-		{"id": "perfect", "title": "💎 完美模式", "detail": "无时限但失误3次即败 · 最佳%d分" % int(progression_state.get("perfect_best_score", 0))},
-		{"id": "tray", "title": "🀄 叠叠消", "detail": "点牌入槽三张即消 · 最佳%d分" % int(progression_state.get("tray_best_score", 0))},
-		{"id": "collect", "title": "🎯 收集挑战", "detail": "限时集齐目标图案 · 最佳%d分" % int(progression_state.get("collect_best_score", 0))},
-		{"id": "flip", "title": "🃏 翻翻乐", "detail": "记忆翻牌全消 · 最佳%d分" % int(progression_state.get("flip_best_score", 0))},
-		{"id": "rock", "title": "🪨 障碍模式", "detail": "石头牌挡路炸弹开路 · 最佳%d分" % int(progression_state.get("rock_best_score", 0))},
-		{"id": "defuse", "title": "💣 拆弹行动", "detail": "诅咒方块限时拆除 · 最佳%d分" % int(progression_state.get("defuse_best_score", 0))},
-		{"id": "target", "title": "✨ 指定连消", "detail": "金光指哪消哪 · 最佳%d分" % int(progression_state.get("target_best_score", 0))},
-		{"id": "shift", "title": "🔄 变脸模式", "detail": "图案偷偷换位置 · 最佳%d分" % int(progression_state.get("shift_best_score", 0))},
-		{"id": "slide", "title": "🧲 滑移模式", "detail": "每消一对整行滑移 · 最佳%d分" % int(progression_state.get("slide_best_score", 0))},
-		{"id": "defense", "title": "🧟 守卫模式", "detail": "消除击退怪物近身即败 · 最佳%d分" % int(progression_state.get("defense_best_score", 0))},
-		{"id": "sum10", "title": "🔟 合十消", "detail": "两数相加为10即可消 · 最佳%d分" % int(progression_state.get("sum10_best_score", 0))},
-		{"id": "duel", "title": "👫 同屏对战", "detail": "轮流消牌分高者胜 · 最佳%d分" % int(progression_state.get("duel_best_score", 0))},
-		{"id": "drag", "title": "🖋️ 连线消", "detail": "一笔拖过相邻同款三连即消 · 最佳%d分" % int(progression_state.get("drag_best_score", 0))},
-		{"id": "edu", "title": "🎓 知识配对", "detail": "每日轮换知识主题配对 · 最佳%d分" % int(progression_state.get("edu_best_score", 0))},
-		{"id": "endless", "title": "∞ 无尽模式", "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]},
-		{"id": "tree", "title": "🌳 攀登树", "detail": "望不到头的大树逐层攀登 · 最佳第%d层" % int(progression_state.get("tree_best_height", 0))}
-	]
-
-
-# Entry grouping for the modes panel; every mode id must appear exactly once.
-# Titles are category headers rendered above each group's cards.
-const MODE_CATEGORIES = [
-	{"title": "🏁 竞速限时", "modes": ["daily", "time_attack", "hell", "fever"]},
-	{"title": "🧠 记忆翻牌", "modes": ["memory", "flip", "tray"]},
-	{"title": "⚙️ 机制挑战", "modes": ["frost", "stack", "gravity", "fog", "chain", "rock", "defuse", "target", "shift", "slide", "defense", "sum10"]},
-	{"title": "🎓 知识新范式", "modes": ["edu", "drag"]},
-	{"title": "👥 双人", "modes": ["race", "duel"]},
-	{"title": "🌙 休闲自定", "modes": ["zen", "moves", "perfect", "collect"]},
-	{"title": "∞ 无尽", "modes": ["endless", "tree"]},
-]
+	var rows = []
+	for mode_id in MODES:
+		var spec = MODES[mode_id]
+		var title = str(spec["icon"]) + " " + str(spec["label"])
+		if mode_id == "daily":
+			var daily = progression_state.get("daily_challenge", {})
+			var done_today = str(daily.get("last_date", "")) == date_string(OS.get_date())
+			rows.append({"id": mode_id, "title": title, "detail": "全网同一棋盘 · 连胜%d · 最佳%d分 · %s" % [int(daily.get("streak", 0)), int(daily.get("best_score", 0)), "今日已完成" if done_today else "今日未完成"]})
+			continue
+		if mode_id == "endless":
+			var endless_best = progression_state.get("endless_best", {})
+			rows.append({"id": mode_id, "title": title, "detail": "不限时，棋盘越滚越大 · 最佳第%d轮 · 最高%d分" % [int(endless_best.get("round", 0)), int(endless_best.get("score", 0))]})
+			continue
+		if mode_id == "tree":
+			rows.append({"id": mode_id, "title": title, "detail": "望不到头的大树逐层攀登 · 最佳第%d层" % int(progression_state.get("tree_best_height", 0))})
+			continue
+		var detail = str(spec["blurb"])
+		if progression_state.has(str(mode_id) + "_best_score"):
+			detail += " · 最佳%d分" % int(progression_state.get(str(mode_id) + "_best_score", 0))
+		rows.append({"id": mode_id, "title": title, "detail": detail})
+	return rows

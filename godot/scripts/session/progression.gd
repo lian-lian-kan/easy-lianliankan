@@ -32,22 +32,12 @@ static func get_achievement_definitions() :
 	return ACHIEVEMENTS_SCRIPT.get_achievement_definitions()
 
 
-# Flat per-mode best-score keys: the single source of truth shared by
-# default_progress, _normalize_special_records and same_progress, so a new
-# mode is one row here instead of three copy-pasted blocks. The nested
-# records (daily_challenge / endless_best) keep their explicit handling.
-const FLAT_BEST_KEYS = [
-	"time_attack_best_score", "memory_best_score", "frost_best_score",
-	"zen_best_score", "hell_best_score", "moves_best_score",
-	"race_best_score", "stack_best_score", "gravity_best_score",
-	"fog_best_score", "chain_best_score", "tray_best_score",
-	"collect_best_score", "flip_best_score", "fever_best_score",
-	"perfect_best_score", "rock_best_score", "defuse_best_score",
-	"target_best_score", "shift_best_score", "slide_best_score",
-	"defense_best_score", "sum10_best_score", "duel_best_score",
-	"drag_best_score", "edu_best_score",
-	"tree_best_height",
-]
+# Flat per-mode best-score keys: derived from the MODES registry in
+# special_modes_data.gd (the single source) plus the two bespoke settle paths
+# (time_attack / tree). default_progress, _normalize_special_records and
+# same_progress all iterate this, so a new mode needs no progression edit.
+static func flat_best_keys() -> Array:
+	return SPECIAL_MODES.flat_best_keys()
 
 static func default_progress(level_count: int) :
 	var state = {
@@ -73,7 +63,7 @@ static func default_progress(level_count: int) :
 		"tree_milestones": [],
 		"weekly_missions": {"week_key": "", "progress": {}, "claimed": []}
 	}
-	for key in FLAT_BEST_KEYS:
+	for key in flat_best_keys():
 		state[key] = 0
 	return state
 
@@ -185,7 +175,7 @@ static func _normalize_special_records(raw, normalized):
 	var raw_tree_milestones = raw.get("tree_milestones", [])
 	if typeof(raw_tree_milestones) == TYPE_ARRAY:
 		normalized["tree_milestones"] = raw_tree_milestones.duplicate()
-	for key in FLAT_BEST_KEYS:
+	for key in flat_best_keys():
 		normalized[key] = max(0, int(raw.get(key, 0)))
 
 
@@ -313,13 +303,14 @@ static func _apply_special_records(next_state, patch):
 		if typeof(endless) == TYPE_DICTIONARY:
 			next_state["endless_best"]["round"] = max(int(next_state["endless_best"]["round"]), max(0, int(endless.get("round", 0))))
 			next_state["endless_best"]["score"] = max(int(next_state["endless_best"]["score"]), max(0, int(endless.get("score", 0))))
-	# Per-mode best scores: <mode>_result -> RECORD_MODES[mode].best_key
+	# Per-mode best scores: <mode>_result -> record_modes()[mode].best_key
 	# (mode_meta_test enforces the key convention); time_attack predates
 	# the table so it is spelled out.
-	for mode_id in SPECIAL_MODES.RECORD_MODES:
+	var records = SPECIAL_MODES.record_modes()
+	for mode_id in records:
 		var result_key = str(mode_id) + "_result"
 		if patch.has(result_key):
-			var best_key = str(SPECIAL_MODES.RECORD_MODES[mode_id]["best_key"])
+			var best_key = str(records[mode_id]["best_key"])
 			next_state[best_key] = max(int(next_state[best_key]), max(0, int(patch[result_key])))
 	if patch.has("time_attack_result"):
 		next_state["time_attack_best_score"] = max(int(next_state["time_attack_best_score"]), max(0, int(patch["time_attack_result"])))
@@ -336,7 +327,7 @@ static func same_progress(a, b, level_count: int) :
 	var aa = normalize_progress(a, level_count)
 	var bb = normalize_progress(b, level_count)
 	# Flat per-mode bests plus the scalar fields, compared key by key.
-	for key in FLAT_BEST_KEYS:
+	for key in flat_best_keys():
 		if int(aa.get(key, 0)) != int(bb.get(key, 0)):
 			return false
 	for key in ["current_level_index", "highest_unlocked_level_index",

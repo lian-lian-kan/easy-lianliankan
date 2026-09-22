@@ -103,8 +103,15 @@ static func _resolve_special_clear(game):
 		var move_bonus = game.moves_left * 20
 		game.total_score += move_bonus
 		game.level_score += move_bonus
+	_finish_special_clear(game, _special_time_bonus(game))
+
+# 剩余时间按关卡倍率折成奖励分。
+static func _special_time_bonus(game) -> int:
 	var time_bonus_multiplier = float(game._current_level().get("time_bonus_multiplier", 2.0))
-	var time_bonus = int(round(float(game.time_left) * time_bonus_multiplier))
+	return int(round(float(game.time_left) * time_bonus_multiplier))
+
+# 结算发放：奖励入账、停表收场，再按模式走各自的完赛分支。
+static func _finish_special_clear(game, time_bonus):
 	game.total_score += time_bonus
 	game.level_score += time_bonus
 
@@ -116,19 +123,7 @@ static func _resolve_special_clear(game):
 	game.audio.play_win()
 
 	if game.special_mode == "endless":
-		game._patch_progress_state({"endless_result": {"round": game.endless_round, "score": game.total_score}})
-		if game.endless_round >= 5:
-			game._unlock_achievements(["endless_round_5"])
-		var finished_round = game.endless_round
-		game.endless_round += 1
-		game.special_level = game.SPECIAL_MODES_SCRIPT.build_endless_level(game.game_mode_configs.get("endless", {}), game.endless_round)
-		game.stage_status = game.STATUS_CLEARED
-		game._play_stage_clear_celebration(false)
-		game._show_message("第" + str(finished_round) + "轮完成～奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
-		# Kick the advance timer so the next (bigger) round actually starts.
-		game.level_advance_timer.stop()
-		game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
-		game.level_advance_timer.start()
+		_advance_endless_round(game, time_bonus)
 	elif game.special_mode == "tree":
 		_advance_tree_layer(game, time_bonus)
 	elif game.special_mode == "custom":
@@ -137,6 +132,22 @@ static func _resolve_special_clear(game):
 		game._record_special_completion()
 		game.stage_status = game.STATUS_COMPLETED
 		game._play_stage_clear_celebration(true)
+
+# 无尽模式一轮完成：记成绩、发徽章、推进到更大的一轮并踢推进计时器。
+static func _advance_endless_round(game, time_bonus):
+	game._patch_progress_state({"endless_result": {"round": game.endless_round, "score": game.total_score}})
+	if game.endless_round >= 5:
+		game._unlock_achievements(["endless_round_5"])
+	var finished_round = game.endless_round
+	game.endless_round += 1
+	game.special_level = game.SPECIAL_MODES_SCRIPT.build_endless_level(game.game_mode_configs.get("endless", {}), game.endless_round)
+	game.stage_status = game.STATUS_CLEARED
+	game._play_stage_clear_celebration(false)
+	game._show_message("第" + str(finished_round) + "轮完成～奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
+	# Kick the advance timer so the next (bigger) round actually starts.
+	game.level_advance_timer.stop()
+	game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
+	game.level_advance_timer.start()
 
 # UGC 试玩结算：a small flat thank-you, no records/missions/leaderboard.
 static func _settle_custom_win(game):
@@ -197,7 +208,7 @@ static func _resolve_tree_buff_pick(game, buff_id):
 static func _record_special_completion(game):
 	game._mission_special_done()
 	var today = game.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
-	var record = game.SPECIAL_MODES_SCRIPT.RECORD_MODES.get(game.special_mode, {})
+	var record = game.SPECIAL_MODES_SCRIPT.record_modes().get(game.special_mode, {})
 	if not record.empty():
 		game._patch_progress_state({record["patch_key"]: game.total_score})
 		var achievements = record["achievements"].duplicate()

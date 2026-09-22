@@ -160,9 +160,15 @@ static func create_playable_board(level, filter_obj = null, filter_method = "", 
 	var cols = int(level.get("cols", 6))
 	var kinds = int(level.get("kinds", 6))
 	var created = create_board(rows, cols, kinds)
-	if find_any_hint(created, filter_obj, filter_method, match_mode).empty():
-		reshuffle_board(created, filter_obj, filter_method, match_mode)
+	ensure_playable(created, filter_obj, filter_method, match_mode)
 	return created
+
+# Deal-solvability pass for an existing grid: reshuffle until a connectable
+# pair exists (the playable filter judges whatever board it reads — callers
+# that route the filter through game state must mount the candidate first).
+static func ensure_playable(board_state, filter_obj = null, filter_method = "", match_mode := ""):
+	if find_any_hint(board_state, filter_obj, filter_method, match_mode).empty():
+		reshuffle_board(board_state, filter_obj, filter_method, match_mode)
 
 # Bomb/rainbow pairs have no connectable path; draw a playful via-top route
 # instead. (-1, col) is the row just above the board, the same edge

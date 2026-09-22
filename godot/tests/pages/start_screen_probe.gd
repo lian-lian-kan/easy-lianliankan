@@ -22,6 +22,9 @@ func _settle(frames):
 		yield(self, "idle_frame")
 
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	print("== start_screen_probe")
 
 	# --- A: probe boot keeps the legacy board-first path ---

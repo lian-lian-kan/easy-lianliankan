@@ -13,6 +13,9 @@ func check(value: bool, message: String) -> void:
 	push_error("FAIL - %s" % message)
 
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	print("== variants_probe")
 	var modes = load("res://scripts/modes/special_modes.gd")
 	var progression = load("res://scripts/session/progression.gd")

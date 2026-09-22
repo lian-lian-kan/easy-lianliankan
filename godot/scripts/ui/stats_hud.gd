@@ -60,7 +60,7 @@ static func _card_style(key):
 	var card_style = StyleBoxFlat.new()
 	card_style.bg_color = PASTEL_BY_KEY.get(key, Color("ffffff"))
 	card_style.set_corner_radius_all(16)
-	card_style.shadow_color = Color("00000010")
+	card_style.shadow_color = Color8(0, 0, 0, 16)
 	card_style.shadow_size = 6
 	card_style.shadow_offset = Vector2(0, 3)
 	card_style.set_border_width_all(1)
@@ -91,7 +91,7 @@ static func set_card_state(game, is_danger):
 	var card = game.stat_values["time_left"]["card"]
 	var card_style = StyleBoxFlat.new()
 	card_style.set_corner_radius_all(12)
-	card_style.shadow_color = Color("00000010")
+	card_style.shadow_color = Color8(0, 0, 0, 16)
 	card_style.shadow_size = 6
 	card_style.shadow_offset = Vector2(0, 3)
 	card_style.set_border_width_all(1)
@@ -121,7 +121,7 @@ static func pulse(game, is_danger, delta):
 	var card_style = StyleBoxFlat.new()
 	card_style.bg_color = Color(1.0, intensity * 0.89, intensity * 0.89, 1.0)
 	card_style.set_corner_radius_all(12)
-	card_style.shadow_color = Color("00000010")
+	card_style.shadow_color = Color8(0, 0, 0, 16)
 	card_style.shadow_size = 6
 	card_style.shadow_offset = Vector2(0, 3)
 	card_style.set_border_width_all(1)

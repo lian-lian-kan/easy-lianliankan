@@ -17,12 +17,14 @@ const BOARD_MECHANICS = preload("res://scripts/board/board_mechanics.gd")
 const BOARD_FIT = preload("res://scripts/board/board_fit.gd")
 
 const UI_PANELS = preload("res://scripts/ui/ui_panels.gd")
+const UI_PREFERENCES = preload("res://scripts/ui/ui_preferences.gd")
 
 const STATS_HUD = preload("res://scripts/ui/stats_hud.gd")
 const PROGRESS_STORE = preload("res://scripts/session/progress_store.gd")
 const GAME_CONFIG = preload("res://scripts/session/game_config.gd")
 const SESSION = preload("res://scripts/session/session.gd")
 const GAME_INPUT = preload("res://scripts/session/game_input.gd")
+const INTERACTIONS = preload("res://scripts/interactions/interaction_manager.gd")
 const FX = preload("res://scripts/ui/fx_layer.gd")
 const BOARD_VIEW = preload("res://scripts/board/board_view.gd")
 const POWERUPS = preload("res://scripts/session/powerups.gd")
@@ -172,7 +174,6 @@ var duel_current = 0
 var pull_http = null
 var audio = null  # AudioManager autoload, cached at ready
 var web_bridge = null
-var push_http = null
 var migration_http = null
 var sync_last_push_ms = -100000
 var cloud_connected = false
@@ -364,9 +365,6 @@ func _start_bgm():
 func _on_tile_pressed(button):
 	return GAME_INPUT._on_tile_pressed(self, button)
 
-func _on_memory_tile_pressed(point, r, c):
-	return GAME_INPUT._on_memory_tile_pressed(self, point, r, c)
-
 func _unhandled_input(event):
 	return GAME_INPUT._unhandled_input(self, event)
 
@@ -512,13 +510,13 @@ func _edu_face_text(value):
 # ── 连线消（drag chain）输入路由 ──
 
 func _on_tile_button_down(button):
-	return DRAG_CHAIN.on_tile_button_down(self, button)
+	return INTERACTIONS.on_tile_button_down(self, button)
 
 func _on_tile_mouse_entered(button):
-	return DRAG_CHAIN.on_tile_mouse_entered(self, button)
+	return INTERACTIONS.on_tile_mouse_entered(self, button)
 
 func _on_tile_button_up(button):
-	return DRAG_CHAIN.on_tile_button_up(self, button)
+	return INTERACTIONS.on_tile_button_up(self, button)
 
 # 指定连消：挑一对可连消的高亮格（无解返回 false）。
 func _pick_target_pair():
@@ -725,7 +723,13 @@ func _create_playable_board(level):
 	var viewport_size = Vector2.ZERO
 	if is_inside_tree():
 		viewport_size = get_viewport_rect().size
-	return BOARD_ENGINE.create_playable_board(BOARD_FIT.level_with_fitted_shape(level, viewport_size), self, "_is_coord_playable", special_mode)
+	var fitted = BOARD_FIT.level_with_fitted_shape(level, viewport_size)
+	# Mount the candidate before the solvability pass: the playable filter
+	# (rock/fog/chain) reads board, and the fitted shape can differ from the
+	# previous session's grid — stale cells must not judge the new deal.
+	board = BOARD_ENGINE.create_board(int(fitted["rows"]), int(fitted["cols"]), int(fitted["kinds"]))
+	BOARD_ENGINE.ensure_playable(board, self, "_is_coord_playable", special_mode)
+	return board
 
 func _contains_coord(list, coord):
 	return BOARD_ENGINE.contains_coord(list, coord)
@@ -793,7 +797,7 @@ func _show_stage_callout(text, color, font_size):
 	return UI_HUD._show_stage_callout(self, text, color, font_size)
 
 func _hide_stage_callout():
-	if stage_callout_label:
+	if stage_callout_label != null and is_instance_valid(stage_callout_label):
 		stage_callout_label.visible = false
 
 func _reset_combo():
@@ -854,19 +858,19 @@ func _mount_modal_panel(panel):
 	return UI_PANELS._mount_modal_panel(self, panel)
 
 func _build_onboarding_panel():
-	UI_PANELS._onboarding_panel(self)
+	UI_PREFERENCES._onboarding_panel(self)
 
 func _build_settings_panel():
-	UI_PANELS._settings_panel(self)
+	UI_PREFERENCES._settings_panel(self)
 
 func _build_pause_panel():
 	UI_PANELS._pause_panel(self)
 
 func _populate_icon_set_options():
-	return UI_PANELS._populate_icon_set_options(self)
+	return UI_PREFERENCES._populate_icon_set_options(self)
 
 func _on_icon_set_selected(index):
-	return UI_PANELS._on_icon_set_selected(self, index)
+	return UI_PREFERENCES._on_icon_set_selected(self, index)
 
 func _apply_glass_style(panel, bg_color, alpha):
 	return UI_STYLE.apply_glass_style(panel, bg_color, alpha)
@@ -903,10 +907,10 @@ func _on_music_toggled(enabled):
 	audio.set_music_enabled(enabled)
 
 func _on_effects_toggled(enabled):
-	return UI_PANELS._on_effects_toggled(self, enabled)
+	return UI_PREFERENCES._on_effects_toggled(self, enabled)
 
 func _on_voice_toggled(enabled):
-	return UI_PANELS._on_voice_toggled(self, enabled)
+	return UI_PREFERENCES._on_voice_toggled(self, enabled)
 
 func _register_perfect_miss():
 	return SESSION._register_perfect_miss(self)
@@ -1369,7 +1373,7 @@ func _sync_push():
 func _on_settings_migration_entry():
 	UI_PANELS.close_modal(self, settings_panel)
 	if migration_panel == null:
-		UI_PANELS._migration_panel(self)
+		UI_PREFERENCES._migration_panel(self)
 	UI_PANELS.open_modal(self, migration_panel)
 
 func _on_settings_migration_close():

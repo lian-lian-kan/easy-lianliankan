@@ -1,8 +1,13 @@
 extends SceneTree
 
+const SPECIAL_MODES = preload("res://scripts/modes/special_modes.gd")
+
+var failures = 0
+
 func _assert_equal(actual, expected, message: String) -> bool:
 	if actual == expected:
 		return true
+	failures += 1
 	push_error(message + " | actual=" + str(actual) + " expected=" + str(expected))
 	quit(1)
 	return false
@@ -10,6 +15,7 @@ func _assert_equal(actual, expected, message: String) -> bool:
 func _init() -> void:
 	var progression = load("res://scripts/session/progression.gd")
 	if progression == null:
+		failures += 1
 		push_error("missing progression.gd")
 		quit(1)
 		return
@@ -105,22 +111,37 @@ func _init() -> void:
 	if not _assert_equal(bool(unseen_again.get("onboarding_seen", true)), false, "onboarding_seen can be cleared"):
 		return
 
-	# Table-driven growth guard: every flat best key declared in
-	# FLAT_BEST_KEYS must exist in a fresh default save and round-trip
+	# Table-driven growth guard: every flat best key derived from the MODES
+	# registry must exist in a fresh default save, be reachable by a writer
+	# (record_modes best_key or one of the bespoke keys), and round-trip
 	# through normalize + same_progress when it changes.
-	var flat = progression.FLAT_BEST_KEYS
-	_assert_equal(flat.size(), 27, "FLAT_BEST_KEYS declares 27 mode bests")
+	var flat = progression.flat_best_keys()
+	_assert_equal(flat.size(), 27, "flat_best_keys derives 27 mode bests")
 	var fresh_save = progression.default_progress(10)
 	var missing := []
 	for key in flat:
 		if not fresh_save.has(key) or int(fresh_save[key]) != 0:
 			missing.append(key)
 	_assert_equal(missing, [], "every flat best key exists in the default save")
-	var bumped = progression.apply_update(fresh_save, 10, {"tray_best_score": 77})
-	_assert_equal(int(bumped.get("tray_best_score", 0)), 77, "a flat best can be applied")
+	# No orphan bests: each flat key must be written by record_modes() or a
+	# bespoke apply path — a key nothing writes would silently never record.
+	var writable := {"time_attack_best_score": true, "tree_best_height": true}
+	var records = SPECIAL_MODES.record_modes()
+	for mode_id in records:
+		writable[str(records[mode_id]["best_key"])] = true
+	var orphans := []
+	for key in flat:
+		if not writable.has(key):
+			orphans.append(key)
+	_assert_equal(orphans, [], "every flat best key has a writer")
+	# Real write path: <mode>_result max-merges into <mode>_best_score.
+	var bumped = progression.apply_update(fresh_save, 10, {"tray_result": 77})
+	_assert_equal(int(bumped.get("tray_best_score", 0)), 77, "a mode result applies to its flat best")
+	_assert_equal(int(progression.apply_update(bumped, 10, {"tray_result": 40}).get("tray_best_score", 0)), 77,
+		"lower repeat result does not raise the best")
 	_assert_equal(progression.same_progress(fresh, bumped, 10), false,
 		"a changed flat best is seen as different")
 	_assert_equal(progression.same_progress(bumped, bumped, 10), true,
 		"identical saves still compare equal")
 
-	quit(0)
+	quit(1 if failures > 0 else 0)

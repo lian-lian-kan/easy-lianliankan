@@ -38,6 +38,15 @@ func _init() -> void:
 	check(hover.bg_color == fill.lightened(0.08), "hover lightens the fill")
 	check(pressed.bg_color == fill.darkened(0.05), "pressed darkens the fill")
 	check(normal.border_color == Color("d6336c"), "normal keeps the border color")
+	# 四态文字色：只覆盖 font_color 会让悬停回落主题默认灰。
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		check(button.get_color(state) == Color("ffffff"), "%s is white on a rose fill" % state)
+	var white_card = Button.new()
+	STYLE.apply_button_style(white_card, Color("ffffff"), Color("f09ebb"))
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		check(white_card.get_color(state) == Color("d6336c"), "%s is rose on a white fill" % state)
+	# 8 位 hex 颜色曾被 Godot 3 错误解析（玫瑰变蓝、阴影变透明）：锁住阴影可见。
+	check(normal.shadow_color.a > 0.0, "button shadow keeps its alpha")
 
 	# --- style_dialog_buttons: rose palette, recursive through children
 	var dialog = PanelContainer.new()

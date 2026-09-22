@@ -64,7 +64,7 @@ static func refresh_ui(game):
 	game._update_power_ups_display()
 
 # Subtitle line: bespoke copy for modes with dynamic context, table-driven
-# "<label> · 最佳N分" for plain record modes (SUBTITLE_RECORDS), campaign
+# "<label> · 最佳N分" for plain record modes (sub=best registry rows), campaign
 # line otherwise.
 
 static func _subtitle_text(game, level_id, level_name, unlocked_level_count):
@@ -159,7 +159,11 @@ static func _hide_message(game):
 static func _show_stage_callout(game, text, color, font_size):
 	# 单例复用（曾经每局新建一次性 Label，播完 alpha=0 却常驻树上，在
 	# 页面/首页之下留下淡影水印）。页面与首页打开时由 _hide_stage_callout
-	# 统一隐藏。
+	# 统一隐藏。注意：兜底自毁计时器释放 Label 后，成员变量会残留悬空
+	# 引用——对已释放实例 == null 为 false，必须用 is_instance_valid 清理，
+	# 否则之后每一关的开场字幕都永远不再显示。
+	if game.stage_callout_label != null and not is_instance_valid(game.stage_callout_label):
+		game.stage_callout_label = null
 	if game.stage_callout_label == null:
 		var label = Label.new()
 		label.name = "StageCallout"
@@ -207,14 +211,14 @@ static func _create_control_button(game, text):
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = Color("f06ba8")
 	normal.set_corner_radius_all(20)
-	normal.shadow_color = Color("f06ba840")
+	normal.shadow_color = Color8(240, 107, 168, 64)
 	normal.shadow_size = 6
 	normal.shadow_offset = Vector2(0, 3)
 
 	var hover = StyleBoxFlat.new()
 	hover.bg_color = Color("ff9ec4")
 	hover.set_corner_radius_all(20)
-	hover.shadow_color = Color("f06ba860")
+	hover.shadow_color = Color8(240, 107, 168, 96)
 	hover.shadow_size = 8
 	hover.shadow_offset = Vector2(0, 4)
 

@@ -313,7 +313,7 @@ static func _dropdown_style():
 	var dropdown_style = StyleBoxFlat.new()
 	dropdown_style.bg_color = Color("ffffff")
 	dropdown_style.set_corner_radius_all(10)
-	dropdown_style.shadow_color = Color("00000010")
+	dropdown_style.shadow_color = Color8(0, 0, 0, 16)
 	dropdown_style.shadow_size = 4
 	dropdown_style.shadow_offset = Vector2(0, 2)
 	dropdown_style.set_border_width_all(1)
@@ -331,7 +331,7 @@ static func _build_message_banner(game):
 	game.message_label.valign = Label.VALIGN_CENTER
 	game.message_label.visible = false
 	var banner_style = StyleBoxFlat.new()
-	banner_style.bg_color = Color("d6336ce6")
+	banner_style.bg_color = Color8(214, 51, 108, 230)
 	banner_style.set_corner_radius_all(16)
 	banner_style.content_margin_left = 14
 	banner_style.content_margin_right = 14
@@ -377,7 +377,7 @@ static func _build_board_panel(game):
 	var board_style = StyleBoxFlat.new()
 	board_style.bg_color = Color("ffffff")
 	board_style.set_corner_radius_all(26)
-	board_style.shadow_color = Color("00000015")
+	board_style.shadow_color = Color8(0, 0, 0, 21)
 	board_style.shadow_size = 10
 	board_style.shadow_offset = Vector2(0, 5)
 	board_style.set_border_width_all(2)

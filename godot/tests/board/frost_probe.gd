@@ -44,6 +44,9 @@ func _find_unfrozen_cell(board, armor):
 	return Vector2(-1, -1)
 
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	print("== frost_probe")
 	var modes = load("res://scripts/modes/special_modes.gd")
 	var scene = load("res://scenes/Main.tscn")

@@ -30,6 +30,9 @@ func _nonzero_grid(grid) -> bool:
 	return false
 
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	print("== startup_probe")
 	var scene = load("res://scenes/Main.tscn").instance()
 	root.add_child(scene)
@@ -38,10 +41,12 @@ func _init() -> void:
 	var game = scene
 	game.progression_state["highest_unlocked_level_index"] = 17
 
-	# mode_id -> [expect_timed(bool), extra check lambda replaced by inline ifs]
-	var modes = ["daily", "time_attack", "endless", "memory", "frost", "zen", "hell",
-		"moves", "race", "stack", "gravity", "fog", "chain", "tray", "collect", "flip",
-		"fever", "perfect", "rock", "defuse", "target", "shift", "slide", "defense", "sum10", "duel", "tree"]
+	# Mode ids come from the MODES registry (the single source in
+	# special_modes_data.gd), so a newly registered mode is probed the moment
+	# it exists — and its dedicated witness branch below is mandatory: the
+	# fallback match arm fails the run, so a mode without a witness turns CI
+	# red instead of silently passing on generic checks only.
+	var modes = game.SPECIAL_MODES_SCRIPT.MODES.keys()
 
 	for mode_id in modes:
 		print("DBG pre %s highest=%s" % [mode_id, str(int(game.progression_state.get("highest_unlocked_level_index", -1)))])
@@ -109,6 +114,28 @@ func _init() -> void:
 				check(_board_cells(game) > 0, "rock deals a real board")
 				check(int(game.BOARD_ENGINE.count_tiles(game.board)) < _board_cells(game),
 					"rocks are excluded from the win count")
+				# Regression: the deal-solvability pass must judge the candidate
+				# grid, not the previous session's board. A stale all-rock board
+				# used to shadow the new deal through the playable filter.
+				# Dims follow cell_buttons so the mounted grid stays consistent
+				# with the rendered view while the scenario runs.
+				var fit_rows = game.cell_buttons.size()
+				var fit_cols = game.cell_buttons[0].size()
+				var stale := []
+				for sr in range(fit_rows):
+					var srow := []
+					for sc in range(fit_cols):
+						srow.append(game.BOARD_ENGINE.ROCK_VALUE)
+					stale.append(srow)
+				var previous_board = game.board
+				game.board = stale
+				game._create_playable_board({"id": 1, "rows": fit_rows, "cols": fit_cols,
+					"kinds": 6, "time_limit": 0, "lock_shape": true})
+				check(not game.BOARD_ENGINE.find_any_hint(game.board, game, "_is_coord_playable", "rock").empty(),
+					"fresh deal stays playable despite stale rocks in the old board")
+				check(game.board.size() == fit_rows and game.board[0].size() == fit_cols,
+					"locked-shape deal keeps its dims")
+				game.board = previous_board
 			"defuse":
 				check(_board_cells(game) > 0, "defuse deals a real board")
 				check(game.board_bomb.size() > 0, "defuse seeds cursed tiles")
@@ -132,8 +159,34 @@ func _init() -> void:
 				check(_board_cells(game) > 0, "duel deals a real board")
 				check(int(game.duel_scores[0]) == 0 && int(game.duel_scores[1]) == 0, "duel starts with zero scores")
 				check(int(game.duel_current) == 0, "duel starts with player 1")
+			"daily":
+				check(int(game.special_level.get("time_limit", 0)) >= 150
+					&& int(game.special_level.get("time_limit", 0)) <= 180, "daily runs its 150-180s clock")
+				check(int(game.special_level.get("rows", 0)) % 2 == 0, "daily board rows are even")
+			"time_attack":
+				check(int(game.special_level.get("time_limit", -1)) == int(game.game_mode_configs["time_attack"]["initial_time"]),
+					"time_attack starts at its configured clock")
+			"endless":
+				check(int(game.special_level.get("time_limit", -1)) == 0, "endless has no clock")
+				check(int(game.special_level.get("round_index", 0)) == 1, "endless starts at round 1")
+			"zen":
+				check(int(game.special_level.get("time_limit", -1)) == 0, "zen has no clock")
+				check(_board_cells(game) > 0, "zen deals a real board")
+			"hell":
+				check(int(game.special_level.get("time_limit", 0)) > 0, "hell runs a tight clock")
+				check(_board_cells(game) > 0, "hell deals a real board")
+			"gravity":
+				check(_board_cells(game) > 0, "gravity deals a real board")
+				check(int(game.special_level.get("rows", 0)) % 2 == 0, "gravity board rows are even")
+			"drag":
+				check(int(game.special_level.get("rows", 0)) == 8 && int(game.special_level.get("cols", 0)) == 8,
+					"drag keeps its 8x8 lock-shape board")
+				check(_board_cells(game) > 0, "drag deals a real board")
+			"edu":
+				check(game.edu_faces.size() > 0, "edu loads its concept faces")
+				check(_board_cells(game) > 0, "edu deals a real board")
 			_:
-				check(_board_cells(game) > 0, "%s deals a real board" % mode_id)
+				check(false, "%s has no startup witness (add a match branch)" % mode_id)
 
 		# exit must return to a clean campaign session
 		game.SPECIAL_SESSION._exit_special_mode(game)

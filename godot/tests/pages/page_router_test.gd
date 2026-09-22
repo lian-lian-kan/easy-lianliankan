@@ -5,6 +5,7 @@ extends SceneTree
 # must stay in sync with.
 
 const PAGE_ROUTER = preload("res://scripts/pages/page_router.gd")
+const UI_FONTS = preload("res://scripts/ui/ui_fonts.gd")
 
 var failures := 0
 
@@ -36,10 +37,34 @@ class FakePageGame extends Node:
 	var stage_status = STATUS_PLAYING
 	var pending_level_index = -1
 	var current_page = ""
+	# Page-content build support: show_page("level_map") runs the real
+	# journey-map builder against the fake, so it needs the same surface the
+	# real game exposes (fonts, campaign table, unlock predicates).
+	var _font_cache := {}
+	var progression_state := {}
+	var level_index := 0
+	var campaign_levels := []
 	func _init():
 		pages_root.visible = false
 		add_child(pages_root)
 		pages_root.add_child(page_content)
+		for i in range(15):
+			campaign_levels.append({"id": i + 1, "name": "第%d关" % (i + 1)})
+	func _font_at_size(px):
+		return UI_FONTS.font_at_size(self, px)
+	func _apply_button_style(_button, _base, _pressed):
+		pass
+	func _is_level_unlocked(_level_index):
+		return true
+	func _is_special_session():
+		return false
+
+func _count_buttons(node, acc):
+	for child in node.get_children():
+		if child is Button:
+			acc.append(child)
+		_count_buttons(child, acc)
+	return acc
 
 func _init() -> void:
 	print("== page_router_test")
@@ -101,6 +126,10 @@ func _init() -> void:
 	game.stage_status = FakePageGame.STATUS_CLEARED
 	game.pending_level_index = 7
 	PAGE_ROUTER.show_page(game, "level_map")
+	# The journey map must actually build: one node per campaign level.
+	var map_buttons = _count_buttons(game.page_content, [])
+	check(map_buttons.size() >= 15,
+		"level_map builds a journey node for every campaign level")
 	game.level_advance_timer.started = 0
 	PAGE_ROUTER.close_page(game)
 	check(game.level_advance_timer.started == 1 and game.pending_level_index == 7,

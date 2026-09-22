@@ -13,6 +13,9 @@ func check(value: bool, message: String) -> void:
 	push_error("FAIL - %s" % message)
 
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	print("== panels_probe")
 	var scene = load("res://scenes/Main.tscn")
 	var game = scene.instance()
@@ -232,6 +235,10 @@ func _init() -> void:
 
 	# --- header height stability: nothing dynamic may live in the layout flow ---
 	check(game.message_label.get_parent() != game.header_box, "message banner is out of the header flow")
+	# 色彩回归锁：8 位 hex 曾被 Godot 3 错解析成蓝色（Color("d6336ce6") 事件）。
+	var banner_sb = game.message_label.get_stylebox("normal")
+	check(banner_sb is StyleBoxFlat and banner_sb.bg_color.r > 0.7 and banner_sb.bg_color.b < 0.6,
+		"message banner keeps the rose brand color")
 	check(float(game.message_label.anchor_top) >= 0.9, "message banner is bottom-anchored over the board")
 	var clip_ok = true
 	for stat_key in ["total_score", "time_left", "remaining", "combo"]:
@@ -468,6 +475,16 @@ func _init() -> void:
 		if child is Label && child.text == "横幅测试":
 			callout_found = true
 	check(callout_found, "stage callout label created")
+	# 回归锁：兜底自毁释放 Label 后单例必须能重建（悬空引用曾让后续
+	# 每一关的开场字幕永远失效）。
+	if game.stage_callout_label != null and is_instance_valid(game.stage_callout_label):
+		game.stage_callout_label.free()
+	game._show_stage_callout("重建测试", Color("ffffff"), 20)
+	var rebuilt_found = false
+	for child in game.get_children():
+		if child is Label && child.text == "重建测试":
+			rebuilt_found = true
+	check(rebuilt_found, "stage callout singleton rebuilds after self-destruct")
 	game.special_mode = ""
 	# fx_layer: eliminate effects emit into the effect layer
 	var fx_before = game.effect_layer.get_child_count()

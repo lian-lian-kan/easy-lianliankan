@@ -4,11 +4,13 @@ const SPECIAL_MODES = preload("res://scripts/modes/special_modes.gd")
 const PROGRESSION = preload("res://scripts/session/progression.gd")
 
 var checks = 0
+var failures = 0
 
 func _check(condition, message: String) -> bool:
 	checks += 1
 	if condition:
 		return true
+	failures += 1
 	push_error("CHECK FAILED: " + message)
 	quit(1)
 	return false
@@ -65,7 +67,11 @@ func _init() -> void:
 	_assert_equal(int(e1["kinds"]), 6, "endless round 1 kinds")
 	var e3 = SPECIAL_MODES.build_endless_level(configs["endless"], 3)
 	_assert_equal(int(e3["rows"]), 10, "endless round 3 rows not yet expanded")
-	_assert_equal(int(e3["kinds"]), 8, "endless round 3 kinds grew")
+	# Kinds climb by the config-driven step (aligned with game_modes.json);
+	# pin the source fields so a silent data-table drift shows up here.
+	_assert_equal(int(configs["endless"]["base_kinds"]), 6, "endless base_kinds source value")
+	_assert_equal(int(configs["endless"]["kinds_increment_every"]), 5, "endless kinds_increment_every source value")
+	_assert_equal(int(e3["kinds"]), int(configs["endless"]["base_kinds"]) + 2 * int(configs["endless"]["kinds_increment_every"]), "endless round 3 kinds grew by kinds_increment_every")
 	var e4 = SPECIAL_MODES.build_endless_level(configs["endless"], 4)
 	_assert_equal(int(e4["rows"]), 12, "endless round 4 board expanded")
 	_assert_equal(int(e4["cols"]), 10, "endless round 4 cols expanded")
@@ -156,5 +162,8 @@ func _init() -> void:
 	_assert_equal(PROGRESSION.has_achievement(ach_state, "memory_first"), true, "memory achievement unlocks")
 	_assert_equal(PROGRESSION.get_achievement_info("memory_first")["name"], "盲盒初体验", "memory achievement info resolvable")
 
-	print("special_modes_test: ALL PASSED (", checks, " checks)")
-	quit(0)
+	if failures > 0:
+		print("special_modes_test: FAILED (", failures, " of ", checks, " checks)")
+	else:
+		print("special_modes_test: ALL PASSED (", checks, " checks)")
+	quit(1 if failures > 0 else 0)

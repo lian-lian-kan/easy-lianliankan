@@ -152,9 +152,35 @@ static func _update_tile_sizes(game):
 	var h_sep = game.board_grid.get_constant("h_separation")
 	var v_sep = game.board_grid.get_constant("v_separation")
 
-	# Get available board area and keep a minimum usable size.
-	var viewport_size = game.get_viewport_rect().size
-	var flags = game._viewport_flags(viewport_size)
+	var flags = game._viewport_flags(game.get_viewport_rect().size)
+	var is_mobile = flags["is_mobile"]
+	var is_portrait = flags["is_portrait"]
+	var available = _available_tile_area(game, flags)
+
+	# Calculate tile size to fill the area edge to edge. Columns and rows
+	# were derived from this screen by board_fit.gd, so tiles are allowed to
+	# be rectangular — there is no square rule and nothing is left over. A
+	# 4px safety margin absorbs layout-estimation drift so the last row
+	# stays on screen; the font follows the shorter side so glyphs never
+	# clip inside a stretched tile.
+	var by_width = int(floor((available.x - float(cols - 1) * h_sep) / max(1, cols)))
+	var by_height = int(floor((available.y - float(rows - 1) * v_sep) / max(1, rows)))
+	var min_tile = 34 if is_mobile and is_portrait else (30 if is_mobile else 34)
+	var tile_w = max(by_width - 4, min_tile)
+	var tile_h = max(by_height - 4, min_tile)
+	var short_side = min(tile_w, tile_h)
+	var tile_font = game._font_at_size(int(clamp(float(short_side) * 0.52, 14.0, 88.0)))
+	for r in range(rows):
+		for c in range(cols):
+			var button = game.cell_buttons[r][c]
+			button.rect_min_size = Vector2(tile_w, tile_h)
+			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			button.add_font_override("font", tile_font)
+
+# Get available TILE area: the board wrapper frame (min_size wins while the
+# layout lags), padding removed and the floating nav reserved.
+static func _available_tile_area(game, flags):
 	var is_mobile = flags["is_mobile"]
 	var is_portrait = flags["is_portrait"]
 	var is_compact_height = flags["is_compact_height"]
@@ -177,27 +203,7 @@ static func _update_tile_sizes(game):
 	var available = board_area - Vector2(padding * 2, padding * 2)
 	available.x = max(available.x, 120.0)
 	available.y = max(available.y, 120.0)
-
-	# Calculate tile size to fill the area edge to edge. Columns and rows
-	# were derived from this screen by board_fit.gd, so tiles are allowed to
-	# be rectangular — there is no square rule and nothing is left over. A
-	# 4px safety margin absorbs layout-estimation drift so the last row
-	# stays on screen; the font follows the shorter side so glyphs never
-	# clip inside a stretched tile.
-	var by_width = int(floor((available.x - float(cols - 1) * h_sep) / max(1, cols)))
-	var by_height = int(floor((available.y - float(rows - 1) * v_sep) / max(1, rows)))
-	var min_tile = 34 if is_mobile and is_portrait else (30 if is_mobile else 34)
-	var tile_w = max(by_width - 4, min_tile)
-	var tile_h = max(by_height - 4, min_tile)
-	var short_side = min(tile_w, tile_h)
-	var tile_font = game._font_at_size(int(clamp(float(short_side) * 0.52, 14.0, 88.0)))
-	for r in range(rows):
-		for c in range(cols):
-			var button = game.cell_buttons[r][c]
-			button.rect_min_size = Vector2(tile_w, tile_h)
-			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			button.add_font_override("font", tile_font)
+	return available
 
 # Cleared cells vanish entirely: a visible empty tile keeps pulling the
 # player's eye long after the pair is gone. The button must keep its place
@@ -228,7 +234,7 @@ static func _apply_tile_style(game, button, bg_color, border_color, highlight):
 		normal.shadow_size = 6
 		normal.shadow_offset = Vector2(0, 2)
 	else:
-		normal.shadow_color = Color("00000010")
+		normal.shadow_color = Color8(0, 0, 0, 16)
 		normal.shadow_size = 3
 		normal.shadow_offset = Vector2(0, 2)
 
@@ -237,7 +243,7 @@ static func _apply_tile_style(game, button, bg_color, border_color, highlight):
 	hover.border_color = border_color.lightened(0.05)
 	hover.set_border_width_all(2)
 	hover.set_corner_radius_all(10)
-	hover.shadow_color = Color("00000020")
+	hover.shadow_color = Color8(0, 0, 0, 32)
 	hover.shadow_size = 5
 	hover.shadow_offset = Vector2(0, 3)
 

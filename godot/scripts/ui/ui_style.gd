@@ -11,7 +11,7 @@ static func apply_glass_style(panel, bg_color, alpha):
 	style.set_corner_radius_all(16)
 	style.set_border_width_all(1)
 	style.border_color = Color("ffd9e8")
-	style.shadow_color = Color("00000020")
+	style.shadow_color = Color8(0, 0, 0, 32)
 	style.shadow_size = 8
 	style.shadow_offset = Vector2(0, 4)
 	panel.add_stylebox_override("panel", style)
@@ -22,7 +22,7 @@ static func apply_button_style(button, bg_color, border_color):
 	normal.border_color = border_color
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(12)
-	normal.shadow_color = Color("00000015")
+	normal.shadow_color = Color8(0, 0, 0, 21)
 	normal.shadow_size = 4
 	normal.shadow_offset = Vector2(0, 2)
 
@@ -31,7 +31,7 @@ static func apply_button_style(button, bg_color, border_color):
 	hover.border_color = border_color.lightened(0.1)
 	hover.set_border_width_all(2)
 	hover.set_corner_radius_all(12)
-	hover.shadow_color = Color("00000020")
+	hover.shadow_color = Color8(0, 0, 0, 32)
 	hover.shadow_size = 6
 	hover.shadow_offset = Vector2(0, 3)
 
@@ -46,6 +46,18 @@ static func apply_button_style(button, bg_color, border_color):
 	button.add_stylebox_override("focus", normal)
 	button.add_stylebox_override("hover", hover)
 	button.add_stylebox_override("disabled", normal)
+	_apply_button_font_colors(button, bg_color)
+
+# 文字色四态统一：只覆盖 font_color 会让悬停回落到主题默认灰——首页
+# 「玩法大厅」悬停发灰就是这么来的。按背景亮度推导：深底白字、浅底粉字。
+# 调用方仍可在其后自行覆盖 font_color 系列以指定特殊用色。
+static func _apply_button_font_colors(button, bg_color):
+	var luminance = 0.299 * bg_color.r + 0.587 * bg_color.g + 0.114 * bg_color.b
+	var fg = Color("d6336c") if luminance > 0.7 else Color("ffffff")
+	button.add_color_override("font_color", fg)
+	button.add_color_override("font_hover_color", fg)
+	button.add_color_override("font_pressed_color", fg)
+	button.add_color_override("font_focus_color", fg)
 
 static func style_dialog_buttons(node):
 	# Dialog buttons join the rose palette instead of the default gray.

@@ -59,15 +59,16 @@ func _init() -> void:
 	check(intros_ok, "intro_text covers every listed special mode")
 	check(SM.intro_text("nope") == "特殊模式开始", "unknown mode falls back to the default intro")
 
-	# --- RECORD_MODES: keys consistent with progression, achievements defined.
+	# --- record_modes(): derived from the MODES registry; keys consistent
+	# with progression, achievements defined.
 	var defined_ids = {}
 	for a in PROGRESSION.get_all_achievements():
 		defined_ids[a["id"]] = true
-	check(SM.RECORD_MODES.size() == 25, "record table covers 25 modes")
+	check(SM.record_modes().size() == 25, "record table covers 25 modes")
 	var table_ok = true
 	var ach_ok = true
-	for mode in SM.RECORD_MODES:
-		var rec = SM.RECORD_MODES[mode]
+	for mode in SM.record_modes():
+		var rec = SM.record_modes()[mode]
 		if rec["patch_key"] != mode + "_result" or rec["best_key"] != mode + "_best_score":
 			table_ok = false
 		for a in rec["achievements"]:
@@ -175,26 +176,80 @@ func _init() -> void:
 	var flip_total = int(DATA.DEFAULT_CONFIGS["flip"]["pairs"])
 	check(flip_total % 2 == 0, "flip pairs count is even")
 
-	# --- growth guards: a newly added mode must register its subtitle record
-	# and power-up loadout rows, otherwise the main screen silently falls back
-	# to campaign copy / default grants (the scattered-branch era lost ways) ---
-	var bespoke_subtitle = {"daily": true, "endless": true, "moves": true, "perfect": true, "tray": true, "collect": true, "flip": true, "tree": true}
-	var sub_ok = true
+	# --- MODES registry completeness: the registry is the single source for
+	# labels/intros/categories/settlement/subtitles. Any new mode missing a
+	# surface (panel row, category, settlement keys, save schema, achievement)
+	# must turn CI red here instead of silently falling back on screen ---
+	check(DATA.MODES.size() == 29, "registry declares 29 special modes")
+	check(DATA.CATEGORY_TITLES.size() == 7, "registry declares 7 panel categories")
+	var reg_ids := {}
+	for mode_id in DATA.MODES:
+		reg_ids[mode_id] = true
+	var cfg_ids := {}
 	for mode_id in DATA.DEFAULT_CONFIGS:
-		if bespoke_subtitle.has(mode_id):
-			continue
-		if not DATA.SUBTITLE_RECORDS.has(mode_id):
-			sub_ok = false
-			push_error("subtitle record missing for " + str(mode_id))
-	for mode_id in DATA.SUBTITLE_RECORDS:
-		if not DATA.DEFAULT_CONFIGS.has(mode_id):
-			sub_ok = false
-			push_error("subtitle record references unknown mode " + str(mode_id))
-		elif str(DATA.SUBTITLE_RECORDS[mode_id]) != str(mode_id) + "_best_score":
-			sub_ok = false
-			push_error("subtitle record key mismatch for " + str(mode_id))
-	check(sub_ok, "subtitle records cover every mode without bespoke copy")
+		cfg_ids[mode_id] = true
+	var mirror_ok := true
+	for mode_id in DATA.MODES:
+		if not cfg_ids.has(mode_id):
+			mirror_ok = false
+			push_error("registry row without config: " + str(mode_id))
+	for mode_id in DATA.DEFAULT_CONFIGS:
+		if not reg_ids.has(mode_id):
+			mirror_ok = false
+			push_error("config without registry row: " + str(mode_id))
+	check(mirror_ok, "registry rows and mode configs mirror each other exactly")
 
+	var field_ok := true
+	var known_cats := {}
+	for category in DATA.CATEGORY_TITLES:
+		known_cats[str(category["id"])] = true
+	var cat_used := {}
+	for mode_id in DATA.MODES:
+		var row = DATA.MODES[mode_id]
+		for field in ["icon", "label", "blurb", "intro", "cat", "settle", "sub"]:
+			if not row.has(field):
+				field_ok = false
+				push_error("%s missing field %s" % [str(mode_id), str(field)])
+		if str(row["icon"]) == "" or str(row["label"]) == "":
+			field_ok = false
+			push_error("%s missing icon/label" % str(mode_id))
+		if not known_cats.has(str(row["cat"])):
+			field_ok = false
+			push_error("%s unknown category %s" % [str(mode_id), str(row["cat"])])
+		cat_used[str(row["cat"])] = true
+		if not ["best", "dyn", "fall"].has(str(row["sub"])):
+			field_ok = false
+			push_error("%s illegal sub %s" % [str(mode_id), str(row["sub"])])
+	for category in DATA.CATEGORY_TITLES:
+		if not cat_used.has(str(category["id"])):
+			field_ok = false
+			push_error("category %s has no modes" % str(category["id"]))
+	check(field_ok, "every registry row carries all fields with legal values")
+
+	# Derivation integrity: subtitle semantics and the flat save schema.
+	var sub_ok := true
+	for mode_id in DATA.MODES:
+		var want_key = str(mode_id) + "_best_score" if str(DATA.MODES[mode_id]["sub"]) == "best" else ""
+		if SM.subtitle_record_key(mode_id) != want_key:
+			sub_ok = false
+			push_error("subtitle key mismatch for " + str(mode_id))
+	check(sub_ok, "subtitle_record_key derives best keys exactly for sub=best rows")
+
+	var flat = SM.flat_best_keys()
+	check(flat.size() == 27, "flat_best_keys derives 27 save keys (25 records + time_attack + tree)")
+	var flat_ok := true
+	for mode_id in SM.record_modes():
+		if not flat.has(str(mode_id) + "_best_score"):
+			flat_ok = false
+			push_error("flat keys missing record best for " + str(mode_id))
+	if not flat.has("time_attack_best_score") or not flat.has("tree_best_height"):
+		flat_ok = false
+		push_error("flat keys missing a bespoke best key")
+	check(flat_ok, "flat_best_keys covers every record mode plus the bespoke pair")
+	check(PROGRESSION.flat_best_keys().size() == 27, "progression schema mirrors the registry-derived flat keys")
+
+	# Power-up loadout guard (kept from the scattered-table era): extras must
+	# target real modes; overrides only tweak known grant keys.
 	var POWERUPS = load("res://scripts/session/powerup_loadout.gd")
 	var grant_keys := {}
 	for key in POWERUPS.SPECIAL_LOADOUT_BASE:

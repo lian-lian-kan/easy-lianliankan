@@ -337,115 +337,62 @@ const DEFAULT_CONFIGS = {
 	}
 }
 
-const MODE_LABELS = {
-	"classic": "经典", "rush": "冲刺", "combo": "连击", "endurance": "耐力",
-	"daily": "每日挑战", "time_attack": "限时挑战", "endless": "无尽模式",
-	"memory": "盲盒模式", "frost": "冰雪挑战", "zen": "休闲模式",
-	"hell": "地狱模式", "moves": "步数挑战", "race": "竞速对战",
-	"stack": "叠层模式", "gravity": "重力模式", "fog": "迷雾模式", "chain": "锁链模式"
+# ── 玩法注册表：每个特殊玩法一行声明，全部展示/结算表面由此派生 ──
+# 新增玩法的必改清单只有三处：DEFAULT_CONFIGS 加配置行、本表加声明行、
+# achievements.gd 加首胜成就文案（可选：startup_probe 加启动 Witness）。
+# 字段：
+#   icon/label  面板与统计页的图标+名称        blurb    玩法面板一行简介
+#   intro       开局横幅（空串回落「特殊模式开始」）  cat  面板分组（CATEGORY_TITLES 键）
+#   settle      结算面板名（空串 = 非纪录玩法，结算走 special_session 专属分支）
+#   sub         副标题语义："best"=最佳N分 / "dyn"=ui_hud 专属动态文案 / "fall"=回落战役行
+# 派生约定（mode_meta_test 强制）：patch_key=<id>_result、best_key=<id>_best_score、
+# 首胜成就=<id>_first（仅 settle 非空的玩法）。
+const MODES = {
+	"daily": {"icon": "📅", "label": "每日挑战", "blurb": "", "intro": "每日挑战开始！今天的棋盘人人相同", "cat": "rush", "settle": "", "sub": "dyn"},
+	"time_attack": {"icon": "⏱️", "label": "限时挑战", "blurb": "60秒起，消除得时间", "intro": "限时挑战！每次消除加时间，连击 5 触发狂热", "cat": "rush", "settle": "", "sub": "best"},
+	"memory": {"icon": "🎁", "label": "盲盒模式", "blurb": "记忆翻牌配对", "intro": "", "cat": "memory", "settle": "盲盒挑战", "sub": "best"},
+	"frost": {"icon": "❄️", "label": "冰雪挑战", "blurb": "冰冻方块要消除两次", "intro": "冰雪挑战！❄️ 结霜的方块要消除两次，🔥暖宝宝可以直接解冻", "cat": "mech", "settle": "冰雪挑战", "sub": "best"},
+	"zen": {"icon": "🍵", "label": "休闲模式", "blurb": "没有时限，纯享受", "intro": "休闲模式！没有时限，慢慢享受", "cat": "casual", "settle": "休闲一局", "sub": "best"},
+	"hell": {"icon": "🔥", "label": "地狱模式", "blurb": "大盘少图案超紧时间", "intro": "地狱模式！大盘少图案，时间极紧", "cat": "rush", "settle": "地狱挑战", "sub": "best"},
+	"moves": {"icon": "🧮", "label": "步数挑战", "blurb": "步数有限精打细算", "intro": "步数挑战！每消一对花 1 步，省着用", "cat": "casual", "settle": "步数挑战", "sub": "dyn"},
+	"race": {"icon": "🤖", "label": "竞速对战", "blurb": "和机器人抢消·先完成者胜", "intro": "竞速对战！抢在机器人前面消完全部", "cat": "duel", "settle": "竞速对战", "sub": "best"},
+	"stack": {"icon": "🥞", "label": "叠层模式", "blurb": "上层压下层先消上层", "intro": "", "cat": "mech", "settle": "叠层挑战", "sub": "best"},
+	"gravity": {"icon": "🍎", "label": "重力模式", "blurb": "消除后方块掉落补位", "intro": "", "cat": "mech", "settle": "重力挑战", "sub": "best"},
+	"fog": {"icon": "🌫️", "label": "迷雾模式", "blurb": "边缘迷雾随消除退散", "intro": "", "cat": "mech", "settle": "迷雾散尽", "sub": "best"},
+	"chain": {"icon": "⛓️", "label": "锁链模式", "blurb": "相邻消除解锁锁链", "intro": "", "cat": "mech", "settle": "锁链尽断", "sub": "best"},
+	"fever": {"icon": "🌶️", "label": "狂热模式", "blurb": "全程x1.5分消除返时间", "intro": "狂热模式！连击 2 起全程 x1.5 分，消除还返时间", "cat": "rush", "settle": "狂热燃尽", "sub": "best"},
+	"perfect": {"icon": "💎", "label": "完美模式", "blurb": "无时限但失误3次即败", "intro": "完美模式！没有时限，但失误 3 次就失败啦", "cat": "casual", "settle": "完美零失误", "sub": "dyn"},
+	"tray": {"icon": "🀄", "label": "叠叠消", "blurb": "点牌入槽三张即消", "intro": "叠叠消！点牌入槽，三张同面即消，槽满则败", "cat": "memory", "settle": "叠叠消通关", "sub": "fall"},
+	"collect": {"icon": "🎯", "label": "收集挑战", "blurb": "限时集齐目标图案", "intro": "收集挑战！限时集齐目标图案", "cat": "casual", "settle": "收集达成", "sub": "fall"},
+	"flip": {"icon": "🃏", "label": "翻翻乐", "blurb": "记忆翻牌全消", "intro": "翻翻乐！全部盖着，靠记忆翻出配对", "cat": "memory", "settle": "翻翻乐全消", "sub": "fall"},
+	"rock": {"icon": "🪨", "label": "障碍模式", "blurb": "石头牌挡路炸弹开路", "intro": "障碍模式！🪨 石头牌消不掉，炸弹能炸开它", "cat": "mech", "settle": "障碍通关", "sub": "best"},
+	"defuse": {"icon": "💣", "label": "拆弹行动", "blurb": "诅咒方块限时拆除", "intro": "拆弹行动！💣 诅咒方块限时拆除，别让它数到 0", "cat": "mech", "settle": "拆弹成功", "sub": "best"},
+	"target": {"icon": "✨", "label": "指定连消", "blurb": "金光指哪消哪", "intro": "指定连消！✨ 只能消金光高亮的那一对", "cat": "mech", "settle": "指哪打哪", "sub": "best"},
+	"shift": {"icon": "🔄", "label": "变脸模式", "blurb": "图案偷偷换位置", "intro": "变脸模式！🔄 图案会偷偷换位置，盯紧了", "cat": "mech", "settle": "变脸大师", "sub": "best"},
+	"slide": {"icon": "🧲", "label": "滑移模式", "blurb": "每消一对整行滑移", "intro": "滑移模式！🧲 每消一对整行就滑动一位，位置要重新算", "cat": "mech", "settle": "滑移通关", "sub": "best"},
+	"defense": {"icon": "🧟", "label": "守卫模式", "blurb": "消除击退怪物近身即败", "intro": "守卫模式！🧟 消除击退怪物，它近身就输了", "cat": "mech", "settle": "守卫成功", "sub": "best"},
+	"sum10": {"icon": "🔟", "label": "合十消", "blurb": "两数相加为10即可消", "intro": "合十消！🔟 两张牌的数字相加为 10 就能消除", "cat": "mech", "settle": "合十满分", "sub": "best"},
+	"duel": {"icon": "👫", "label": "同屏对战", "blurb": "轮流消牌分高者胜", "intro": "同屏对战！👫 成功消除继续，失败换对方，分高者胜", "cat": "duel", "settle": "同屏争霸", "sub": "best"},
+	"drag": {"icon": "🖋️", "label": "连线消", "blurb": "一笔拖过相邻同款三连即消", "intro": "连线消！🖋️ 按住一笔拖过相邻同款，凑满 3 个松手一次消掉", "cat": "know", "settle": "一笔连消", "sub": "best"},
+	"edu": {"icon": "🎓", "label": "知识配对", "blurb": "每日轮换知识主题配对", "intro": "知识配对！🎓 牌面是一对知识：找到相关的两张（如 汉字↔拼音）", "cat": "know", "settle": "知识学士", "sub": "best"},
+	"endless": {"icon": "∞", "label": "无尽模式", "blurb": "", "intro": "无尽模式第1轮！棋盘会越滚越大", "cat": "infinite", "settle": "", "sub": "dyn"},
+	"tree": {"icon": "🌳", "label": "攀登树", "blurb": "", "intro": "攀登树！🌳 从第 1 层开始往上爬，每层更难，里程碑送上樱花", "cat": "infinite", "settle": "", "sub": "dyn"},
 }
 
-const INTRO_TEXTS = {
-	"daily": "每日挑战开始！今天的棋盘人人相同",
-	"time_attack": "限时挑战！每次消除加时间，连击 5 触发狂热",
-	"endless": "无尽模式第1轮！棋盘会越滚越大",
-	"frost": "冰雪挑战！❄️ 结霜的方块要消除两次，🔥暖宝宝可以直接解冻",
-	"zen": "休闲模式！没有时限，慢慢享受",
-	"hell": "地狱模式！大盘少图案，时间极紧",
-	"moves": "步数挑战！每消一对花 1 步，省着用",
-	"race": "竞速对战！抢在机器人前面消完全部"
-}
+# 玩法面板分组：标题与顺序在此；组内成员与顺序由 MODES 行的 cat 字段派生。
+const CATEGORY_TITLES = [
+	{"id": "rush", "title": "🏁 竞速限时"},
+	{"id": "memory", "title": "🧠 记忆翻牌"},
+	{"id": "mech", "title": "⚙️ 机制挑战"},
+	{"id": "know", "title": "🎓 知识新范式"},
+	{"id": "duel", "title": "👥 双人"},
+	{"id": "casual", "title": "🌙 休闲自定"},
+	{"id": "infinite", "title": "∞ 无尽"},
+]
 
-const MODE_LABELS_EXTRA = {
-	"tray": "叠叠消",
-	"collect": "收集挑战",
-	"flip": "翻翻乐",
-	"fever": "狂热模式",
-	"perfect": "完美模式",
-	"rock": "障碍模式",
-	"defuse": "拆弹行动",
-	"target": "指定连消",
-	"shift": "变脸模式",
-	"slide": "滑移模式",
-	"defense": "守卫模式",
-	"sum10": "合十消",
-	"duel": "同屏对战",
-	"tree": "攀登树",
-	"drag": "连线消",
-	"edu": "知识配对",
-}
-const INTRO_TEXTS_EXTRA = {
-	"tray": "叠叠消！点牌入槽，三张同面即消，槽满则败",
-	"collect": "收集挑战！限时集齐目标图案",
-	"flip": "翻翻乐！全部盖着，靠记忆翻出配对",
-	"fever": "狂热模式！连击 2 起全程 x1.5 分，消除还返时间",
-	"perfect": "完美模式！没有时限，但失误 3 次就失败啦",
-	"rock": "障碍模式！🪨 石头牌消不掉，炸弹能炸开它",
-	"defuse": "拆弹行动！💣 诅咒方块限时拆除，别让它数到 0",
-	"target": "指定连消！✨ 只能消金光高亮的那一对",
-	"shift": "变脸模式！🔄 图案会偷偷换位置，盯紧了",
-	"slide": "滑移模式！🧲 每消一对整行就滑动一位，位置要重新算",
-	"defense": "守卫模式！🧟 消除击退怪物，它近身就输了",
-	"sum10": "合十消！🔟 两张牌的数字相加为 10 就能消除",
-	"duel": "同屏对战！👫 成功消除继续，失败换对方，分高者胜",
-	"tree": "攀登树！🌳 从第 1 层开始往上爬，每层更难，里程碑送上樱花",
-	"drag": "连线消！🖋️ 按住一笔拖过相邻同款，凑满 3 个松手一次消掉",
-	"edu": "知识配对！🎓 牌面是一对知识：找到相关的两张（如 汉字↔拼音）",
-}
-
-const RECORD_MODES = {
-	"stack": {"label": "叠层挑战", "patch_key": "stack_result", "best_key": "stack_best_score", "achievements": ["stack_first"]},
-	"gravity": {"label": "重力挑战", "patch_key": "gravity_result", "best_key": "gravity_best_score", "achievements": ["gravity_first"]},
-	"fog": {"label": "迷雾散尽", "patch_key": "fog_result", "best_key": "fog_best_score", "achievements": ["fog_first"]},
-	"chain": {"label": "锁链尽断", "patch_key": "chain_result", "best_key": "chain_best_score", "achievements": ["chain_first"]},
-	"tray": {"label": "叠叠消通关", "patch_key": "tray_result", "best_key": "tray_best_score", "achievements": ["tray_first"]},
-	"collect": {"label": "收集达成", "patch_key": "collect_result", "best_key": "collect_best_score", "achievements": ["collect_first"]},
-	"flip": {"label": "翻翻乐全消", "patch_key": "flip_result", "best_key": "flip_best_score", "achievements": ["flip_first"]},
-	"zen": {"label": "休闲一局", "patch_key": "zen_result", "best_key": "zen_best_score", "achievements": ["zen_first"]},
-	"hell": {"label": "地狱挑战", "patch_key": "hell_result", "best_key": "hell_best_score", "achievements": ["hell_first"]},
-	"moves": {"label": "步数挑战", "patch_key": "moves_result", "best_key": "moves_best_score", "achievements": ["moves_first"]},
-	"race": {"label": "竞速对战", "patch_key": "race_result", "best_key": "race_best_score", "achievements": ["race_first"]},
-	"frost": {"label": "冰雪挑战", "patch_key": "frost_result", "best_key": "frost_best_score", "achievements": ["frost_first"]},
-	"memory": {"label": "盲盒挑战", "patch_key": "memory_result", "best_key": "memory_best_score", "achievements": ["memory_first"]},
-	"fever": {"label": "狂热燃尽", "patch_key": "fever_result", "best_key": "fever_best_score", "achievements": ["fever_first"]},
-	"perfect": {"label": "完美零失误", "patch_key": "perfect_result", "best_key": "perfect_best_score", "achievements": ["perfect_first"]},
-	"rock": {"label": "障碍通关", "patch_key": "rock_result", "best_key": "rock_best_score", "achievements": ["rock_first"]},
-	"defuse": {"label": "拆弹成功", "patch_key": "defuse_result", "best_key": "defuse_best_score", "achievements": ["defuse_first"]},
-	"target": {"label": "指哪打哪", "patch_key": "target_result", "best_key": "target_best_score", "achievements": ["target_first"]},
-	"shift": {"label": "变脸大师", "patch_key": "shift_result", "best_key": "shift_best_score", "achievements": ["shift_first"]},
-	"slide": {"label": "滑移通关", "patch_key": "slide_result", "best_key": "slide_best_score", "achievements": ["slide_first"]},
-	"defense": {"label": "守卫成功", "patch_key": "defense_result", "best_key": "defense_best_score", "achievements": ["defense_first"]},
-	"sum10": {"label": "合十满分", "patch_key": "sum10_result", "best_key": "sum10_best_score", "achievements": ["sum10_first"]},
-	"duel": {"label": "同屏争霸", "patch_key": "duel_result", "best_key": "duel_best_score", "achievements": ["duel_first"]},
-	"drag": {"label": "一笔连消", "patch_key": "drag_result", "best_key": "drag_best_score", "achievements": ["drag_first"]},
-	"edu": {"label": "知识学士", "patch_key": "edu_result", "best_key": "edu_best_score", "achievements": ["edu_first"]},
-}
-
-# 主屏副标题「<标签> · 最佳N分」模式段的最佳分字段；标签统一取 mode_label()。
-# daily/endless/moves/perfect 的副标题含动态上下文，由 ui_hud 专属分支渲染；
-# tray/collect/flip 无最佳分概念，回落战役行文案。
-const SUBTITLE_RECORDS = {
-	"time_attack": "time_attack_best_score",
-	"memory": "memory_best_score",
-	"frost": "frost_best_score",
-	"zen": "zen_best_score",
-	"hell": "hell_best_score",
-	"race": "race_best_score",
-	"stack": "stack_best_score",
-	"gravity": "gravity_best_score",
-	"fog": "fog_best_score",
-	"chain": "chain_best_score",
-	"fever": "fever_best_score",
-	"rock": "rock_best_score",
-	"defuse": "defuse_best_score",
-	"target": "target_best_score",
-	"shift": "shift_best_score",
-	"slide": "slide_best_score",
-	"defense": "defense_best_score",
-	"sum10": "sum10_best_score",
-	"duel": "duel_best_score",
-	"drag": "drag_best_score",
-	"edu": "edu_best_score",
+# 战役规则标签（非特殊玩法，不进注册表）。
+const CAMPAIGN_LABELS = {
+	"classic": "经典", "rush": "冲刺", "combo": "连击", "endurance": "耐力"
 }
 
 # 结算后按模式语境补发的条件成就。

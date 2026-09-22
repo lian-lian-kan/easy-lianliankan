@@ -47,6 +47,9 @@ func _page_labels(game):
 	return labels
 
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	print("== page_probe")
 	var scene = load("res://scenes/Main.tscn")
 	var game = scene.instance()

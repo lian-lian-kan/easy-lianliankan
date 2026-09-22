@@ -91,28 +91,32 @@ static func refresh_editor(game):
 	if game.editor_panel == null or game.editor_state == null:
 		return
 	var state: Dictionary = game.editor_state
+	_refresh_editor_palette(game, state)
+	_refresh_editor_grid(game, state)
+	_refresh_editor_validation(game, state)
+
+# 调色板重绘：擦除键 + 当前图集的图案键，活动键灰置。
+static func _refresh_editor_palette(game, state):
 	for child in game.editor_palette.get_children():
 		game.editor_palette.remove_child(child)
 		child.queue_free()
-	var eraser = Button.new()
-	eraser.text = "🧽"
-	eraser.rect_min_size = Vector2(38, 38)
-	eraser.add_font_override("font", game.game_font)
-	eraser.connect("pressed", game, "_on_editor_kind_pressed", [0])
-	if int(state["active_kind"]) == 0:
-		eraser.disabled = true
-	game.editor_palette.add_child(eraser)
+	game.editor_palette.add_child(_editor_palette_button(game, "🧽", 0, state))
 	var icons: Array = game.icon_sets[game.icon_set_index].get("icons", [])
 	for kind in range(1, int(state["kinds"]) + 1):
-		var kind_button = Button.new()
-		kind_button.text = game._icon_for(kind)
-		kind_button.rect_min_size = Vector2(38, 38)
-		kind_button.add_font_override("font", game.game_font)
-		kind_button.connect("pressed", game, "_on_editor_kind_pressed", [kind])
-		if int(state["active_kind"]) == kind:
-			kind_button.disabled = true
-		game.editor_palette.add_child(kind_button)
+		game.editor_palette.add_child(_editor_palette_button(game, game._icon_for(kind), kind, state))
 
+static func _editor_palette_button(game, text, kind, state):
+	var button = Button.new()
+	button.text = text
+	button.rect_min_size = Vector2(38, 38)
+	button.add_font_override("font", game.game_font)
+	button.connect("pressed", game, "_on_editor_kind_pressed", [kind])
+	if int(state["active_kind"]) == kind:
+		button.disabled = true
+	return button
+
+# 网格重绘：按 state 的行列逐格出按钮，空格显示 ·。
+static func _refresh_editor_grid(game, state):
 	game.editor_grid.columns = int(state["cols"])
 	for child in game.editor_grid.get_children():
 		game.editor_grid.remove_child(child)
@@ -127,6 +131,8 @@ static func refresh_editor(game):
 			cell.connect("pressed", game, "_on_editor_cell_pressed", [r, c])
 			game.editor_grid.add_child(cell)
 
+# 校验行：可玩性判定（成对且有解）落在面板底部的提示文本上。
+static func _refresh_editor_validation(game, state):
 	var verdict = LEVEL_EDITOR.validate_layout(state["grid"], int(state["kinds"]))
 	if verdict["ok"]:
 		game.editor_validation.text = "✅ 关卡可玩，可以试玩或分享"

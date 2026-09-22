@@ -1,5 +1,8 @@
 extends SceneTree
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	OS.window_position = Vector2(-4000, -4000)
 	OS.window_size = Vector2(780, 1688)
 	var scene = load("res://scenes/Main.tscn").instance()

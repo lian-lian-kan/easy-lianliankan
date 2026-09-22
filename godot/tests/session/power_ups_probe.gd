@@ -53,6 +53,9 @@ func _dicts_equal(a, b) -> bool:
 	return true
 
 func _init() -> void:
+	# Black-hole the API (headless runs must stay offline): a live cloud
+	# save adopting mid-probe would replace the board under assertion.
+	OS.set_environment("LIANLIAN_API_BASE", "http://127.0.0.1:1")
 	print("== power_ups_probe")
 	var scene = load("res://scenes/Main.tscn")
 	if scene == null:
