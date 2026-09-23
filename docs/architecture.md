@@ -12,13 +12,13 @@
 | `scripts/board/board_view.gd` | 棋盘视觉：全量刷新、格子样式/尺寸、图标映射、出生/洗牌动画 | `panels_probe.gd`（视觉断言） |
 | `scripts/interactions/` | 交互域（多阶段交互状态机）：interaction_registry 登记交互类型（优先级/手势/武装维度/阶段表/每阶段提示），interaction_manager 是棋盘手势唯一入口（路由+阶段查询+草稿态重置+收回武装），power_target/pair_select/memory_pick/drag_link 四类交互各自承接「武装→瞄准→结算」「选牌→配对」「翻牌→配对」「按下→划入→松手」 | `interaction_manager_test.gd` + 既有输入探针 |
 | `scripts/session/game_input.gd` | 输入域：棋盘手势委托交互模块（interactions/）的多阶段管理器；键盘路由、提示/自动消/洗牌/重开等对局动作，以及为既有调用方保留的委托薄壳 | `game_input_test.gd` + `panels_probe.gd` |
-| `scripts/modes/special_session.gd` | 特殊模式会话：25 种玩法进出、结算纪录与发放、竞速判负、盲盒记忆 | `flip_probe.gd` + `variants_probe.gd` |
+| `scripts/modes/special_session.gd` | 特殊模式会话：32 种玩法进出、结算纪录与发放、竞速判负、盲盒记忆、无尽轮间增益、boss 击败结算 | `flip_probe.gd` + `variants_probe.gd` |
 | `scripts/session/session.gd` | 会话生命周期：关卡会话重置、走子后裁决（胜负/重排/重力）、暂停/恢复、判负；结算与计分委托 session_settle | `panels_probe.gd` + `session_settle_test.gd` |
 | `scripts/session/session_settle.gd` | 结算与计分域（session 内容分册）：过关结算（时间奖励/星级/解锁推进）、连击计分、成就发放 | `session_settle_test.gd` + `session_combo_test.gd` |
 | `scripts/session/game_config.gd` | 配置装载：JSON 覆盖 + 代码内默认回退（关卡表/调参/图标集/模式配置） | `panels_probe.gd`（重载断言） |
 | `scripts/session/progress_store.gd` | 进度存取：加载/保存/补丁式更新（special 会话过滤战役字段） | `panels_probe.gd`（持久化断言） |
 | `scripts/session/progression.gd` | 进度/成就/纪录的纯存档模型（apply_update/normalize/比较） | `progression_test.gd` |
-| `scripts/modes/special_modes_data.gd` | 玩法数据：MODES 注册表（每玩法一行声明）+ 分类标题 + 战役标签 + 29 个模式默认配置（纯 const），全部展示/结算表面由注册表派生 | `special_modes_test.gd` + `mode_meta_test.gd` |
+| `scripts/modes/special_modes_data.gd` | 玩法数据：MODES 注册表（每玩法一行声明）+ 分类标题 + 战役标签 + 32 个模式默认配置（纯 const），全部展示/结算表面由注册表派生 | `special_modes_test.gd` + `mode_meta_test.gd` |
 | `scripts/modes/special_modes.gd` | 特殊玩法配置/生成器/解锁/纪录键 + 注册表派生视图（record_modes/flat_best_keys/mode_categories/mode_label/intro_text/面板行） | `special_modes_test.gd` + `mode_meta_test.gd` |
 | `scripts/modes/campaign_levels.gd` | 战役关卡数据表（深拷贝访问器） | `campaign_levels_test.gd`（数据不变量） |
 | `scripts/session/powerups.gd` | 道具域：载荷规则（战役按关递进 + 特殊会话 SPECIAL_LOADOUT 三表）、取用流程（武装/收回/守卫）、点击目标执行 | `power_ups_probe.gd`（34 断言） |
@@ -61,7 +61,7 @@
   ① `special_modes_data.DEFAULT_CONFIGS` 加配置行（mode_id/name/description/unlock_level 等）；
   ② `special_modes_data.MODES` 注册表加一行声明（icon/label/blurb/intro/cat/settle/sub 七字段）——标签、开局横幅、玩法面板行与分组、结算表（record_modes()）、副标题、统计页行、存档 schema（flat_best_keys()）全部由该行派生，一处声明处处生效；
   ③ 首胜成就文案进 achievements.gd（`<id>_first`）；④ 道具特供（可选）进 powerups.SPECIAL_LOADOUT_EXTRA；⑤ 可选：startup_probe 加启动 Witness。
-  守卫强制：注册表与配置表互为镜像、行字段齐全且取值合法、分类存在且有成员、派生键命名规范、纪录成就已定义、存档 schema 27 键无孤儿。
+  守卫强制：注册表与配置表互为镜像、行字段齐全且取值合法、分类存在且有成员、派生键命名规范、纪录成就已定义、存档 schema 30 键无孤儿。
 - 未接线 manager（签到/商店等）已删除；如需启用从 git 历史恢复（b72e1c3 之前）。
 - 双人联机与关卡编辑器需对战/编辑基建，另立项。
 - `docs/code_review.md` 为审查主报告，P 项随整改滚动更新。
