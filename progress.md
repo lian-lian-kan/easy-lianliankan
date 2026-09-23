@@ -1174,3 +1174,12 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **真产品 bug：解锁曲线不可达**。战役 15 关 → highest_unlocked_level_index 钳制 ≤14 → 解锁检查最高到 15 级，而 slide/defense=16、sum10/duel=17——四个玩法正常进度下永远锁死（startup_probe 直接改字典绕过钳制所以从未暴露）。修复：四玩法压回 15 级；mode_meta_test 解锁上限守卫从硬编码 17 改为 CAMPAIGN.LEVELS.size() 推导——"超出战役即红"，这类 bug 不再可能合入。
 - 测试与守卫：mode_meta_test 全量刷新（32 配置/32 注册表/28 结算/30 平铺键/面板 32 行/解锁上限推导）+ boss callout 断言；board_pathfinder_test 补 diff1/mult 谓词与提示用例（首版断言 connect/refuse 语义写反，被自己抓出）；board_engine_test 补牌面分发用例；game_input_test 补 boss 钩子三段（常规消除/跨线狂暴/击败改道）；special_session_test 补无尽轮间增益全流程（offer 先行/排除时间 buff/挑选拿 buff 踢表/跳过也踢表）；tree_buffs_test 补排除参数 40 轮种子对拍；startup_probe 三模式 witness（真实开局 + 规则可配对/满血/阶段 1 断言）；panels_probe/page_probe/achievements_test/progression_test 数量与新行为同步。
 - Validation: 本地 Godot 3.6.2 全量 55 项 CI 清单 + web_entry 实跑 rc 全 0；shell_audit 八项 perl 对拍 clean；port_shell_audit 与 check_copy_chars 双工具零警告；推送后待 CI deploy 回填（python 版 shell_audit 正式执行）。
+
+## 2026-09-24 (Round 30：单元测试覆盖率攻坚——函数级对账归零)
+
+- Context: 用户定向"持续完善单元测试，覆盖率 100%"。按项目既定口径（quality-report：纯逻辑模块全部公共函数有断言、场景行为由探针覆盖、后端行+分支双 100% 门禁）执行：先建对账工具量化缺口，再逐个清偿。
+- **tools/func_coverage_audit.pl（新增）**：函数级覆盖对账——scripts 全部公共函数 vs tests 引用集的差集审计；视图/动态分发类归 probe-covered 白名单（注释注明各由哪个探针/动态分发驱动）。踩坑记录：模块名带域前缀（board/board_view），白名单裸名匹配不上——首轮 16 个假 GAP 全源于此。
+- **board_mechanics_test.gd（新增，CI 清单 55→56）**：board_mechanics 16 个公共函数首次专属直测（45 断言）——迷雾环几何与分层（36 格=1 层、少牌退层）、石头成对转换 parity、可玩性门禁三拒绝、拆弹（零比例 no-op/镜像对称对/倒计时逐秒/归零判负）、堆叠掩埋 round(filled×ratio)、锁链正交破坏与全解、重力压缩清交互态、护甲裂而不消、堆叠顶起。
+- **散点清偿 9 文件**：board_engine（sum10 牌面直测/rock_grid parity/contains_coord/edge_path/ensure_playable 双契约/format_time_seconds）、board_pathfinder（reconstruct_path 回放）、special_modes（10 个 builder 形状 + default_configs 深拷贝 + mode_categories 全划分 + mode_tier 回退）、tile_match/memory_flip（clear_view null 安全）、tree_buffs（is_score_prism）、economy（yesterday_dict 往返 86400s）、server_sync（boot_sync 三开口经 lane meta 断言）、stats_hud（is_time_danger 五态）、ui_style（次级按钮四态色 + 递归扫）。
+- **Godot 3 测试陷阱复犯两则（写进 quality-report）**：Parse Error 照样 exit 0（`int += bool` 踩中）；Dictionary `==` 引用比较、`hash()` 插入顺序敏感（逐键计数比较替代）。
+- Validation: 本地全量 56 项 CI 清单 + web_entry 实跑 rc 全 0、零 Parse Error；shell_audit 八项 clean；func_coverage_audit 纯逻辑域缺口归零（58 模块 995 函数）。推送后待 CI deploy 回填。

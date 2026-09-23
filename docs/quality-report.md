@@ -9,7 +9,8 @@
 | 后端测试覆盖率 | backend.yml（pytest-cov） | **`--cov-fail-under=100`，当前 100%**（39 用例，真 PG16+Redis7） |
 | 后端静态审计 | tools/backend_audit.py | 函数 ≤45 行、禁 print/裸 except/通配导入 |
 | 游戏静态审计 | godot/tools/shell_audit.py | 薄壳一致性、connect 目标、孤儿壳、Godot4 语法泄漏、跨模块调用解析、规模棘轮（函数≤45 行）、顶层卫生、测试退出诚实性（quit(1) 不得被末尾 quit(0) 覆盖） |
-| 游戏无头测试 | deploy.yml | **55 项无头测试/探针**入 CI 清单（godot/tests 共 58 文件，截图工具与 shell 专用 web_entry 留根不入），全部逻辑域有专属直测 |
+| 游戏无头测试 | deploy.yml | **56 项无头测试/探针**入 CI 清单（godot/tests 共 59 文件，截图工具与 shell 专用 web_entry 留根不入），全部逻辑域有专属直测 |
+| 函数覆盖对账 | tools/func_coverage_audit.pl | 纯逻辑域每个公共函数在测试里有引用（调用/假体/断言），视图与动态分发类按口径由场景探针覆盖——缺口即退出码 1 |
 | 生产端到端 | prod-e2e-check.yml（手动） | 真 Chrome 开线上页，断言云同步 API 流量 |
 
 ## 测试覆盖矩阵（游戏端：模块 → 专属测试）
@@ -18,6 +19,7 @@
 - progression → progression_test；**achievements（新抽取）→ achievements_test**
 - special_modes(+data) → special_modes_test；campaign_levels → campaign_levels_test
 - missions / tile_match / memory_flip / progress_store / server_sync / economy / game_config / session 连击与结算 / content(cheers+voice) → 各自专属单测（本轮新增 11 个测试文件）
+- **board_mechanics → board_mechanics_test（2026-09-24 补齐：16 个公共函数 45 断言全直测，此前仅探针覆盖）**
 
 ## 本轮发现并修复的真问题
 
@@ -220,3 +222,11 @@
   perl 对拍固化为 `tools/port_shell_audit.pl`（8 项 1:1、与 python 版互注同步），修掉
   perl 嵌套 /g 的 pos() 重置死循环与 `$path::` 插值坑，阴性对照（假悬挂调用 + quit 假绿）
   确认可抓。本地 58 项无头测试全绿 + 八项门禁零警告。
+
+## Round 30 覆盖率攻坚：函数级对账归零（2026-09-24）
+
+- **新工具 tools/func_coverage_audit.pl**：函数级测试覆盖对账——扫 scripts 全部公共函数，对 tests 的引用集（调用/假体/connect 串）做差集；视图与动态分发类按项目口径归 probe-covered（注释写明各由哪个探针驱动）。定位是"必要条件审计"：名字没出现过=肯定没测。本轮归零：**58 模块 995 函数，纯逻辑域零未引用函数**。
+- **board_mechanics 专属直测（最大缺口清偿）**：16 个公共函数（迷雾几何/石头 parity/可玩性门禁/拆弹建与爆/堆叠掩埋/锁链破坏/重力压缩/护甲裂而不消/堆叠顶起）此前全部只靠场景探针的间接状态断言，补 board_mechanics_test 45 断言入 CI 清单 55→56。
+- **散点清偿**：board_engine 补 apply_sum10_faces 直测、build_rock_grid 偶数 parity、contains_coord、edge_path 形状、ensure_playable 双契约（可解盘不动 / 死盘重排保 multiset）、format_time_seconds；board_pathfinder 补 reconstruct_path 直接回放；special_modes 补全部 10 个 builder 形状 + default_configs 深拷贝不变式 + mode_categories 全集合划分；tile_match/memory_flip 补 clear_view（null 安全 + 子节点清空）；tree_buffs 补 is_score_prism；economy 补 yesterday_dict 往返 86400 秒；server_sync 补 boot_sync 三开口（禁用 no-op / 空 meta→register lane / 有 token→pull lane，经共享 HTTPRequest 的 lane meta 断言）；stats_hud 补 is_time_danger 五态（无时钟/零时限/危险/安全/暂停）；ui_style 补 style_secondary_button 与 style_all_secondary_buttons 递归扫。
+- **测试侧的两个 Godot 3 陷阱（复犯记录）**：① `-s` 脚本 Parse Error 照样退出 0——`int += bool` 这类解析错误是假绿，本地验证必须 grep Parse Error；② Godot 3 的 Dictionary `==` 是引用比较、`hash()` 按插入顺序敏感——内容比较要用逐键对比或排序后哈希。
+- Validation: 本地 Godot 3.6.2 全量 56 项 CI 清单 + web_entry 实跑 rc 全 0 且零 Parse Error；shell_audit 八项 perl 对拍 clean；func_coverage_audit 归零（exit 0）。推送后待 CI deploy 回填。
