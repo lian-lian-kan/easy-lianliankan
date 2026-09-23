@@ -28,8 +28,13 @@ static func on_press(game, point):
 	var target_value = int(game.board[point.x][point.y])
 	if not game._values_match(selected_value, target_value):
 		var hint = "请先选择相同图案"
-		if game._is_sum_mode():
-			hint = "合十消：两张牌的数字相加要等于 10 哦"
+		if game._is_rule_mode():
+			if game.special_mode == "sum10":
+				hint = "合十消：两张牌的数字相加要等于 10 哦"
+			elif game.special_mode == "diff1":
+				hint = "差一消：两张牌的数字相差 1 就能消哦"
+			elif game.special_mode == "mult":
+				hint = "倍数消：两数成倍就能消哦"
 		elif game._is_edu_mode():
 			hint = "知识配对：找一对相关的牌（如 汉字↔拼音、单词↔翻译）"
 		_reject_pair(game, previous, point, hint, 0.7)
@@ -133,7 +138,33 @@ static func _execute_match_core(game, path, a, b):
 		game.defense_distance = min(cap, game.defense_distance + 1)
 		game.defense_countdown = int(game._current_level().get("defense_step", 12))
 		game._show_message("⚔️ 击退！距离还有 %d 步" % game.defense_distance, 0.8)
+	# boss 挑战：每消一对打一下；被击败时结算并收尾（盘面无需清空）。
+	if game._is_boss_mode() and _boss_match_hook(game):
+		return
 
 	game._refresh_ui()
 	game._refresh_board_visuals()
 	game._resolve_after_board_changed()
+
+# boss 消除钩子：扣血 → 打空交由击败结算（返回 true）；血线跨过 2/3、1/3
+# 各狂暴一次——逼近提速 + 图案大乱（swap 保 parity，可解性不受影响）。
+static func _boss_match_hook(game) -> bool:
+	game.boss_hp = max(0, game.boss_hp - 1)
+	if game.boss_hp <= 0:
+		game._resolve_boss_defeated()
+		return true
+	var boss_max = max(1, int(game._current_level().get("boss_hp", 24)))
+	var phase = 1
+	if game.boss_hp <= int(boss_max / 3.0):
+		phase = 3
+	elif game.boss_hp <= int(boss_max * 2.0 / 3.0):
+		phase = 2
+	if phase > game.boss_phase:
+		game.boss_phase = phase
+		var step = int(game._current_level().get("defense_step", 12))
+		game.special_level["defense_step"] = max(4, step - 3)
+		for _i in range(phase * 2):
+			game.BOARD_ENGINE.swap_random_faces(game.board)
+		game.audio.play_shuffle()
+		game._show_message("👾 Boss狂暴了！行动更快，图案大乱", 1.2)
+	return false

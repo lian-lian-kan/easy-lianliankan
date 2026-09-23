@@ -26,9 +26,12 @@ static func buff_by_id(buff_id) -> Dictionary:
 	return {}
 
 # Roll OFFER_SIZE distinct buff ids (partial Fisher-Yates over a copy).
-static func roll_offer() -> Array:
+# excluded_ids lets clockless sessions (endless) drop time-based buffs.
+static func roll_offer(excluded_ids := []) -> Array:
 	var pool = []
 	for buff in BUFF_POOL:
+		if str(buff["id"]) in excluded_ids:
+			continue
 		pool.append(str(buff["id"]))
 	var picked = []
 	for i in range(min(OFFER_SIZE, pool.size())):

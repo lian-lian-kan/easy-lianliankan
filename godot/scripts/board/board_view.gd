@@ -65,7 +65,7 @@ static func _tile_base_style(game, button, r, c, value, playing) -> Dictionary:
 		button.text = "❓"
 		bg = Color("ffc2d4")
 		border = Color("f09ebb")
-	elif game._is_sum_mode():
+	elif game._is_rule_mode():
 		button.text = str(value)
 	elif game._is_edu_mode():
 		button.text = game._edu_face_text(value)

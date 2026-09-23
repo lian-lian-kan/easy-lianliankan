@@ -43,6 +43,18 @@ func _init() -> void:
 			seen[buff_id] = true
 	check(rolls_ok, "40 seeded rolls all return distinct in-pool ids")
 
+	# --- roll_offer exclusions: clockless endless drops the time-bound buffs
+	var excluded_ok := true
+	for seed_value in range(40):
+		seed(seed_value * 104729 + 7)
+		var filtered = TREE_BUFFS.roll_offer(["time_gift", "tool_breeze"])
+		if filtered.size() != TREE_BUFFS.OFFER_SIZE:
+			excluded_ok = false
+		for buff_id in filtered:
+			if buff_id == "time_gift" or buff_id == "tool_breeze":
+				excluded_ok = false
+	check(excluded_ok, "excluded ids never surface in 40 seeded endless rolls")
+
 	# --- effect hooks
 	check(TREE_BUFFS.combo_window_mult({}) == 1.0, "no buffs keep the stock combo window")
 	check(abs(TREE_BUFFS.combo_window_mult({"combo_ember": true}) - 1.4) < 0.001, "combo_ember widens the window 1.4x")

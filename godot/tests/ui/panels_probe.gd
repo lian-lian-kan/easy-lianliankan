@@ -516,7 +516,7 @@ func _init() -> void:
 	game._build_pause_panel()
 	check(game.pause_panel != null and game.pause_panel.get_child_count() > 0, "pause panel built")
 
-	# modes hub: the fullscreen page always renders the workshop + all 29 mode
+	# modes hub: the fullscreen page always renders the workshop + all 32 mode
 	# cards (locked ones disabled), whatever the save's unlock state is
 	game._on_modes_pressed()
 	var hub_buttons := []
@@ -526,7 +526,7 @@ func _init() -> void:
 		if String(sub.text).find("关卡工坊") != -1:
 			hub_has_workshop = true
 	check(hub_has_workshop, "the hub page carries the workshop entry")
-	check(hub_buttons.size() == 31, "the hub page renders the back button + workshop + all 29 mode cards (got %d)" % hub_buttons.size())
+	check(hub_buttons.size() == 34, "the hub page renders the back button + workshop + all 32 mode cards (got %d)" % hub_buttons.size())
 	game._on_nav_home_pressed()
 
 	# modal lifecycle: open pauses the stage clock, close resumes it
@@ -589,7 +589,7 @@ func _init() -> void:
 			unlocked_wired = unlocked_wired && not mode_button.is_connected("pressed", game, "_on_special_mode_pressed")
 			if locked_sample == "":
 				locked_sample = mode_button.text
-	check(locked_count == 26, "a fresh save locks 26 of the 29 mode cards (got %d)" % locked_count)
+	check(locked_count == 29, "a fresh save locks 29 of the 32 mode cards (got %d)" % locked_count)
 	check(unlocked_wired, "locked mode cards drop the session wiring")
 	check(locked_sample.find("\n完成第") != -1, "locked mode cards show their unlock requirement")
 
@@ -605,7 +605,7 @@ func _init() -> void:
 			late_locked += 1
 		elif sub.text.find("关卡工坊") == -1 && sub.text.find("返回") == -1:
 			late_playable += 1
-	check(late_locked == 0 && late_playable == 29, "restored unlock index lights every mode card up (playable %d)" % late_playable)
+	check(late_locked == 0 && late_playable == 32, "restored unlock index lights every mode card up (playable %d)" % late_playable)
 	game.progression_state["highest_unlocked_level_index"] = saved_modes_unlock
 	game._on_nav_home_pressed()
 	check(not game.pages_root.visible, "leaving the hub hides the page surface")

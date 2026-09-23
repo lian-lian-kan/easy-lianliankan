@@ -114,6 +114,8 @@ class FakeTimerGame extends Node:
 		return special_mode == "shift"
 	func _is_defense_mode():
 		return special_mode == "defense"
+	func _is_boss_mode():
+		return special_mode == "boss"
 	func _refresh_ui():
 		refreshes += 1
 	func _refresh_board_visuals():

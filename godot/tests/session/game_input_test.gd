@@ -91,6 +91,9 @@ class FakeGame extends Reference:
 	var duel_scores = [0, 0]
 	var defense_distance = 0
 	var defense_countdown = 0
+	var boss_hp = 0
+	var boss_phase = 1
+	var defeated = 0
 	var memory_previewing = false
 	var memory_lock = false
 	var memory_revealed = {}
@@ -129,8 +132,12 @@ class FakeGame extends Reference:
 		return special_mode != ""
 	func _is_memory_mode():
 		return special_mode == "memory"
-	func _is_sum_mode():
-		return special_mode == "sum10"
+	func _is_rule_mode():
+		return special_mode == "sum10" or special_mode == "diff1" or special_mode == "mult"
+	func _is_boss_mode():
+		return special_mode == "boss"
+	func _resolve_boss_defeated():
+		defeated += 1
 	func _is_tree_mode():
 		return special_mode == "tree"
 	func _is_edu_mode():
@@ -344,6 +351,33 @@ func _init() -> void:
 	GAME_INPUT._on_tile_pressed(game, tile_button(0, 0))
 	GAME_INPUT._on_tile_pressed(game, tile_button(1, 1))
 	check(game.defense_distance == 1 and game.defense_countdown == 12, "defense pushes the monster back")
+
+	# --- boss hook: damage per match, enrage at the HP lines, defeat settles
+	game = FakeGame.new()
+	game.special_mode = "boss"
+	game.boss_hp = 9
+	game.boss_phase = 1
+	game.level = {"time_limit": 60, "defense_start": 5, "defense_step": 12, "boss_hp": 9}
+	GAME_INPUT._on_tile_pressed(game, tile_button(0, 0))
+	GAME_INPUT._on_tile_pressed(game, tile_button(1, 1))
+	check(game.boss_hp == 8 and game.boss_phase == 1 and game.resolves == 1, "a match deals one boss damage and stays calm above the enrage line")
+	game = FakeGame.new()
+	game.special_mode = "boss"
+	game.boss_hp = 7
+	game.boss_phase = 1
+	game.level = {"time_limit": 60, "defense_start": 5, "defense_step": 12, "boss_hp": 9}
+	GAME_INPUT._on_tile_pressed(game, tile_button(0, 0))
+	GAME_INPUT._on_tile_pressed(game, tile_button(1, 1))
+	check(game.boss_hp == 6 and game.boss_phase == 2, "crossing 2/3 health enrages the boss")
+	check(int(game.special_level.get("defense_step", 12)) == 9, "the enrage speeds up the creep clock")
+	game = FakeGame.new()
+	game.special_mode = "boss"
+	game.boss_hp = 1
+	game.boss_phase = 3
+	game.level = {"time_limit": 60, "defense_start": 5, "defense_step": 12, "boss_hp": 9}
+	GAME_INPUT._on_tile_pressed(game, tile_button(0, 0))
+	GAME_INPUT._on_tile_pressed(game, tile_button(1, 1))
+	check(game.defeated == 1 and game.resolves == 0, "the killing blow routes to the boss defeat settlement, not the board resolve")
 
 	# --- memory mode: face-up tracking through the same toggles
 	game = FakeGame.new()

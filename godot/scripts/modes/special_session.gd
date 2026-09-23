@@ -14,7 +14,10 @@ const EVENTS = preload("res://scripts/content/events_calendar.gd")
 
 # Shared tail of the per-mode win settlements: record, celebration, banner.
 # Modes dealt by build_classic_style_level (one row in DEFAULT_CONFIGS, no bespoke builder).
-const CLASSIC_STYLE_MODES = ["zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "target", "shift", "slide", "defense", "duel", "sum10", "drag"]
+const CLASSIC_STYLE_MODES = ["zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "target", "shift", "slide", "defense", "boss", "duel", "sum10", "diff1", "mult", "drag"]
+
+# 无尽模式的轮间增益奖池排除项：无尽没有时钟——加时收益为零、免时耗无意义。
+const ENDLESS_BUFF_EXCLUDED = ["time_gift", "tool_breeze"]
 
 static func _finish_special_win(game, message):
 	if game._is_duel_mode():
@@ -133,7 +136,8 @@ static func _finish_special_clear(game, time_bonus):
 		game.stage_status = game.STATUS_COMPLETED
 		game._play_stage_clear_celebration(true)
 
-# 无尽模式一轮完成：记成绩、发徽章、推进到更大的一轮并踢推进计时器。
+# 无尽模式一轮完成：记成绩、发徽章、推进到更大的一轮，然后进入轮间休整
+# （roguelike 三选一增益，复用攀登树的整套基建；挑选后由 resolve 踢计时器）。
 static func _advance_endless_round(game, time_bonus):
 	game._patch_progress_state({"endless_result": {"round": game.endless_round, "score": game.total_score}})
 	if game.endless_round >= 5:
@@ -144,10 +148,7 @@ static func _advance_endless_round(game, time_bonus):
 	game.stage_status = game.STATUS_CLEARED
 	game._play_stage_clear_celebration(false)
 	game._show_message("第" + str(finished_round) + "轮完成～奖励 +" + str(time_bonus) + "，下一轮更大", 1.4)
-	# Kick the advance timer so the next (bigger) round actually starts.
-	game.level_advance_timer.stop()
-	game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
-	game.level_advance_timer.start()
+	_offer_tree_buffs(game, ENDLESS_BUFF_EXCLUDED)
 
 # UGC 试玩结算：a small flat thank-you, no records/missions/leaderboard.
 static func _settle_custom_win(game):
@@ -184,9 +185,10 @@ static func _advance_tree_layer(game, time_bonus):
 	_offer_tree_buffs(game)
 
 # Roll the three-choice buff offer and surface it; the clock stays stopped
-# (the stage is CLEARED) until the player picks or skips.
-static func _offer_tree_buffs(game):
-	game.tree_pending_buffs = game.TREE_BUFFS.roll_offer()
+# (the stage is CLEARED) until the player picks or skips. excluded_ids lets
+# endless drop buffs that assume a clock.
+static func _offer_tree_buffs(game, excluded_ids := []):
+	game.tree_pending_buffs = game.TREE_BUFFS.roll_offer(excluded_ids)
 	game.tree_buff_offer_open = true
 	game.UI_PANELS.offer_tree_buffs(game)
 
@@ -204,6 +206,15 @@ static func _resolve_tree_buff_pick(game, buff_id):
 	game.level_advance_timer.stop()
 	game.level_advance_timer.wait_time = float(game.tuning.get("level_advance_ms", 1200)) / 1000.0
 	game.level_advance_timer.start()
+
+# boss 被击败：盘面无需清空，即时结算——剩余时间照折奖励分，纪录/成就走
+# 结算表的通用通路（_finish_special_win → _record_special_completion）。
+static func _resolve_boss_defeated(game):
+	var time_bonus = _special_time_bonus(game)
+	game.total_score += time_bonus
+	game.level_score += time_bonus
+	_finish_special_win(game, "👾 Boss被打败了！奖励 +%d" % time_bonus)
+	game._refresh_board_visuals()
 
 static func _record_special_completion(game):
 	game._mission_special_done()

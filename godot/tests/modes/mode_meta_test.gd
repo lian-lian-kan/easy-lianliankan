@@ -5,6 +5,7 @@ extends SceneTree
 const SM = preload("res://scripts/modes/special_modes.gd")
 const DATA = preload("res://scripts/modes/special_modes_data.gd")
 const PROGRESSION = preload("res://scripts/session/progression.gd")
+const CAMPAIGN = preload("res://scripts/modes/campaign_levels.gd")
 
 var failures := 0
 
@@ -35,7 +36,10 @@ func _init() -> void:
 		"shift": "变脸模式",
 		"slide": "滑移模式",
 		"defense": "守卫模式",
+		"boss": "Boss挑战",
 		"sum10": "合十消",
+		"diff1": "差一消",
+		"mult": "倍数消",
 		"duel": "同屏对战",
 		"drag": "连线消",
 		"edu": "知识配对",
@@ -45,11 +49,11 @@ func _init() -> void:
 		if SM.mode_label(mode) != labels[mode]:
 			all_ok = false
 			push_error("label mismatch: %s -> %s (want %s)" % [mode, SM.mode_label(mode), labels[mode]])
-	check(all_ok, "mode_label covers all 29 modes")
+	check(all_ok, "mode_label covers all 32 modes")
 	check(SM.mode_label("nope") == "未知", "unknown mode falls back to 未知")
 	check(SM.mode_label("tray") == "叠叠消", "tray label registered")
 
-	var intros = ["daily", "time_attack", "endless", "frost", "zen", "hell", "moves", "race", "tray", "collect", "flip", "fever", "perfect", "drag", "edu"]
+	var intros = ["daily", "time_attack", "endless", "frost", "zen", "hell", "moves", "race", "tray", "collect", "flip", "fever", "perfect", "drag", "edu", "diff1", "mult", "boss"]
 	var intros_ok = true
 	for mode in intros:
 		var txt = SM.intro_text(mode)
@@ -64,7 +68,7 @@ func _init() -> void:
 	var defined_ids = {}
 	for a in PROGRESSION.get_all_achievements():
 		defined_ids[a["id"]] = true
-	check(SM.record_modes().size() == 25, "record table covers 25 modes")
+	check(SM.record_modes().size() == 28, "record table covers 28 modes")
 	var table_ok = true
 	var ach_ok = true
 	for mode in SM.record_modes():
@@ -84,8 +88,8 @@ func _init() -> void:
 	check(SM.bonus_achievements("moves", {"moves_left": 5, "move_budget": 56}) == [], "moves below threshold earns none")
 	check(SM.bonus_achievements("race", {}) == [], "race has no conditional bonus")
 
-	# --- modes_panel_rows: 13 ordered rows, best-score formatting, daily done branch.
-	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "tray", "collect", "flip", "rock", "defuse", "target", "shift", "slide", "defense", "sum10", "duel", "drag", "edu", "endless", "tree"]
+	# --- modes_panel_rows: 32 ordered rows, best-score formatting, daily done branch.
+	var want_ids = ["daily", "time_attack", "memory", "frost", "zen", "hell", "moves", "race", "stack", "gravity", "fog", "chain", "fever", "perfect", "tray", "collect", "flip", "rock", "defuse", "target", "shift", "slide", "defense", "boss", "sum10", "diff1", "mult", "duel", "drag", "edu", "endless", "tree"]
 	var state := {
 		"daily_challenge": {"streak": 2, "best_score": 88},
 		"time_attack_best_score": 120, "memory_best_score": 34, "frost_best_score": 56,
@@ -97,7 +101,8 @@ func _init() -> void:
 		"rock_best_score": 121, "defuse_best_score": 131,
 		"target_best_score": 141, "shift_best_score": 151,
 		"slide_best_score": 161, "defense_best_score": 171,
-		"sum10_best_score": 181, "duel_best_score": 191,
+		"boss_best_score": 172,
+		"sum10_best_score": 181, "diff1_best_score": 182, "mult_best_score": 183, "duel_best_score": 191,
 		"drag_best_score": 192, "edu_best_score": 193,
 		"endless_best": {"round": 3, "score": 456},
 	}
@@ -105,7 +110,7 @@ func _init() -> void:
 	var got_ids := []
 	for r in rows:
 		got_ids.append(r["id"])
-	check(got_ids == want_ids, "modes_panel_rows returns 29 rows in panel order")
+	check(got_ids == want_ids, "modes_panel_rows returns 32 rows in panel order")
 	var titles_ok := true
 	for r in rows:
 		if r["title"] == "" or r["detail"] == "":
@@ -120,7 +125,7 @@ func _init() -> void:
 			details_ok = false
 			push_error("detail mismatch for %s: %s" % [r["id"], r["detail"]])
 	check(details_ok, "special-mode details end with their best score")
-	var endless_row = rows[27]
+	var endless_row = rows[30]
 	check(endless_row["detail"].find("最佳第3轮") != -1 and endless_row["detail"].find("最高456分") != -1, "endless detail shows round and score")
 	var daily_row = rows[0]
 	check(daily_row["detail"].find("今日已完成") == -1, "daily shows not-done without today's date")
@@ -141,11 +146,16 @@ func _init() -> void:
 	check(SM.stage_callout("memory", campaign_level, 2, 1)[1] == Color("3bc9db"), "memory callout carries its color")
 	var frost_callout = SM.stage_callout("frost", {"frost_ratio": 0.38}, 2, 1)
 	check(frost_callout[0].find("38%") != -1, "frost callout embeds the frozen percentage")
+	check(SM.stage_callout("boss", {"boss_hp": 24}, 2, 1)[0] == "Boss挑战 · Boss剩余 24", "boss callout embeds the boss health")
 
 	# --- special_modes_data invariants: the whole campaign's unlock curve
 	# and per-mode payloads must stay inside legal bounds (BQ found unlock
 	# levels beyond the campaign once already) ---
-	check(DATA.DEFAULT_CONFIGS.size() == 29, "data module carries 29 mode configs")
+	# The bound derives from the campaign table itself: highest_unlocked_level_index
+	# clamps to LEVELS.size()-1, so an unlock_level beyond LEVELS.size() can
+	# never be reached (slide/defense/sum10/duel shipped unplayable that way).
+	var max_unlock := CAMPAIGN.LEVELS.size()
+	check(DATA.DEFAULT_CONFIGS.size() == 32, "data module carries 32 mode configs")
 	var inv_ok = true
 	var unlock_too_high = ""
 	for mode_id in DATA.DEFAULT_CONFIGS:
@@ -157,12 +167,12 @@ func _init() -> void:
 			inv_ok = false
 			push_error("missing name/description in %s" % mode_id)
 		var unlock_level = int(cfg.get("unlock_level", 1))
-		if unlock_level < 1 or unlock_level > 17:
+		if unlock_level < 1 or unlock_level > max_unlock:
 			inv_ok = false
 			unlock_too_high = mode_id
 		if int(cfg.get("time_limit", 1)) < 0:
 			inv_ok = false
-	check(inv_ok, "all 29 configs carry mode_id/name/description and legal unlock levels" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
+	check(inv_ok, "all 32 configs carry mode_id/name/description and unlock levels within the campaign" + (" (offender %s)" % unlock_too_high if unlock_too_high != "" else ""))
 	check(int(DATA.DEFAULT_CONFIGS["fever"]["fever_mode_threshold"]) >= 2, "fever needs combo 2+")
 	check(int(DATA.DEFAULT_CONFIGS["perfect"]["miss_limit"]) >= 1, "perfect carries a miss budget")
 
@@ -180,7 +190,7 @@ func _init() -> void:
 	# labels/intros/categories/settlement/subtitles. Any new mode missing a
 	# surface (panel row, category, settlement keys, save schema, achievement)
 	# must turn CI red here instead of silently falling back on screen ---
-	check(DATA.MODES.size() == 29, "registry declares 29 special modes")
+	check(DATA.MODES.size() == 32, "registry declares 32 special modes")
 	check(DATA.CATEGORY_TITLES.size() == 7, "registry declares 7 panel categories")
 	var reg_ids := {}
 	for mode_id in DATA.MODES:
@@ -236,7 +246,7 @@ func _init() -> void:
 	check(sub_ok, "subtitle_record_key derives best keys exactly for sub=best rows")
 
 	var flat = SM.flat_best_keys()
-	check(flat.size() == 27, "flat_best_keys derives 27 save keys (25 records + time_attack + tree)")
+	check(flat.size() == 30, "flat_best_keys derives 30 save keys (28 records + time_attack + tree)")
 	var flat_ok := true
 	for mode_id in SM.record_modes():
 		if not flat.has(str(mode_id) + "_best_score"):
@@ -246,7 +256,7 @@ func _init() -> void:
 		flat_ok = false
 		push_error("flat keys missing a bespoke best key")
 	check(flat_ok, "flat_best_keys covers every record mode plus the bespoke pair")
-	check(PROGRESSION.flat_best_keys().size() == 27, "progression schema mirrors the registry-derived flat keys")
+	check(PROGRESSION.flat_best_keys().size() == 30, "progression schema mirrors the registry-derived flat keys")
 
 	# Power-up loadout guard (kept from the scattered-table era): extras must
 	# target real modes; overrides only tweak known grant keys.

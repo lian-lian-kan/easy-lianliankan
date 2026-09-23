@@ -173,6 +173,7 @@ static func _tree_buff_panel(game):
 	title.add_font_override("font", game.game_font)
 	title.add_color_override("font_color", Color("5c3a4d"))
 	content.add_child(title)
+	game.tree_buff_title = title
 
 	game.tree_buff_options = VBoxContainer.new()
 	game.tree_buff_options.add_constant_override("separation", 10)
@@ -185,12 +186,23 @@ static func _tree_buff_panel(game):
 	skip_button.add_font_override("font", game.game_font)
 	skip_button.connect("pressed", game, "_on_tree_buff_skipped")
 	content.add_child(skip_button)
+	game.tree_buff_skip = skip_button
 	game._style_dialog_buttons(game.tree_buff_panel)
+
+
+# 树=层间休整，无尽=轮间休整：同一块面板，文案随会话刷新（全部复用既有字符）。
+static func _tree_buff_copy(game) -> Dictionary:
+	if game.special_mode == "endless":
+		return {"title": "∞ 轮间休整 · 三选一增益", "skip": "跳过，直接开始下一轮"}
+	return {"title": "🌳 层间休整 · 三选一增益", "skip": "跳过，直接继续攀登"}
 
 
 static func offer_tree_buffs(game):
 	if game.tree_buff_panel == null:
 		_tree_buff_panel(game)
+	var copy = _tree_buff_copy(game)
+	game.tree_buff_title.text = copy["title"]
+	game.tree_buff_skip.text = copy["skip"]
 	_refresh_tree_buff_options(game)
 	game.tree_buff_panel.visible = true
 

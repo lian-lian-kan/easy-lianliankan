@@ -85,6 +85,20 @@ func _init() -> void:
 	check(sum_hint.empty(), "sum10 hint also honours filters")
 	check(not FINDER.find_any_hint([[1, 2, 9]], AllowAll.new(), "playable", "sum10").empty(), "sum10 hint finds 1-9")
 
+	# --- digit rule predicates: diff1 neighbours, mult divisors
+	check(FINDER.values_match("diff1", 3, 4), "diff1 connects 3 and 4")
+	check(FINDER.values_match("diff1", 4, 3), "diff1 is symmetric")
+	check(FINDER.values_match("diff1", 5, 5), "diff1 keeps equal faces matchable")
+	check(FINDER.values_match("diff1", 3, 5) == false, "diff1 refuses a gap of 2")
+	check(not FINDER.find_path([[3, 0, 0, 4]], Vector2(0, 0), Vector2(0, 3), "diff1").empty(), "diff1 path honours the predicate")
+	check(FINDER.values_match("mult", 2, 8), "mult connects 2 and 8")
+	check(FINDER.values_match("mult", 9, 3), "mult connects 9 and 3")
+	check(FINDER.values_match("mult", 6, 6), "mult keeps equal faces matchable")
+	check(FINDER.values_match("mult", 5, 2) == false, "mult refuses 5 and 2")
+	check(FINDER.values_match("mult", 8, 6) == false, "mult refuses 8 and 6")
+	check(not FINDER.find_any_hint([[2, 0, 4]], AllowAll.new(), "playable", "mult").empty(), "mult hint finds a divisor pair")
+	check(FINDER.find_any_hint([[5, 0, 7]], BlockAll.new(), "playable", "mult").empty(), "mult hint refuses non-divisor faces")
+
 	if failures == 0:
 		print("board_pathfinder_test: ALL PASSED")
 		quit(0)

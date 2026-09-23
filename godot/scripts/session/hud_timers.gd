@@ -55,23 +55,34 @@ static func _on_second_tick(game):
 				game.audio.play_shuffle()
 				game._show_message("🔄 变脸！图案换位置了", 0.9)
 				game._refresh_board_visuals()
-	# Defense: the monster creeps closer every step interval; reaching the
+	# Defense/boss: the menace creeps closer every step interval; reaching the
 	# player loses the run even with time left on the clock.
-	if game._is_defense_mode() and game.defense_countdown > 0:
-		game.defense_countdown -= 1
-		if game.defense_countdown == 0:
-			game.defense_countdown = int(game._current_level().get("defense_step", 12))
-			game.defense_distance -= 1
-			game.audio.play_select()
-			if game.defense_distance <= 0:
-				game.SESSION._fail_stage(game, "🧟 怪物冲到了面前，防线失守！\n点击「重开」再战")
-			else:
-				game._show_message("🧟 怪物逼近！还剩 %d 步距离" % game.defense_distance, 1.1)
-				game._refresh_board_visuals()
+	if game._is_defense_mode() or game._is_boss_mode():
+		_tick_menace(game)
 	game._refresh_ui()
 
 	if game.time_left <= 0:
 		game._on_time_up()
+
+# Shared creep clock for defense (monster) and boss (the boss itself). Each
+# step interval drops the distance by one; matches push it back (pair_select).
+static func _tick_menace(game):
+	if game.defense_countdown <= 0:
+		return
+	game.defense_countdown -= 1
+	if game.defense_countdown != 0:
+		return
+	game.defense_countdown = int(game._current_level().get("defense_step", 12))
+	game.defense_distance -= 1
+	game.audio.play_select()
+	var is_boss = game._is_boss_mode()
+	if game.defense_distance <= 0:
+		var lose_text = "👾 Boss冲到了面前，挑战失败！\n点击「重开」再战" if is_boss else "🧟 怪物冲到了面前，防线失守！\n点击「重开」再战"
+		game.SESSION._fail_stage(game, lose_text)
+		return
+	var near_text = "👾 Boss逼近！还剩 %d 步距离" if is_boss else "🧟 怪物逼近！还剩 %d 步距离"
+	game._show_message(near_text % game.defense_distance, 1.1)
+	game._refresh_board_visuals()
 
 static func _on_race_tick(game):
 	if game.special_mode != "race" or game.stage_status != game.STATUS_PLAYING:

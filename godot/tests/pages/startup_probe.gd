@@ -142,10 +142,23 @@ func _init() -> void:
 				check(_board_cells(game) > 0, "defense deals a real board")
 				check(int(game.defense_distance) > 0, "defense arms the monster distance")
 				check(int(game.defense_countdown) > 0, "defense arms its advance interval")
+			"boss":
+				check(_board_cells(game) > 0, "boss deals a real board")
+				check(int(game.boss_hp) == int(game.special_level.get("boss_hp", 0)), "boss starts at full health")
+				check(int(game.boss_phase) == 1, "boss starts in phase 1")
+				check(int(game.defense_distance) > 0 && int(game.defense_countdown) > 0, "boss arms its creep clock")
 			"sum10":
 				check(_board_cells(game) > 0, "sum10 deals a real board")
 				check(game.BOARD_ENGINE.values_match("sum10", 3, 7), "sum10 pairs digits summing to 10")
 				check(not game.BOARD_ENGINE.values_match("sum10", 3, 6), "sum10 rejects non-ten sums")
+			"diff1":
+				check(_board_cells(game) > 0, "diff1 deals a real board")
+				check(not game.BOARD_ENGINE.find_any_hint(game.board, game, "_is_coord_playable", "diff1").empty(),
+					"diff1 deals a rule-matchable pair")
+			"mult":
+				check(_board_cells(game) > 0, "mult deals a real board")
+				check(not game.BOARD_ENGINE.find_any_hint(game.board, game, "_is_coord_playable", "mult").empty(),
+					"mult deals a rule-matchable pair")
 			"duel":
 				check(_board_cells(game) > 0, "duel deals a real board")
 				check(int(game.duel_scores[0]) == 0 && int(game.duel_scores[1]) == 0, "duel starts with zero scores")

@@ -252,7 +252,7 @@ static func build_defuse_level(config, progress_level: int) -> Dictionary:
 const CLASSIC_OPTIONAL_FIELDS = [
 	"move_budget", "miss_limit", "ai_interval", "stack_ratio", "fog_layers",
 	"defense_start", "defense_step", "sum10", "chain_ratio", "target_bonus",
-	"shift_interval", "chain_min",
+	"shift_interval", "chain_min", "boss_hp",
 ]
 
 static func build_classic_style_level(config, mode_id: String):
@@ -388,6 +388,8 @@ static func stage_callout(mode: String, level, level_index: int, endless_round: 
 		return ["翻翻乐", Color("9775fa")]
 	if mode == "tree":
 		return ["攀登树 · 第%d层" % int(level.get("tree_height", 1)), Color("40c057")]
+	if mode == "boss":
+		return ["Boss挑战 · Boss剩余 %d" % int(level.get("boss_hp", 24)), Color("f06565")]
 	if mode == "drag":
 		return ["连线消 · 一笔拖过 3+ 同款", Color("20c997")]
 	if mode == "edu":

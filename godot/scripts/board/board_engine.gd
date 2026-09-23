@@ -117,6 +117,50 @@ static func apply_sum10_faces(board_state):
 				board_state[r][c] = 10 - v
 
 
+# 差一消 deal: logical types 1..8 split into neighbour digit faces (t, t+1),
+# so every dealt pair satisfies |a-b| = 1 and every face stays a single digit.
+static func apply_diff1_faces(board_state):
+	var seen = {}
+	for r in range(board_state.size()):
+		for c in range(board_state[0].size()):
+			var v = int(board_state[r][c])
+			if v == 0 or is_rock_value(v):
+				continue
+			var times = int(seen.get(v, 0))
+			seen[v] = times + 1
+			if times % 2 == 1:
+				board_state[r][c] = v + 1
+
+
+# 倍数消 deal: logical types 1..6 map to digit pairs where one face is a
+# multiple of the other (2-4/2-6/2-8/3-6/3-9/4-8); faces 1/5/7 never deal.
+const MULT_FACE_PAIRS = [[2, 4], [2, 6], [2, 8], [3, 6], [3, 9], [4, 8]]
+
+static func apply_mult_faces(board_state):
+	var seen = {}
+	for r in range(board_state.size()):
+		for c in range(board_state[0].size()):
+			var v = int(board_state[r][c])
+			if v == 0 or is_rock_value(v):
+				continue
+			var times = int(seen.get(v, 0))
+			seen[v] = times + 1
+			var pair = MULT_FACE_PAIRS[(v - 1) % MULT_FACE_PAIRS.size()]
+			board_state[r][c] = pair[0] if times % 2 == 0 else pair[1]
+
+
+# Rule-mode face transforms: the digit rules deal split faces so every dealt
+# pair satisfies its mode predicate (pathfinding/hints read values_match with
+# the same mode id). Callers pass the session's special_mode.
+static func apply_rule_faces(mode_id, board_state):
+	if mode_id == "sum10":
+		apply_sum10_faces(board_state)
+	elif mode_id == "diff1":
+		apply_diff1_faces(board_state)
+	elif mode_id == "mult":
+		apply_mult_faces(board_state)
+
+
 # Edu deal: concept ids 1..kinds (each dealt exactly twice) split into a
 # prompt face (2c-1) and an answer face (2c); edu values_match pairs them.
 static func apply_edu_faces(board_state):

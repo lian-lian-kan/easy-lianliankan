@@ -194,6 +194,32 @@ func _init() -> void:
 	check(ENGINE.fog_layers(24, 2) == 1 and ENGINE.fog_layers(12, 2) == 0 and ENGINE.fog_layers(240, 2) == 2 and ENGINE.fog_layers(100, 5) == 4, "fog layers follow remaining/24 clamped to max")
 	check(ENGINE.zero_grid([[1, 2], [3, 4]])[1][0] == 0, "zero_grid clears every cell")
 
+	# --- digit rule face deals: split pairs satisfy each mode predicate
+	var diff_board = ENGINE.create_board(4, 4, 8)
+	ENGINE.apply_diff1_faces(diff_board)
+	for r in range(diff_board.size()):
+		for c in range(diff_board[0].size()):
+			if int(diff_board[r][c]) != 0:
+				check_v(int(diff_board[r][c]), 9)
+	check(not ENGINE.find_any_hint(diff_board, null, "", "diff1").empty(), "diff1 deal is rule-playable")
+
+	var mult_board = ENGINE.create_board(4, 4, 6)
+	ENGINE.apply_mult_faces(mult_board)
+	var legal_faces := {2: true, 3: true, 4: true, 6: true, 8: true, 9: true}
+	for r in range(mult_board.size()):
+		for c in range(mult_board[0].size()):
+			var mv = int(mult_board[r][c])
+			if mv == 0:
+				continue
+			if not legal_faces.has(mv):
+				push_error("FAIL - mult face %d outside the divisor set" % mv)
+				failures += 1
+	check(not ENGINE.find_any_hint(mult_board, null, "", "mult").empty(), "mult deal is rule-playable")
+
+	var rule_board = ENGINE.create_board(2, 4, 8)
+	ENGINE.apply_rule_faces("diff1", rule_board)
+	check(not ENGINE.find_any_hint(rule_board, null, "", "diff1").empty(), "apply_rule_faces dispatches by mode id")
+
 	if failures == 0:
 		print("board_engine_test: ALL PASSED")
 		quit(0)

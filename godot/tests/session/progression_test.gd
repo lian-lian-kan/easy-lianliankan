@@ -116,7 +116,7 @@ func _init() -> void:
 	# (record_modes best_key or one of the bespoke keys), and round-trip
 	# through normalize + same_progress when it changes.
 	var flat = progression.flat_best_keys()
-	_assert_equal(flat.size(), 27, "flat_best_keys derives 27 mode bests")
+	_assert_equal(flat.size(), 30, "flat_best_keys derives 30 mode bests")
 	var fresh_save = progression.default_progress(10)
 	var missing := []
 	for key in flat:

@@ -114,7 +114,9 @@ class FakeGame extends Reference:
 		return false
 	func _is_rock_mode():
 		return false
-	func _is_sum_mode():
+	func _is_rule_mode():
+		return false
+	func _is_boss_mode():
 		return false
 	func _is_edu_mode():
 		return false

@@ -40,12 +40,17 @@ static func pad_board(board_state):
 
 	return padded
 
-# Pair rule: equal faces everywhere; sum10 mode also clears digit pairs that
-# add up to 10 (1-9, 2-8, 3-7, 4-6, plus the equal 5-5 pair); edu mode pairs
-# a concept's prompt face with its answer face (values 2c-1 / 2c).
+# Pair rule: equal faces everywhere; the digit rules also clear number pairs
+# by their predicate (sum10 adds up to 10: 1-9/2-8/3-7/4-6 plus the equal
+# 5-5 pair; diff1 neighbours |a-b|=1; mult divides a%b==0 or b%a==0); edu
+# pairs a concept's prompt face with its answer face (values 2c-1 / 2c).
 static func values_match(mode_id, a, b):
 	if mode_id == "sum10":
 		return a == b or a + b == 10
+	if mode_id == "diff1":
+		return a == b or abs(a - b) == 1
+	if mode_id == "mult":
+		return a == b or a % b == 0 or b % a == 0
 	if mode_id == "edu":
 		return EDU.values_match(int(a), int(b))
 	return a == b

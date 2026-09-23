@@ -99,11 +99,14 @@ var drag_active = false
 var drag_consumed = false
 
 # 攀登树 roguelike 增益（本层/本次攀登生效，见 tree_buffs.gd）。
+# 无尽模式的轮间三选一复用同一套状态与面板（成员名沿用 tree_ 前缀）。
 var tree_buffs = {}
 var tree_pending_buffs = []
 var tree_buff_offer_open = false
 var tree_buff_panel  # 层间增益弹窗（懒构建）
 var tree_buff_options  # 增益选项容器
+var tree_buff_title  # 弹窗标题（树=层间休整 / 无尽=轮间休整）
+var tree_buff_skip  # 跳过按钮（文案随模式刷新）
 
 # Memory (盲盒) session state
 var memory_previewing = false
@@ -169,6 +172,9 @@ var target_pair = [Vector2(-1, -1), Vector2(-1, -1)]
 var shift_countdown = 0
 var defense_distance = 0
 var defense_countdown = 0
+# boss 挑战：复用 defense 的逼近成员当狂暴节奏，血量打空即胜。
+var boss_hp = 0
+var boss_phase = 1
 var duel_scores = [0, 0]
 var duel_current = 0
 var pull_http = null
@@ -488,11 +494,15 @@ func _is_slide_mode():
 func _is_defense_mode():
 	return special_mode == "defense"
 
+func _is_boss_mode():
+	return special_mode == "boss"
+
 func _is_duel_mode():
 	return special_mode == "duel"
 
-func _is_sum_mode():
-	return special_mode == "sum10"
+func _is_rule_mode():
+	# 数字规则玩法：配对谓词改写（values_match）+ 数字牌面，共享一条接线。
+	return special_mode == "sum10" or special_mode == "diff1" or special_mode == "mult"
 
 func _is_tree_mode():
 	return special_mode == "tree"
@@ -579,6 +589,11 @@ func _on_tree_buff_picked(buff_id):
 
 func _on_tree_buff_skipped():
 	return SPECIAL_SESSION._resolve_tree_buff_pick(self, "")
+
+# ── boss 挑战（pair_select 消除钩子经此进入会话域，interactions 不反向 preload） ──
+
+func _resolve_boss_defeated():
+	return SPECIAL_SESSION._resolve_boss_defeated(self)
 
 func _on_tray_tile_pressed(tile_index):
 	var result = TILE_MATCH.pick(tray_state, tile_index)

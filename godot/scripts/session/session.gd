@@ -121,8 +121,8 @@ static func _init_mode_boards(game, level):
 		game.BOARD_MECHANICS.build_rocks(game, level)
 	if game._is_defuse_mode():
 		game.BOARD_MECHANICS.build_bombs(game, level)
-	if game._is_sum_mode():
-		game.BOARD_ENGINE.apply_sum10_faces(game.board)
+	if game._is_rule_mode():
+		game.BOARD_ENGINE.apply_rule_faces(game.special_mode, game.board)
 	if game._is_edu_mode():
 		game.edu_faces = game.EDU.faces_for(str(level.get("subject", "hanzi")))
 		game.BOARD_ENGINE.apply_edu_faces(game.board)
@@ -130,6 +130,14 @@ static func _init_mode_boards(game, level):
 		game._build_stack_layers(float(level.get("stack_ratio", 0.25)))
 	if game._is_chain_mode():
 		game._build_chain_locks(float(level.get("chain_ratio", 0.22)))
+	if game._is_boss_mode():
+		_init_boss(game, level)
+
+
+# boss 挑战：血量与狂暴节奏来自关卡表（defense_start/defense_step 复用为逼近节奏）。
+static func _init_boss(game, level):
+	game.boss_hp = int(level.get("boss_hp", 24))
+	game.boss_phase = 1
 
 
 # Interaction scratch state: nothing armed, no stale highlights or paths.
