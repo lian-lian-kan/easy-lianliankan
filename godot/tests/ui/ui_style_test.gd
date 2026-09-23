@@ -68,6 +68,22 @@ func _init() -> void:
 	for node in [panel, button, dialog]:
 		node.free()
 
+	# --- style_secondary_button / style_all_secondary_buttons: the white-card
+	# companion look, applied recursively
+	var secondary = Button.new()
+	STYLE.style_secondary_button(secondary)
+	check(secondary.get_stylebox("normal").bg_color == Color("ffffff"), "secondary buttons keep the white card")
+	check(secondary.get_color("font_color") == Color("d6336c"), "secondary text is pink on white")
+	check(secondary.get_color("font_disabled_color") == Color("c9a5b6"), "disabled secondary text softens")
+	var sweep_panel = PanelContainer.new()
+	var sweep_box = VBoxContainer.new()
+	var deep = Button.new()
+	sweep_box.add_child(deep)
+	sweep_panel.add_child(sweep_box)
+	STYLE.style_all_secondary_buttons(sweep_panel)
+	check(deep.get_color("font_color") == Color("d6336c"), "the sweep reaches nested buttons")
+	sweep_panel.free()
+
 	if failures == 0:
 		print("ui_style_test: ALL PASSED")
 		quit(0)

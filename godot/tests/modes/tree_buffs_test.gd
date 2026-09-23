@@ -75,6 +75,11 @@ func _init() -> void:
 	check(TREE_BUFFS.bonus_loadout({"time_gift": true}).empty(), "the time gift is not a loadout grant")
 	check(TREE_BUFFS.bonus_loadout("junk").empty(), "non-dict buffs yield no grants")
 
+	# --- score prism predicate (public view of the multiplier gate)
+	check(TREE_BUFFS.is_score_prism({"score_prism": true}), "is_score_prism detects the prism")
+	check(not TREE_BUFFS.is_score_prism({}), "is_score_prism rejects empty buffs")
+	check(not TREE_BUFFS.is_score_prism("junk"), "is_score_prism rejects non-dict buffs")
+
 	if failures == 0:
 		print("tree_buffs_test: ALL PASSED")
 		quit(0)

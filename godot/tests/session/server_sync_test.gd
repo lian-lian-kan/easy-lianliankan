@@ -45,6 +45,9 @@ class FakeGame extends Node:
 		cancelled += 1
 	func _on_sync_request_completed(_result, code, _headers, body, kind):
 		SERVER_SYNC.on_completed(self, kind, code, body.get_string_from_utf8())
+	func _on_pull_http_completed(_result, code, _headers, body):
+		# the boot handshake wires its shared HTTPRequest straight at this shell
+		SERVER_SYNC.on_completed(self, pull_http.get_meta("lane"), code, body.get_string_from_utf8())
 
 func _forward(game, kind, code, body):
 	game._on_sync_request_completed(0, code, null, body.to_utf8(), kind)
@@ -152,6 +155,20 @@ func _init() -> void:
 	SERVER_SYNC._write_meta(game, {"user_id": "u9", "token": "t9", "synced_at": 77})
 	var round_trip = SERVER_SYNC._meta(game)
 	check(str(round_trip["user_id"]) == "u9" and int(round_trip["synced_at"]) == 77, "sync meta persists beside the local save")
+
+	# --- boot_sync: the three boot openings (disabled / first contact / returning)
+	OS.set_environment("LIANLIAN_SYNC", "0")
+	var boot_game = FakeGame.new()
+	SERVER_SYNC.boot_sync(boot_game)
+	check(boot_game.pull_http == null, "disabled sync keeps the boot handshake a no-op")
+	OS.set_environment("LIANLIAN_SYNC", "1")
+	SERVER_SYNC._write_meta(boot_game, {"user_id": "", "token": "", "synced_at": 0})
+	SERVER_SYNC.boot_sync(boot_game)
+	check(boot_game.pull_http != null and boot_game.pull_http.get_meta("lane") == "register",
+		"an empty meta opens the register lane")
+	SERVER_SYNC._write_meta(boot_game, {"user_id": "u9", "token": "t9", "synced_at": 77})
+	SERVER_SYNC.boot_sync(boot_game)
+	check(boot_game.pull_http.get_meta("lane") == "pull", "a stored token resumes with a pull")
 
 	OS.set_environment("LIANLIAN_SYNC", "0")
 	var dir = Directory.new()

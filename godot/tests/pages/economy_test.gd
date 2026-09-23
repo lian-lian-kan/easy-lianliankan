@@ -84,6 +84,14 @@ func _init() -> void:
 	ECONOMY.collect_level_icons(game)
 	check(game.patches.size() == 1, "replaying the same set pays nothing")
 
+	# --- yesterday_dict: the signin streak keys off the same epoch math
+	var yesterday = ECONOMY.yesterday_dict()
+	check(yesterday.has("year") and yesterday.has("month") and yesterday.has("day"),
+		"yesterday_dict returns a full datetime dict")
+	var today_epoch = OS.get_unix_time_from_datetime(OS.get_date())
+	var yesterday_epoch = OS.get_unix_time_from_datetime(yesterday)
+	check(today_epoch - yesterday_epoch == 86400, "yesterday_dict is exactly one day back")
+
 	if failures == 0:
 		print("economy_test: ALL PASSED")
 		quit(0)

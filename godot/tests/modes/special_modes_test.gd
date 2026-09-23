@@ -162,6 +162,37 @@ func _init() -> void:
 	_assert_equal(PROGRESSION.has_achievement(ach_state, "memory_first"), true, "memory achievement unlocks")
 	_assert_equal(PROGRESSION.get_achievement_info("memory_first")["name"], "盲盒初体验", "memory achievement info resolvable")
 
+	# --- builders and derived views: every public builder keeps its shape
+	var fresh = SPECIAL_MODES.default_configs()
+	fresh["zen"]["rows"] = 99
+	_assert_equal(int(SPECIAL_MODES.DEFAULT_CONFIGS["zen"]["rows"]), int(configs["zen"]["rows"]),
+		"default_configs returns deep copies — the const table never mutates")
+	var tree_level = SPECIAL_MODES.build_tree_level({}, 7)
+	_assert_equal(int(tree_level.get("tree_height", 0)), 7, "build_tree_level stamps the layer height")
+	var tray_level = SPECIAL_MODES.build_tray_level(configs["tray"])
+	_assert_equal(int(tray_level["layers"]), int(configs["tray"]["layers"]), "build_tray_level carries the pile layers")
+	var collect_level = SPECIAL_MODES.build_collect_level(configs["collect"])
+	_assert_equal(collect_level["targets"].size(), int(configs["collect"]["target_count"]),
+		"build_collect_level rolls the configured target count")
+	var flip_level = SPECIAL_MODES.build_memory_flip_level(configs["flip"])
+	_assert_equal(int(flip_level["pairs"]), int(configs["flip"]["pairs"]), "build_memory_flip_level carries the pair count")
+	var rock_level = SPECIAL_MODES.build_rock_level(configs["rock"], 3)
+	_check(rock_level.has("rock_ratio") and int(rock_level["rows"]) > 0, "build_rock_level produces a ratioed board")
+	var defuse_level = SPECIAL_MODES.build_defuse_level(configs["defuse"], 3)
+	_check(defuse_level.has("bomb_seconds") and defuse_level.has("bomb_ratio"), "build_defuse_level carries bomb knobs")
+	var tiered = SPECIAL_MODES.build_tiered_level({"rows": 8, "cols": 6, "kinds": 5, "time_base": 90, "stack_ratio": 0.3}, "stack", 3, "stack_ratio")
+	_assert_equal(int(tiered["rows"]), 8, "build_tiered_level falls back to config geometry")
+	_assert_equal(float(tiered["stack_ratio"]), 0.3, "build_tiered_level passes the ratio key through")
+	var tier_fallback = SPECIAL_MODES.mode_tier({"rows": 9}, 3, "time_base")
+	_assert_equal(int(tier_fallback["rows"]), 9, "mode_tier falls back without a covering tier")
+	var groups = SPECIAL_MODES.mode_categories()
+	var grouped_ids := {}
+	for group in groups:
+		_check(str(group["title"]) != "", "every category group carries a title")
+		for mid in group["modes"]:
+			grouped_ids[mid] = true
+	_assert_equal(grouped_ids.size(), SPECIAL_MODES.MODES.size(), "mode_categories partitions the whole registry")
+
 	if failures > 0:
 		print("special_modes_test: FAILED (", failures, " of ", checks, " checks)")
 	else:

@@ -99,6 +99,15 @@ func _init() -> void:
 	check(not FINDER.find_any_hint([[2, 0, 4]], AllowAll.new(), "playable", "mult").empty(), "mult hint finds a divisor pair")
 	check(FINDER.find_any_hint([[5, 0, 7]], BlockAll.new(), "playable", "mult").empty(), "mult hint refuses non-divisor faces")
 
+	# --- reconstruct_path: walks the parent chain back to the start
+	var parent = {
+		"1,1,0,0": "0,1,0,0",
+		"0,1,0,0": "0,0,0,0",
+	}
+	var walked = FINDER.reconstruct_path({"r": 1, "c": 1, "dir": 0, "turns": 0}, parent, Vector2(0, 0))
+	check(walked == [Vector2(0, 0), Vector2(0, 1), Vector2(1, 1)],
+		"reconstruct_path rebuilds the route start-to-end")
+
 	if failures == 0:
 		print("board_pathfinder_test: ALL PASSED")
 		quit(0)

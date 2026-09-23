@@ -94,9 +94,22 @@ func _init() -> void:
 	check(after == before, "shuffle keeps the same multiset of patterns")
 	check(TM.shuffle(state) == false, "shuffle without charges refuses")
 
+	# --- clear_view: null-safe layer teardown
+	var layer = Node.new()
+	layer.add_child(Node.new())
+	var view_game = ViewGame.new()
+	view_game.tray_layer = layer
+	TM.clear_view(view_game)
+	check(layer.get_child_count() == 0, "clear_view empties the tray layer")
+	TM.clear_view(ViewGame.new())
+	check(true, "clear_view tolerates a missing layer")
+
 	if failures == 0:
 		print("tile_match_test: ALL PASSED")
 		quit(0)
 	else:
 		print("tile_match_test: %d FAILURES" % failures)
 		quit(1)
+
+class ViewGame:
+	var tray_layer = null

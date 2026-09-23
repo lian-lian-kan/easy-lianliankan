@@ -64,9 +64,22 @@ func _init() -> void:
 	check(game.flip_state["cards"][0]["removed"] == false, "a miss never removes cards")
 	check(game.flip_state["open"] == [0, 1], "the missed pair stays open for the pause window")
 
+	# --- clear_view: null-safe layer teardown
+	var layer = Node.new()
+	layer.add_child(Node.new())
+	var view_game = ViewGame.new()
+	view_game.flip_layer = layer
+	FLIP.clear_view(view_game)
+	check(layer.get_child_count() == 0, "clear_view empties the flip layer")
+	FLIP.clear_view(ViewGame.new())
+	check(true, "clear_view tolerates a missing layer")
+
 	if failures == 0:
 		print("memory_flip_test: ALL PASSED")
 		quit(0)
 	else:
 		print("memory_flip_test: %d FAILURES" % failures)
 		quit(1)
+
+class ViewGame:
+	var flip_layer = null

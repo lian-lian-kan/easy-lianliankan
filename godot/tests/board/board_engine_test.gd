@@ -220,6 +220,52 @@ func _init() -> void:
 	ENGINE.apply_rule_faces("diff1", rule_board)
 	check(not ENGINE.find_any_hint(rule_board, null, "", "diff1").empty(), "apply_rule_faces dispatches by mode id")
 
+	# --- sum10 face split, rock grid builder, misc pure helpers
+	var sum_board = ENGINE.create_board(2, 4, 5)
+	ENGINE.apply_sum10_faces(sum_board)
+	for r in range(sum_board.size()):
+		for c in range(sum_board[0].size()):
+			if int(sum_board[r][c]) != 0:
+				check_v(int(sum_board[r][c]), 9)
+	check(not ENGINE.find_any_hint(sum_board, null, "", "sum10").empty(), "sum10 split deal is rule-playable")
+
+	var rock_board = ENGINE.create_board(6, 6, 7)
+	var made = ENGINE.build_rock_grid(rock_board, 0.3)
+	check(made > 0 && made % 2 == 0, "build_rock_grid places whole rock pairs")
+	var rock_cells := 0
+	for r in range(6):
+		for c in range(6):
+			if ENGINE.is_rock_value(int(rock_board[r][c])):
+				rock_cells += 1
+	check(rock_cells == made, "every placed rock cell is marked with ROCK_VALUE")
+
+	check(ENGINE.contains_coord([Vector2(1, 1), Vector2(2, 2)], Vector2(2, 2)), "contains_coord finds a member")
+	check(not ENGINE.contains_coord([Vector2(1, 1)], Vector2(3, 3)), "contains_coord rejects a miss")
+
+	check(ENGINE.edge_path(Vector2(0, 0), Vector2(0, 3)) == [Vector2(0, 0), Vector2(-1, 0), Vector2(0, 3)],
+		"edge_path routes above the board edge")
+
+	var healthy = ENGINE.create_board(4, 4, 6)
+	var frozen_board = str(healthy)
+	ENGINE.ensure_playable(healthy, null, "", "")
+	check(str(healthy) == frozen_board, "ensure_playable leaves a playable deal untouched")
+	var multiset_before := {}
+	var stuck = [[1, 2], [3, 4]]
+	for v in [1, 2, 3, 4]:
+		multiset_before[v] = multiset_before.get(v, 0) + 1
+	ENGINE.ensure_playable(stuck, null, "", "")
+	var multiset_after := {}
+	for row in stuck:
+		for v in row:
+			multiset_after[v] = multiset_after.get(v, 0) + 1
+	var counts_ok := true
+	for v in [1, 2, 3, 4]:
+		if int(multiset_after.get(v, 0)) != int(multiset_before[v]):
+			counts_ok = false
+	check(counts_ok, "an unsolvable deal survives the reshuffle attempt unchanged")
+
+	check(ENGINE.format_time_seconds(65.5) == "01:05.50", "format_time_seconds renders mm:ss.cs")
+
 	if failures == 0:
 		print("board_engine_test: ALL PASSED")
 		quit(0)

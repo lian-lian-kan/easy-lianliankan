@@ -71,6 +71,30 @@ func _init() -> void:
 	check(STATS_HUD.pulse(game, false, 0.016) == false, "pulse is a no-op when safe")
 	check(STATS_HUD.pulse(game, true, 0.016) == true, "pulse applies when dangerous")
 
+	# --- is_time_danger: clockless, paused and safe-clock states stay calm
+	var saved_status = game.stage_status
+	var saved_time = game.time_left
+	var saved_mode = game.special_mode
+	var saved_level_time = game._current_level().get("time_limit", 0)
+	game.stage_status = game.STATUS_PLAYING
+	game.special_mode = "zen"
+	check(STATS_HUD.is_time_danger(game) == false, "clockless zen never reads as danger")
+	game.special_mode = ""
+	game._current_level()["time_limit"] = 0
+	check(STATS_HUD.is_time_danger(game) == false, "a zero time limit never reads as danger")
+	game._current_level()["time_limit"] = 60
+	game.time_left = 5
+	check(STATS_HUD.is_time_danger(game) == true, "a playing session under the threshold reads as danger")
+	game.time_left = 50
+	check(STATS_HUD.is_time_danger(game) == false, "a comfortable clock stays calm")
+	game.time_left = 5
+	game.stage_status = game.STATUS_PAUSED
+	check(STATS_HUD.is_time_danger(game) == false, "paused sessions never read as danger")
+	game.stage_status = saved_status
+	game.time_left = saved_time
+	game.special_mode = saved_mode
+	game._current_level()["time_limit"] = saved_level_time
+
 	if failures == 0:
 		print("stat_probe: ALL PASSED")
 		quit(0)
