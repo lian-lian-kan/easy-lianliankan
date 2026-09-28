@@ -192,10 +192,14 @@ static func _signin_cell(game, day, signed_today, slot, today, yesterday):
 	style.set_corner_radius_all(12)
 	var claimed = signed_today and day < slot
 	var is_today = (not signed_today) and day == slot
-	style.bg_color = Color("ffe3ee") if is_today else (Color("f8e7ef") if claimed else Color("fdf3f7"))
-	if is_today:
-		style.set_border_width_all(2)
-		style.border_color = Color("e64980")
+	# Round 32：日历卡从近隐形的粉上粉改为白瓷面——待领=白+细线，
+	# 今日=白+玫瑰描边，已领=淡玫瑰面+细线。
+	style.bg_color = Color("fff0f6") if is_today else (Color("fde8f1") if claimed else Color("ffffff"))
+	style.set_border_width_all(2 if is_today else 1)
+	style.border_color = Color("e64980") if is_today else (Color("f8c8dc") if claimed else Color("ffd9e8"))
+	style.shadow_color = Color(0.361, 0.227, 0.302, 0.10)
+	style.shadow_size = 3
+	style.shadow_offset = Vector2(0, 2)
 	cell.add_stylebox_override("panel", style)
 	cell.rect_min_size = Vector2(72, 64)
 	var cell_box = VBoxContainer.new()
@@ -205,7 +209,7 @@ static func _signin_cell(game, day, signed_today, slot, today, yesterday):
 	day_label.text = ("第%d天" % (day + 1)) + ("\n🌸%d" % SIGNIN_REWARDS[day]) + ("\n✔ 已领" if claimed else ("\n🎁 可领" if is_today else ""))
 	day_label.align = Label.ALIGN_CENTER
 	day_label.add_font_override("font", game._font_at_size(12))
-	day_label.add_color_override("font_color", Color("d6336c") if is_today else Color("a85878"))
+	day_label.add_color_override("font_color", Color("d6336c") if is_today else Color("8f6b80"))
 	cell_box.add_child(day_label)
 	if is_today:
 		var claim = Button.new()
@@ -318,7 +322,7 @@ static func _card_shell(game, title):
 	return card_box
 
 
-# The three-state shop action: in use (disabled) / owned ("使用") / buy.
+# The three-state shop action: in use (tinted no-op) / owned ("使用") / buy.
 # Callers wire the pressed connect themselves — the targets differ per card.
 static func _action_button(game, in_use, is_owned, price, min_height = 0):
 	var action = Button.new()
@@ -332,10 +336,19 @@ static func _action_button(game, in_use, is_owned, price, min_height = 0):
 	if min_height > 0:
 		action.rect_min_size = Vector2(0, min_height)
 	action.add_font_override("font", game._font_at_size(13))
-	game._apply_button_style(action, Color("f06ba8"), Color("d6336c"))
-	action.add_color_override("font_color", Color("ffffff"))
 	if in_use:
+		# 使用中：淡玫瑰药丸 + 深玫瑰满透明度字——以前是实心玫瑰叠 disabled
+		# 半透明，看起来像坏掉的按钮。
 		action.disabled = true
+		game._apply_button_style(action, Color("ffe3ef"), Color("f0a8c4"))
+		for state in ["font_color", "font_disabled_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			action.add_color_override(state, Color("d6336c"))
+	elif is_owned:
+		# 使用：轻量切换动作，白卡次级（购买键保持全卡唯一实心玫瑰）。
+		game._style_secondary_button(action)
+	else:
+		game._apply_button_style(action, Color("f06ba8"), Color("d6336c"))
+		action.add_color_override("font_color", Color("ffffff"))
 	return action
 
 static func _shop_card(game, set_index, owned, current_set):

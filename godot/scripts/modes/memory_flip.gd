@@ -84,8 +84,10 @@ static func build_view(game):
 			game._apply_button_style(card_button, Color("ffffff"), Color("f09ebb"))
 			card_button.add_color_override("font_color", Color("5c3a4d"))
 		else:
+			# 牌背与盲盒模式的盖牌同配方（淡粉面+深粉边）——整墙实心玫瑰
+			# 会把翻牌局变成粉墙，盖牌的「未知」语义也更强。
 			card_button.text = "❓"
-			game._apply_button_style(card_button, Color("f06ba8"), Color("d6336c"))
+			game._apply_button_style(card_button, Color("ffc2d4"), Color("f09ebb"))
 			card_button.add_color_override("font_color", Color("ffffff"))
 		card_button.connect("pressed", game, "_on_flip_card_pressed", [i])
 		grid.add_child(card_button)

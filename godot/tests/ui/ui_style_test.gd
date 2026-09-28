@@ -74,7 +74,7 @@ func _init() -> void:
 	STYLE.style_secondary_button(secondary)
 	check(secondary.get_stylebox("normal").bg_color == Color("ffffff"), "secondary buttons keep the white card")
 	check(secondary.get_color("font_color") == Color("d6336c"), "secondary text is pink on white")
-	check(secondary.get_color("font_disabled_color") == Color("c9a5b6"), "disabled secondary text softens")
+	check(secondary.get_color("font_disabled_color") == Color("8f6b80"), "disabled secondary text stays readable (muted ink, not ghost)")
 	var sweep_panel = PanelContainer.new()
 	var sweep_box = VBoxContainer.new()
 	var deep = Button.new()

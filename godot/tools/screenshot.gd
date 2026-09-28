@@ -95,6 +95,14 @@ func _init() -> void:
 	var st_modes_p = _shot(game2, "page-modes-portrait")
 	if st_modes_p != null:
 		yield(st_modes_p, "completed")
+	# 页面巡礼：其余一级/二级页逐页截图（界面轮的证据底座）。
+	for page_id in ["level_map", "collection", "signin", "shop", "events", "stats", "missions", "achievements"]:
+		game2.PAGE_ROUTER.show_page(game2, page_id)
+		yield(_settle(10), "completed")
+		var st_page = _shot(game2, "page-%s-portrait" % page_id)
+		if st_page != null:
+			yield(st_page, "completed")
+	game2.PAGE_ROUTER.close_page(game2)
 	game2.queue_free()
 	yield(_settle(2), "completed")
 

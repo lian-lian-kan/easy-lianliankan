@@ -116,7 +116,9 @@ static func style_secondary_button(button):
 	button.add_color_override("font_hover_color", Color("d6336c"))
 	button.add_color_override("font_pressed_color", Color("d6336c"))
 	button.add_color_override("font_focus_color", Color("d6336c"))
-	button.add_color_override("font_disabled_color", Color("c9a5b6"))
+	# 禁用态（锁定玩法卡等）要读得清解锁条件：INK_SOFT 满透明度。
+	# 以前的浅粉 c9a5b6 在白卡上糊成幽灵字，卡上写什么完全不可辨。
+	button.add_color_override("font_disabled_color", Color("8f6b80"))
 
 static func style_all_secondary_buttons(node):
 	# Recursive sweep: every Button under the panel takes the white-card

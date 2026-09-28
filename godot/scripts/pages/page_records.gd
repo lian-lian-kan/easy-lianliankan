@@ -42,14 +42,21 @@ static func _level_node(game, level_index):
 	node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	node.rect_min_size = Vector2(0, 54)
 	node.add_font_override("font", game._font_at_size(14))
-	game._apply_button_style(node, Color("f06ba8"), Color("d6336c"))
 	if is_current:
+		# 全页唯一实心玫瑰：接下来要玩的那一关。
+		game._apply_button_style(node, Color("f06ba8"), Color("d6336c"))
 		node.text = "▶ 第%d关 · %s %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡")), star_mark]
+		node.add_color_override("font_color", Color("ffffff"))
 	elif unlocked:
+		# 已解锁未到达：白卡粉字——旅程不再是一面粉墙。
+		game._apply_button_style(node, Color("ffffff"), Color("ffb1cf"))
 		node.text = "第%d关 · %s %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡")), star_mark]
+		node.add_color_override("font_color", Color("8f6b80"))
 	else:
+		# 锁定：白卡细线 + 弱化但可读的墨字（浅粉压粉底=幽灵字，弃用）。
+		game._apply_button_style(node, Color("ffffff"), Color("ffd9e8"))
 		node.text = "🔒 第%d关 · %s" % [int(level.get("id", level_index + 1)), str(level.get("name", "关卡"))]
-	node.add_color_override("font_color", Color("ffffff") if unlocked else Color("e8b8cc"))
+		node.add_color_override("font_color", Color("c2a3b2"))
 	if unlocked:
 		node.connect("pressed", game, "_on_map_level_pressed", [level_index])
 	else:
@@ -260,12 +267,14 @@ static func _build_achievements(game):
 
 static func _achievement_item(game, achievement):
 	var hbox = HBoxContainer.new()
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_constant_override("separation", 12)
 
 	var unlocked = game.PROGRESSION_SCRIPT.has_achievement(game.progression_state, achievement["id"])
 
 	var card = PanelContainer.new()
-	game._apply_glass_style(card, Color("ffffff"), 0.92 if unlocked else 0.7)
+	game._apply_glass_style(card, Color("ffffff"), 0.92 if unlocked else 0.8)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.rect_min_size = Vector2(0, 52)
 	hbox.add_child(card)
 	var row = HBoxContainer.new()
@@ -290,13 +299,15 @@ static func _achievement_texts(game, achievement, unlocked):
 
 	var name_label = Label.new()
 	name_label.text = str(achievement["name"])
-	name_label.add_color_override("font_color", Color("059669") if unlocked else Color("94a3b8"))
+	# 解锁=品牌绿（与进行中状态章同源）；锁定=弱化墨字（旧 94a3b8/ cbd5e1
+	# 是工程灰，不在甜系色板上，且浅到读不清）。
+	name_label.add_color_override("font_color", Color("0ca678") if unlocked else Color("8f6b80"))
 	name_label.add_font_override("font", game._font_at_size(14))
 	vbox.add_child(name_label)
 
 	var desc_label = Label.new()
 	desc_label.text = str(achievement["desc"])
-	desc_label.add_color_override("font_color", Color("64748b") if unlocked else Color("cbd5e1"))
+	desc_label.add_color_override("font_color", Color("8f6b80") if unlocked else Color("c2a3b2"))
 	desc_label.add_font_override("font", game._font_at_size(12))
 	vbox.add_child(desc_label)
 
