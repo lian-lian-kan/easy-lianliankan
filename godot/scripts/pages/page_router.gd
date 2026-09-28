@@ -117,7 +117,13 @@ static func show_page(game, page_id):
 	# resumes when the page closes.
 	if game.level_advance_timer:
 		game.level_advance_timer.stop()
-	game.current_page = page_id
+	game.current_page = _sync_nav_active(game, page_id)
+	# Fresh route eases in; in-place rebuilds (claim flows) must not flicker.
+	if not reopened and game.page_content != null:
+		var intro = Tween.new()
+		game.page_content.add_child(intro)
+		intro.interpolate_property(game.page_content, "modulate:a", 0.0, 1.0, 0.18, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+		intro.start()
 	# Desktop hides the nav on the chrome-free home board; it belongs to
 	# pages, so it comes back the moment one opens. get() keeps fakes and
 	# partial shells without the member safe.
@@ -126,6 +132,22 @@ static func show_page(game, page_id):
 		nav_bar.visible = true
 	if not reopened:
 		_route_page(game, page_id)
+
+# The active tab reads as「你在这里」: tinted face + rose ring, the rest
+# stay white islands. Pure stylebox work — the buttons' text/fonts untouched.
+static func _sync_nav_active(game, page_id):
+	var nav_buttons = game.get("nav_buttons")
+	if nav_buttons == null:
+		return page_id
+	for tab_id in nav_buttons:
+		var button = nav_buttons[tab_id]
+		if button == null:
+			continue
+		if str(tab_id) == str(page_id):
+			game._apply_button_style(button, Color("ffe9f1"), Color("f06ba8"))
+		else:
+			game._apply_button_style(button, Color("ffffff"), Color("ffb1cf"))
+	return page_id
 
 # Build (or rebuild) the given page's body into the shared content box.
 static func _route_page(game, page_id):
@@ -164,6 +186,7 @@ static func close_page(game):
 	var nav_bar = game.get("nav_bar")
 	if nav_bar != null:
 		nav_bar.visible = false
+	_sync_nav_active(game, "")
 	# Resume a settle that was interrupted by opening the page.
 	if game.stage_status == game.STATUS_CLEARED and game.pending_level_index >= 0 \
 			and game.level_advance_timer:
@@ -187,11 +210,7 @@ static func _build_modes_hub(game):
 		rows_by_id[row["id"]] = row
 	var unlocked_index = int(game.progression_state.get("highest_unlocked_level_index", 0))
 	for category in game.SPECIAL_MODES_SCRIPT.mode_categories():
-		var header = Label.new()
-		header.text = str(category["title"])
-		header.add_font_override("font", game._font_at_size(15))
-		header.add_color_override("font_color", Color("9c6b7f"))
-		box.add_child(header)
+		box.add_child(PAGE_UI.section_header(game, str(category["title"])))
 		for mode_id in category["modes"]:
 			var row = rows_by_id.get(mode_id, null)
 			if row == null:

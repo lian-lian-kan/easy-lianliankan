@@ -17,12 +17,8 @@ static func _build_level_map(game):
 	var box = PAGE_UI.scroll_area(game, page_content)
 	var chapter_size = int(ceil(game.campaign_levels.size() / float(CHAPTER_NAMES.size())))
 	for chapter in range(CHAPTER_NAMES.size()):
-		var chapter_label = Label.new()
 		var chapter_mark = ["一", "二", "三"][chapter]
-		chapter_label.text = "第%s章 · %s" % [chapter_mark, CHAPTER_NAMES[chapter]]
-		chapter_label.add_font_override("font", game._font_at_size(15))
-		chapter_label.add_color_override("font_color", Color("a85878"))
-		box.add_child(chapter_label)
+		box.add_child(PAGE_UI.section_header(game, "第%s章 · %s" % [chapter_mark, CHAPTER_NAMES[chapter]]))
 		for slot in range(chapter_size):
 			var level_index = chapter * chapter_size + slot
 			if level_index >= game.campaign_levels.size():

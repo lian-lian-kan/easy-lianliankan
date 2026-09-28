@@ -332,15 +332,15 @@ static func _build_message_banner(game):
 	game.message_label.visible = false
 	var banner_style = StyleBoxFlat.new()
 	banner_style.bg_color = Color8(214, 51, 108, 230)
-	banner_style.set_corner_radius_all(16)
-	banner_style.content_margin_left = 14
-	banner_style.content_margin_right = 14
-	banner_style.content_margin_top = 5
-	banner_style.content_margin_bottom = 5
+	banner_style.set_corner_radius_all(18)
+	banner_style.content_margin_left = 18
+	banner_style.content_margin_right = 18
+	banner_style.content_margin_top = 6
+	banner_style.content_margin_bottom = 6
 	game.message_label.add_stylebox_override("normal", banner_style)
 	game.message_label.set_anchors_and_margins_preset(Control.PRESET_BOTTOM_WIDE)
-	game.message_label.margin_left = 14
-	game.message_label.margin_right = 14
+	game.message_label.margin_left = 40
+	game.message_label.margin_right = 40
 	game.message_label.rect_min_size = Vector2(0, 32)
 	game.add_child(game.message_label)
 

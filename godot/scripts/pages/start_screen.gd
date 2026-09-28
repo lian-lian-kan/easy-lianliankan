@@ -40,6 +40,14 @@ static func show_start_screen(game):
 	game.add_child(root)
 	game.start_screen_root = root
 	game.start_screen_open = true
+	# 入场淡入：背景/花瓣/英雄卡整层浮现，开场不像「直接糊上来」。
+	# Tween 挂在 root 之下随其释放——玩家在 0.25s 内点掉首页也不会留下
+	# 悬空补间。
+	root.modulate = Color(1, 1, 1, 0)
+	var intro = Tween.new()
+	root.add_child(intro)
+	intro.interpolate_property(root, "modulate:a", 0.0, 1.0, 0.25, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	intro.start()
 	UI_PANELS.open_modal(game, root)
 	# 开局字幕与页面互斥（单例常驻，显隐控制）。
 	game._hide_stage_callout()

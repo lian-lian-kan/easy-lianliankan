@@ -170,9 +170,24 @@ static func _show_stage_callout(game, text, color, font_size):
 		label.align = Label.ALIGN_CENTER
 		label.valign = Label.VALIGN_CENTER
 		label.set_anchors_and_margins_preset(Control.PRESET_TOP_WIDE)
-		label.margin_left = 0
-		label.margin_right = 0
+		label.margin_left = 60
+		label.margin_right = 60
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# 白药丸底：各模式的开场字幕色板都是饱和中调，直接压在棋盘上
+		# 对比度随瓷片颜色漂；统一白底药丸+细线+软投影，任何字色都可读。
+		var pill = StyleBoxFlat.new()
+		pill.bg_color = Color(1, 1, 1, 0.92)
+		pill.set_corner_radius_all(16)
+		pill.set_border_width_all(1)
+		pill.border_color = Color("ffd9e8")
+		pill.shadow_color = game.UI_STYLE.INK_SHADOW
+		pill.shadow_size = 4
+		pill.shadow_offset = Vector2(0, 2)
+		pill.content_margin_left = 16
+		pill.content_margin_right = 16
+		pill.content_margin_top = 6
+		pill.content_margin_bottom = 6
+		label.add_stylebox_override("normal", pill)
 		game.add_child(label)
 		game.stage_callout_label = label
 	var label = game.stage_callout_label

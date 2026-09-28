@@ -72,6 +72,26 @@ func _init() -> void:
 	var st_board = _shot(game, "board-desktop")
 	if st_board != null:
 		yield(st_board, "completed")
+	# 弹窗样张：暂停 / 设置 / 引导（界面轮的细节证据底座）。
+	game._show_pause_panel()
+	yield(_settle(6), "completed")
+	var st_pause = _shot(game, "panel-pause-desktop")
+	if st_pause != null:
+		yield(st_pause, "completed")
+	game._hide_pause_panel()
+	game._on_settings_pressed()
+	yield(_settle(6), "completed")
+	var st_settings = _shot(game, "panel-settings-desktop")
+	if st_settings != null:
+		yield(st_settings, "completed")
+	game._on_settings_close()
+	game.progression_state[game.ONBOARDING_SEEN_KEY] = false
+	game._show_onboarding_if_needed()
+	yield(_settle(6), "completed")
+	var st_onboarding = _shot(game, "panel-onboarding-desktop")
+	if st_onboarding != null:
+		yield(st_onboarding, "completed")
+	game._on_onboarding_dismissed()
 	game.queue_free()
 	yield(_settle(2), "completed")
 	_log("[shot] desktop done")

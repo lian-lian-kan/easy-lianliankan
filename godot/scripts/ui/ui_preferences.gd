@@ -63,7 +63,7 @@ static func _onboarding_sections(game, content):
 	for section in sections:
 		var section_title = Label.new()
 		section_title.text = section.title
-		section_title.add_color_override("font_color", Color("7a5064"))
+		section_title.add_color_override("font_color", Color("8f6b80"))
 		section_title.add_font_override("font", game.game_font)
 		content.add_child(section_title)
 
@@ -277,7 +277,7 @@ static func _create_volume_row(game, label_text, initial_value):
 	var label = Label.new()
 	label.text = label_text
 	label.rect_min_size = Vector2(80, 0)
-	label.add_color_override("font_color", Color("7a5064"))
+	label.add_color_override("font_color", Color("8f6b80"))
 	label.add_font_override("font", game.game_font)
 	container.add_child(label)
 
@@ -287,6 +287,18 @@ static func _create_volume_row(game, label_text, initial_value):
 	slider.max_value = 1.0
 	slider.step = 0.05
 	slider.value = initial_value
+	# 品牌化凹槽：默认黑槽是整个弹窗里最「工程件」的元素。
+	var groove = StyleBoxFlat.new()
+	groove.bg_color = Color("ffd9e8")
+	groove.set_corner_radius_all(3)
+	groove.content_margin_top = 3
+	groove.content_margin_bottom = 3
+	slider.add_stylebox_override("slider", groove)
+	var fill = StyleBoxFlat.new()
+	fill.bg_color = Color("f783ac")
+	fill.set_corner_radius_all(3)
+	slider.add_stylebox_override("grabber_area", fill)
+	slider.add_stylebox_override("grabber_area_highlight", fill)
 	container.add_child(slider)
 
 	return {"container": container, "slider": slider}
@@ -298,7 +310,7 @@ static func _create_toggle_row(game, label_text, initial_value):
 	var label = Label.new()
 	label.text = label_text
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.add_color_override("font_color", Color("7a5064"))
+	label.add_color_override("font_color", Color("8f6b80"))
 	label.add_font_override("font", game.game_font)
 	container.add_child(label)
 

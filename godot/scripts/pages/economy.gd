@@ -264,11 +264,7 @@ static func build_shop(game):
 
 # Ambience themes: swatch card per theme with a use/buy action.
 static func _build_theme_section(game, box):
-	var theme_title = Label.new()
-	theme_title.text = "🌫️ 氛围主题"
-	theme_title.add_font_override("font", game._font_at_size(15))
-	theme_title.add_color_override("font_color", Color("a85878"))
-	box.add_child(theme_title)
+	box.add_child(PAGE_UI.section_header(game, "🌫️ 氛围主题"))
 	var theme_grid = GridContainer.new()
 	theme_grid.columns = 2
 	theme_grid.add_constant_override("h_separation", 8)
