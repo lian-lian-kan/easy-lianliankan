@@ -1222,3 +1222,15 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **设置面板滑杆品牌化**：主音量默认黑槽是全弹窗最"工程件"的元素——凹槽改玫瑰浅粉、填充段改玫瑰（grabber 图标为引擎纹理不动）；行标签 7a5064→8f6b80 归墨系。
 - 弹窗样张结论：暂停面板（主次按钮分层）与引导面板（分区+主 CTA）本就达标，未动。
 - Validation: 受影响探针先行全绿（page_router/page_probe/panels/start_screen/hud_timers/economy）；全量 56 项 rc 全 0；16 张样张（含 3 张弹窗）复验达标。零新增渲染字符。推送后待 CI deploy 回填。
+
+## 2026-09-29 (Round 34：界面四轮——代码生成纹理 + 数据页分组 + 章节星级)
+
+- Context: 用户继续定向"优化界面细节"。上轮遗留的最后一批"工程默认件"（勾选框/滑杆把手/滚动条 grabber 都是引擎内置图标纹理，StyleBox 够不着）本轮用 **Image 逐像素生成品牌纹理** 根治——无美术资源依赖，装进全局主题一次管全场。
+- **ui_style 新增纹理工厂**（`init_control_textures(theme)`，由 ui_fonts.init_theme 装载）：
+  - `_disc_texture`：圆盘 SDF（AA 边缘）——滑杆把手（玫瑰圆钮+浅玫瑰环，三态）与未勾选框（白圆细环）；
+  - `_check_texture`：实心玫瑰圆 + 白对勾（两段线段距离场，`_seg_distance` 助手）——勾选框 checked/radio_checked；
+  - `_pill_texture`：圆角胶囊 SDF——VScrollBar/HScrollBar 把手三态（常态 60% 透明玫瑰、悬停 85%、按下深玫瑰）+ 滚槽玫瑰浅粉 stylebox。
+- **数据页三段分组**：`_stats_rows` 从平铺 30+ 行改为 成长足迹/每日与攀登/玩法纪录 三段（`page_ui.section_header` 分隔），玩法纪录段仍由 MODES 注册表派生零手写。分区标题字符（🏆📅🎮 + 标题词）全部经 check_copy_chars 对拍在 1446 字符池内（🗓️ 不在池中，弃用）。
+- **旅程章节星级尾巴**：章节头右侧 "⭐ x/y"（level_stars 求和/章节满星），收集进度直接写在地图上；section_header 加可选 tail 参数。
+- 结算面板勘察结论：过关"面板"实为顶部 stage_panel_label 字幕（非独立面板），无需样板化，跳过。
+- Validation: 受影响探针先行全绿（ui_fonts/panels/page_probe/page_router/economy）；全量 56 项 rc 全 0；web_entry rc=0；shell_audit clean；巡礼样张复验（滚动条/勾选框/滑杆全场生效）。零新增渲染字符。推送后待 CI deploy 回填。

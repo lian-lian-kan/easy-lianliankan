@@ -44,9 +44,9 @@ static func scroll_area(game, page_content):
 	scroll.add_child(box)
 	return box
 
-# 区块标题：玫瑰短棒 + 标题行。旅程章节/玩法分类/氛围主题等所有页面分区
-# 的统一开头——以前是几处裸 Label，各写各的，页面读起来像顺手拼的。
-static func section_header(game, text):
+# 区块标题：玫瑰短棒 + 标题行（可选右侧进度尾巴）。旅程章节/玩法分类/
+# 氛围主题等所有页面分区的统一开头——以前是几处裸 Label，各写各的。
+static func section_header(game, text, tail_text = ""):
 	var row = HBoxContainer.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_constant_override("separation", 8)
@@ -66,6 +66,13 @@ static func section_header(game, text):
 	label.add_color_override("font_color", Color("9c6b7f"))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(label)
+	if tail_text != "":
+		var tail = Label.new()
+		tail.text = tail_text
+		tail.add_font_override("font", game._font_at_size(12))
+		tail.add_color_override("font_color", Color("d6336c"))
+		tail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(tail)
 	return row
 
 static func clear_page(game, page_content):

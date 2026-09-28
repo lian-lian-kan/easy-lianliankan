@@ -16,9 +16,20 @@ static func _build_level_map(game):
 	PAGE_UI.page_frame(game, page_content, "🗺️ 旅程", "点亮每一座樱园")
 	var box = PAGE_UI.scroll_area(game, page_content)
 	var chapter_size = int(ceil(game.campaign_levels.size() / float(CHAPTER_NAMES.size())))
+	var star_map: Dictionary = game.progression_state.get("level_stars", {})
 	for chapter in range(CHAPTER_NAMES.size()):
 		var chapter_mark = ["一", "二", "三"][chapter]
-		box.add_child(PAGE_UI.section_header(game, "第%s章 · %s" % [chapter_mark, CHAPTER_NAMES[chapter]]))
+		# 章节头右侧带已集星级进度——收集感直接写在地图上。
+		var chapter_stars = 0
+		var chapter_levels = 0
+		for slot in range(chapter_size):
+			var level_index = chapter * chapter_size + slot
+			if level_index >= game.campaign_levels.size():
+				break
+			chapter_levels += 1
+			chapter_stars += int(star_map.get(str(level_index), 0))
+		box.add_child(PAGE_UI.section_header(game, "第%s章 · %s" % [chapter_mark, CHAPTER_NAMES[chapter]],
+			"⭐ %d/%d" % [chapter_stars, chapter_levels * 3]))
 		for slot in range(chapter_size):
 			var level_index = chapter * chapter_size + slot
 			if level_index >= game.campaign_levels.size():
@@ -124,32 +135,41 @@ static func _build_stats(game):
 	var box = PAGE_UI.scroll_area(game, page_content)
 
 	var rows = _stats_rows(game, collected, total_icons)
-	for row_data in rows:
-		_stats_row_panel(game, box, row_data)
+	for section in rows:
+		box.add_child(PAGE_UI.section_header(game, str(section["title"])))
+		for row_data in section["rows"]:
+			_stats_row_panel(game, box, row_data)
 
-# 统计页纪录汇总：头部五行通用数据 + 每日/无尽/树三个专属行 + 玩法最佳分行
-# 全部由 MODES 注册表派生（旧手写行已漂移：drag/edu 从未上榜）。
+# 统计页纪录汇总：三段分区（成长足迹 / 每日与攀登 / 玩法纪录），玩法最佳
+# 分行全部由 MODES 注册表派生（旧手写行已漂移：drag/edu 从未上榜）。
 static func _stats_rows(game, collected, total_icons) -> Array:
-	var rows = [
+	var growth = [
 		["🏆 最佳总分", str(int(game.progression_state.get("best_total_score", 0)))],
 		["🔥 最佳连击", "x" + str(int(game.progression_state.get("best_combo", 0)))],
 		["🌸 樱花币", str(int(game.progression_state.get("coins", 0)))],
 		["📖 图鉴收集", "%d / %d" % [collected.size(), total_icons]],
 		["🎁 连续签到", "%d 天" % int(game.progression_state.get("signin_streak", 0))],
+	]
+	var daily = [
 		["📅 每日挑战最佳", str(int(game.progression_state.get("daily_challenge", {}).get("best_score", 0)))],
 		["∞ 无尽模式", "第%d轮 · %d分" % [int(game.progression_state.get("endless_best", {}).get("round", 0)), int(game.progression_state.get("endless_best", {}).get("score", 0))]],
 		["🌳 攀登树", "最佳第%d层" % int(game.progression_state.get("tree_best_height", 0))],
 	]
+	var mode_rows = []
 	var records = game.SPECIAL_MODES_SCRIPT.record_modes()
 	for mode_id in game.SPECIAL_MODES_SCRIPT.MODES:
 		if not records.has(mode_id) and mode_id != "time_attack":
 			continue
 		var spec = game.SPECIAL_MODES_SCRIPT.MODES[mode_id]
-		rows.append([
+		mode_rows.append([
 			str(spec["icon"]) + " " + str(spec["label"]) + "最佳",
 			str(int(game.progression_state.get(str(mode_id) + "_best_score", 0)))
 		])
-	return rows
+	return [
+		{"title": "🏆 成长足迹", "rows": growth},
+		{"title": "📅 每日与攀登", "rows": daily},
+		{"title": "🎮 玩法纪录", "rows": mode_rows},
+	]
 
 # 单行白卡：名称居左、数值居右。
 static func _stats_row_panel(game, box, row_data):
