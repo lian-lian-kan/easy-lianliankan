@@ -133,6 +133,23 @@ func _init() -> void:
 	check(signed_note, "sign-in page reflects today's claim")
 	game._on_nav_home_pressed()
 
+	# --- regression guard: a self-destructed stage callout must not brick
+	# show_page. The callout frees itself 1.8s after every level start while
+	# the member keeps the freed reference — a bare truthy check then crashed
+	# show_page mid-way and left a blank page with no nav (2026-09-29).
+	game._show_stage_callout("横幅回归测试", Color("ffffff"), 20)
+	game.stage_callout_label.queue_free()
+	for _i in range(2):
+		yield(self, "idle_frame")
+	game._on_modes_pressed()
+	check(game.current_page == "modes",
+		"a page opened after the callout self-destructed still routes")
+	check(game.page_content.get_child_count() > 0,
+		"post-callout page builds its content instead of a blank surface")
+	check(game.nav_bar != null and game.nav_bar.visible,
+		"post-callout page brings the nav back")
+	game._on_nav_home_pressed()
+
 	# --- regression guard: the three program-built modes must each build
 	# their own level (a lost elif here silently starts endless instead) ---
 	for mode_id in ["tray", "collect", "flip"]:

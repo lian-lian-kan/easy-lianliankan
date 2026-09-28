@@ -1183,3 +1183,16 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **散点清偿 9 文件**：board_engine（sum10 牌面直测/rock_grid parity/contains_coord/edge_path/ensure_playable 双契约/format_time_seconds）、board_pathfinder（reconstruct_path 回放）、special_modes（10 个 builder 形状 + default_configs 深拷贝 + mode_categories 全划分 + mode_tier 回退）、tile_match/memory_flip（clear_view null 安全）、tree_buffs（is_score_prism）、economy（yesterday_dict 往返 86400s）、server_sync（boot_sync 三开口经 lane meta 断言）、stats_hud（is_time_danger 五态）、ui_style（次级按钮四态色 + 递归扫）。
 - **Godot 3 测试陷阱复犯两则（写进 quality-report）**：Parse Error 照样 exit 0（`int += bool` 踩中）；Dictionary `==` 引用比较、`hash()` 插入顺序敏感（逐键计数比较替代）。
 - Validation: 本地全量 56 项 CI 清单 + web_entry 实跑 rc 全 0、零 Parse Error；shell_audit 八项 clean；func_coverage_audit 纯逻辑域缺口归零（58 模块 995 函数）。推送后待 CI deploy 回填。
+
+## 2026-09-29 (Round 31：界面重设计「蜜糖瓷片」+ 两个真产品渲染 bug 根修)
+
+- Context: 用户定向"继续优化和完善界面效果，重新规划和设计界面"。入场先拍四视角基线截图，发现棋盘整盘"褪色"——逐层排查（隐藏覆盖层二分 / 属性级 diff 两颗按钮）定位到**真产品 bug ①**：活瓷片被置 `disabled`，Godot 3 把 disabled 按钮的文字按半透明渲染（~50% alpha），这就是整盘发灰的根源；且暂停窗口期最后一次刷新滞留 disabled 后，恢复播放也不再有刷新点，棋盘会整盘不可点（headless 探针直调 `_on_tile_pressed` 绕过 Button 所以从未暴露）。根修：活牌与石头一律 `disabled=false`（点击合法性由 `interactions.press_valid` 统一门控，顺带让石头牌"用 💣 炸开"提示重新可达——disabled 按钮收不到点击，该提示此前是死代码），仅空格保持 disabled。
+- **真产品 bug ②（截图工具全链路首次跑到才暴露）**：关卡横幅 1.8s 兜底自毁后 `stage_callout_label` 成员仍指向 freed instance，`page_router.show_page` 里裸真值判断再 set `visible` 直接 SCRIPT ERROR 中断——**横幅消失后打开任何页面只剩空白页、导航不出现**（每次开局 1.8s 后点任何入口即复现；探针恰好都在 1.8s 内开页所以从未抓到）。修复：`show_page` 对 callout 加 `is_instance_valid` 守卫；page_probe 新增三断言防回归（自毁后开页仍路由/内容非空/导航回归）。
+- **视觉重设计（信息架构零变动，product-map 头注已同步）**：
+  - 设计令牌入 `ui/ui_style.gd`：品牌玫瑰系/墨色文字系/软投影/糖果边轮换表（图标色过浅时按图案序号取，保证任何图集下糖边可读）+ `tile_face/tile_rim` 配方。
+  - 瓷片：粉彩底+白边 → 近白牌面（25% 图标色）+ 加深糖边 + 厚底边（bottom 6px 立体厚度）+ 梅调软投影；按下底边收平、高亮态边色光晕；emoji 全彩贴浅面不再被粉底泡淡；图标字号 0.52→0.60 短边；规则/知识模式的数字牌面白字→墨色字（白字泡浅面不可读）。
+  - HUD：控制按钮实心粉 → 白卡粉字次级品牌样式（厚底边+软投影，四态字色钉死）；统计药丸描边/投影/圆角精修，数值墨色加深。
+  - 导航条：一整条实心粉 → 白卡浮岛（白底玫瑰字，浮在页面粉面上）。
+  - 首页快捷卡：马卡龙底整卡填充 → 白瓷面+糖边描边，图标 24→27。
+- **截图工具（tools/screenshot.gd）两处修复**：①出生动画（错峰淡入 ≈0.6s）播完前就拍导致瓷片停在半透明 modulate——开局 settle 30→90 帧；②窗口尺寸竞态——board_fit 在关卡创建时读一次视口，换窗后不 settle 会把上一档窗口的棋盘形状带进新视口（竖屏拍到 8 列残留即此），窗口设定后先 settle 8 帧再 boot；新增玩法大厅页面样张（page-modes-portrait）。
+- Validation: 本地 Godot 3.6.2 全量 56 项 CI 清单 rc 全 0（board_view/page_router 改动后复跑 page_probe/panels_probe/page_router_test/start_screen_probe 及最终全量两轮全绿）；port_shell_audit 八项 clean；四视角截图目验收（棋盘水果全彩鲜亮、糖边瓷片成立、页面与导航正常）。零新增渲染文案（字体子集无需重切）；推送后待 CI deploy 回填。

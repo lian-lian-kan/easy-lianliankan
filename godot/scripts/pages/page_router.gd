@@ -87,8 +87,9 @@ static func _nav_button(game, item):
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.rect_min_size = Vector2(0, 46)
 	button.add_font_override("font", game._font_at_size(12))
-	game._apply_button_style(button, Color("f06ba8"), Color("d6336c"))
-	button.add_color_override("font_color", Color("ffffff"))
+	# Round 31 白卡浮岛导航：一整条实心粉会压过页面内容，白卡+玫瑰字
+	# 浮在粉面上更轻盈（_apply_button_style 白底自动派生玫瑰字色）。
+	game._apply_button_style(button, Color("ffffff"), Color("ffb1cf"))
 	if item[0] == "home":
 		button.connect("pressed", game, "_on_nav_home_pressed")
 	else:
@@ -102,12 +103,15 @@ static func show_page(game, page_id):
 	UI_PANELS.open_modal(game, game.pages_root)
 	# Home-screen floaters sit above the page surface; hide them while a
 	# page is open (the stage is paused, so nothing re-raises them).
+	# callout 必须带 is_instance_valid 守卫：横幅 1.8s 兜底自毁后成员仍指向
+	# freed instance，裸判真再 set visible 会让 show_page 半途崩溃——症状是
+	# 横幅消失后打开任何页面只剩空白页、导航不出现。
 	if game.stage_panel_label:
 		game.stage_panel_label.visible = false
 	if game.combo_burst_label:
 		game.combo_burst_label.visible = false
 	var stage_callout = game.get("stage_callout_label")
-	if stage_callout:
+	if stage_callout != null and is_instance_valid(stage_callout):
 		stage_callout.visible = false
 	# Freeze the post-clear level advance while browsing: the settle flow
 	# resumes when the page closes.

@@ -205,31 +205,44 @@ static func _create_control_button(game, text):
 	button.add_font_override("font", game.game_font)
 	button.text = text
 	button.rect_min_size = Vector2(88, 42)
-	button.add_color_override("font_color", Color("ffffff"))
 
-	# Apply gradient button style
+	# Round 31 白卡粉字工具栏：棋盘页的实心玫瑰只留给横幅/复活这类
+	# 强动作，工具栏读作一排「按钮」而不是一排色块（次级品牌样式）。
 	var normal = StyleBoxFlat.new()
-	normal.bg_color = Color("f06ba8")
-	normal.set_corner_radius_all(20)
-	normal.shadow_color = Color8(240, 107, 168, 64)
-	normal.shadow_size = 6
-	normal.shadow_offset = Vector2(0, 3)
+	normal.bg_color = Color("ffffff")
+	normal.border_color = Color("ffb1cf")
+	normal.set_border_width_all(1)
+	normal.border_width_bottom = 3
+	normal.set_corner_radius_all(14)
+	normal.shadow_color = game.UI_STYLE.INK_SHADOW
+	normal.shadow_size = 3
+	normal.shadow_offset = Vector2(0, 2)
 
 	var hover = StyleBoxFlat.new()
-	hover.bg_color = Color("ff9ec4")
-	hover.set_corner_radius_all(20)
-	hover.shadow_color = Color8(240, 107, 168, 96)
-	hover.shadow_size = 8
-	hover.shadow_offset = Vector2(0, 4)
+	hover.bg_color = Color("fff0f6")
+	hover.border_color = Color("f06ba8")
+	hover.set_border_width_all(1)
+	hover.border_width_bottom = 3
+	hover.set_corner_radius_all(14)
+	hover.shadow_color = game.UI_STYLE.INK_SHADOW
+	hover.shadow_size = 5
+	hover.shadow_offset = Vector2(0, 3)
 
 	var pressed = StyleBoxFlat.new()
-	pressed.bg_color = Color("d6336c")
-	pressed.set_corner_radius_all(20)
+	pressed.bg_color = Color("ffe3ef")
+	pressed.border_color = Color("d6336c")
+	pressed.set_border_width_all(1)
+	pressed.set_corner_radius_all(14)
+	pressed.shadow_color = game.UI_STYLE.INK_SHADOW
+	pressed.shadow_size = 1
+	pressed.shadow_offset = Vector2(0, 1)
 
 	button.add_stylebox_override("normal", normal)
 	button.add_stylebox_override("hover", hover)
 	button.add_stylebox_override("pressed", pressed)
 	button.add_stylebox_override("focus", normal)
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_color_override(state, Color("d6336c"))
 	button.connect("pressed", AudioManager, "play_button_click")
 
 	return button

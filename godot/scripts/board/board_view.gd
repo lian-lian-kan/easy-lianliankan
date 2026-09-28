@@ -9,7 +9,6 @@ static func _refresh_board_visuals(game):
 
 	var rows = game.board.size()
 	var cols = game.board[0].size()
-	var playing = game.stage_status == game.STATUS_PLAYING
 
 	for r in range(rows):
 		for c in range(cols):
@@ -22,15 +21,15 @@ static func _refresh_board_visuals(game):
 				continue
 			if game.BOARD_ENGINE.is_rock_value(tile_value):
 				button.text = "🪨"
-				button.disabled = true
+				button.disabled = false
 				game._apply_tile_style(button, Color("dee2e6"), Color("adb5bd"), false)
 				continue
-			_refresh_tile(game, button, r, c, playing)
+			_refresh_tile(game, button, r, c)
 
 # One living tile: base style, mechanism state flags, then the overlay chain.
-static func _refresh_tile(game, button, r, c, playing):
+static func _refresh_tile(game, button, r, c):
 	var value = int(game.board[r][c])
-	var base = _tile_base_style(game, button, r, c, value, playing)
+	var base = _tile_base_style(game, button, r, c, value)
 	var bg = base["bg"]
 	var border = base["border"]
 	var frozen = base["frozen"]
@@ -57,21 +56,32 @@ static func _refresh_tile(game, button, r, c, playing):
 	button.modulate = Color(0.86, 0.95, 1.1) if frozen else Color(1, 1, 1)
 
 # Base face: memory face-down, icon text, disabled state, mechanism flags.
-static func _tile_base_style(game, button, r, c, value, playing) -> Dictionary:
+static func _tile_base_style(game, button, r, c, value) -> Dictionary:
 	var face_down = game._is_memory_mode() and not game.memory_previewing 				and not game.memory_revealed.has(game._memory_key(Vector2(r, c))) 				and not (game.selected.x == r and game.selected.y == c)
-	var bg = game._color_for(value)
-	var border = Color("ffffff")
+	# 蜜糖瓷片：近白牌面 + 加深糖边（Round 31）。纯 emoji 时代粉彩底把
+	# 图标一起泡淡了；现在 emoji 全彩贴浅面，糖边按图案序号可辨。
+	var base_color = game._color_for(value)
+	var bg = game.UI_STYLE.tile_face(base_color)
+	var border = game.UI_STYLE.tile_rim(base_color, value)
 	if face_down:
 		button.text = "❓"
 		bg = Color("ffc2d4")
 		border = Color("f09ebb")
 	elif game._is_rule_mode():
+		# 数字牌面：白字泡在浅面上不可读，改墨色字。
 		button.text = str(value)
+		button.add_color_override("font_color", game.UI_STYLE.INK)
 	elif game._is_edu_mode():
 		button.text = game._edu_face_text(value)
+		button.add_color_override("font_color", game.UI_STYLE.INK)
 	else:
 		button.text = game._icon_for(value)
-	button.disabled = not playing
+	# 活牌与石头都保持可点：Godot 3 会把 disabled 按钮的文字按半透明画
+	# （整盘「褪色」观感的根源），且暂停期间最后一次刷新若滞留 disabled，
+	# 恢复后棋盘会整盘不可点。点击合法性由 press_valid 统一门控——顺带
+	# 让石头牌的「用 💣 炸开」提示重新可达（disabled 按钮收不到点击）。
+	# 只有空格保持 disabled：它们本来就不可见。
+	button.disabled = false
 
 	var is_selected = (game.selected.x == r and game.selected.y == c)
 	var frozen = game._is_frost_mode() and r < game.board_armor.size() \
@@ -169,7 +179,9 @@ static func _update_tile_sizes(game):
 	var tile_w = max(by_width - 4, min_tile)
 	var tile_h = max(by_height - 4, min_tile)
 	var short_side = min(tile_w, tile_h)
-	var tile_font = game._font_at_size(int(clamp(float(short_side) * 0.52, 14.0, 88.0)))
+	# 0.60 of the short side: candy tiles read from sofa distance; the cap
+	# keeps giant desktop tiles from turning into icon posters.
+	var tile_font = game._font_at_size(int(clamp(float(short_side) * 0.60, 14.0, 88.0)))
 	for r in range(rows):
 		for c in range(cols):
 			var button = game.cell_buttons[r][c]
@@ -223,35 +235,46 @@ static func _apply_cleared_tile_style(game, button):
 
 
 static func _apply_tile_style(game, button, bg_color, border_color, highlight):
+	# 糖果厚度（Round 31）：粗底边 + 梅调软投影让瓷片像一块块糖，
+	# 按下时底边收平（塌下去），高亮态投影换成边色光晕。
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = bg_color
 	normal.border_color = border_color
 	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(14)
+	normal.border_width_bottom = 6
+	normal.set_corner_radius_all(16)
+	normal.shadow_color = game.UI_STYLE.INK_SHADOW
+	normal.shadow_size = 3
+	normal.shadow_offset = Vector2(0, 3)
 
 	if highlight:
+		normal.border_width_left = 3
+		normal.border_width_right = 3
+		normal.border_width_top = 3
+		normal.border_width_bottom = 6
 		normal.shadow_color = border_color
-		normal.shadow_size = 6
-		normal.shadow_offset = Vector2(0, 2)
-	else:
-		normal.shadow_color = Color8(0, 0, 0, 16)
-		normal.shadow_size = 3
-		normal.shadow_offset = Vector2(0, 2)
+		normal.shadow_size = 8
 
 	var hover = StyleBoxFlat.new()
 	hover.bg_color = bg_color.lightened(0.06)
 	hover.border_color = border_color.lightened(0.05)
 	hover.set_border_width_all(2)
-	hover.set_corner_radius_all(10)
-	hover.shadow_color = Color8(0, 0, 0, 32)
+	hover.border_width_bottom = 6
+	hover.set_corner_radius_all(16)
+	hover.shadow_color = game.UI_STYLE.INK_SHADOW
 	hover.shadow_size = 5
-	hover.shadow_offset = Vector2(0, 3)
+	hover.shadow_offset = Vector2(0, 4)
 
 	var pressed = StyleBoxFlat.new()
 	pressed.bg_color = bg_color.darkened(0.08)
 	pressed.border_color = border_color.darkened(0.05)
 	pressed.set_border_width_all(2)
-	pressed.set_corner_radius_all(10)
+	# 按下的糖：厚度收平、投影贴地。
+	pressed.border_width_bottom = 2
+	pressed.set_corner_radius_all(16)
+	pressed.shadow_color = game.UI_STYLE.INK_SHADOW
+	pressed.shadow_size = 1
+	pressed.shadow_offset = Vector2(0, 1)
 
 	button.add_stylebox_override("normal", normal)
 	button.add_stylebox_override("pressed", pressed)

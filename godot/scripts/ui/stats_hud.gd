@@ -43,7 +43,7 @@ static func add_card(game, parent, title, key):
 	var value_label = Label.new()
 	value_label.text = "--"
 	value_label.add_font_override("font", game.game_font)
-	value_label.add_color_override("font_color", Color("7a5064"))
+	value_label.add_color_override("font_color", Color("5c3a4d"))
 	value_label.align = Label.ALIGN_CENTER
 	value_label.valign = Label.VALIGN_CENTER
 	value_label.set_anchors_and_margins_preset(Control.PRESET_WIDE)
@@ -55,13 +55,14 @@ static func add_card(game, parent, title, key):
 		"value": value_label
 	}
 
-# Macaron pastel card look, tinted per stat key.
+# Macaron pastel card look, tinted per stat key. Round 31: crisper hairline
+# rose border + plum-tinted shadow instead of plain black.
 static func _card_style(key):
 	var card_style = StyleBoxFlat.new()
 	card_style.bg_color = PASTEL_BY_KEY.get(key, Color("ffffff"))
-	card_style.set_corner_radius_all(16)
-	card_style.shadow_color = Color8(0, 0, 0, 16)
-	card_style.shadow_size = 6
+	card_style.set_corner_radius_all(14)
+	card_style.shadow_color = Color(0.361, 0.227, 0.302, 0.141)
+	card_style.shadow_size = 4
 	card_style.shadow_offset = Vector2(0, 3)
 	card_style.set_border_width_all(1)
 	card_style.border_color = Color("ffd9e8")

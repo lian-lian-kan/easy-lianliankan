@@ -54,6 +54,9 @@ func _init() -> void:
 
 	if OS.get_environment("SKIP_SHOTS") == "":
 		OS.window_size = Vector2(1600, 960)
+		# 窗口尺寸落定后再建盘：board_fit 在关卡创建时读一次视口，竞态会把
+		# 上一档窗口的棋盘形状带进新视口（竖屏拍到 8 列残留即此）。
+		yield(_settle(8), "completed")
 	_log("[shot] booting desktop")
 	var game = yield(_boot_with_title(), "completed")
 	yield(_settle(30), "completed")
@@ -63,7 +66,9 @@ func _init() -> void:
 
 	_log("[shot] pressing start")
 	game._on_start_game_pressed()
-	yield(_settle(30), "completed")
+	# 90 帧：棋盘出生动画（错峰延迟 + 淡入 ≈0.6s）播完再拍，否则瓷片
+	# 停在半透明 modulate 上，整盘看着像褪色（旧基线截图即此）。
+	yield(_settle(90), "completed")
 	var st_board = _shot(game, "board-desktop")
 	if st_board != null:
 		yield(st_board, "completed")
@@ -73,16 +78,23 @@ func _init() -> void:
 
 	if OS.get_environment("SKIP_SHOTS") == "":
 		OS.window_size = Vector2(414, 896)
+		yield(_settle(8), "completed")
 	var game2 = yield(_boot_with_title(), "completed")
 	yield(_settle(30), "completed")
 	var st_title_p = _shot(game2, "title-portrait")
 	if st_title_p != null:
 		yield(st_title_p, "completed")
 	game2._on_start_game_pressed()
-	yield(_settle(30), "completed")
+	yield(_settle(90), "completed")
 	var st_board_p = _shot(game2, "board-portrait")
 	if st_board_p != null:
 		yield(st_board_p, "completed")
+	# 页面 chrome 样张：玩法大厅（导航浮岛 + 白卡清单）。
+	game2._on_modes_pressed()
+	yield(_settle(12), "completed")
+	var st_modes_p = _shot(game2, "page-modes-portrait")
+	if st_modes_p != null:
+		yield(st_modes_p, "completed")
 	game2.queue_free()
 	yield(_settle(2), "completed")
 

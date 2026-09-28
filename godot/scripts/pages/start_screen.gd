@@ -307,8 +307,9 @@ static func _dot_divider():
 		row.add_child(dot)
 	return row
 
-# 快捷入口 2×3：马卡龙底色的图标卡——emoji 徽章在上、名字在下，
-# 比一行文字按钮更像游戏主界面。
+# 快捷入口 2×3：白瓷卡——糖边描border、emoji 徽章在上、名字在下。
+# Round 31：马卡龙底整卡填充太甜腻，白面+糖边+彩描边更「瓷」，图标也
+# 放大一号当主视觉。
 static func _quick_grid(game):
 	var grid = GridContainer.new()
 	grid.columns = 2
@@ -332,18 +333,18 @@ static func _quick_grid(game):
 
 static func _quick_card(game, icon_text, name_text, page_id, tint):
 	var button = Button.new()
-	button.rect_min_size = Vector2(140, 78)
+	button.rect_min_size = Vector2(140, 82)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	game._apply_button_style(button, tint["bg"], tint["border"])
+	game._apply_button_style(button, Color("ffffff"), tint["border"])
 	var layout = VBoxContainer.new()
 	layout.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	layout.alignment = BoxContainer.ALIGN_CENTER
-	layout.add_constant_override("separation", 1)
+	layout.add_constant_override("separation", 2)
 	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var icon = Label.new()
 	icon.text = icon_text
 	icon.align = Label.ALIGN_CENTER
-	icon.add_font_override("font", game._font_at_size(24))
+	icon.add_font_override("font", game._font_at_size(27))
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(icon)
 	var name_label = Label.new()

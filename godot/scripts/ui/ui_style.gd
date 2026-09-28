@@ -4,6 +4,43 @@ extends Reference
 # ui_panels.gd: these helpers are cross-cutting (used by the home screen,
 # mode views, the HUD and the panels themselves) and know nothing about
 # panels or the game node.
+#
+# ── 设计令牌（Round 31「蜜糖瓷片」界面重设计）────────────────────────
+# 界面用色从这里取：调主题只动这一层。既有 helper 的行为契约被探针钉死
+# （ui_style_test / stat_probe / panels_probe 的色彩回归锁），令牌仅供新
+# 样式与后续逐步迁移，不改变 helper 签名。
+
+# 品牌玫瑰系
+const ROSE = Color("f06ba8")        # 实心主按钮
+const ROSE_BRIGHT = Color("ff9ec4") # 主按钮悬停
+const ROSE_DEEP = Color("d6336c")   # 描边 / 强调文字
+const ROSE_LINE = Color("ffd9e8")   # 卡片细描边
+const CREAM = Color("fff0f6")       # 品牌粉白底
+
+# 墨色文字系（梅紫灰，正文可读性比纯灰高）
+const INK = Color("5c3a4d")         # 正文
+const INK_SOFT = Color("8f6b80")    # 次级文字
+const INK_FADE = Color("c2a3b2")    # 弱化文字（页脚/快捷键角标）
+const INK_SHADOW = Color(0.361, 0.227, 0.302, 0.141)  # 通用软投影（梅调 instead of 纯黑）
+
+# 糖果边轮换：瓷片底色过浅（近白）时描边从这里按图案序号取，
+# 保证任何图集下每张牌都有一条可读的糖边。
+const CANDY_RIMS = [
+	Color("f7a8c6"), Color("7fd0c0"), Color("92b8f5"), Color("f5c07a"),
+	Color("c3a6f2"), Color("f5a0a0"), Color("8fcdea"), Color("a8d894"),
+]
+
+# 糖果瓷片配方：近白牌面 + 加深糖边。牌面保留 25% 图标色 so 同类图案
+# 一眼成组，emoji 全彩直接贴浅面不再被粉底吃掉。
+static func tile_face(base_color):
+	return Color(1, 1, 1).linear_interpolate(base_color, 0.25)
+
+static func tile_rim(base_color, value):
+	var rim = base_color.darkened(0.24)
+	if rim.get_luminance() > 0.82:
+		# GDScript 3 的 abs()/max() 返回 float，float % int 是 parse error——先收 int。
+		rim = CANDY_RIMS[int(abs(float(value))) % CANDY_RIMS.size()]
+	return rim
 
 static func apply_glass_style(panel, bg_color, alpha):
 	var style = StyleBoxFlat.new()
