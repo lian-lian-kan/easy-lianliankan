@@ -87,6 +87,23 @@ func _init() -> void:
 	check(game_b.start_screen_open and game_b.stage_status == game_b.STATUS_PAUSED, "B: pause-panel home re-opens the title paused")
 	game_b._on_start_game_pressed()
 	check(game_b.stage_status == game_b.STATUS_PLAYING, "B: start button lands back on the board")
+
+	# ⚙️ 设置圆钮：z 序在全部 Control 之上 + 按下行为（先收首页再开面板——
+	# 面板 holder 层级在标题之下，标题不收就开 = 「开了也看不见」）。
+	game_b._show_start_screen()
+	yield(_settle(4), "completed")
+	var gear_btn = null
+	for i in range(game_b.start_screen_root.get_child_count() - 1, -1, -1):
+		var cand = game_b.start_screen_root.get_child(i)
+		if cand is Control:
+			gear_btn = cand
+			break
+	check(gear_btn != null and gear_btn is Button and str(gear_btn.text) == "⚙️", "B: settings gear sits above the full-rect containers (clickable)")
+	gear_btn.emit_signal("pressed")
+	yield(_settle(4), "completed")
+	check(not game_b.start_screen_open, "B: gear press dismisses the title first")
+	check(game_b.settings_panel != null and game_b.settings_panel.visible, "B: settings panel visible over the board")
+	game_b._on_settings_close()
 	game_b.queue_free()
 	yield(_settle(2), "completed")
 

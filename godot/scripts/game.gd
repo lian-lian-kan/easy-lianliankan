@@ -1000,6 +1000,12 @@ func _on_start_game_pressed():
 func _on_start_open_page(page_id):
 	return START_SCREEN.open_page_from_start(self, page_id)
 
+# 首页 ⚙️ 设置：设置面板的 modal holder 在开机早期挂载，层级压在标题页之下
+# ——直接 open 会「开了也看不见」。沿用快捷入口的既有模式：先收首页再开。
+func _on_title_settings_pressed():
+	START_SCREEN.dismiss_start_screen(self)
+	_on_settings_pressed()
+
 # 暂停面板「🌸 回到首页」：先合暂停（恢复一帧内即被首页重新暂停），再上首页。
 func _on_pause_home_pressed():
 	if pause_panel != null:

@@ -122,7 +122,7 @@ static func _build_settings(game, root):
 	game._apply_button_style(gear, Color("ffffff"), Color("ffd9e8"))
 	for sb_name in ["normal", "hover", "pressed", "focus", "disabled"]:
 		gear.get_stylebox(sb_name).set_corner_radius_all(22)
-	gear.connect("pressed", game, "_on_settings_pressed")
+	gear.connect("pressed", game, "_on_title_settings_pressed")
 	root.add_child(gear)
 
 # 氛围层：甜系天空渐变 + 标题白圈光晕 + 底部双层山丘剪影。
