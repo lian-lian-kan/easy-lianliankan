@@ -13,6 +13,7 @@ extends Reference
 
 const PAGE_ROUTER = preload("res://scripts/pages/page_router.gd")
 const UI_PANELS = preload("res://scripts/ui/ui_panels.gd")
+const UI_PAINT = preload("res://scripts/ui/ui_paint.gd")
 
 # 快捷卡的马卡龙底色/描边（同族粉彩轮换）。
 const CARD_TINTS = [
@@ -100,51 +101,21 @@ static func _build(game):
 	return root
 
 # 氛围层：甜系天空渐变 + 标题白圈光晕 + 底部双层山丘剪影。
+# 绘制原语（渐变贴图/光晕圆盘/圆点线）在 UI_PAINT（Round 35 抽取）。
 static func _build_background(game, root, driver):
 	var view = game.get_viewport_rect().size
 	var bg = TextureRect.new()
-	bg.texture = _gradient_texture(Color("ffd6e7"), Color("fff0f5"), Color("fff7ec"))
+	bg.texture = UI_PAINT.gradient_texture(Color("ffd6e7"), Color("fff0f5"), Color("fff7ec"))
 	bg.set_anchors_and_margins_preset(Control.PRESET_WIDE)
 	bg.expand = true
 	bg.stretch_mode = TextureRect.STRETCH_SCALE
 	root.add_child(bg)
 	# 标题背后的白圈光晕（画在卡片之下，像背光板）。
-	root.add_child(_soft_disc(Vector2(view.x / 2.0 - 330.0, view.y / 2.0 - 330.0), Vector2(660, 660), Color(1, 1, 1, 0.5)))
+	root.add_child(UI_PAINT.soft_disc(Vector2(view.x / 2.0 - 330.0, view.y / 2.0 - 330.0), Vector2(660, 660), Color(1, 1, 1, 0.5)))
 	# 底部山丘：两枚半出画的大圆叠出层次，前景山丘更深一档。
-	root.add_child(_soft_disc(Vector2(view.x - 520.0, view.y - 130.0), Vector2(900, 900), Color("fbc9dc"), 130))
-	root.add_child(_soft_disc(Vector2(-260.0, view.y - 60.0), Vector2(760, 760), Color("f8a9c7"), 120))
+	root.add_child(UI_PAINT.soft_disc(Vector2(view.x - 520.0, view.y - 130.0), Vector2(900, 900), Color("fbc9dc"), 130))
+	root.add_child(UI_PAINT.soft_disc(Vector2(-260.0, view.y - 60.0), Vector2(760, 760), Color("f8a9c7"), 120))
 	_build_sparkles(game, root, driver)
-
-static func _soft_disc(pos, size, fill_or_alpha, tint_alpha = -1):
-	var disc = Panel.new()
-	disc.rect_position = pos
-	disc.rect_size = size
-	var style = StyleBoxFlat.new()
-	if tint_alpha >= 0:
-		style.bg_color = Color(fill_or_alpha.r, fill_or_alpha.g, fill_or_alpha.b, tint_alpha / 255.0)
-	else:
-		style.bg_color = fill_or_alpha
-	style.set_corner_radius_all(int(size.x / 2.0))
-	disc.add_stylebox_override("panel", style)
-	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return disc
-
-# 竖向渐变贴图：Godot 3 的 GradientTexture 只会横向铺，这里直接逐行
-# 生成 4x256 像素（顶色→中色→底色两段线性插值）。
-static func _gradient_texture(top, mid, bottom):
-	var img = Image.new()
-	img.create(4, 256, false, Image.FORMAT_RGBA8)
-	img.lock()
-	for y in range(256):
-		var t = float(y) / 255.0
-		var c = top.linear_interpolate(mid, clamp(t / 0.45, 0.0, 1.0)) if t < 0.45 \
-				else mid.linear_interpolate(bottom, clamp((t - 0.45) / 0.55, 0.0, 1.0))
-		for x in range(4):
-			img.set_pixel(x, y, c)
-	img.unlock()
-	var tex = ImageTexture.new()
-	tex.create_from_image(img)
-	return tex
 
 # 闪烁星星：三枚 ✨ 钉在英雄卡两侧，由驱动器做呼吸式明暗。
 static func _build_sparkles(game, root, driver):
@@ -298,22 +269,9 @@ static func _start_button(game):
 	start.connect("pressed", game, "_on_start_game_pressed")
 	return start
 
-# 花边圆点分隔线：九枚粉色小圆点，卡内的「蕾丝边」。
+# 花边圆点分隔线：九枚粉色小圆点（绘制原语在 UI_PAINT）。
 static func _dot_divider():
-	var row = HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGN_CENTER
-	row.add_constant_override("separation", 9)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for i in range(9):
-		var dot = Panel.new()
-		dot.rect_min_size = Vector2(6, 6)
-		var style = StyleBoxFlat.new()
-		style.bg_color = Color8(255, 184, 210, 220)
-		style.set_corner_radius_all(3)
-		dot.add_stylebox_override("panel", style)
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(dot)
-	return row
+	return UI_PAINT.dot_divider()
 
 # 快捷入口 2×3：白瓷卡——糖边描border、emoji 徽章在上、名字在下。
 # Round 31：马卡龙底整卡填充太甜腻，白面+糖边+彩描边更「瓷」，图标也

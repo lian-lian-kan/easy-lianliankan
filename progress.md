@@ -1234,3 +1234,16 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **旅程章节星级尾巴**：章节头右侧 "⭐ x/y"（level_stars 求和/章节满星），收集进度直接写在地图上；section_header 加可选 tail 参数。
 - 结算面板勘察结论：过关"面板"实为顶部 stage_panel_label 字幕（非独立面板），无需样板化，跳过。
 - Validation: 受影响探针先行全绿（ui_fonts/panels/page_probe/page_router/economy）；全量 56 项 rc 全 0；web_entry rc=0；shell_audit clean；巡礼样张复验（滚动条/勾选框/滑杆全场生效）。零新增渲染字符。推送后待 CI deploy 回填。
+
+## 2026-09-29 (Round 35：界面绘制域抽取——ui_paint.gd 绘制原语模块 + 糖果面配方共享)
+
+- Context: 用户定向"继续完善界面细节，有必要的话把界面绘制部分单独重构抽取为模块"。盘点绘制代码散布：ui_style.gd 已混三职责（令牌/组件样式/程序纹理），start_screen 还自留渐变/山丘/圆点线三件绘制原语，棋盘瓷片的糖果厚面配方埋在 board_view 里而叠叠消/翻翻乐想要同款只能复制。
+- **新模块 scripts/ui/ui_paint.gd（装饰绘制原语，153 行）**：
+  - 程序纹理四件套迁入（init_control_textures/_disc/_check/_pill/_init_scroll_textures），Image 构建与 Texture 包装**分离**（disc_image/check_image/pill_image/gradient_image 公开返回 Image）——无头测试可断言像素，不依赖渲染服务；
+  - start_screen 的 gradient_texture/soft_disc/dot_divider 收编为公共工厂（删本地三函数），新增 accent_bar（section_header 短棒）；
+  - ui_style.gd 回归"令牌+组件样式"（246→166 行），纹理段整体迁出。
+- **糖果面配方升为共享工厂**：ui_style 新增 candy_stylebox(bg,border,highlight,state)（normal 厚底 6px+梅调投影 / hover 投影加深 / pressed 底边收平塌下去 / highlight 三边加粗+边色光晕）与 apply_candy_button 三态装挂；board_view._apply_tile_style 40 行内联 → 4 行委托；**行为增量（刻意）**：叠叠消槽位与翻翻乐牌面/牌背接入同配方——三处视觉从此一个源头，改主题一处生效。
+- **新测试 ui/ui_paint_test.gd（CI 清单 57 项）**：像素级不变量 31 断言（圆盘尺寸/圆角透明/环色分带/AA 边、对勾白划线、胶囊圆角、渐变三段端点、主题七 icon+双滚槽安装、软盘/圆点线/短棒结构）。
+- **两个 Godot 3 坑记入测试注释**：①Image.create() **不清零内存**——跳过的像素是垃圾值，必须先 fill 透明底（视觉上侥幸没炸过，测试确定性复现）；②get_pixel 前必须 lock()，否则报错并返回未定义值（首轮 11 条断言假红即此）。
+- 迁移次序踩坑：ui_paint 漏搬 gradient_texture 包装导致 start_screen 三连 SCRIPT ERROR（探针容错吞掉、仅 error 扫描可见）——"漏搬包装函数"是这类抽取的典型断点，全量探针 + 错误扫描兜住。
+- Validation: 受影响探针先行全绿（ui_style/ui_fonts/ui_paint/panels/start_screen/page/tray/flip/startup）；全量 **57 项** CI 清单 rc 全 0；port_shell_audit clean（顺带修 ui_paint_test 尾部的 quit(1)+quit(0) 假绿模式——audit 第 8 项当场抓到）；web_entry rc=0；抽取前后四张样张逐张比对**视觉零变化**。零新增渲染字符。推送后待 CI deploy 回填。

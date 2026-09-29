@@ -235,52 +235,9 @@ static func _apply_cleared_tile_style(game, button):
 
 
 static func _apply_tile_style(game, button, bg_color, border_color, highlight):
-	# 糖果厚度（Round 31）：粗底边 + 梅调软投影让瓷片像一块块糖，
-	# 按下时底边收平（塌下去），高亮态投影换成边色光晕。
-	var normal = StyleBoxFlat.new()
-	normal.bg_color = bg_color
-	normal.border_color = border_color
-	normal.set_border_width_all(2)
-	normal.border_width_bottom = 6
-	normal.set_corner_radius_all(16)
-	normal.shadow_color = game.UI_STYLE.INK_SHADOW
-	normal.shadow_size = 3
-	normal.shadow_offset = Vector2(0, 3)
-
-	if highlight:
-		normal.border_width_left = 3
-		normal.border_width_right = 3
-		normal.border_width_top = 3
-		normal.border_width_bottom = 6
-		normal.shadow_color = border_color
-		normal.shadow_size = 8
-
-	var hover = StyleBoxFlat.new()
-	hover.bg_color = bg_color.lightened(0.06)
-	hover.border_color = border_color.lightened(0.05)
-	hover.set_border_width_all(2)
-	hover.border_width_bottom = 6
-	hover.set_corner_radius_all(16)
-	hover.shadow_color = game.UI_STYLE.INK_SHADOW
-	hover.shadow_size = 5
-	hover.shadow_offset = Vector2(0, 4)
-
-	var pressed = StyleBoxFlat.new()
-	pressed.bg_color = bg_color.darkened(0.08)
-	pressed.border_color = border_color.darkened(0.05)
-	pressed.set_border_width_all(2)
-	# 按下的糖：厚度收平、投影贴地。
-	pressed.border_width_bottom = 2
-	pressed.set_corner_radius_all(16)
-	pressed.shadow_color = game.UI_STYLE.INK_SHADOW
-	pressed.shadow_size = 1
-	pressed.shadow_offset = Vector2(0, 1)
-
-	button.add_stylebox_override("normal", normal)
-	button.add_stylebox_override("pressed", pressed)
-	button.add_stylebox_override("focus", normal)
-	button.add_stylebox_override("hover", hover)
-	button.add_stylebox_override("disabled", normal)
+	# 糖果厚度配方集中在 UI_STYLE（Round 35 抽取，玩法视图共用）；这里只
+	# 做三态取用——按下收平、高亮光晕在配方内部处理。
+	game.UI_STYLE.apply_candy_button(button, bg_color, border_color, highlight)
 
 static func _icon_for(game, value):
 	if game.icon_sets.empty():

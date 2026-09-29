@@ -90,3 +90,18 @@ func _init() -> void:
 	else:
 		print("ui_style_test: %d FAILURES" % failures)
 		quit(1)
+
+	# --- candy surface factory (Round 35): the shared tile/tray/flip recipe
+	var candy = Button.new()
+	STYLE.apply_candy_button(candy, Color("ffffff"), Color("f09ebb"), false)
+	var candy_normal: StyleBoxFlat = candy.get_stylebox("normal")
+	check(candy_normal.border_width_bottom == 6, "candy surface has the thick bottom edge")
+	check(candy_normal.border_width_top == 2, "candy surface keeps hairline sides unhighlighted")
+	check(candy_normal.shadow_size == 3, "candy surface ships the soft plum shadow")
+	check(candy.get_stylebox("disabled") == candy_normal, "candy disabled falls back to normal")
+	var candy_hot: StyleBoxFlat = candy.get_stylebox("hover")
+	check(candy_hot.border_width_bottom == 6 && candy_hot.shadow_size == 5, "candy hover deepens the shadow, keeps the edge")
+	var candy_pressed: StyleBoxFlat = candy.get_stylebox("pressed")
+	check(candy_pressed.border_width_bottom == 2 && candy_pressed.shadow_size == 1, "candy press collapses the thickness")
+	var candy_hl: StyleBoxFlat = STYLE.candy_stylebox(Color("ffffff"), Color("f09ebb"), true)
+	check(candy_hl.border_width_top == 3 && candy_hl.shadow_color == Color("f09ebb"), "candy highlight glows in the border color")

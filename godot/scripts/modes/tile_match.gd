@@ -191,11 +191,8 @@ static func _build_tray_slots(game, state):
 	game.tray_layer.add_child(tray_row)
 	for slot in range(int(state["capacity"])):
 		var slot_panel = PanelContainer.new()
-		var style = StyleBoxFlat.new()
-		style.bg_color = Color("ffffff")
-		style.set_corner_radius_all(10)
-		style.set_border_width_all(2)
-		style.border_color = Color("f09ebb")
+		# 槽位与棋盘瓷片同糖果面配方（Round 35 抽取后共享）。
+		var style = game.UI_STYLE.candy_stylebox(Color("ffffff"), Color("f09ebb"), false)
 		slot_panel.add_stylebox_override("panel", style)
 		slot_panel.rect_min_size = Vector2(46, 46)
 		var glyph = Label.new()

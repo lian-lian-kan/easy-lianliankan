@@ -8,6 +8,7 @@ const DISPLAY_FONT = preload("res://fonts/ZCOOLKuaiLe-Regular.ttf")
 const EMBEDDED_FONT = preload("res://fonts/NotoSansSC-Regular.ttf")
 const EMOJI_FONT = preload("res://fonts/NotoColorEmoji.ttf")
 const UI_STYLE = preload("res://scripts/ui/ui_style.gd")
+const UI_PAINT = preload("res://scripts/ui/ui_paint.gd")
 
 static func font_at_size(game, px):
 	px = int(max(8, px))
@@ -36,5 +37,5 @@ static func init_theme(game):
 	theme.set_font("font", "PopupMenu", game.game_font)
 	theme.set_font("font", "CheckBox", game.game_font)
 	# 勾选框/滑杆把手/滚动条 grabber 的品牌纹理件（代码生成，无美术依赖）。
-	UI_STYLE.init_control_textures(theme)
+	UI_PAINT.init_control_textures(theme)
 	game.theme = theme

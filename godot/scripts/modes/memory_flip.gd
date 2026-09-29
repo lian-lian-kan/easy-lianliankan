@@ -81,13 +81,14 @@ static func build_view(game):
 			card_button.visible = false
 		elif card["flipped"]:
 			card_button.text = _pattern_glyph(game, int(card["pattern"]))
-			game._apply_button_style(card_button, Color("ffffff"), Color("f09ebb"))
+			# 牌面/牌背与棋盘瓷片同糖果面配方（Round 35 抽取后共享）。
+			game.UI_STYLE.apply_candy_button(card_button, Color("ffffff"), Color("f09ebb"))
 			card_button.add_color_override("font_color", Color("5c3a4d"))
 		else:
 			# 牌背与盲盒模式的盖牌同配方（淡粉面+深粉边）——整墙实心玫瑰
 			# 会把翻牌局变成粉墙，盖牌的「未知」语义也更强。
 			card_button.text = "❓"
-			game._apply_button_style(card_button, Color("ffc2d4"), Color("f09ebb"))
+			game.UI_STYLE.apply_candy_button(card_button, Color("ffc2d4"), Color("f09ebb"))
 			card_button.add_color_override("font_color", Color("ffffff"))
 		card_button.connect("pressed", game, "_on_flip_card_pressed", [i])
 		grid.add_child(card_button)

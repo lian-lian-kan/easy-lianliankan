@@ -4,6 +4,8 @@ extends Reference
 # scrolling content area every meta page is built from. Kept dependency-free
 # so both page_router.gd and economy.gd can use it without cycles.
 
+const UI_PAINT = preload("res://scripts/ui/ui_paint.gd")
+
 # Common header: back arrow + page title + optional subtitle line.
 static func page_frame(game, page_content, title, subtitle):
 	var header = HBoxContainer.new()
@@ -50,15 +52,7 @@ static func section_header(game, text, tail_text = ""):
 	var row = HBoxContainer.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_constant_override("separation", 8)
-	var accent = Panel.new()
-	accent.rect_min_size = Vector2(4, 16)
-	accent.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var accent_style = StyleBoxFlat.new()
-	accent_style.bg_color = Color("f06ba8")
-	accent_style.set_corner_radius_all(2)
-	accent.add_stylebox_override("panel", accent_style)
-	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(accent)
+	row.add_child(UI_PAINT.accent_bar())
 	var label = Label.new()
 	label.text = text
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -38,7 +38,9 @@
 | `scripts/session/hud_timers.gd` | 会话心跳：计时器工厂与时钟/消息/错误/连击/高亮/推进/解冻/竞速回调 | `panels_probe.gd`（心跳行为断言） |
 | `scripts/ui/ui_panels.gd` | 弹窗框架与强上下文面板：shell/挂载/开合生命周期（open/close_modal 暂停语义）、暂停面板、攀登树增益三选一 | `panels_probe.gd`（生命周期断言） |
 | `scripts/ui/ui_preferences.gd` | 偏好面板族（ui_panels 内容分册）：新玩家引导、设置（音频行/功能入口/页面入口）、数据迁移、图集选项粘合 | `panels_probe.gd`（设置面板断言） |
-| `scripts/ui/ui_fonts.gd` | 字体工厂与全局主题（快乐体→Noto→Emoji 兜底链，按字号缓存） | `panels_probe.gd`（缓存与挂载断言） |
+| `scripts/ui/ui_fonts.gd` | 字体工厂与全局主题（快乐体→Noto→Emoji 兜底链，按字号缓存；装载 ui_paint 品牌控件纹理） | `panels_probe.gd`（缓存与挂载断言） |
+| `scripts/ui/ui_style.gd` | 设计令牌（品牌玫瑰/墨色系/糖果边轮换）与组件样式工厂：玻璃面板/按钮四态/对话框/次级白卡/瓷片牌面配方/糖果厚面（棋盘与玩法视图共用） | `ui_style_test.gd`（含糖果面三态断言） |
+| `scripts/ui/ui_paint.gd` | 装饰绘制原语：Image 逐像素程序纹理（滑杆把手/勾选框/滚动条 grabber，无美术依赖）+ 渐变/光晕圆盘/圆点线/区块短棒工厂；Image 构建与 Texture 包装分离，无头可测 | `ui_paint_test.gd`（像素级不变量） |
 | `scripts/ui/fx_layer.gd` | 特效发射：樱花飘落/撒花/消除粒子/连击爆字/过关庆典/补间工厂 | `power_ups_probe.gd`（层与撒花断言） |
 | `scripts/audio_manager.gd` | 程序化音效与 BGM（autoload，裸全局名访问） | 手动验收 |
 | `scripts/board/path_overlay.gd` | 连线绘制（Control） | `path_overlay_input_passthrough_test.gd` |
