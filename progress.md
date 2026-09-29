@@ -1266,3 +1266,13 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **连带修测试结构 bug**：ui_style_test 的 quit(0)/quit(1) 块在 Round 35 追加糖果面断言时被顶到了文件中部——糖果面 9 条断言全在 quit 之后**从未执行**（audit 第 8 项只管 quit 诚实性、管不到 quit 后死代码）。quit 块移至文件末尾，断言复活。
 - **像素级验证**：从上一提交抽出修复前样张与修复后同区域采样——修复前最暗像素亮度 0.89（#dfe4e7，幽灵白实锤）、修复后 0.355（满对比文字）；小铺「使用中」（真实 disabled）修复后样张清晰可读，disabled 渲染路径直接视觉验证。
 - Validation: 受影响探针先行全绿（ui_style/ui_fonts/economy/page_router/page_probe/panels/start_screen）；全量 57 项 CI 清单 rc 全 0；port_shell_audit clean；ui_style_test 补 2 条禁用字色亮度推导断言、ui_fonts_test 补全局主题默认断言。零新增渲染字符（仅注释与既有文案）。推送后待 CI deploy 回填。
+
+## 2026-09-30 (Round 38：浏览器逐页审查——悬停/按压态全部失真，Godot 3 主题项名反拼真凶落网)
+
+- Context: 用户要求亲自用浏览器逐页审查线上版本。IAB 打开 github.io 生产构建，坐标点击+截图逐页过：首页/棋盘/新手引导/玩法大厅/旅程/图鉴/有礼/活动/小铺/数据/任务/成就/暂停面板。审查当场抓到两类静态截图从未暴露的交互态 bug。
+- **悬停幽灵字（全按钮）**：悬停任意自定义按钮（HUD 键/导航键/次级卡），文字变成 12px 深灰 #424242 压白卡=「看不见」；导航选中态被鼠标停住时按钮只剩 emoji。**根因（读 3.6 源码 button.cpp 实证）**：Godot 3 的主题项名是 **`font_color_hover` / `font_color_pressed` / `font_color_focus` / `font_color_hover_pressed`**——与 Godot 4 的 `font_hover_color` 系**反着拼**；全库 override 写的全是 Godot 4 名=静默空操作，悬停态一路落引擎默认深灰。上轮修的 `font_color_disabled` 是唯一碰对的一个。最小复现链：无头探针 get_color 对拍 → 本地真窗口 warp_mouse 复现 → 改名后悬停有字。
+- **⚙️ 首页设置圆钮点不动**：浏览器连点无响应。根因：gear 挂在 safe/center 两个全屏容器**之前**——绘制在下、点击被盖（Godot 事件顶层优先，兄弟不穿透）。修复：挪到 _build 末尾最后挂（画在最上、点得到）；start_screen_probe 锁「最后一个 Control 子节点必须是 ⚙️ 按钮」。
+- **探针/测试同步**：ui_style_test 四态断言改用正确项名（旧断言用错名自洽通过——正是这类 bug 的盲区）；本地真窗口悬停复验（提示/导航选中键悬停文字恢复玫瑰色）。
+- **记录待查（不影响可读性）**：①HUD「玩法/设置」两键偶尔粉脸（三键 stylebox 全同、disabled=False，样式层排除，疑似覆盖层/引擎绘制缓存，瞬态）；②web 端关页后偶现深色药丸（本地程序化开关不复现，疑似鼠标焦点路径+引擎缓存）。二者文字始终可读，留待下次浏览器复验。
+- 审查结论（其余页面）：玩法大厅锁定卡修复后线上可读 ✓、暂停面板主次分明 ✓、数据三段/任务五卡/成就锁定行/图鉴收集格全部可读 ✓。桌面宽屏下 有礼/活动/小铺 内容顶左偏空（最大宽度+居中的布局改造候选，另立一轮）。
+- Validation: 受影响探针先行全绿（start_screen/ui_style/ui_fonts/economy/page_router/page_probe）；全量 57 项 rc 全 0；本地真窗口悬停截图复验；零新增渲染字符。推送后待 CI deploy 回填 + 浏览器线上复验。

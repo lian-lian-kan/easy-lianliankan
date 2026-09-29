@@ -47,6 +47,16 @@ func _init() -> void:
 	yield(_settle(8), "completed")
 	check(game_b.start_screen_open, "B: real boot auto-opens the title")
 	check(game_b.start_screen_root != null and game_b.start_screen_root.visible, "B: title surface visible")
+	# ⚙️ 设置圆钮必须挂在全屏容器之后（最上层 Control）：提前挂会被
+	# safe/center 盖住点击——按钮看得见却永远收不到事件（线上浏览器实测踩中）。
+	# （root 的最后一个孩子是入场 Tween 节点，跳过非 Control 找最上层控件。）
+	var gear_ok := false
+	for i in range(game_b.start_screen_root.get_child_count() - 1, -1, -1):
+		var top_control = game_b.start_screen_root.get_child(i)
+		if top_control is Control:
+			gear_ok = top_control is Button and str(top_control.text) == "⚙️"
+			break
+	check(gear_ok, "B: settings gear sits above the full-rect containers (clickable)")
 	check(game_b.stage_status == game_b.STATUS_PAUSED, "B: title pauses the stage")
 	check(game_b.second_timer != null and game_b.second_timer.is_stopped(), "B: clock stopped under the title")
 	game_b.progression_state[game_b.ONBOARDING_SEEN_KEY] = true

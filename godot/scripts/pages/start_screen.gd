@@ -90,7 +90,6 @@ static func _build(game):
 	var driver = PetalDrift.new()
 	_build_background(game, root, driver)
 	_build_petals(game, root, driver)
-	_build_settings(game, root)
 
 	var safe = MarginContainer.new()
 	safe.set_anchors_and_margins_preset(Control.PRESET_WIDE)
@@ -103,6 +102,9 @@ static func _build(game):
 	var hero = _build_hero_card(game, driver)
 	center.add_child(hero)
 	root.add_child(driver)
+	# ⚙️ 圆钮必须最后挂（画在 safe/center 两个全屏容器之上）：提前挂会被
+	# 全屏容器盖住点击——按钮看得见却永远收不到事件（浏览器实测踩中）。
+	_build_settings(game, root)
 	return root
 
 # ⚙️ 设置常驻首页右上（白瓷圆钮）：不用先进棋盘也能调音量与显示。

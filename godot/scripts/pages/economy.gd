@@ -338,7 +338,7 @@ static func _action_button(game, in_use, is_owned, price, min_height = 0):
 		# font_color_disabled），不设就「看起来像坏掉的按钮」。
 		action.disabled = true
 		game._apply_button_style(action, Color("ffe3ef"), Color("f0a8c4"))
-		for state in ["font_color", "font_color_disabled", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		for state in ["font_color", "font_color_disabled", "font_color_hover", "font_color_pressed", "font_color_focus"]:
 			action.add_color_override(state, Color("d6336c"))
 	elif is_owned:
 		# 使用：轻量切换动作，白卡次级（购买键保持全卡唯一实心玫瑰）。

@@ -256,7 +256,7 @@ static func _create_control_button(game, text):
 	button.add_stylebox_override("hover", hover)
 	button.add_stylebox_override("pressed", pressed)
 	button.add_stylebox_override("focus", normal)
-	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+	for state in ["font_color", "font_color_hover", "font_color_pressed", "font_color_focus"]:
 		button.add_color_override(state, Color("d6336c"))
 	button.connect("pressed", AudioManager, "play_button_click")
 
