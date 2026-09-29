@@ -30,6 +30,13 @@ var _bgm_player: AudioStreamPlayer = null
 var _bgm_timer: Timer = null
 var _current_note_index: int = 0
 
+# Sound-effect catalog (Round 40): WHAT each event sounds like lives in
+# content/sfx.gd as data — variant pools drawn through shuffled decks so
+# repeats stay rare. This autoload only renders recipes; the play_* wrappers
+# stay for the existing call sites.
+const SFX_CATALOG = preload("res://scripts/content/sfx.gd")
+var sfx_decks: Dictionary = {}
+
 # BGM melody (simple cheerful tune)
 const BGM_MELODY = [
 	{"note": 523.25, "duration": 0.25},  # C5
@@ -93,8 +100,19 @@ func _build_tone_stream(frequency: float, duration: float) :
 
 	var phase: float = 0.0
 	var phase_step: float = TAU * frequency / float(sample_rate)
+	# 音色包络（Round 40）：6ms 起音消掉裸正弦的爆音咔嗒，尾段 35% 抛物线
+	# 收束；叠加二/三次泛音把「冷硬蜂鸣」变成柔和的钟琴质感。
+	var attack_frames: int = max(1, int(round(0.006 * sample_rate)))
+	var decay_start: int = int(float(frame_count) * 0.65)
+	var decay_len: float = float(max(1, frame_count - decay_start))
 	for i in range(frame_count):
-		var sample_value: int = int(round(sin(phase) * 32767.0 * amplitude))
+		var env: float = 1.0
+		if i < attack_frames:
+			env = float(i) / float(attack_frames)
+		elif i >= decay_start:
+			var t: float = float(i - decay_start) / decay_len
+			env = 1.0 - 0.9 * (t * t)
+		var sample_value: int = int(round((sin(phase) + 0.32 * sin(2.0 * phase) + 0.1 * sin(3.0 * phase)) * env * amplitude * 32767.0))
 		sample_value = int(clamp(sample_value, -32768, 32767))
 		var unsigned_value: int = sample_value & 0xffff
 		pcm[i * 2] = unsigned_value & 0xff
@@ -129,103 +147,56 @@ func _play_tone(frequency: float, duration: float, volume_db: float = -10.0) :
 	yield(get_tree().create_timer(duration + 0.1), "timeout")
 	player.queue_free()
 
-# Public API for playing sound effects
+# Public API for playing sound effects — thin wrappers over the catalog
+# (content/sfx.gd owns the recipes; each event rotates through its variant
+# pool via shuffled decks, so consecutive hits never sound identical).
+
+func _play_event(key: String):
+	if muted or not effects_enabled:
+		return
+	var recipe = SFX_CATALOG.draw(self, key)
+	for note in recipe:
+		_play_tone(float(note[0]), float(note[1]), float(note[2]))
+		if float(note[3]) > 0.0:
+			yield(get_tree().create_timer(float(note[3])), "timeout")
 
 func play_select() :
-	# High pitched short beep for selection
-	_play_tone(880.0, 0.08, -12.0)
+	_play_event("select")
 
 func play_eliminate() :
-	# Pleasant chord for successful match
-	_play_tone(523.25, 0.1, -10.0)  # C5
-	yield(get_tree().create_timer(0.05), "timeout")
-	_play_tone(659.25, 0.1, -10.0)  # E5
+	_play_event("eliminate")
 
 func play_eliminate_combo(combo: int) :
-	# Play different sounds based on combo level
-	if combo >= 10:
-		# 10+ combo: High pitch arpeggio
-		_play_tone(1046.50, 0.08, -8.0)  # C6
-		yield(get_tree().create_timer(0.03), "timeout")
-		_play_tone(1318.51, 0.08, -8.0)  # E6
-		yield(get_tree().create_timer(0.03), "timeout")
-		_play_tone(1567.98, 0.08, -8.0)  # G6
-		yield(get_tree().create_timer(0.03), "timeout")
-		_play_tone(2093.00, 0.12, -6.0)  # C7
-	elif combo >= 7:
-		# 7+ combo: Higher pitch chord
-		_play_tone(783.99, 0.1, -9.0)  # G5
-		yield(get_tree().create_timer(0.04), "timeout")
-		_play_tone(987.77, 0.1, -9.0)  # B5
-		yield(get_tree().create_timer(0.04), "timeout")
-		_play_tone(1174.66, 0.1, -9.0)  # D6
-	elif combo >= 5:
-		# 5+ combo: Medium-high pitch
-		_play_tone(659.25, 0.1, -10.0)  # E5
-		yield(get_tree().create_timer(0.04), "timeout")
-		_play_tone(830.61, 0.1, -10.0)  # G#5
-		yield(get_tree().create_timer(0.04), "timeout")
-		_play_tone(987.77, 0.1, -10.0)  # B5
-	elif combo >= 3:
-		# 3+ combo: Slightly higher pitch
-		_play_tone(587.33, 0.1, -10.0)  # D5
-		yield(get_tree().create_timer(0.05), "timeout")
-		_play_tone(739.99, 0.1, -10.0)  # F#5
-	else:
-		# Base combo: Standard
-		play_eliminate()
+	_play_event(SFX_CATALOG.key_for_combo(combo))
 
 func play_error() :
-	# Low dissonant tone for error
-	_play_tone(200.0, 0.15, -8.0)
+	_play_event("error")
 
 func play_hint() :
-	# Gentle rising tone for hint
-	_play_tone(440.0, 0.08, -14.0)
-	yield(get_tree().create_timer(0.05), "timeout")
-	_play_tone(554.0, 0.08, -14.0)
-	yield(get_tree().create_timer(0.05), "timeout")
-	_play_tone(659.0, 0.08, -14.0)
+	_play_event("hint")
 
 func play_win() :
-	# Victory fanfare
-	_play_tone(523.25, 0.15, -8.0)  # C5
-	yield(get_tree().create_timer(0.1), "timeout")
-	_play_tone(659.25, 0.15, -8.0)  # E5
-	yield(get_tree().create_timer(0.1), "timeout")
-	_play_tone(783.99, 0.15, -8.0)  # G5
-	yield(get_tree().create_timer(0.1), "timeout")
-	_play_tone(1046.50, 0.3, -6.0)  # C6
+	_play_event("win")
 
 func play_button_click() :
-	# Subtle click sound
-	_play_tone(600.0, 0.05, -15.0)
+	_play_event("click")
 
 func play_shuffle() :
-	# Shuffling sound effect
-	for i in range(5):
-		_play_tone(300.0 + i * 50.0, 0.05, -12.0)
-		yield(get_tree().create_timer(0.05), "timeout")
+	_play_event("shuffle")
 
 func play_combo(combo_level: int) :
-	# Rising pitch based on combo level
-	var base_freq = 440.0
-	var freq = base_freq + (combo_level * 50.0)
-	_play_tone(freq, 0.1, -10.0)
-	yield(get_tree().create_timer(0.05), "timeout")
-	_play_tone(freq * 1.25, 0.15, -8.0)
+	_play_event(SFX_CATALOG.key_for_combo(combo_level))
 
 func play_time_warning() :
-	# Urgent ticking sound
-	_play_tone(800.0, 0.1, -10.0)
+	_play_event("time_warning")
 
 func play_fail() :
-	# Sad descending tone for failure
-	_play_tone(349.23, 0.2, -8.0)  # F4
-	yield(get_tree().create_timer(0.15), "timeout")
-	_play_tone(293.66, 0.2, -8.0)  # D4
-	yield(get_tree().create_timer(0.15), "timeout")
-	_play_tone(246.94, 0.3, -6.0)  # B3
+	_play_event("fail")
+
+# Reward chime (new event): blossoms/coins landing — paid at milestones,
+# mission claims and achievement unlocks.
+func play_coin() :
+	_play_event("coin")
 
 # Background Music
 

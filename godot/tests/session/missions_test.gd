@@ -19,8 +19,10 @@ class StubPageRouter:
 		pass
 
 class FakeGame:
+	const CHEERS = preload("res://scripts/content/cheers.gd")
 	var progression_state = {}
 	var messages = []
+	var cheer_decks = {}
 	var PAGE_ROUTER = StubPageRouter.new()
 	func _patch_progress_state(patch):
 		for k in patch:

@@ -331,6 +331,33 @@ static func make_tween(game, node_to_free = null):
 	return tween
 
 
+# 奖励迸发（Round 40）：星星/花/心从一点向外抛洒、旋转淡出——任务达成、
+# 连击里程碑、成就解锁这类「获得时刻」的通用激励特效。at 用全局坐标
+# （特效层为全屏层）。
+const REWARD_ICONS = ["⭐", "🌸", "💗", "✨"]
+
+static func spawn_reward_burst(game, at: Vector2, count = 14):
+	if game._petal_layer == null or not game.is_inside_tree():
+		return
+	for _i in range(int(count)):
+		var star = Label.new()
+		star.text = REWARD_ICONS[randi() % REWARD_ICONS.size()]
+		star.add_font_override("font", game._font_at_size(int(12 + randi() % 10)))
+		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		star.modulate = Color(1, 1, 1, 0.0)
+		star.rect_position = at
+		game._petal_layer.add_child(star)
+		var angle = randf() * TAU
+		var dist = rand_range(50.0, 140.0)
+		var target = at + Vector2(cos(angle), sin(angle)) * dist - Vector2(0.0, rand_range(10.0, 50.0))
+		var tween = make_tween(game, star)
+		tween.interpolate_property(star, "modulate:a", 0.0, 1.0, 0.12, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+		tween.interpolate_property(star, "rect_position", at, target, rand_range(0.5, 0.8), Tween.TRANS_QUAD, Tween.EASE_OUT)
+		tween.interpolate_property(star, "modulate:a", 1.0, 0.0, 0.35, Tween.TRANS_LINEAR, Tween.EASE_IN, 0.45)
+		tween.interpolate_property(star, "rect_rotation", 0.0, rand_range(-130.0, 130.0), 0.8, Tween.TRANS_LINEAR, Tween.EASE_IN_OUT)
+		tween.start()
+
+
 static func stage_clear_celebration(game, is_final_clear):
 	var burst_color = Color("ff8fab") if is_final_clear else Color("22c55e")
 	var text = "全部通关!" if is_final_clear else "过关!"

@@ -306,10 +306,14 @@ static func _show_achievement_notification(game, achievement_name):
 	hbox.add_child(margin)
 
 	var label = Label.new()
-	label.text = "🏆 成就解锁：" + achievement_name
+	# 获得时刻三件套（Round 40）：变体前缀池（告别单一「成就解锁」模板）、
+	# 奖励音、顶部迸发特效。
+	label.text = "🏆 %s：%s" % [game.CHEERS.draw_line(game, "achievement"), achievement_name]
 	label.add_color_override("font_color", Color("d6336c"))
 	label.add_font_override("font", game.game_font)
 	margin.add_child(label)
+	game.audio.play_coin()
+	game.FX.spawn_reward_burst(game, Vector2(game.get_viewport_rect().size.x * 0.5, 70.0), 14)
 
 	# Auto-dismiss after animation
 	var dismiss_timer = Timer.new()

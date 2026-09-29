@@ -1001,6 +1001,15 @@ func _on_start_game_pressed():
 func _on_start_open_page(page_id):
 	return START_SCREEN.open_page_from_start(self, page_id)
 
+# 获得时刻的音效/特效包装（Round 40）：content/session 模块经 has_method
+# 探测调用——测试假体没有这些方法时静默跳过，真机必达。
+func _play_coin_sound():
+	return audio.play_coin()
+
+func _spawn_reward_burst(count = 12):
+	var view = get_viewport_rect().size
+	return FX.spawn_reward_burst(self, Vector2(view.x * 0.5, 110.0), count)
+
 # 首页 ⚙️ 设置：设置面板的 modal holder 在开机早期挂载，层级压在标题页之下
 # ——直接 open 会「开了也看不见」。沿用快捷入口的既有模式：先收首页再开。
 func _on_title_settings_pressed():

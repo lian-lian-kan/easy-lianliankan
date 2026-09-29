@@ -32,6 +32,7 @@
 | `scripts/pages/page_events.gd` | 活动页（page_router 内容分册）：周末双倍/节日奖池/节日日历（events_calendar 供数） | `page_probe.gd` |
 | `scripts/pages/economy.gd` | 樱花币经济：钱包 chip、每日签到、图集商店、收集进度统计 | `page_probe.gd` |
 | `scripts/pages/start_screen.gd` | 首页（启动标题页）：进游戏先见首页再落棋盘，走 open_modal 暂停语义；`current_scene` 判据让 `-s` 探针自动走老路径（直达棋盘，既有探针零改动）；暂停面板「🌸 回到首页」随时可达 | `start_screen_probe.gd` |
+| `scripts/content/sfx.gd` | 音效目录（Round 40 抽取）：14 个事件的音符配方变体池（洗牌不重复抽牌），播放引擎（包络合成/音量/设置）留在 audio_manager autoload，play_* 为薄包装 | `sfx_test.gd`（数据不变量） |
 | `scripts/ui/home_screen.gd` | 主屏构建：背景/页头/统计卡/道具行/控制区/棋盘区/钱包/页面与导航挂载 | `panels_probe.gd` |
 | `scripts/ui/ui_hud.gd` | 主屏结构：构建/状态刷新/消息横幅/控制按钮/关卡选择胶水/连击条/成就通知 | `panels_probe.gd`（结构+行为断言） |
 | `scripts/ui/hud_layout.gd` | 屏幕适配：视口分类（手机/竖屏/紧凑）与响应式布局（棋盘高度/边距/网格间距/统计卡与控件尺寸/竖屏头部压缩） | `panels_probe.gd`（布局断言） |

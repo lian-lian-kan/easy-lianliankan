@@ -90,6 +90,12 @@ static func claim(game, task_id: String):
 	var reward = int(MISSIONS[task_id]["reward"])
 	state["claimed"].append(task_id)
 	game._patch_progress_state({"weekly_missions": state, "coins_delta": reward})
-	game._show_message("任务完成！🌸+%d" % reward, 1.4)
+	# 获得时刻三件套（Round 40）：变体文案 + 奖励音 + 迸发特效。声音/特效
+	# 经 has_method 探测调用（测试假体没有时静默跳过）。
+	game._show_message("✅ %s · 🌸+%d" % [game.CHEERS.draw_line(game, "mission"), reward], 1.6)
+	if game.has_method("_play_coin_sound"):
+		game._play_coin_sound()
+	if game.has_method("_spawn_reward_burst"):
+		game._spawn_reward_burst(16)
 	# 任务页就地刷新（rebuild_page 对未开页早退，安全）。
 	game.PAGE_ROUTER.rebuild_page(game)

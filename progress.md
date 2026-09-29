@@ -1290,3 +1290,14 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **假体兼容坑**：探针 FakeGame 是裸 Node——成员直接赋值会炸（Invalid set index），改 `game.set("page_column_outer", …)`（对无此属性的假体是静默空操作）；内容宽度优先读 `page_content.rect_size`（已布局真值），假体拿不到时留白 0、只断言子节点结构不受影响。
 - **截图工具增强**：desktop 段新增页面巡礼（有礼/活动/小铺/任务 四页落盘 `page-*-desktop.png`）——宽屏回归从此有本地证据，不用每次开浏览器。
 - Validation: 受影响探针先行全绿（hud_layout/page_router/page_probe/economy/stat/panels/startup/start_screen）；全量 57 项 rc 全 0；桌面样张复验（有礼居中列/活动任务 760 卡列/小铺 4 列网格）；竖屏样张确认窄屏不受影响（自适应全宽+半宽大卡）。零新增渲染字符。推送后待 CI deploy 回填 + 浏览器线上复验。
+
+## 2026-09-30 (Round 40：音效系统重构为独立模块 + 文案变体池 + 获得时刻激励三件套)
+
+- Context: 用户定向"完善界面细节与音效，音效系统单独重构为模块；音效提示文案太挫、花样太少；需要动画特效激励玩家"。盘点：全部音效是裸正弦蜂鸣（无包络，冷硬）、每个事件固定单一旋律、音效设计内嵌在 333 行 autoload 里不可测；奖励时刻（任务达成/里程碑/成就）只有一行模板文案、零特效。
+- **新模块 scripts/content/sfx.gd（音效目录）**：WHAT each event sounds like 收敛为纯数据——14 个事件 × 2-4 个变体的音符配方池（[freq, dur, vol_db, gap]），经 game.sfx_decks 洗牌不重复抽牌（cheers/voice_lines 同款模式）。audio_manager 回归播放引擎：`_play_event(key)` 渲染配方，play_* 全部变一行薄包装（调用点零改动），`play_coin()` 新增奖励音。
+- **音色升级**：合成器加 6ms 起音（消裸正弦的爆音咔嗒）+ 尾段 35% 抛物线收束 + 二/三次泛音叠加——「冷硬蜂鸣」变柔和钟琴质感。消除音从 1 种变 4 种旋律、连击五档各 2 变体、选择/点击/错误各有轮换。
+- **文案变体池（cheers.EVENT_POOLS）**：settle/full_clear/mission/record/achievement 五个获得时刻各 4-5 条夸夸变体，draw_line 按键轮换；结算横幅从「第X关过关啦！奖励 +..」变成「丝滑通关！第3关 · 时间+12 · 🌸+8」，成就通知从固定「成就解锁：」变四选一前缀。
+- **激励特效三件套**：fx_layer.spawn_reward_burst（星/花/心从一点抛洒旋转淡出）接到 里程碑达成/任务领取/成就解锁 三时刻，配 play_coin 奖励音——获得瞬间「有声音、有文案、有动画」。
+- **工程坑（重要）**：①字体子集对拍必须对 **9/19 基线提交**（38d16ff）——当前池被注释散文污染（1446→1469），漂/拿/添/碾/雅/贯/壁/封/勋/杯 十字会漏网放水成豆腐块；git archive 旧提交建基线池（1283 字）后全部重验，四条文案当场换词。②content 模块调 game 服务经 has_method 探测（_play_coin_sound/_spawn_reward_burst 包装在 game.gd），测试假体（裸 Node/Reference）没有这些方法时静默跳过——missions_test/content_decks_test 的假体零改动通过。
+- **新测试 tests/content/sfx_test.gd（CI 清单 58 项）**：池不变量（pools_valid）、14 事件键存在、combo 分档映射、洗牌牌堆不重复直至抽干重洗。
+- Validation: 受影响探针先行全绿（sfx/content_decks/missions/session_settle/voice_playback/content_sanity/edu/events_calendar）；全量 57+1=58 项 rc 全 0；port_shell_audit clean；新文案 25 条全过 9/19 基线池对拍。推送后待 CI deploy 回填 + 浏览器线上复验。

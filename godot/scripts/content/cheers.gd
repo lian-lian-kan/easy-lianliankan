@@ -72,6 +72,12 @@ static func on_combo(game, combo: int, gain: int) -> String:
 			game._patch_progress_state({"coins_delta": reward})
 			game._show_message("🌈 %d 连击达成 · 🌸+%d" % [int(milestone), reward], 1.6)
 			game.VOICE_LINES.play(game, "milestone")
+			# 获得时刻三件套：奖励音 + 迸发特效。经 game 包装方法 has_method
+			# 探测调用——测试假体没有这些方法时静默跳过。
+			if game.has_method("_play_coin_sound"):
+				game._play_coin_sound()
+			if game.has_method("_spawn_reward_burst"):
+				game._spawn_reward_burst()
 	if line == "":
 		return ""
 	return line + " +" + str(max(0, gain))
@@ -96,3 +102,36 @@ static func husband_line(game) -> String:
 static func clear_cheer(game) -> String:
 	var pick = int(randi() % CLEAR_LINES.size())
 	return str(CLEAR_LINES[pick])
+
+# Reward-moment praise pools (Round 40): one-line phrases composed into the
+# settle / mission / record / achievement banners, drawn through per-key
+# decks so the phrasing rotates instead of repeating one template. Every
+# line passed the Sep-19 font baseline check (漂/拿/添/碾/雅/贯/壁/封/勋/杯
+# 都不在子集里，写文案前必须对基线池对拍).
+const EVENT_POOLS = {
+	"settle": ["甜度超标", "丝滑通关", "温柔通关", "完美收场", "顺顺过关"],
+	"full_clear": ["全部通关", "关卡全清", "终点也开满花", "你就是传奇", "满载而归"],
+	"mission": ["小目标达成", "任务清单打勾", "又进一步啦", "顺手就完成了", "进展神速"],
+	"record": ["新纪录诞生", "快过闪电", "历史最快的一局", "手速无解", "收获满满"],
+	"achievement": ["成就点亮", "高光时刻", "值得纪念", "里程碑达成"],
+}
+
+
+# Draw the next praise line for this reward moment (deck per key, held on
+# game.cheer_decks alongside the combo decks).
+static func draw_line(game, key: String) -> String:
+	if not EVENT_POOLS.has(key):
+		return ""
+	var deck_key = "line:" + key
+	if not game.cheer_decks.has(deck_key):
+		var fresh = EVENT_POOLS[key].duplicate()
+		fresh.shuffle()
+		game.cheer_decks[deck_key] = fresh
+	var deck: Array = game.cheer_decks[deck_key]
+	if deck.empty():
+		deck = EVENT_POOLS[key].duplicate()
+		deck.shuffle()
+		game.cheer_decks[deck_key] = deck
+	var line = str(deck.pop_front())
+	game.cheer_decks[deck_key] = deck
+	return line

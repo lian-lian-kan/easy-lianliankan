@@ -106,3 +106,8 @@ func _init() -> void:
 	else:
 		print("content_decks_test: %d FAILURES" % failures)
 		quit(1)
+
+	# --- Round 40 reward praise pools: rotation via per-key decks
+	var game_holder = Node.new()
+	root.add_child(game_holder)
+	game_holder.set("cheer_decks", {})
