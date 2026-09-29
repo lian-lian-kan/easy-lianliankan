@@ -303,6 +303,7 @@ var editor_import_input
 var custom_level = {}  # 工坊「试玩」进行中的虚拟关卡
 
 var settings_panel  # 设置面板
+var page_column_outer  # 页面内容列的居中容器（page_ui.scroll_area 挂，hud_layout 缩放重算）
 var migration_panel  # 数据迁移面板（懒构建）
 var migration_code_label  # 旧设备生成的迁移码展示
 var migration_input  # 新设备输入迁移码

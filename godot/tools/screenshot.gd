@@ -92,6 +92,16 @@ func _init() -> void:
 	if st_onboarding != null:
 		yield(st_onboarding, "completed")
 	game._on_onboarding_dismissed()
+	# 桌面页面巡礼（Round 39 宽屏适配的证据底座）：有礼/活动/小铺/任务
+	# 在 1600 宽下最考验内容列居中，逐页落盘。
+	for page_id in ["signin", "events", "shop", "missions"]:
+		game.PAGE_ROUTER.show_page(game, page_id)
+		yield(_settle(10), "completed")
+		var st_page_d = _shot(game, "page-%s-desktop" % page_id)
+		if st_page_d != null:
+			yield(st_page_d, "completed")
+	game.PAGE_ROUTER.close_page(game)
+	yield(_settle(2), "completed")
 	game.queue_free()
 	yield(_settle(2), "completed")
 	_log("[shot] desktop done")

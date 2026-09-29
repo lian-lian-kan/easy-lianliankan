@@ -1281,3 +1281,12 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 
 - gear 的 z 序修完、线上实测仍无反应——第二层根因：设置面板的 modal holder 在**开机早期** add_child，层级压在**后挂的标题页之下**，直接 open = 「开了也看不见」。沿用快捷入口的既有模式修复：`_on_title_settings_pressed` 先 `dismiss_start_screen` 再 `_on_settings_pressed`（同帧连发、暂停态配对安全，模式有探针背书）。
 - start_screen_probe 增补行为断言：gear 按下 → 标题收起 + 设置面板在棋盘上可见 + 关设置落回棋盘。全量 57 项 rc 全 0。
+
+## 2026-09-30 (Round 39：宽屏适配——全页面居中内容列，小铺响应式网格)
+
+- Context: 继续浏览器审查的遗留清单头号项：桌面宽屏下 有礼/活动/小铺 的内容顶着左上角、右侧一大片空粉，数据/任务的行被拉满 1280 宽像散架的表格——「页面骨架没有内容列」是根因级缺口。
+- **内容列改造（一处修，11 处 scroll_area 调用全生效）**：`page_ui.scroll_area` 在 ScrollContainer 与内容 VBox 之间插入 MarginContainer——宽屏按 `ui_style.PAGE_COLUMN_MAX_WIDTH = 760` 设计令牌左右留白居中，窄屏自适应全宽（side=max(0,(view−min(760,view))/2)）。边距容器挂到 `game.page_column_outer`，`hud_layout.update_layout` 在窗口缩放时重算（令牌数值内联，ui 不反向 import pages）。
+- **小铺响应式网格**：两个商店网格（氛围主题/图集）从写死 `columns = 2` 改为 `page_ui.grid_columns(page_content)`（按内容列宽每列 ~150px 估算，宽屏 4-5 列、窄屏回落 2 列），卡片 `EXPAND_FILL` 吃满列宽——桌面从 64px 小方块两小条变成与内容列同宽的正规商店卡；竖屏反而也受益（半宽大卡）。
+- **假体兼容坑**：探针 FakeGame 是裸 Node——成员直接赋值会炸（Invalid set index），改 `game.set("page_column_outer", …)`（对无此属性的假体是静默空操作）；内容宽度优先读 `page_content.rect_size`（已布局真值），假体拿不到时留白 0、只断言子节点结构不受影响。
+- **截图工具增强**：desktop 段新增页面巡礼（有礼/活动/小铺/任务 四页落盘 `page-*-desktop.png`）——宽屏回归从此有本地证据，不用每次开浏览器。
+- Validation: 受影响探针先行全绿（hud_layout/page_router/page_probe/economy/stat/panels/startup/start_screen）；全量 57 项 rc 全 0；桌面样张复验（有礼居中列/活动任务 760 卡列/小铺 4 列网格）；竖屏样张确认窄屏不受影响（自适应全宽+半宽大卡）。零新增渲染字符。推送后待 CI deploy 回填 + 浏览器线上复验。

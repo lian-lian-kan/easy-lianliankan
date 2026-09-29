@@ -23,6 +23,11 @@ const INK_SOFT = Color("8f6b80")    # 次级文字
 const INK_FADE = Color("c2a3b2")    # 弱化文字（页脚/快捷键角标）
 const INK_SHADOW = Color(0.361, 0.227, 0.302, 0.141)  # 通用软投影（梅调 instead of 纯黑）
 
+# 页面内容列：宽屏下所有 meta 页共享的最大内容宽度（超过则居中留白，
+# 窄屏自适应全宽）。UI 层令牌，pages/page_ui 与 ui/hud_layout 共用——
+# 没有它，有礼/活动/小铺的内容会顶着左上角、右侧一大片空粉。
+const PAGE_COLUMN_MAX_WIDTH = 760.0
+
 # 糖果边轮换：瓷片底色过浅（近白）时描边从这里按图案序号取，
 # 保证任何图集下每张牌都有一条可读的糖边。
 const CANDY_RIMS = [

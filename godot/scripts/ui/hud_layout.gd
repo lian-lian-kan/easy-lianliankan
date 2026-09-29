@@ -22,6 +22,14 @@ static func update_layout(game):
 	_apply_header_compaction(game, flags)
 	_apply_nav_visibility(game, flags)
 	game._update_modal_panel_sizes(viewport_size, flags["is_portrait"])
+	# 页面内容列的居中边距跟随窗口宽度（列宽上限是 ui_style.PAGE_COLUMN_MAX_WIDTH
+	# 设计令牌，数字内联于此——ui 不反向 import pages）。
+	var page_column = game.get("page_column_outer")
+	if page_column != null:
+		var column_view_w = max(0.0, viewport_size.x - 28.0)
+		var column_side = max(0.0, (column_view_w - min(760.0, column_view_w)) * 0.5)
+		page_column.add_constant_override("margin_left", column_side)
+		page_column.add_constant_override("margin_right", column_side)
 	# Tile sizing depends on the wrapper frame above; re-run once the
 	# container has actually applied it, or tiles stay at the boot-time size.
 	game.call_deferred("_update_tile_sizes")

@@ -266,7 +266,7 @@ static func build_shop(game):
 static func _build_theme_section(game, box):
 	box.add_child(PAGE_UI.section_header(game, "🌫️ 氛围主题"))
 	var theme_grid = GridContainer.new()
-	theme_grid.columns = 2
+	theme_grid.columns = PAGE_UI.grid_columns(game.page_content)
 	theme_grid.add_constant_override("h_separation", 8)
 	theme_grid.add_constant_override("v_separation", 8)
 	box.add_child(theme_grid)
@@ -294,7 +294,7 @@ static func _build_theme_section(game, box):
 # Icon-set section: one shop card per set.
 static func _build_set_section(game, box, owned, current_set):
 	var grid = GridContainer.new()
-	grid.columns = 2
+	grid.columns = PAGE_UI.grid_columns(game.page_content)
 	grid.add_constant_override("h_separation", 8)
 	grid.add_constant_override("v_separation", 8)
 	box.add_child(grid)
@@ -305,6 +305,8 @@ static func _build_set_section(game, box, owned, current_set):
 # centered title. Returns the body VBox; the panel itself is its parent.
 static func _card_shell(game, title):
 	var card = PanelContainer.new()
+	# EXPAND 吃满网格列宽（响应式列数下卡片与内容列同宽，不再缩成小方块）。
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game._apply_glass_style(card, Color("ffffff"), 0.88)
 	var card_box = VBoxContainer.new()
 	card_box.add_constant_override("separation", 4)
