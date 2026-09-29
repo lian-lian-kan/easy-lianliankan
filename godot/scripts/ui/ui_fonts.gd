@@ -36,6 +36,11 @@ static func init_theme(game):
 	theme.set_font("font", "OptionButton", game.game_font)
 	theme.set_font("font", "PopupMenu", game.game_font)
 	theme.set_font("font", "CheckBox", game.game_font)
+	# 禁用按钮的默认字色：Godot 3 的主题项叫 font_color_disabled（引擎默认
+	# 0.9,0.9,0.9,0.2——白字两成透明，压白卡就是幽灵字；font_disabled_color
+	# 是 Godot 4 的名字，在这里 set/get 都是静默空操作）。装一个可读的
+	# 墨系默认，任何 disabled 按钮不再隐形。
+	theme.set_color("font_color_disabled", "Button", Color("8f6b80"))
 	# 勾选框/滑杆把手/滚动条 grabber 的品牌纹理件（代码生成，无美术依赖）。
 	UI_PAINT.init_control_textures(theme)
 	game.theme = theme

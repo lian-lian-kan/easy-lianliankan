@@ -49,6 +49,9 @@ func _init() -> void:
 	for control in ["Label", "Button", "OptionButton", "PopupMenu", "CheckBox"]:
 		var bound = game.theme.get_font("font", control)
 		check(bound == game.game_font, "%s is bound to the shared font" % control)
+	# 禁用按钮默认字色可读（Godot 3 主题项名 font_color_disabled）：全局默认
+	# 墨系，锁定玩法卡这类 disabled 白卡不再落到引擎默认的幽灵白。
+	check(game.theme.get_color("font_color_disabled", "Button") == Color("8f6b80"), "theme default disabled text is readable ink")
 
 	if failures == 0:
 		print("ui_fonts_test: ALL PASSED")

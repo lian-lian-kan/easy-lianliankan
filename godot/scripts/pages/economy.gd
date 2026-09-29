@@ -333,11 +333,12 @@ static func _action_button(game, in_use, is_owned, price, min_height = 0):
 		action.rect_min_size = Vector2(0, min_height)
 	action.add_font_override("font", game._font_at_size(13))
 	if in_use:
-		# 使用中：淡玫瑰药丸 + 深玫瑰满透明度字——以前是实心玫瑰叠 disabled
-		# 半透明，看起来像坏掉的按钮。
+		# 使用中：淡玫瑰药丸 + 深玫瑰字。disabled 态字色必须显式给满——
+		# Godot 3 的默认禁用字色是两成透明的幽灵白（主题项
+		# font_color_disabled），不设就「看起来像坏掉的按钮」。
 		action.disabled = true
 		game._apply_button_style(action, Color("ffe3ef"), Color("f0a8c4"))
-		for state in ["font_color", "font_disabled_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		for state in ["font_color", "font_color_disabled", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 			action.add_color_override(state, Color("d6336c"))
 	elif is_owned:
 		# 使用：轻量切换动作，白卡次级（购买键保持全卡唯一实心玫瑰）。

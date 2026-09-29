@@ -74,7 +74,15 @@ func _init() -> void:
 	STYLE.style_secondary_button(secondary)
 	check(secondary.get_stylebox("normal").bg_color == Color("ffffff"), "secondary buttons keep the white card")
 	check(secondary.get_color("font_color") == Color("d6336c"), "secondary text is pink on white")
-	check(secondary.get_color("font_disabled_color") == Color("8f6b80"), "disabled secondary text stays readable (muted ink, not ghost)")
+	check(secondary.get_color("font_color_disabled") == Color("8f6b80"), "disabled secondary text stays readable (muted ink, not ghost)")
+	# 禁用态字色按面亮度推导（Godot 3 主题项 font_color_disabled；引擎默认
+	# 0.9,0.9,0.9,0.2 幽灵白——玩法大厅锁定卡/小铺「使用中」全栽在这）。
+	var light_face = Button.new()
+	STYLE.apply_button_style(light_face, Color("ffffff"), Color("f09ebb"))
+	check(light_face.get_color("font_color_disabled") == Color("d6336c"), "disabled text on a light face derives deep rose")
+	var dark_face = Button.new()
+	STYLE.apply_button_style(dark_face, Color("f06ba8"), Color("d6336c"))
+	check(dark_face.get_color("font_color_disabled") == Color("ffffff"), "disabled text on a dark face derives white")
 	var sweep_panel = PanelContainer.new()
 	var sweep_box = VBoxContainer.new()
 	var deep = Button.new()
@@ -83,13 +91,6 @@ func _init() -> void:
 	STYLE.style_all_secondary_buttons(sweep_panel)
 	check(deep.get_color("font_color") == Color("d6336c"), "the sweep reaches nested buttons")
 	sweep_panel.free()
-
-	if failures == 0:
-		print("ui_style_test: ALL PASSED")
-		quit(0)
-	else:
-		print("ui_style_test: %d FAILURES" % failures)
-		quit(1)
 
 	# --- candy surface factory (Round 35): the shared tile/tray/flip recipe
 	var candy = Button.new()
@@ -105,3 +106,10 @@ func _init() -> void:
 	check(candy_pressed.border_width_bottom == 2 && candy_pressed.shadow_size == 1, "candy press collapses the thickness")
 	var candy_hl: StyleBoxFlat = STYLE.candy_stylebox(Color("ffffff"), Color("f09ebb"), true)
 	check(candy_hl.border_width_top == 3 && candy_hl.shadow_color == Color("f09ebb"), "candy highlight glows in the border color")
+
+	if failures == 0:
+		print("ui_style_test: ALL PASSED")
+		quit(0)
+	else:
+		print("ui_style_test: %d FAILURES" % failures)
+		quit(1)

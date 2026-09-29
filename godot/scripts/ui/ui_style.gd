@@ -87,6 +87,8 @@ static func apply_button_style(button, bg_color, border_color):
 
 # 文字色四态统一：只覆盖 font_color 会让悬停回落到主题默认灰——首页
 # 「玩法大厅」悬停发灰就是这么来的。按背景亮度推导：深底白字、浅底粉字。
+# 禁用态同规则（Godot 3 主题项名 font_color_disabled，引擎默认是
+# 0.9,0.9,0.9,0.2 的幽灵白——不设它，锁定/使用中按钮就是「什么都看不到」）。
 # 调用方仍可在其后自行覆盖 font_color 系列以指定特殊用色。
 static func _apply_button_font_colors(button, bg_color):
 	var luminance = 0.299 * bg_color.r + 0.587 * bg_color.g + 0.114 * bg_color.b
@@ -95,6 +97,7 @@ static func _apply_button_font_colors(button, bg_color):
 	button.add_color_override("font_hover_color", fg)
 	button.add_color_override("font_pressed_color", fg)
 	button.add_color_override("font_focus_color", fg)
+	button.add_color_override("font_color_disabled", fg)
 
 static func style_dialog_buttons(node):
 	# Dialog buttons join the rose palette instead of the default gray.
@@ -104,6 +107,8 @@ static func style_dialog_buttons(node):
 		node.add_color_override("font_hover_color", Color("ffffff"))
 		node.add_color_override("font_pressed_color", Color("ffffff"))
 		node.add_color_override("font_focus_color", Color("ffffff"))
+		# 禁用态保持白字（全局默认的墨系禁用字色压玫瑰底会发闷）。
+		node.add_color_override("font_color_disabled", Color("ffffff"))
 	for child in node.get_children():
 		style_dialog_buttons(child)
 
@@ -116,9 +121,11 @@ static func style_secondary_button(button):
 	button.add_color_override("font_hover_color", Color("d6336c"))
 	button.add_color_override("font_pressed_color", Color("d6336c"))
 	button.add_color_override("font_focus_color", Color("d6336c"))
-	# 禁用态（锁定玩法卡等）要读得清解锁条件：INK_SOFT 满透明度。
-	# 以前的浅粉 c9a5b6 在白卡上糊成幽灵字，卡上写什么完全不可辨。
-	button.add_color_override("font_disabled_color", Color("8f6b80"))
+	# 禁用态（锁定玩法卡等）要读得清解锁条件：INK_SOFT 满透明度。注意
+	# Godot 3 的主题项名是 font_color_disabled（引擎默认 0.9,0.9,0.9,0.2
+	# 的幽灵白）；font_disabled_color 是 Godot 4 的名字，写它等于没写——
+	# 之前这里就用错了名字，锁定玩法卡在白卡上「什么都看不到」。
+	button.add_color_override("font_color_disabled", Color("8f6b80"))
 
 static func style_all_secondary_buttons(node):
 	# Recursive sweep: every Button under the panel takes the white-card
