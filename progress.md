@@ -1247,3 +1247,13 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **两个 Godot 3 坑记入测试注释**：①Image.create() **不清零内存**——跳过的像素是垃圾值，必须先 fill 透明底（视觉上侥幸没炸过，测试确定性复现）；②get_pixel 前必须 lock()，否则报错并返回未定义值（首轮 11 条断言假红即此）。
 - 迁移次序踩坑：ui_paint 漏搬 gradient_texture 包装导致 start_screen 三连 SCRIPT ERROR（探针容错吞掉、仅 error 扫描可见）——"漏搬包装函数"是这类抽取的典型断点，全量探针 + 错误扫描兜住。
 - Validation: 受影响探针先行全绿（ui_style/ui_fonts/ui_paint/panels/start_screen/page/tray/flip/startup）；全量 **57 项** CI 清单 rc 全 0；port_shell_audit clean（顺带修 ui_paint_test 尾部的 quit(1)+quit(0) 假绿模式——audit 第 8 项当场抓到）；web_entry rc=0；抽取前后四张样张逐张比对**视觉零变化**。零新增渲染字符。推送后待 CI deploy 回填。
+
+## 2026-09-30 (Round 36：家界面四轮——首页从「好看」到「贴心」)
+
+- Context: 用户定向"继续优化和完善我们的家界面效果"。首页（标题页）Round 31 已立「蜜糖瓷片」视觉骨架，本轮盘点「贴心感」缺口：快捷卡是死的（有可领奖励时一声不吭）、宽屏下 520px 窄卡在 1600 视口里构图偏挤、主 CTA 没有生命感、没有设置入口（必须先进棋盘才能调音量）、标题两侧 ✨ 用旧卡宽定位。
+- **红点徽章（入口卡自己会说话）**：`_dot_badge()` 12px 玫瑰实心圆+白描边（纯代码，钉卡右上）；三个只读判据——今天未签到→有礼、周任务完成未领→任务、大树里程碑够高未领→数据。判据构建期**不写存档**：周任务桶滚动（`MISSIONS.active_state` 会写）留给任务页自己做，首页只读 `weekly_missions` 且 week_key 不匹配视为新周无进度（点亮无意义）。
+- **宽屏构图升级**：≥1100 视口快捷格 2×3→3×2、英雄卡 520→640；驱动器逐帧自校正扩到列数+盒宽（窗口缩放实时切换）。**连带修复**：三颗 ✨ 装饰星旧坐标按 520 卡定位，宽卡直接盖住整排——改按卡片实际半宽外挂（`min(320, (view.x-40)/2)`），窄屏收到屏内不失踪。
+- **主 CTA 呼吸**：±1.2% 绕中心缩放（pivot 逐帧跟 rect_size），全页唯一的实心玫瑰自己「活着」。
+- **时段请安 + 日期徽章**：标语跟时段换（<11 早上好·今天也要元气满满 / ≥22 夜深了·注意休息 / 其余原句）；宽屏信息行添「📅 9月30日 星期三」第三枚药丸（weekday 0=周日映射）。新文案全部先过 check_copy_chars 改码前探查（pool 1446 含全部字形：早/元/气/满/夜/深/注/意/休/息/星期几；⚙️+VS16 本就在池——home_screen 早用着）。
+- **⚙️ 设置白瓷圆钮**：首页右上常驻（PRESET_TOP_RIGHT 白瓷 44px 圆钮，hint_tooltip「设置」——Godot 3 属性名，写成 Godot 4 的 tooltip_text 探针当场抓 SCRIPT ERROR），直接 open_modal 叠在首页暂停态之上，免进棋盘即可调音量。
+- Validation: start_screen_probe 全绿（B 段 17 条 + 新增 D 段 7 条红点判据锁：签到/周任务/里程碑各真假两侧 + 跨周桶不点亮）；全量 **57 项** CI 清单 rc 全 0、无 Parse Error/FAIL；port_shell_audit clean；check_copy_chars ALL COVERED；桌面/竖屏样张复验（宽屏 3×2+红点+日期徽章+圆钮，竖屏保持 2×3+双徽章）。零新增渲染字符。推送后待 CI deploy 回填。

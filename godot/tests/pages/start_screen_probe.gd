@@ -88,6 +88,37 @@ func _init() -> void:
 	yield(_settle(8), "completed")
 	check(not game_c.start_screen_open and game_c.stage_status == game_c.STATUS_PLAYING, "C: suppressed flag keeps legacy boot even as main scene")
 	game_c.queue_free()
+	yield(_settle(2), "completed")
+
+	# --- D: 首页红点状态（Round 36）——三个只读判据的真假两侧 ---
+	var game_d = load("res://scenes/Main.tscn").instance()
+	root.add_child(game_d)
+	yield(_settle(8), "completed")
+	var start_screen = load("res://scripts/pages/start_screen.gd")
+	# 签到：没签 → 亮点；签了 → 熄灭。
+	game_d.progression_state["last_signin"] = ""
+	check(start_screen._has_unsigned_signin(game_d), "D: empty last_signin lights the signin dot")
+	game_d.progression_state["last_signin"] = game_d.SPECIAL_MODES_SCRIPT.date_string(OS.get_date())
+	check(not start_screen._has_unsigned_signin(game_d), "D: signing today clears the signin dot")
+	# 周任务：本周桶里有完成未领 → 亮点；跨周桶（未滚动）与新周空白 → 熄灭。
+	var week_state = {
+		"week_key": game_d.MISSIONS.current_week_key(game_d),
+		"progress": {game_d.MISSIONS.MISSIONS.keys()[0]: int(game_d.MISSIONS.MISSIONS[game_d.MISSIONS.MISSIONS.keys()[0]]["target"])},
+		"claimed": [],
+	}
+	game_d.progression_state["weekly_missions"] = week_state
+	check(start_screen._has_claimable_mission(game_d), "D: done-but-unclaimed weekly task lights the missions dot")
+	week_state["claimed"] = [game_d.MISSIONS.MISSIONS.keys()[0]]
+	check(not start_screen._has_claimable_mission(game_d), "D: claiming the task clears the missions dot")
+	game_d.progression_state["weekly_missions"] = {"week_key": "W0", "progress": {}, "claimed": []}
+	check(not start_screen._has_claimable_mission(game_d), "D: stale week bucket stays dark (no write during title build)")
+	# 大树里程碑：够高未领 → 亮点；领过 → 熄灭。
+	game_d.progression_state["tree_best_height"] = 8
+	game_d.progression_state["tree_milestones"] = []
+	check(start_screen._has_unclaimed_milestone(game_d), "D: reached milestone lights the stats dot")
+	game_d.progression_state["tree_milestones"] = [8]
+	check(not start_screen._has_unclaimed_milestone(game_d), "D: claimed milestone clears the stats dot")
+	game_d.queue_free()
 
 	if failures == 0:
 		print("start_screen_probe: ALL PASSED")
