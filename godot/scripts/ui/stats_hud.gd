@@ -83,7 +83,19 @@ static func update_power_up(game, power_up_id, count):
 static func set_text(game, key, value):
 	if not game.stat_values.has(key):
 		return
-	game.stat_values[key]["value"].text = value
+	var value_label = game.stat_values[key]["value"]
+	if value_label.text == value:
+		return
+	value_label.text = value
+	# 总分变化时闪一下玫瑰高光再淡回（Round 42）——把眼睛引向变化处。只
+	# 对总分做：倒计时/剩余每秒都在跳，全部脉冲就成了常亮噪音。
+	if key == "score":
+		value_label.modulate = Color(1.7, 1.25, 1.45, 1.0)
+		var tween = Tween.new()
+		value_label.add_child(tween)
+		tween.connect("tween_all_completed", tween, "queue_free")
+		tween.interpolate_property(value_label, "modulate", value_label.modulate, Color(1, 1, 1, 1), 0.4, Tween.TRANS_QUAD, Tween.EASE_OUT)
+		tween.start()
 
 # Normal (non-pulsing) look of the countdown card. Returns the applied bg.
 static func set_card_state(game, is_danger):

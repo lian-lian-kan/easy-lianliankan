@@ -205,6 +205,13 @@ func _play_next_bgm_note() :
 	if not music_enabled or muted:
 		return
 
+	# 语音避让（Round 42）：语音台词播放期间 BGM 小节静默顺延——台词是
+	# 主角，和声垫底让路，播完自动回归，不做音量打架。
+	if _voice_player != null and _voice_player.playing:
+		_bgm_timer.wait_time = 0.4
+		_bgm_timer.start()
+		return
+
 	# 一个 tick 演奏一小节：低音持续整小节，和弦音四连琶音。
 	var bars := []
 	for section in SFX_CATALOG.MUSIC_SECTIONS:

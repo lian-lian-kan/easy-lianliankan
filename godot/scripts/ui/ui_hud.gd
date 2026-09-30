@@ -164,6 +164,9 @@ static func _show_message(game, text, duration_sec = 1.0):
 	tween.start()
 
 static func _hide_message(game):
+	# 退场保持瞬时隐藏（Round 41 只给入场加滑入）：退场若做 tween，会和
+	# 「新消息打断退场」产生同属性双 tween 竞态，不值得为半秒的淡出引入
+	# 跨 tween 状态机。label 常驻树上，隐藏成本为零。
 	game.message_label.visible = false
 	game.message_timer.stop()
 

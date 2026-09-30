@@ -1309,3 +1309,11 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **道具专属音效**：新增 `powerup` 事件（柔和上行三连音的「蓄力感」），使用道具不再混用通用点击音；powerups_test 的 StubAudio 补 stub、断言改 powerup。
 - **入场动画三处**：①`ui_panels.open_modal` 统一弹窗入场——淡入 + 非全屏面板缩放 pop（pivot 延迟一帧取布局后实际尺寸；全屏覆盖层只淡入，整屏缩放会晕），Tween 挂面板之下随其生死；②消息横幅自下滑入 + 淡入（BACK_OUT 回弹）；③成就通知自上滑入（锚定 CENTER_TOP + margin_top=60 落点确定，无需等布局）。所有动画 Tween 挂宿主节点之下随其生死，快速开关不悬空。
 - Validation: 受影响探针先行全绿（sfx/panels/stat/powerups/hud_timers/game_input/tray/flip）；全量 58 项 rc 全 0；shell_audit clean。纯代码图形与音符数据，零新增渲染字符。推送后待 CI deploy 回填。
+
+## 2026-09-30 (Round 42：BGM 语音避让 + 总分高光脉冲)
+
+- Context: 继续音画深化。语音台词与 BGM 和声垫底同时发声会打架；统计药丸数值变化无任何视觉反馈。
+- **BGM 语音避让（ducking）**：调度器在语音台词播放期间跳过小节演奏（0.4s 后重查）——台词是主角、和声垫底让路、播完自动回归，不做音量打架。零状态机：只读 `_voice_player.playing`。
+- **总分高光脉冲**：`stats_hud.set_text` 检测值变化，总分药丸闪玫瑰高光 0.4s 淡回（modulate 过亮再回归纯白，单属性零残留）。只对总分做——倒计时/剩余每秒都在跳，全部脉冲就成了常亮噪音。
+- **评估后放弃**：横幅退场淡出——退场 tween 与「新消息打断退场」在同一 modulate 属性上双 tween 竞态，为半秒的淡出引入跨 tween 状态机不值当（Round 41 的入场滑入已覆盖主要观感），退场保持瞬时隐藏并注释理由。
+- Validation: 受影响探针先行全绿（stat/panels/hud_timers/voice_playback/sfx/hud_layout/game_input）；全量 58 项 rc 全 0；shell_audit clean。零新增渲染字符。推送后待 CI deploy 回填。
