@@ -47,7 +47,8 @@ static func _use_power_up(game, power_up_type):
 
 	game.power_ups[power_up_type] -= 1
 	game._refresh_ui()
-	game.audio.play_button_click()
+	# Round 41：道具有了自己的音效（柔和上行的「蓄力感」），不再混用通用点击。
+	game.audio.play_powerup()
 
 # Re-pressing an armed type disarms it; rainbow also drops the selection.
 static func _recall_armed(game, power_up_type) -> bool:

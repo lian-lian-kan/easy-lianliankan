@@ -144,10 +144,29 @@ static func open_modal(game, panel):
 	if panel == null:
 		return
 	panel.visible = true
+	_animate_modal_in(game, panel)
 	if game.stage_status == game.STATUS_PLAYING:
 		game.stage_status = game.STATUS_PAUSED
 		if game.second_timer:
 			game.second_timer.stop()
+
+
+# 弹窗入场（Round 41）：淡入 + 轻微缩放 pop（ pivot 延迟一帧取布局后的实
+# 际尺寸）。全屏覆盖层（标题页）只做淡入——整屏缩放会晕。Tween 挂在面板
+# 之下随其生死，快速开关不悬空。
+static func _animate_modal_in(game, panel):
+	if not panel.is_inside_tree():
+		return
+	panel.modulate = Color(1, 1, 1, 0)
+	var tween = Tween.new()
+	panel.add_child(tween)
+	tween.connect("tween_all_completed", tween, "queue_free")
+	tween.interpolate_property(panel, "modulate:a", 0.0, 1.0, 0.16, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	var is_fullscreen = panel.rect_size.x >= game.get_viewport_rect().size.x * 0.95
+	if not is_fullscreen:
+		panel.call_deferred("set", "rect_pivot_offset", panel.rect_size / 2.0)
+		tween.interpolate_property(panel, "rect_scale", Vector2(0.94, 0.94), Vector2.ONE, 0.2, Tween.TRANS_BACK, Tween.EASE_OUT)
+	tween.start()
 
 
 static func close_modal(game, panel):

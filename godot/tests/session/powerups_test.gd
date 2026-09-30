@@ -34,6 +34,8 @@ class StubAudio:
 		events.append("shuffle")
 	func play_button_click():
 		events.append("click")
+	func play_powerup():
+		events.append("powerup")
 	func play_eliminate_combo(_combo):
 		events.append("eliminate")
 	func played(what):
@@ -170,7 +172,7 @@ func _init() -> void:
 	game.stage_status = "playing"
 	POWERUPS._use_power_up(game, "bomb")
 	check(game.activations == ["bomb"] and game.power_ups["bomb"] == 0 \
-		and game.refreshes == 1 and game.audio.played("click"),
+		and game.refreshes == 1 and game.audio.played("powerup"),
 		"an armed-able power-up activates, spends and refreshes")
 	game = FakeGame.new()
 	game.special_mode = "endless"

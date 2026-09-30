@@ -75,7 +75,41 @@ const POOLS = {
 		[[1318.51, 0.05, -12.0, 0.03], [1760.0, 0.1, -10.0, 0.0]],
 		[[1567.98, 0.05, -12.0, 0.03], [2093.0, 0.1, -10.0, 0.0]],
 	],
+	# Power-up armed: a soft mystical rise (distinct from the plain click so
+	# arming a tool feels like charging something).
+	"powerup": [
+		[[659.25, 0.07, -13.0, 0.04], [830.61, 0.07, -13.0, 0.04], [1108.73, 0.12, -11.0, 0.0]],
+		[[587.33, 0.07, -13.0, 0.04], [739.99, 0.07, -13.0, 0.04], [987.77, 0.12, -11.0, 0.0]],
+	],
 }
+
+# Background music (Round 41): two 8-bar sections (C-Am-F-G and its fifth
+# answer) rendered as bass + arpeggio through the enveloped synth. A bar is
+# {bass: hz, tones: [hz,...]} — the player arpeggiates `tones` over `beat`
+# seconds while the bass sustains. Sections rotate so the loop breathes.
+const MUSIC_SECTIONS = [
+	{
+		"bass_root": 130.81,  # C3
+		"progression": [
+			{"bass": 130.81, "tones": [523.25, 659.25, 783.99, 659.25]},
+			{"bass": 220.0, "tones": [523.25, 659.25, 880.0, 659.25]},
+			{"bass": 174.61, "tones": [523.25, 698.46, 880.0, 698.46]},
+			{"bass": 196.0, "tones": [587.33, 783.99, 987.77, 783.99]},
+		],
+	},
+	{
+		"bass_root": 146.83,  # D3
+		"progression": [
+			{"bass": 146.83, "tones": [587.33, 739.99, 880.0, 739.99]},
+			{"bass": 246.94, "tones": [587.33, 739.99, 987.77, 739.99]},
+			{"bass": 196.0, "tones": [587.33, 783.99, 987.77, 783.99]},
+			{"bass": 164.81, "tones": [523.25, 659.25, 830.61, 659.25]},
+		],
+	},
+]
+const MUSIC_BEAT = 0.26
+const MUSIC_BASS_DB = -26.0
+const MUSIC_TONE_DB = -21.0
 
 
 # Draw the next recipe for this event. Each pool keeps its own deck on

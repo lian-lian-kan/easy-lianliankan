@@ -25,8 +25,18 @@ func _init() -> void:
 
 	# --- all events the play_* wrappers rely on actually exist
 	for key in ["select", "eliminate", "combo_3", "combo_5", "combo_7", "combo_10",
-			"error", "hint", "win", "fail", "shuffle", "click", "time_warning", "coin"]:
+			"error", "hint", "win", "fail", "shuffle", "click", "time_warning", "coin",
+			"powerup"]:
 		check(SFX.POOLS.has(key), "pool exists: %s" % key)
+
+	# --- background music data (Round 41): bars well-formed for the scheduler
+	check(SFX.MUSIC_SECTIONS.size() >= 2, "at least two music sections rotate")
+	for section in SFX.MUSIC_SECTIONS:
+		check(section["progression"].size() >= 4, "each section has a 4-chord progression")
+		for bar in section["progression"]:
+			check(float(bar["bass"]) > 0.0, "bar has a bass note")
+			check(bar["tones"].size() == 4, "bar arpeggiates four chord tones")
+	check(float(SFX.MUSIC_BEAT) > 0.0, "music beat is positive")
 
 	# --- combo tier mapping
 	check(SFX.key_for_combo(0) == "eliminate" and SFX.key_for_combo(2) == "eliminate",

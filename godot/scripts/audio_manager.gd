@@ -28,7 +28,7 @@ var _sounds: Dictionary = {}
 # Background music player
 var _bgm_player: AudioStreamPlayer = null
 var _bgm_timer: Timer = null
-var _current_note_index: int = 0
+var _bgm_step: int = 0
 
 # Sound-effect catalog (Round 40): WHAT each event sounds like lives in
 # content/sfx.gd as data — variant pools drawn through shuffled decks so
@@ -36,24 +36,6 @@ var _current_note_index: int = 0
 # stay for the existing call sites.
 const SFX_CATALOG = preload("res://scripts/content/sfx.gd")
 var sfx_decks: Dictionary = {}
-
-# BGM melody (simple cheerful tune)
-const BGM_MELODY = [
-	{"note": 523.25, "duration": 0.25},  # C5
-	{"note": 659.25, "duration": 0.25},  # E5
-	{"note": 783.99, "duration": 0.25},  # G5
-	{"note": 1046.50, "duration": 0.25}, # C6
-	{"note": 783.99, "duration": 0.25},  # G5
-	{"note": 659.25, "duration": 0.25},  # E5
-	{"note": 523.25, "duration": 0.5},   # C5
-	{"note": 587.33, "duration": 0.25},  # D5
-	{"note": 698.46, "duration": 0.25},  # F5
-	{"note": 880.00, "duration": 0.25},  # A5
-	{"note": 1174.66, "duration": 0.25}, # D6
-	{"note": 880.00, "duration": 0.25},  # A5
-	{"note": 698.46, "duration": 0.25},  # F5
-	{"note": 587.33, "duration": 0.5},   # D5
-]
 
 func _ready() :
 	_load_settings()
@@ -198,12 +180,19 @@ func play_fail() :
 func play_coin() :
 	_play_event("coin")
 
-# Background Music
+# Power-up armed: soft mystical rise (distinct from the plain click).
+func play_powerup() :
+	_play_event("powerup")
+
+# Background Music (Round 41): bass + arpeggio bars from the catalog
+# (content/sfx.gd MUSIC_SECTIONS), two sections rotating so the loop
+# breathes. The scheduler walks one bar per tick: sustain the bass while
+# arpeggiating the chord tones.
 
 func start_bgm() :
 	if not music_enabled or muted:
 		return
-	_current_note_index = 0
+	_bgm_step = 0
 	_play_next_bgm_note()
 
 func stop_bgm() :
@@ -216,22 +205,27 @@ func _play_next_bgm_note() :
 	if not music_enabled or muted:
 		return
 
-	var note_data = BGM_MELODY[_current_note_index]
-	var freq = note_data.note
-	var duration = note_data.duration
+	# 一个 tick 演奏一小节：低音持续整小节，和弦音四连琶音。
+	var bars := []
+	for section in SFX_CATALOG.MUSIC_SECTIONS:
+		for bar in section["progression"]:
+			bars.append(bar)
+	var bar = bars[_bgm_step % bars.size()]
+	var beat: float = SFX_CATALOG.MUSIC_BEAT
 
-	# Play note quietly for background
-	var player = _create_tone_player(freq, duration, -22.0)
-	player.play()
+	var bass = _create_tone_player(float(bar["bass"]), beat * 4.0, SFX_CATALOG.MUSIC_BASS_DB)
+	bass.play()
 
-	# Schedule next note
-	_current_note_index = (_current_note_index + 1) % BGM_MELODY.size()
-	_bgm_timer.wait_time = duration
+	for i in range(bar["tones"].size()):
+		var tone = _create_tone_player(float(bar["tones"][i]), beat * 0.9, SFX_CATALOG.MUSIC_TONE_DB)
+		tone.play()
+		var stop_at = get_tree().create_timer(beat * 0.9 + 0.1)
+		stop_at.connect("timeout", tone, "queue_free")
+
+	# Schedule next bar
+	_bgm_step += 1
+	_bgm_timer.wait_time = beat * 4.0
 	_bgm_timer.start()
-
-	# Auto-cleanup
-	yield(get_tree().create_timer(duration + 0.1), "timeout")
-	player.queue_free()
 
 func set_music_enabled(enabled: bool) :
 	music_enabled = enabled

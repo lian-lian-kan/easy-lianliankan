@@ -1301,3 +1301,11 @@ Original prompt: 哎，继续完善我们的 GoDota 框架开发的 连连看游
 - **工程坑（重要）**：①字体子集对拍必须对 **9/19 基线提交**（38d16ff）——当前池被注释散文污染（1446→1469），漂/拿/添/碾/雅/贯/壁/封/勋/杯 十字会漏网放水成豆腐块；git archive 旧提交建基线池（1283 字）后全部重验，四条文案当场换词。②content 模块调 game 服务经 has_method 探测（_play_coin_sound/_spawn_reward_burst 包装在 game.gd），测试假体（裸 Node/Reference）没有这些方法时静默跳过——missions_test/content_decks_test 的假体零改动通过。
 - **新测试 tests/content/sfx_test.gd（CI 清单 58 项）**：池不变量（pools_valid）、14 事件键存在、combo 分档映射、洗牌牌堆不重复直至抽干重洗。
 - Validation: 受影响探针先行全绿（sfx/content_decks/missions/session_settle/voice_playback/content_sanity/edu/events_calendar）；全量 57+1=58 项 rc 全 0；port_shell_audit clean；新文案 25 条全过 9/19 基线池对拍。推送后待 CI deploy 回填 + 浏览器线上复验。
+
+## 2026-09-30 (Round 41：BGM 和弦化重构 + 弹窗/横幅/通知入场动画 + 道具专属音效)
+
+- Context: 继续深化音效与动画系统。最大短板：BGM 仍是 14 音裸正弦单旋律循环；弹窗/消息横幅/成就通知全是瞬间闪现（无入场动画）；道具使用混用通用点击音。
+- **BGM 和弦化**：旋律数据迁入 sfx.gd 目录（MUSIC_SECTIONS 两个 8 小节段轮换，C-Am-F-G 及其五度回应），每小节 = 低音持续整小节 + 和弦音四连琶音（包络合成器渲染，低音 -26dB/琶音 -21dB 保持背景感）。调度器一 tick 一小节，段间无缝循环——听感从「电子门铃」变成有和声进行的背景乐。
+- **道具专属音效**：新增 `powerup` 事件（柔和上行三连音的「蓄力感」），使用道具不再混用通用点击音；powerups_test 的 StubAudio 补 stub、断言改 powerup。
+- **入场动画三处**：①`ui_panels.open_modal` 统一弹窗入场——淡入 + 非全屏面板缩放 pop（pivot 延迟一帧取布局后实际尺寸；全屏覆盖层只淡入，整屏缩放会晕），Tween 挂面板之下随其生死；②消息横幅自下滑入 + 淡入（BACK_OUT 回弹）；③成就通知自上滑入（锚定 CENTER_TOP + margin_top=60 落点确定，无需等布局）。所有动画 Tween 挂宿主节点之下随其生死，快速开关不悬空。
+- Validation: 受影响探针先行全绿（sfx/panels/stat/powerups/hud_timers/game_input/tray/flip）；全量 58 项 rc 全 0；shell_audit clean。纯代码图形与音符数据，零新增渲染字符。推送后待 CI deploy 回填。

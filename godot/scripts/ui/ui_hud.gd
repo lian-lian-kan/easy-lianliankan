@@ -151,6 +151,17 @@ static func _show_message(game, text, duration_sec = 1.0):
 	game.message_timer.stop()
 	game.message_timer.wait_time = max(0.1, duration_sec)
 	game.message_timer.start()
+	# 入场（Round 41）：自下滑入 + 淡入，不再凭空闪现。
+	var label = game.message_label
+	var target_y = label.rect_position.y
+	label.modulate = Color(1, 1, 1, 0.0)
+	label.rect_position.y = target_y + 16.0
+	var tween = Tween.new()
+	label.add_child(tween)
+	tween.connect("tween_all_completed", tween, "queue_free")
+	tween.interpolate_property(label, "modulate:a", 0.0, 1.0, 0.16, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	tween.interpolate_property(label, "rect_position:y", target_y + 16.0, target_y, 0.2, Tween.TRANS_BACK, Tween.EASE_OUT)
+	tween.start()
 
 static func _hide_message(game):
 	game.message_label.visible = false
@@ -314,6 +325,17 @@ static func _show_achievement_notification(game, achievement_name):
 	margin.add_child(label)
 	game.audio.play_coin()
 	game.FX.spawn_reward_burst(game, Vector2(game.get_viewport_rect().size.x * 0.5, 70.0), 14)
+
+	# 入场（Round 41）：自上滑入 + 淡入，与消息横幅的下滑呼应。通知锚定
+	# CENTER_TOP + margin_top=60，落点是确定的 60，无需等布局。
+	notification.modulate = Color(1, 1, 1, 0.0)
+	notification.rect_position.y = 42.0
+	var tween = Tween.new()
+	notification.add_child(tween)
+	tween.connect("tween_all_completed", tween, "queue_free")
+	tween.interpolate_property(notification, "modulate:a", 0.0, 1.0, 0.16, Tween.TRANS_LINEAR, Tween.EASE_OUT)
+	tween.interpolate_property(notification, "rect_position:y", 42.0, 60.0, 0.2, Tween.TRANS_BACK, Tween.EASE_OUT)
+	tween.start()
 
 	# Auto-dismiss after animation
 	var dismiss_timer = Timer.new()
